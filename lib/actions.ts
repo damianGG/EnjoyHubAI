@@ -1,3 +1,4 @@
+"""typescript
 "use server"
 
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
@@ -9,90 +10,106 @@ function createSupabaseServerClient() {
   return createServerActionClient({ cookies: () => cookieStore })
 }
 
+type ActionResult = { ok?: boolean; message?: string; error?: string }
+
+function validateEmail(e: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+}
+
 // Sign in action
-export async function signIn(prevState: any, formData: FormData) {
-  if (!formData) {
-    return { error: "Form data is missing" }
-  }
+export async function signIn(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Form data is missing" }
 
   const email = formData.get("email")
   const password = formData.get("password")
 
-  if (!email || !password) {
-    return { error: "Email and password are required" }
-  }
+  if (!email || !password) return { error: "Email and password are required" }
+
+  const emailStr = String(email).trim()
+  const passwordStr = String(password)
+
+  if (!validateEmail(emailStr)) return { error: "Invalid email" }
+  if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
 
   const supabase = createSupabaseServerClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.toString(),
-      password: password.toString(),
+      email: emailStr,
+      password: passwordStr,
     })
 
     if (error) {
-      return { error: error.message }
+      // Avoid leaking provider internals; give a friendly message
+      return { error: "Invalid credentials or account not confirmed" }
     }
 
-    return { success: true }
-  } catch (error) {
-    console.error("Login error:", error)
+    return { ok: true, message: "Signed in" }
+  } catch (err) {
+    console.error("Login error:", err)
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
 
 // Sign up action
-export async function signUp(prevState: any, formData: FormData) {
-  if (!formData) {
-    return { error: "Form data is missing" }
-  }
+export async function signUp(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Form data is missing" }
 
   const email = formData.get("email")
   const password = formData.get("password")
   const fullName = formData.get("fullName")
   const isHost = formData.get("isHost") === "on"
 
-  if (!email || !password || !fullName) {
-    return { error: "Email, password and full name are required" }
-  }
+  if (!email || !password || !fullName) return { error: "Email, password and full name are required" }
+
+  const emailStr = String(email).trim()
+  const passwordStr = String(password)
+  const fullNameStr = String(fullName).trim()
+
+  if (!validateEmail(emailStr)) return { error: "Invalid email" }
+  if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
 
   const supabase = createSupabaseServerClient()
 
   try {
     const { data, error } = await supabase.auth.signUp({
-      email: email.toString(),
-      password: password.toString(),
+      email: emailStr,
+      password: passwordStr,
       options: {
         emailRedirectTo:
           process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         data: {
-          full_name: fullName.toString(),
+          full_name: fullNameStr,
           is_host: isHost,
         },
       },
     })
 
     if (error) {
-      return { error: error.message }
+      console.error("Sign up error (provider):", error)
+      return { error: "Sign up failed. Please try again." }
     }
 
-    // Create user profile in our users table
-    if (data.user) {
-      const { error: profileError } = await supabase.from("users").insert({
-        id: data.user.id,
-        email: data.user.email,
-        full_name: fullName.toString(),
-        is_host: isHost,
-      })
+    // If a user object was returned (depends on confirmation settings), upsert profile to avoid conflicts with DB trigger
+    if (data?.user?.id) {
+      const { error: profileError } = await supabase
+        .from("users")
+        .upsert(
+          {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: fullNameStr,
+            is_host: isHost,
+          },
+          { onConflict: "id" },
+        )
 
-      if (profileError) {
-        console.error("Profile creation error:", profileError)
-      }
+      if (profileError) console.error("Profile creation error:", profileError)
     }
 
-    return { success: "Check your email to confirm your account." }
-  } catch (error) {
-    console.error("Sign up error:", error)
+    return { ok: true, message: "Check your email to confirm your account." }
+  } catch (err) {
+    console.error("Sign up error:", err)
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
@@ -118,10 +135,11 @@ export async function signInWithGoogle() {
 
   if (error) {
     console.error("Google OAuth error:", error)
-    return { error: error.message }
+    return { error: "OAuth sign-in failed" }
   }
 
-  if (data.url) {
+  if (data?.url) {
     redirect(data.url)
   }
 }
+"""
