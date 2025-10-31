@@ -1,4 +1,3 @@
-"""typescript
 "use server"
 
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
@@ -142,4 +141,3 @@ export async function signInWithGoogle() {
     redirect(data.url)
   }
 }
-"""
