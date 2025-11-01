@@ -166,10 +166,10 @@ function BookingCard({ booking }: { booking: any }) {
       <CardContent className="p-6">
         <div className="flex space-x-6">
           <div className="w-32 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-            {booking.properties.images && booking.properties.images.length > 0 ? (
+            {Array.isArray(booking.properties.images) && booking.properties.images.length > 0 ? (
               <img
                 src={booking.properties.images[0] || "/placeholder.svg?height=96&width=128"}
-                alt={booking.properties.title}
+                alt={booking.properties.title || 'Property'}
                 className="w-full h-full object-cover"
               />
             ) : (

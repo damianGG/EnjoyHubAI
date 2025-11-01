@@ -13,7 +13,7 @@ interface PropertyGalleryProps {
 export default function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const [currentImage, setCurrentImage] = useState(0)
 
-  if (!images || images.length === 0) {
+  if (!Array.isArray(images) || images.length === 0) {
     return (
       <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
         <span className="text-muted-foreground">No images available</span>

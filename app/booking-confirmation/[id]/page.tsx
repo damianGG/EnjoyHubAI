@@ -106,10 +106,10 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
             {/* Property Info */}
             <div className="flex space-x-4">
               <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                {booking.properties.images && booking.properties.images.length > 0 ? (
+                {Array.isArray(booking.properties.images) && booking.properties.images.length > 0 ? (
                   <img
                     src={booking.properties.images[0] || "/placeholder.svg?height=80&width=80"}
-                    alt={booking.properties.title}
+                    alt={booking.properties.title || 'Property'}
                     className="w-full h-full object-cover"
                   />
                 ) : (
