@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signIn, signInWithGoogle } from "@/lib/actions"
+import { useT } from "@/components/i18n-provider"
 
 interface LoginFormProps {
   inline?: boolean
@@ -17,6 +18,7 @@ interface LoginFormProps {
 }
 
 function SubmitButton() {
+  const t = useT()
   const { pending } = useFormStatus()
 
   return (
@@ -24,16 +26,17 @@ function SubmitButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Logowanie...
+          {t("auth.login.submitting")}
         </>
       ) : (
-        "Zaloguj się"
+        t("auth.login.submit")
       )}
     </Button>
   )
 }
 
 function GoogleSignInButton() {
+  const t = useT()
   const { pending } = useFormStatus()
 
   return (
@@ -41,7 +44,7 @@ function GoogleSignInButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Łączenie z Google...
+          {t("auth.google_connecting")}
         </>
       ) : (
         <>
@@ -63,7 +66,7 @@ function GoogleSignInButton() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Kontynuuj z Google
+          {t("auth.google")}
         </>
       )}
     </Button>
@@ -71,6 +74,7 @@ function GoogleSignInButton() {
 }
 
 export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp }: LoginFormProps = {}) {
+  const t = useT()
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
@@ -96,7 +100,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp 
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Lub kontynuuj z</span>
+          <span className="bg-background px-2 text-muted-foreground">{t("common.or_continue_with")}</span>
         </div>
       </div>
 
@@ -109,14 +113,14 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp 
 
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium">
-            Email
+            {t("auth.login.email")}
           </label>
-          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+          <Input id="email" name="email" type="email" placeholder={t("auth.login.email_placeholder")} required />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm font-medium">
-            Hasło
+            {t("auth.login.password")}
           </label>
           <Input id="password" name="password" type="password" required />
         </div>
@@ -124,18 +128,18 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp 
         <SubmitButton />
 
         <div className="text-center text-sm text-muted-foreground">
-          Nie masz konta?{" "}
+          {t("auth.login.no_account")}{" "}
           {onSwitchToSignUp ? (
             <button
               type="button"
               onClick={onSwitchToSignUp}
               className="text-primary hover:underline"
             >
-              Zarejestruj się
+              {t("auth.login.signup_link")}
             </button>
           ) : (
-            <Link href="/auth/sign-up" className="text-primary hover:underline">
-              Zarejestruj się
+            <Link href="/signup" className="text-primary hover:underline">
+              {t("auth.login.signup_link")}
             </Link>
           )}
         </div>
@@ -150,8 +154,8 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Witaj ponownie</CardTitle>
-        <CardDescription>Zaloguj się do swojego konta EnjoyHub</CardDescription>
+        <CardTitle className="text-2xl">{t("auth.login.title")}</CardTitle>
+        <CardDescription>{t("auth.login.description")}</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

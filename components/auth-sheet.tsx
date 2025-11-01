@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import LoginForm from "@/components/login-form"
 import SignUpForm from "@/components/sign-up-form"
 import { useRouter } from "next/navigation"
+import { useT } from "@/components/i18n-provider"
 
 interface AuthSheetProps {
   open: boolean
@@ -14,6 +15,7 @@ interface AuthSheetProps {
 }
 
 export function AuthSheet({ open, onOpenChange, mode, onModeChange }: AuthSheetProps) {
+  const t = useT()
   const router = useRouter()
   const [currentMode, setCurrentMode] = useState(mode)
 
@@ -45,7 +47,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange }: AuthSheetP
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
         <SheetHeader className="p-6 pb-0">
-          <SheetTitle>{currentMode === "login" ? "Zaloguj się" : "Zarejestruj się"}</SheetTitle>
+          <SheetTitle>{currentMode === "login" ? t("auth.login.title") : t("auth.signup.title")}</SheetTitle>
         </SheetHeader>
         <div className="p-6">
           {currentMode === "login" ? (
