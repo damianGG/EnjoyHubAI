@@ -21,15 +21,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
+    // Validate file type - only allow images
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Only image files are allowed (JPEG, PNG, GIF, WebP)" }, { status: 400 })
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: "File size must be less than 10MB" }, { status: 400 })
+    }
+
     // Check if Cloudinary is configured
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 
     if (!cloudName || !uploadPreset) {
       // Fallback: return a placeholder URL if Cloudinary is not configured
+      // Sanitize filename for URL
+      const safeName = encodeURIComponent(file.name.replace(/[^a-zA-Z0-9.-]/g, "_"))
       console.warn("Cloudinary is not configured. Using placeholder.")
       return NextResponse.json({
-        url: `https://via.placeholder.com/400x300.png?text=${encodeURIComponent(file.name)}`,
+        url: `https://via.placeholder.com/400x300.png?text=${safeName}`,
         public_id: `placeholder-${Date.now()}`,
       })
     }

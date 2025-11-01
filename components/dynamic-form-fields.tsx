@@ -34,14 +34,17 @@ export default function DynamicFormFields({ fields, values, onChange, errors = {
       })
 
       if (!response.ok) {
-        throw new Error("Upload failed")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Upload failed")
       }
 
       const data = await response.json()
       onChange(fieldId, file.name, data.url)
       toast.success("File uploaded successfully")
     } catch (error) {
-      toast.error("Failed to upload file")
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload file"
+      console.error("File upload error:", error)
+      toast.error(errorMessage)
     } finally {
       setUploadingFields((prev) => {
         const next = new Set(prev)

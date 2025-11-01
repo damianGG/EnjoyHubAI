@@ -181,7 +181,7 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
 
       const { data: userExists, error: userCheckError } = await supabase
         .from("users")
-        .select("id")
+        .select("id, role")
         .eq("id", userId)
         .single()
 
@@ -201,13 +201,16 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
           email: user.email,
           full_name: user.user_metadata?.full_name || null,
           is_host: true, // Mark as host since they're adding a property
-          role: "host", // Set role to host
+          role: "host", // Set role to host (won't override if user already has a role set)
         })
 
         if (insertUserError) {
           console.error("[v0] Error creating user record:", insertUserError)
           throw insertUserError
         }
+      } else if (userExists && !userExists.role) {
+        // Update existing user to host role if they don't have a role yet
+        await supabase.from("users").update({ role: "host", is_host: true }).eq("id", userId)
       }
 
       // Insert property

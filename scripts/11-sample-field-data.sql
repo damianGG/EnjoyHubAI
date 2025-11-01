@@ -3,7 +3,7 @@
 
 -- First, ensure we have the base categories
 INSERT INTO categories (id, name, slug, icon, description, created_at) VALUES
-  ('550e8400-e29b-41d4-a716-446655440001', 'Go-Karts', 'go-karts', '🏎️', 'Tory gokartowe i wyścigi', NOW()),
+  ('550e8400-e29b-41d4-a716-446655440001', 'Go-Karts', 'go-karts', '🏎️', 'Trasy gokartowe i wyścigi', NOW()),
   ('550e8400-e29b-41d4-a716-446655440002', 'Paintball', 'paintball', '🎯', 'Gry paintballowe i laser tag', NOW()),
   ('550e8400-e29b-41d4-a716-446655440003', 'Dmuchańce', 'dmuchance', '🎈', 'Dmuchane atrakcje dla dzieci', NOW()),
   ('550e8400-e29b-41d4-a716-446655440004', 'Mini Golf', 'mini-golf', '⛳', 'Kreatywne tory mini golfa', NOW()),
