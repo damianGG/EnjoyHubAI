@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ interface PropertiesViewProps {
 }
 
 export default function PropertiesView({ properties }: PropertiesViewProps) {
+  const [isMounted, setIsMounted] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid")
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
@@ -47,6 +48,11 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
     amenities: [],
     sortBy: "newest",
   })
+
+  // Ensure component is mounted to avoid hydration mismatches
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const filteredAndSortedProperties = useMemo(() => {
     // Ensure properties is an array
@@ -114,6 +120,11 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
     // Search is handled by the filtering logic above
     // This could trigger additional actions like analytics
     console.log("Search triggered with filters:", filters)
+  }
+
+  // Prevent hydration issues by only rendering on client
+  if (!isMounted) {
+    return null
   }
 
   return (
