@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+// TODO: Re-enable Google Fonts once network restrictions are resolved in build environment
 // Temporarily disabled Google Fonts due to network restrictions in build environment
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
