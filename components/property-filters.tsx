@@ -92,6 +92,9 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
 
   const clearFilters = () => {
     onFiltersChange({
+      location: "",
+      checkIn: "",
+      checkOut: "",
       guests: "1",
       priceRange: [0, 500],
       ageRange: [0, 18],
