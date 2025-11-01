@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
 import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 import { signIn, signInWithGoogle } from "@/lib/actions"
+
+interface LoginFormProps {
+  inline?: boolean
+  onSuccess?: () => void
+  onSwitchToSignUp?: () => void
+}
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -19,10 +24,10 @@ function SubmitButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Signing in...
+          Logowanie...
         </>
       ) : (
-        "Sign In"
+        "Zaloguj się"
       )}
     </Button>
   )
@@ -36,7 +41,7 @@ function GoogleSignInButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Signing in...
+          Łączenie z Google...
         </>
       ) : (
         <>
@@ -58,75 +63,97 @@ function GoogleSignInButton() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Continue with Google
+          Kontynuuj z Google
         </>
       )}
     </Button>
   )
 }
 
-export default function LoginForm() {
+export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp }: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
-  // Handle successful login by redirecting
+  // Handle successful login by redirecting or calling onSuccess
   useEffect(() => {
-    if (state?.success) {
-      router.push("/")
+    if (state?.ok) {
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push("/")
+      }
     }
-  }, [state, router])
+  }, [state, router, onSuccess])
+
+  const content = (
+    <>
+      <form action={signInWithGoogle} className="mb-4">
+        <GoogleSignInButton />
+      </form>
+
+      <div className="relative mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Lub kontynuuj z</span>
+        </div>
+      </div>
+
+      <form action={formAction} className="space-y-4">
+        {state?.error && (
+          <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+            {state.error}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <label htmlFor="email" className="block text-sm font-medium">
+            Email
+          </label>
+          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-sm font-medium">
+            Hasło
+          </label>
+          <Input id="password" name="password" type="password" required />
+        </div>
+
+        <SubmitButton />
+
+        <div className="text-center text-sm text-muted-foreground">
+          Nie masz konta?{" "}
+          {onSwitchToSignUp ? (
+            <button
+              type="button"
+              onClick={onSwitchToSignUp}
+              className="text-primary hover:underline"
+            >
+              Zarejestruj się
+            </button>
+          ) : (
+            <Link href="/auth/sign-up" className="text-primary hover:underline">
+              Zarejestruj się
+            </Link>
+          )}
+        </div>
+      </form>
+    </>
+  )
+
+  if (inline) {
+    return <div className="w-full">{content}</div>
+  }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to your EnjoyHub account</CardDescription>
+        <CardTitle className="text-2xl">Witaj ponownie</CardTitle>
+        <CardDescription>Zaloguj się do swojego konta EnjoyHub</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form action={signInWithGoogle} className="mb-4">
-          <GoogleSignInButton />
-        </form>
-
-        <div className="relative mb-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-          </div>
-        </div>
-
-        <form action={formAction} className="space-y-4">
-          {state?.error && (
-            <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
-              {state.error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <Input id="email" name="email" type="email" placeholder="you@example.com" required />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <Input id="password" name="password" type="password" required />
-          </div>
-
-          <SubmitButton />
-
-          <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/auth/sign-up" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
-        </form>
-      </CardContent>
+      <CardContent>{content}</CardContent>
     </Card>
   )
 }
