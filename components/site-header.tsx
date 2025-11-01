@@ -61,13 +61,13 @@ export default function SiteHeader() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/login"
+                href="/auth/login"
                 className="rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800"
               >
                 {t('nav.login')}
               </Link>
               <Link
-                href="/signup"
+                href="/auth/sign-up"
                 className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
               >
                 {t('nav.signup')}
