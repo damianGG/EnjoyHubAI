@@ -12,9 +12,12 @@ import { Search, Users, Filter, X, SlidersHorizontal } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export interface FilterState {
+  location?: string
+  checkIn?: string
+  checkOut?: string
   guests: string
   priceRange: [number, number]
-  ageRange: [number, number]
+  ageRange?: [number, number]
   propertyTypes: string[]
   amenities: string[]
   sortBy: string
@@ -102,7 +105,7 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
     let count = 0
     if (filters.guests !== "1") count++
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 500) count++
-    if (filters.ageRange[0] > 0 || filters.ageRange[1] < 18) count++
+    if (filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)) count++
     if (filters.propertyTypes.length > 0) count++
     if (filters.amenities.length > 0) count++
     return count
@@ -192,7 +195,7 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
         <Label className="text-sm font-medium">Wiek uczestników</Label>
         <div className="px-2">
           <Slider
-            value={filters.ageRange}
+            value={filters.ageRange || [0, 18]}
             onValueChange={(value) => updateFilter("ageRange", value as [number, number])}
             max={18}
             min={0}
@@ -200,8 +203,8 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
             className="w-full"
           />
           <div className="flex justify-between text-sm text-muted-foreground mt-2">
-            <span>{filters.ageRange[0]} lat</span>
-            <span>{filters.ageRange[1] === 18 ? "18+" : `${filters.ageRange[1]} lat`}</span>
+            <span>{filters.ageRange?.[0] || 0} lat</span>
+            <span>{(filters.ageRange?.[1] || 18) === 18 ? "18+" : `${filters.ageRange?.[1] || 18} lat`}</span>
           </div>
         </div>
       </div>

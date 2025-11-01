@@ -49,7 +49,17 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
   })
 
   const filteredAndSortedProperties = useMemo(() => {
+    // Ensure properties is an array
+    if (!Array.isArray(properties)) {
+      return []
+    }
+
     const filtered = properties.filter((property) => {
+      // Safety checks for required fields
+      if (!property || !property.city || !property.country || !property.title) {
+        return false
+      }
+
       // Location filter
       if (filters.location) {
         const searchTerm = filters.location.toLowerCase()
@@ -153,10 +163,10 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                     <CardContent className="p-4">
                       <div className="flex space-x-4">
                         <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {property.images && property.images.length > 0 ? (
+                          {Array.isArray(property.images) && property.images.length > 0 ? (
                             <img
                               src={property.images[0] || "/placeholder.svg?height=96&width=96"}
-                              alt={property.title}
+                              alt={property.title || 'Property'}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -169,7 +179,7 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-2">
                             <h3 className="font-semibold line-clamp-1">{property.title}</h3>
-                            {property.avgRating > 0 && (
+                            {property.avgRating != null && property.avgRating > 0 && (
                               <div className="flex items-center space-x-1 text-sm">
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                 <span>{property.avgRating}</span>
@@ -233,10 +243,10 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                 <Link key={property.id} href={`/properties/${property.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                     <div className="aspect-square bg-muted relative">
-                      {property.images && property.images.length > 0 ? (
+                      {Array.isArray(property.images) && property.images.length > 0 ? (
                         <img
                           src={property.images[0] || "/placeholder.svg?height=300&width=300"}
-                          alt={property.title}
+                          alt={property.title || 'Property'}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -254,11 +264,11 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold line-clamp-1">{property.title}</h3>
-                        {property.avgRating > 0 && (
+                        {property.avgRating != null && property.avgRating > 0 && (
                           <div className="flex items-center space-x-1 text-sm">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span>{property.avgRating}</span>
-                            <span className="text-muted-foreground">({property.reviewCount})</span>
+                            <span className="text-muted-foreground">({property.reviewCount || 0})</span>
                           </div>
                         )}
                       </div>
