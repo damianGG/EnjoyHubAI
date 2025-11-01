@@ -16,10 +16,10 @@ const I18nContext = createContext<I18nContextValue>({
 
 function resolveKey(messages: Messages, path: string): string | undefined {
   const parts = path.split('.')
-  let current: any = messages
+  let current: Messages | string = messages
   for (const part of parts) {
-    if (current && typeof current === 'object' && part in current) {
-      current = (current as any)[part]
+    if (typeof current === 'object' && current !== null && part in current) {
+      current = current[part]
     } else {
       return undefined
     }

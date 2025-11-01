@@ -1,14 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClientComponentClient, type User } from '@supabase/auth-helpers-nextjs'
 import { useT } from './i18n-provider'
 
 export default function SiteHeader() {
   const t = useT()
-  const router = useRouter()
   const supabase = createClientComponentClient()
   const [user, setUser] = useState<User | null>(null)
 
@@ -24,18 +22,16 @@ export default function SiteHeader() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      router.refresh()
     })
 
     return () => {
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [router, supabase])
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.refresh()
   }
 
   return (
