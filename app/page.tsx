@@ -8,6 +8,7 @@ import { CategoryBar } from "@/components/category-bar"
 import { FeaturedProperties } from "@/components/featured-properties"
 import { UserAvatar } from "@/components/user-avatar"
 import { InteractiveMap } from "@/components/interactive-map"
+import { AuthSheet } from "@/components/auth-sheet"
 import { createClient } from "@/lib/supabase/client"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
@@ -17,6 +18,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [authSheetOpen, setAuthSheetOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
 
   useEffect(() => {
     const supabase = createClient()
@@ -72,7 +75,7 @@ export default function Home() {
 
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/host" className="text-muted-foreground hover:text-foreground">
-              Become a Host
+              Zostań gospodarzem
             </Link>
             {user && (
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
@@ -85,12 +88,24 @@ export default function Home() {
                 <UserAvatar user={user} />
               ) : (
                 <>
-                  <Link href="/auth/login" className="text-muted-foreground hover:text-foreground">
-                    Log in
-                  </Link>
-                  <Link href="/auth/sign-up">
-                    <Button>Sign up</Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAuthMode("login")
+                      setAuthSheetOpen(true)
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Zaloguj się
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setAuthMode("signup")
+                      setAuthSheetOpen(true)
+                    }}
+                  >
+                    Zarejestruj się
+                  </Button>
                 </>
               ))}
           </nav>
@@ -114,7 +129,7 @@ export default function Home() {
                     className="text-lg font-medium hover:text-primary transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Become a Host
+                    Zostań gospodarzem
                   </Link>
 
                   {user && (
@@ -135,14 +150,27 @@ export default function Home() {
                         </div>
                       ) : (
                         <div className="flex flex-col space-y-3 pt-4 border-t">
-                          <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                            <Button variant="outline" className="w-full bg-transparent">
-                              Log in
-                            </Button>
-                          </Link>
-                          <Link href="/auth/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                            <Button className="w-full">Sign up</Button>
-                          </Link>
+                          <Button
+                            variant="outline"
+                            className="w-full bg-transparent"
+                            onClick={() => {
+                              setMobileMenuOpen(false)
+                              setAuthMode("login")
+                              setAuthSheetOpen(true)
+                            }}
+                          >
+                            Zaloguj się
+                          </Button>
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              setMobileMenuOpen(false)
+                              setAuthMode("signup")
+                              setAuthSheetOpen(true)
+                            }}
+                          >
+                            Zarejestruj się
+                          </Button>
                         </div>
                       )}
                     </>
@@ -231,6 +259,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Auth Sheet */}
+      <AuthSheet open={authSheetOpen} onOpenChange={setAuthSheetOpen} mode={authMode} onModeChange={setAuthMode} />
     </div>
   )
 }
