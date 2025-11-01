@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signUp, signInWithGoogle } from "@/lib/actions"
+import { useT } from "@/components/i18n-provider"
 
 interface SignUpFormProps {
   inline?: boolean
@@ -18,6 +19,7 @@ interface SignUpFormProps {
 }
 
 function SubmitButton() {
+  const t = useT()
   const { pending } = useFormStatus()
 
   return (
@@ -25,16 +27,17 @@ function SubmitButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Tworzenie konta...
+          {t("auth.signup.submitting")}
         </>
       ) : (
-        "Zarejestruj się"
+        t("auth.signup.submit")
       )}
     </Button>
   )
 }
 
 function GoogleSignInButton() {
+  const t = useT()
   const { pending } = useFormStatus()
 
   return (
@@ -42,7 +45,7 @@ function GoogleSignInButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Łączenie z Google...
+          {t("auth.google_connecting")}
         </>
       ) : (
         <>
@@ -64,7 +67,7 @@ function GoogleSignInButton() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Kontynuuj z Google
+          {t("auth.google")}
         </>
       )}
     </Button>
@@ -72,6 +75,7 @@ function GoogleSignInButton() {
 }
 
 export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin }: SignUpFormProps = {}) {
+  const t = useT()
   const router = useRouter()
   const [state, formAction] = useActionState(signUp, null)
 
@@ -97,7 +101,7 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Lub kontynuuj z</span>
+          <span className="bg-background px-2 text-muted-foreground">{t("common.or_continue_with")}</span>
         </div>
       </div>
 
@@ -116,21 +120,21 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
 
         <div className="space-y-2">
           <label htmlFor="fullName" className="block text-sm font-medium">
-            Imię i nazwisko
+            {t("auth.signup.full_name")}
           </label>
-          <Input id="fullName" name="fullName" type="text" placeholder="Jan Kowalski" required />
+          <Input id="fullName" name="fullName" type="text" placeholder={t("auth.signup.full_name_placeholder")} required />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium">
-            Email
+            {t("auth.signup.email")}
           </label>
-          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+          <Input id="email" name="email" type="email" placeholder={t("auth.signup.email_placeholder")} required />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm font-medium">
-            Hasło
+            {t("auth.signup.password")}
           </label>
           <Input id="password" name="password" type="password" required />
         </div>
@@ -138,25 +142,25 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
         <div className="flex items-center space-x-2">
           <Checkbox id="isHost" name="isHost" />
           <label htmlFor="isHost" className="text-sm">
-            Chcę zostać gospodarzem i dodać swój obiekt
+            {t("auth.signup.is_host")}
           </label>
         </div>
 
         <SubmitButton />
 
         <div className="text-center text-sm text-muted-foreground">
-          Masz już konto?{" "}
+          {t("auth.signup.have_account")}{" "}
           {onSwitchToLogin ? (
             <button
               type="button"
               onClick={onSwitchToLogin}
               className="text-primary hover:underline"
             >
-              Zaloguj się
+              {t("auth.signup.login_link")}
             </button>
           ) : (
-            <Link href="/auth/login" className="text-primary hover:underline">
-              Zaloguj się
+            <Link href="/login" className="text-primary hover:underline">
+              {t("auth.signup.login_link")}
             </Link>
           )}
         </div>
@@ -171,8 +175,8 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Utwórz konto</CardTitle>
-        <CardDescription>Dołącz do EnjoyHub i rozpocznij przygodę</CardDescription>
+        <CardTitle className="text-2xl">{t("auth.signup.title")}</CardTitle>
+        <CardDescription>{t("auth.signup.description")}</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

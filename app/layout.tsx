@@ -1,20 +1,11 @@
 import type { Metadata } from 'next'
-// TODO: Re-enable Google Fonts once network restrictions are resolved in build environment
-// Temporarily disabled Google Fonts due to network restrictions in build environment
-// import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { I18nProvider } from '@/components/i18n-provider'
+import { SiteHeader } from '@/components/site-header'
 import './globals.css'
 
-// const geist = Geist({ 
-//   subsets: ["latin"],
-//   display: 'swap',
-//   fallback: ['system-ui', 'arial']
-// })
-// const geistMono = Geist_Mono({ 
-//   subsets: ["latin"],
-//   display: 'swap',
-//   fallback: ['monospace']
-// })
+// Note: Using CSS-based Poppins font due to build environment network restrictions
+// Font is loaded via @import in globals.css
 
 export const metadata: Metadata = {
   title: 'v0 App',
@@ -28,9 +19,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">
-        {children}
+    <html lang="pl">
+      <body className="font-poppins antialiased">
+        <I18nProvider locale="pl">
+          <SiteHeader />
+          {children}
+        </I18nProvider>
         <Analytics />
       </body>
     </html>
