@@ -14,6 +14,9 @@ import { Label } from "@/components/ui/label"
 import { Loader2, Upload, X } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import LocationPicker from "./location-picker"
+import DynamicFormFields from "./dynamic-form-fields"
+import type { Category, CategoryField } from "@/lib/types/dynamic-fields"
+import { toast } from "sonner"
 
 interface AddPropertyFormProps {
   userId: string
@@ -38,13 +41,6 @@ const AMENITIES = [
   "Prysznice",
 ]
 
-interface Category {
-  id: string
-  name: string
-  slug: string
-  icon: string
-}
-
 export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -53,6 +49,9 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("")
   const [location, setLocation] = useState<{ lat: number; lng: number }>({ lat: 52.2297, lng: 21.0122 })
+  const [categoryFields, setCategoryFields] = useState<CategoryField[]>([])
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, any>>({})
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -69,6 +68,7 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
           hint: error.hint,
           code: error.code,
         })
+        toast.error("Failed to load categories")
       } else {
         console.log("[v0] Categories loaded successfully:", data)
         console.log("[v0] Number of categories:", data?.length || 0)
@@ -78,6 +78,35 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
 
     loadCategories()
   }, [])
+
+  // Load fields when category changes
+  useEffect(() => {
+    const loadCategoryFields = async () => {
+      if (!selectedCategory) {
+        setCategoryFields([])
+        setDynamicFieldValues({})
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/admin/fields?category_id=${selectedCategory}`)
+        if (response.ok) {
+          const data = await response.json()
+          setCategoryFields(data)
+          // Reset field values when category changes
+          setDynamicFieldValues({})
+          setFieldErrors({})
+        } else {
+          toast.error("Failed to load category fields")
+        }
+      } catch (error) {
+        console.error("Error loading category fields:", error)
+        toast.error("Error loading category fields")
+      }
+    }
+
+    loadCategoryFields()
+  }, [selectedCategory])
 
   const handleAmenityChange = (amenity: string, checked: boolean) => {
     if (checked) {
@@ -103,8 +132,46 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
     console.log("[v0] Location selected:", { lat, lng })
   }
 
+  const handleDynamicFieldChange = (fieldId: string, value: any, fileUrl?: string) => {
+    setDynamicFieldValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+      ...(fileUrl && { [`${fieldId}_url`]: fileUrl }),
+    }))
+    // Clear error for this field when value changes
+    if (fieldErrors[fieldId]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[fieldId]
+        return next
+      })
+    }
+  }
+
+  const validateDynamicFields = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    categoryFields.forEach((field) => {
+      const value = dynamicFieldValues[field.id]
+
+      if (field.is_required && (!value || value === "")) {
+        errors[field.id] = `${field.field_label} is required`
+      }
+    })
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    // Validate dynamic fields before submission
+    if (!validateDynamicFields()) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
@@ -134,6 +201,7 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
           email: user.email,
           full_name: user.user_metadata?.full_name || null,
           is_host: true, // Mark as host since they're adding a property
+          role: "host", // Set role to host
         })
 
         if (insertUserError) {
@@ -142,34 +210,65 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
         }
       }
 
-      const { error } = await supabase.from("properties").insert({
-        host_id: userId,
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        property_type: "entertainment", // Added property_type with default value for entertainment objects
-        category_id: selectedCategory,
-        address: formData.get("address") as string,
-        city: formData.get("city") as string,
-        country: formData.get("country") as string,
-        latitude: location.lat,
-        longitude: location.lng,
-        price_per_night: Number.parseFloat(formData.get("price_per_night") as string),
-        max_guests: Number.parseInt(formData.get("max_guests") as string),
-        amenities: selectedAmenities,
-        images: images,
-        is_active: true,
-      })
+      // Insert property
+      const { data: propertyData, error: propertyError } = await supabase
+        .from("properties")
+        .insert({
+          host_id: userId,
+          title: formData.get("title") as string,
+          description: formData.get("description") as string,
+          property_type: "entertainment", // Added property_type with default value for entertainment objects
+          category_id: selectedCategory,
+          address: formData.get("address") as string,
+          city: formData.get("city") as string,
+          country: formData.get("country") as string,
+          latitude: location.lat,
+          longitude: location.lng,
+          price_per_night: Number.parseFloat(formData.get("price_per_night") as string),
+          max_guests: Number.parseInt(formData.get("max_guests") as string),
+          amenities: selectedAmenities,
+          images: images,
+          is_active: true,
+        })
+        .select()
+        .single()
 
-      if (error) {
-        console.error("[v0] Error adding property:", error)
-        alert(`Error adding property: ${error.message}`)
-      } else {
-        console.log("[v0] Property added successfully")
-        router.push("/host")
+      if (propertyError) {
+        console.error("[v0] Error adding property:", propertyError)
+        toast.error(`Error adding property: ${propertyError.message}`)
+        return
       }
+
+      console.log("[v0] Property added successfully:", propertyData)
+
+      // Save dynamic field values
+      if (categoryFields.length > 0 && propertyData) {
+        const fieldValues = categoryFields.map((field) => ({
+          field_id: field.id,
+          value: dynamicFieldValues[field.id] || "",
+          file_url: dynamicFieldValues[`${field.id}_url`] || "",
+        }))
+
+        const response = await fetch("/api/properties/field-values", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            property_id: propertyData.id,
+            field_values: fieldValues,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error("[v0] Error saving field values")
+          toast.error("Property created but some field values failed to save")
+        }
+      }
+
+      toast.success("Property added successfully!")
+      router.push("/host")
     } catch (error) {
       console.error("[v0] Unexpected error:", error)
-      alert("An unexpected error occurred. Please try again.")
+      toast.error("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -308,6 +407,24 @@ export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dynamic Fields */}
+      {categoryFields.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dodatkowe informacje</CardTitle>
+            <CardDescription>Szczegóły specyficzne dla kategorii</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DynamicFormFields
+              fields={categoryFields}
+              values={dynamicFieldValues}
+              onChange={handleDynamicFieldChange}
+              errors={fieldErrors}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Images */}
       <Card>
