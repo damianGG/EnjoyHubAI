@@ -1,25 +1,22 @@
 import type { Metadata } from 'next'
-// TODO: Re-enable Google Fonts once network restrictions are resolved in build environment
-// Temporarily disabled Google Fonts due to network restrictions in build environment
-// import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { Analytics } from '@vercel/analytics/next'
+// TODO: Re-enable Poppins font once network restrictions are resolved in build environment
+// import { Poppins } from 'next/font/google'
+import SiteHeader from '../components/site-header'
+import I18nProvider from '../components/i18n-provider'
+import pl from '../locales/pl'
 
-// const geist = Geist({ 
-//   subsets: ["latin"],
+// const poppins = Poppins({
+//   subsets: ['latin', 'latin-ext'],
+//   weight: ['300', '400', '500', '600', '700'],
 //   display: 'swap',
-//   fallback: ['system-ui', 'arial']
-// })
-// const geistMono = Geist_Mono({ 
-//   subsets: ["latin"],
-//   display: 'swap',
-//   fallback: ['monospace']
 // })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'EnjoyHubAI',
+  description: 'EnjoyHubAI',
+  generator: 'EnjoyHubAI',
 }
 
 export default function RootLayout({
@@ -28,10 +25,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <body className="font-sans antialiased">
-        {children}
-        <Analytics />
+        <I18nProvider locale="pl" messages={pl}>
+          <SiteHeader />
+          {children}
+          <Analytics />
+        </I18nProvider>
       </body>
     </html>
   )
