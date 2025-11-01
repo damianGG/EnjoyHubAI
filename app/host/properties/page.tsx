@@ -79,10 +79,10 @@ export default async function PropertiesPage() {
             {properties.map((property) => (
               <Card key={property.id} className="overflow-hidden">
                 <div className="aspect-video bg-muted relative">
-                  {property.images && property.images.length > 0 ? (
+                  {Array.isArray(property.images) && property.images.length > 0 ? (
                     <img
                       src={property.images[0] || "/placeholder.svg"}
-                      alt={property.title}
+                      alt={property.title || 'Property'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
