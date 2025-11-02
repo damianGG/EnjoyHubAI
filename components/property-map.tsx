@@ -49,7 +49,7 @@ const getMockCoordinates = (city: string, country: string) => {
 
 export default function PropertyMap({ properties, selectedProperty, onPropertySelect, className }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const [map, setMap] = useState<any>(null)
+  const mapInstanceRef = useRef<any>(null)
   const [leaflet, setLeaflet] = useState<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const clusterRef = useRef<any>(null)
@@ -85,24 +85,25 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
         maxZoom: 19,
       }).addTo(mapInstance)
 
-      setMap(mapInstance)
+      mapInstanceRef.current = mapInstance
     }
 
     initMap()
 
     return () => {
-      if (clusterRef.current && map) {
-        map.removeLayer(clusterRef.current)
+      if (clusterRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(clusterRef.current)
         clusterRef.current = null
       }
-      if (map) {
-        map.remove()
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
       }
     }
   }, [])
 
   useEffect(() => {
-    if (!map || !leaflet || !properties.length) return
+    if (!mapInstanceRef.current || !leaflet || !properties.length) return
 
     // Initialize cluster group if not exists
     if (!clusterRef.current) {
@@ -120,7 +121,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
           })
         },
       })
-      map.addLayer(clusterRef.current)
+      mapInstanceRef.current.addLayer(clusterRef.current)
     }
 
     // Clear existing markers
@@ -239,12 +240,12 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
     setMarkers(newMarkers)
 
     if (properties.length > 0 && bounds.isValid()) {
-      map.fitBounds(bounds, {
+      mapInstanceRef.current.fitBounds(bounds, {
         padding: [50, 50],
         maxZoom: 15,
       })
     }
-  }, [map, leaflet, properties, selectedProperty, hoveredProperty])
+  }, [leaflet, properties, selectedProperty, hoveredProperty])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
