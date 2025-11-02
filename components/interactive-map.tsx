@@ -1,5 +1,5 @@
 "use client"
-import "leaflet/dist/leaflet.css" 
+import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Gamepad2, Music, Camera, UtensilsCrossed, Dumbbell, Palette, Car, TreePine } from "lucide-react"
@@ -38,6 +38,7 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const clusterRef = useRef<any>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -116,6 +117,9 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
       // Dynamically import Leaflet
       const L = (await import("leaflet")).default
 
+      // Import marker cluster plugin
+      await import("leaflet.markercluster")
+
       // Fix default markers
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -141,6 +145,10 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     initMap()
 
     return () => {
+      if (clusterRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(clusterRef.current)
+        clusterRef.current = null
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
@@ -155,10 +163,27 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     const updateMarkers = async () => {
       const L = (await import("leaflet")).default
 
+      // Initialize cluster group if not exists
+      if (!clusterRef.current) {
+        clusterRef.current = (L as any).markerClusterGroup({
+          showCoverageOnHover: false,
+          spiderfyOnMaxZoom: true,
+          maxClusterRadius: 60,
+          iconCreateFunction: (cluster: any) => {
+            const count = cluster.getChildCount()
+            return L.divIcon({
+              html: `<div class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-lg border-2 border-primary/70">${count}</div>`,
+              className: "custom-cluster",
+              iconSize: [40, 40] as [number, number],
+              iconAnchor: [20, 20] as [number, number],
+            })
+          },
+        })
+        mapInstanceRef.current.addLayer(clusterRef.current)
+      }
+
       // Clear existing markers
-      markersRef.current.forEach((marker) => {
-        mapInstanceRef.current.removeLayer(marker)
-      })
+      clusterRef.current.clearLayers()
       markersRef.current = []
 
       // Add new markers
@@ -174,18 +199,15 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
                   ${getIconSVG(property.category_slug)}
                 </svg>
               </div>
-              <div class="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium mt-1 whitespace-nowrap">
-                ${property.price_per_night} zł
-              </div>
             `,
             className: "custom-marker",
-            iconSize: [60, 80],
-            iconAnchor: [30, 80],
+            iconSize: [40, 40] as [number, number],
+            iconAnchor: [20, 20] as [number, number],
           })
 
           const marker = L.marker([property.latitude, property.longitude], {
             icon: customIcon,
-          }).addTo(mapInstanceRef.current)
+          })
 
           marker.bindPopup(`
             <div class="p-2">
@@ -199,6 +221,7 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
             onPropertySelect?.(property)
           })
 
+          clusterRef.current.addLayer(marker)
           markersRef.current.push(marker)
         }
       })
@@ -241,6 +264,8 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
 
   return (
     <div className="w-full h-full relative">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
       <div ref={mapRef} className="w-full h-full rounded-lg" />
       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
         <p className="text-xs font-medium">
