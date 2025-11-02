@@ -54,7 +54,6 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
   const [leaflet, setLeaflet] = useState<any>(null)
-  const [markers, setMarkers] = useState<any[]>([])
   const clusterRef = useRef<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredProperty, setHoveredProperty] = useState<string | null>(null)

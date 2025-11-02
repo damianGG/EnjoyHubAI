@@ -39,7 +39,6 @@ interface InteractiveMapProps {
 export function InteractiveMap({ selectedCategory, onPropertySelect }: InteractiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
   const clusterRef = useRef<any>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
