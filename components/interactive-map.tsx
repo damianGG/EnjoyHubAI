@@ -1,5 +1,7 @@
 "use client"
-import "leaflet/dist/leaflet.css" 
+import "leaflet/dist/leaflet.css"
+import "leaflet.markercluster/dist/MarkerCluster.css"
+import "leaflet.markercluster/dist/MarkerCluster.Default.css"
 import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Gamepad2, Music, Camera, UtensilsCrossed, Dumbbell, Palette, Car, TreePine } from "lucide-react"
@@ -37,7 +39,7 @@ interface InteractiveMapProps {
 export function InteractiveMap({ selectedCategory, onPropertySelect }: InteractiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
+  const clusterRef = useRef<any>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -115,6 +117,9 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     const initMap = async () => {
       // Dynamically import Leaflet
       const L = (await import("leaflet")).default
+      
+      // Dynamically import leaflet.markercluster
+      await import("leaflet.markercluster")
 
       // Fix default markers
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -141,6 +146,10 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     initMap()
 
     return () => {
+      if (clusterRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(clusterRef.current)
+        clusterRef.current = null
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
@@ -155,18 +164,35 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     const updateMarkers = async () => {
       const L = (await import("leaflet")).default
 
-      // Clear existing markers
-      markersRef.current.forEach((marker) => {
-        mapInstanceRef.current.removeLayer(marker)
-      })
-      markersRef.current = []
+      // Initialize cluster group if it doesn't exist
+      if (!clusterRef.current) {
+        clusterRef.current = (L as any).markerClusterGroup({
+          showCoverageOnHover: false,
+          spiderfyOnMaxZoom: true,
+          disableClusteringAtZoom: undefined,
+          maxClusterRadius: 60,
+          iconCreateFunction: (cluster: any) => {
+            const count = cluster.getChildCount()
+            return L.divIcon({
+              html: `<div class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-lg border-2 border-primary/70 font-bold">${count}</div>`,
+              className: "custom-cluster",
+              iconSize: [40, 40] as [number, number],
+              iconAnchor: [20, 20] as [number, number],
+            })
+          },
+        })
+        mapInstanceRef.current.addLayer(clusterRef.current)
+      } else {
+        // Clear existing markers from cluster
+        clusterRef.current.clearLayers()
+      }
 
-      // Add new markers
+      // Add new markers to cluster
       properties.forEach((property) => {
         if (property.latitude && property.longitude) {
           const IconComponent = categoryIcons[property.category_slug as keyof typeof categoryIcons] || Gamepad2
 
-          // Create custom HTML marker
+          // Create custom HTML marker (category icon only, no price)
           const customIcon = L.divIcon({
             html: `
               <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
@@ -174,18 +200,15 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
                   ${getIconSVG(property.category_slug)}
                 </svg>
               </div>
-              <div class="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium mt-1 whitespace-nowrap">
-                ${property.price_per_night} zł
-              </div>
             `,
             className: "custom-marker",
-            iconSize: [60, 80],
-            iconAnchor: [30, 80],
+            iconSize: [40, 40] as [number, number],
+            iconAnchor: [20, 40] as [number, number],
           })
 
           const marker = L.marker([property.latitude, property.longitude], {
             icon: customIcon,
-          }).addTo(mapInstanceRef.current)
+          })
 
           marker.bindPopup(`
             <div class="p-2">
@@ -199,7 +222,7 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
             onPropertySelect?.(property)
           })
 
-          markersRef.current.push(marker)
+          clusterRef.current.addLayer(marker)
         }
       })
     }

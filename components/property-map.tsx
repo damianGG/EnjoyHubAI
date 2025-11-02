@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Maximize2, Minimize2 } from "lucide-react"
+import "leaflet/dist/leaflet.css"
+import "leaflet.markercluster/dist/MarkerCluster.css"
+import "leaflet.markercluster/dist/MarkerCluster.Default.css"
 
 interface Property {
   id: string
@@ -51,7 +54,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
   const [leaflet, setLeaflet] = useState<any>(null)
-  const [markers, setMarkers] = useState<any[]>([])
+  const clusterRef = useRef<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredProperty, setHoveredProperty] = useState<string | null>(null)
 
@@ -60,6 +63,10 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
     const initMap = async () => {
       const L = (await import("leaflet")).default
+      
+      // Dynamically import leaflet.markercluster
+      await import("leaflet.markercluster")
+      
       setLeaflet(L)
 
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -86,6 +93,10 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
     initMap()
 
     return () => {
+      if (clusterRef.current && map) {
+        map.removeLayer(clusterRef.current)
+        clusterRef.current = null
+      }
       if (map) {
         map.remove()
       }
@@ -95,9 +106,29 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   useEffect(() => {
     if (!map || !leaflet || !properties.length) return
 
-    markers.forEach((marker) => map.removeLayer(marker))
+    // Initialize cluster group if it doesn't exist
+    if (!clusterRef.current) {
+      clusterRef.current = (leaflet as any).markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: undefined,
+        maxClusterRadius: 60,
+        iconCreateFunction: (cluster: any) => {
+          const count = cluster.getChildCount()
+          return leaflet.divIcon({
+            html: `<div class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-lg border-2 border-primary/70 font-bold">${count}</div>`,
+            className: "custom-cluster",
+            iconSize: [40, 40] as [number, number],
+            iconAnchor: [20, 20] as [number, number],
+          })
+        },
+      })
+      map.addLayer(clusterRef.current)
+    } else {
+      // Clear existing markers from cluster
+      clusterRef.current.clearLayers()
+    }
 
-    const newMarkers: any[] = []
     const bounds = leaflet.latLngBounds([])
 
     properties.forEach((property) => {
@@ -126,11 +157,11 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
       const customIcon = leaflet.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
+        iconSize: [60, 40] as [number, number],
+        iconAnchor: [30, 40] as [number, number],
       })
 
-      const marker = leaflet.marker([lat, lng], { icon: customIcon }).addTo(map)
+      const marker = leaflet.marker([lat, lng], { icon: customIcon })
 
       marker.on("click", () => {
         onPropertySelect?.(property.id)
@@ -203,10 +234,8 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
         className: "custom-popup",
       })
 
-      newMarkers.push(marker)
+      clusterRef.current.addLayer(marker)
     })
-
-    setMarkers(newMarkers)
 
     if (properties.length > 0 && bounds.isValid()) {
       map.fitBounds(bounds, {
@@ -256,8 +285,6 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
       </Card>
 
       {isFullscreen && <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />}
-
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     </>
   )
 }
