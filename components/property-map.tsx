@@ -52,6 +52,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   const [map, setMap] = useState<any>(null)
   const [leaflet, setLeaflet] = useState<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
+  const clusterRef = useRef<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredProperty, setHoveredProperty] = useState<string | null>(null)
 
@@ -60,6 +61,10 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
     const initMap = async () => {
       const L = (await import("leaflet")).default
+      
+      // Import marker cluster plugin
+      await import("leaflet.markercluster")
+      
       setLeaflet(L)
 
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -86,6 +91,10 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
     initMap()
 
     return () => {
+      if (clusterRef.current && map) {
+        map.removeLayer(clusterRef.current)
+        clusterRef.current = null
+      }
       if (map) {
         map.remove()
       }
@@ -95,7 +104,27 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   useEffect(() => {
     if (!map || !leaflet || !properties.length) return
 
-    markers.forEach((marker) => map.removeLayer(marker))
+    // Initialize cluster group if not exists
+    if (!clusterRef.current) {
+      clusterRef.current = (leaflet as any).markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        maxClusterRadius: 60,
+        iconCreateFunction: (cluster: any) => {
+          const count = cluster.getChildCount()
+          return leaflet.divIcon({
+            html: `<div class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-lg border-2 border-primary/70">${count}</div>`,
+            className: "custom-cluster",
+            iconSize: [40, 40] as [number, number],
+            iconAnchor: [20, 20] as [number, number],
+          })
+        },
+      })
+      map.addLayer(clusterRef.current)
+    }
+
+    // Clear existing markers
+    clusterRef.current.clearLayers()
 
     const newMarkers: any[] = []
     const bounds = leaflet.latLngBounds([])
@@ -130,7 +159,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
         iconAnchor: [30, 40],
       })
 
-      const marker = leaflet.marker([lat, lng], { icon: customIcon }).addTo(map)
+      const marker = leaflet.marker([lat, lng], { icon: customIcon })
 
       marker.on("click", () => {
         onPropertySelect?.(property.id)
@@ -203,6 +232,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
         className: "custom-popup",
       })
 
+      clusterRef.current.addLayer(marker)
       newMarkers.push(marker)
     })
 
@@ -258,6 +288,8 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
       {isFullscreen && <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />}
 
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     </>
   )
 }
