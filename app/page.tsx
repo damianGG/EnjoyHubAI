@@ -321,7 +321,7 @@ export default function Home() {
           </div>
 
           {/* Map - Right Half */}
-          <div className="w-1/2 border-l">
+          <div className="w-1/2 h-full border-l">
             {mapLoading ? (
               <div className="w-full h-full flex items-center justify-center bg-muted">
                 <div className="text-center">

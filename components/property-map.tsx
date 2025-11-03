@@ -231,10 +231,18 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
     )
   }
 
+  // Determine if parent wants full height based on className
+  const useFullHeight = className?.split(/\s+/).includes("h-full")
+  
+  // Determine map height class and style
+  const shouldFillHeight = isFullscreen || useFullHeight
+  const mapHeightClass = shouldFillHeight ? "h-full" : "h-96"
+  const mapMinHeight = isFullscreen ? "calc(100vh - 2rem)" : useFullHeight ? "100%" : "384px"
+
   return (
     <>
       <Card className={`${className} ${isFullscreen ? "fixed inset-4 z-50" : ""} transition-all duration-300`}>
-        <CardContent className="p-0 relative">
+        <CardContent className="p-0 relative h-full">
           <div className="absolute top-4 right-4 z-10 space-x-2">
             <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="bg-white/90 backdrop-blur-sm">
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -243,8 +251,8 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
           <div
             ref={mapRef}
-            className={`w-full ${isFullscreen ? "h-full" : "h-96"} rounded-lg`}
-            style={{ minHeight: isFullscreen ? "calc(100vh - 2rem)" : "384px" }}
+            className={`w-full ${mapHeightClass} rounded-lg`}
+            style={{ minHeight: mapMinHeight }}
           />
 
           <div className="absolute bottom-4 left-4 z-10">
