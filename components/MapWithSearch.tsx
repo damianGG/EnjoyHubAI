@@ -89,6 +89,8 @@ export default function MapWithSearch({ initialResults, onResultsUpdate }: MapWi
         const centerStr = `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`
 
         // Update URL with new bbox, center, zoom
+        // Note: We capture searchParams and router from closure at mount time
+        // This is intentional to avoid recreating the moveend handler on every URL change
         const currentParams = parseSearchParams(searchParams)
         const updatedParams = updateSearchParams(currentParams, {
           bbox,
@@ -108,7 +110,8 @@ export default function MapWithSearch({ initialResults, onResultsUpdate }: MapWi
         mapRef.current = null
       }
     }
-  }, []) // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount - searchParams and router captured in closure
 
   // Update markers when results change
   useEffect(() => {

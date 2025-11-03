@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Search RPC error:", error)
-      return NextResponse.json({ results: [], error: error.message }, { status: 500 })
+      return NextResponse.json({ results: [], error: "Search failed" }, { status: 500 })
     }
 
     return NextResponse.json({ results: data || [], page, limit })

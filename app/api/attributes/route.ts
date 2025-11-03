@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Attributes fetch error:", error)
-      return NextResponse.json({ attributes: [], error: error.message }, { status: 500 })
+      return NextResponse.json({ attributes: [], error: "Failed to fetch attributes" }, { status: 500 })
     }
 
     return NextResponse.json({ attributes: data || [] })

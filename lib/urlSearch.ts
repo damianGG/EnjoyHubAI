@@ -128,7 +128,7 @@ export function attributeFiltersToJsonb(af?: Record<string, string>): Record<str
         jsonb[key] = true
       } else if (value === 'false') {
         jsonb[key] = false
-      } else if (!isNaN(Number(value))) {
+      } else if (value.trim() !== '' && !isNaN(Number(value))) {
         jsonb[key] = Number(value)
       } else {
         jsonb[key] = value
