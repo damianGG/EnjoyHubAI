@@ -232,7 +232,12 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   }
 
   // Determine if parent wants full height based on className
-  const useFullHeight = className?.includes("h-full")
+  const useFullHeight = className?.split(/\s+/).includes("h-full")
+  
+  // Determine map height class and style
+  const shouldFillHeight = isFullscreen || useFullHeight
+  const mapHeightClass = shouldFillHeight ? "h-full" : "h-96"
+  const mapMinHeight = isFullscreen ? "calc(100vh - 2rem)" : useFullHeight ? "100%" : "384px"
 
   return (
     <>
@@ -246,8 +251,8 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
           <div
             ref={mapRef}
-            className={`w-full ${isFullscreen ? "h-full" : useFullHeight ? "h-full" : "h-96"} rounded-lg`}
-            style={{ minHeight: isFullscreen ? "calc(100vh - 2rem)" : useFullHeight ? "100%" : "384px" }}
+            className={`w-full ${mapHeightClass} rounded-lg`}
+            style={{ minHeight: mapMinHeight }}
           />
 
           <div className="absolute bottom-4 left-4 z-10">
