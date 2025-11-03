@@ -7,7 +7,7 @@ import Link from "next/link"
 import { CategoryBar } from "@/components/category-bar"
 import { FeaturedProperties } from "@/components/featured-properties"
 import { UserAvatar } from "@/components/user-avatar"
-import { InteractiveMap } from "@/components/interactive-map"
+import PropertyMap from "@/components/property-map"
 import { AuthSheet } from "@/components/auth-sheet"
 import { createClient } from "@/lib/supabase/client"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -17,9 +17,11 @@ export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [selectedProperty, setSelectedProperty] = useState<string | null>(null)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  const [mapProperties, setMapProperties] = useState<any[]>([])
+  const [mapLoading, setMapLoading] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
@@ -60,6 +62,71 @@ export default function Home() {
       setLoading(false)
     }
   }, [])
+
+  // Fetch properties for the map
+  useEffect(() => {
+    const fetchMapProperties = async () => {
+      setMapLoading(true)
+      const supabase = createClient()
+
+      let query = supabase
+        .from("properties")
+        .select(`
+          *,
+          reviews (
+            rating
+          ),
+          categories (
+            slug
+          )
+        `)
+        .eq("is_active", true)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error("Error fetching map properties:", error)
+        setMapProperties([])
+      } else {
+        // Filter by category if selected
+        let filteredData = data || []
+        if (selectedCategory) {
+          filteredData = data?.filter((property: any) => property.categories?.slug === selectedCategory) || []
+        }
+
+        // Transform data to match PropertyMap's expected format
+        const transformedData = filteredData.map((property: any) => {
+          const ratings = property.reviews?.map((r: any) => r.rating) || []
+          const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0
+          const roundedRating = Math.round(avgRating * 10) / 10
+
+          return {
+            id: property.id,
+            title: property.title,
+            city: property.city,
+            country: property.country,
+            latitude: property.latitude,
+            longitude: property.longitude,
+            price_per_night: property.price_per_night,
+            property_type: property.property_type,
+            max_guests: property.max_guests,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            images: property.images,
+            avgRating: roundedRating,
+            reviewCount: ratings.length,
+          }
+        })
+
+        setMapProperties(transformedData)
+      }
+      setMapLoading(false)
+    }
+
+    fetchMapProperties()
+  }, [selectedCategory])
 
   return (
     <div className="min-h-screen bg-background">
@@ -255,7 +322,21 @@ export default function Home() {
 
           {/* Map - Right Half */}
           <div className="w-1/2 border-l">
-            <InteractiveMap selectedCategory={selectedCategory} onPropertySelect={setSelectedProperty} />
+            {mapLoading ? (
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Ładowanie mapy...</p>
+                </div>
+              </div>
+            ) : (
+              <PropertyMap
+                properties={mapProperties}
+                selectedProperty={selectedProperty}
+                onPropertySelect={setSelectedProperty}
+                className="h-full"
+              />
+            )}
           </div>
         </div>
       </section>
