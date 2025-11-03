@@ -7,7 +7,7 @@ import SearchResultsClient from '@/components/SearchResultsClient'
 import { parseSearchParams, attributeFiltersToJsonb } from '@/lib/urlSearch'
 
 interface SearchPageProps {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 // Example categories - you can fetch these from DB or define statically
@@ -22,9 +22,12 @@ const CATEGORIES = [
  * URL is the single source of truth
  */
 export default async function SearchPage({ searchParams }: SearchPageProps) {
+  // Await searchParams
+  const resolvedSearchParams = await searchParams
+  
   // Parse URL params
   const urlSearchParams = new URLSearchParams()
-  Object.entries(searchParams).forEach(([key, value]) => {
+  Object.entries(resolvedSearchParams).forEach(([key, value]) => {
     if (Array.isArray(value)) {
       value.forEach((v) => urlSearchParams.append(key, v))
     } else if (value) {
@@ -35,7 +38,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = parseSearchParams(urlSearchParams)
 
   // Create Supabase client
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
