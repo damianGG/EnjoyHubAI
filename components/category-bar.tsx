@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { SlidersHorizontal } from "lucide-react"
@@ -16,12 +17,13 @@ interface Category {
 
 interface CategoryBarProps {
   selectedCategory?: string
-  onCategorySelect: (categorySlug: string | null) => void
+  onCategorySelect?: (categorySlug: string | null) => void
 }
 
 export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const s = createClient()
@@ -54,7 +56,10 @@ export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarP
         <Button
           variant={!selectedCategory ? "default" : "ghost"}
           size="sm"
-          onClick={() => onCategorySelect(null)}
+          onClick={() => {
+            router.push("/")
+            onCategorySelect?.(null)
+          }}
           className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl"
         >
           <div className="w-6 md:w-8 h-6 md:h-8 flex items-center justify-center">
@@ -70,7 +75,10 @@ export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarP
               key={category.id}
               variant={selectedCategory === category.slug ? "default" : "ghost"}
               size="sm"
-              onClick={() => onCategorySelect(category.slug)}
+              onClick={() => {
+                router.push(`/k/${category.slug}`)
+                onCategorySelect?.(category.slug)
+              }}
               className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
             >
               <span className="text-2xl md:text-3xl">{category.icon}</span>

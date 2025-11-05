@@ -294,7 +294,7 @@ export default function Home() {
       {/* Category Bar Section */}
       <section className="border-b bg-background">
         <div className="container mx-auto">
-          <CategoryBar selectedCategory={selectedCategory} onCategorySelect={setSelectedCategory} />
+          <CategoryBar selectedCategory={selectedCategory ?? undefined} onCategorySelect={setSelectedCategory} />
         </div>
       </section>
 

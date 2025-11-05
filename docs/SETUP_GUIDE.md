@@ -27,8 +27,20 @@ Execute these scripts in order:
 3. `scripts/09-dynamic-fields-system.sql` - Dynamic fields tables and RLS
 4. `scripts/10-set-super-admin.sql` - Set up super admin user
 5. `scripts/11-sample-field-data.sql` - Sample categories and fields (optional)
+6. `scripts/12-geo-indexes.sql` - Geographic and search indexes (optional, see note below)
 
-### 2. Set Super Admin User
+### 2. Geographic Indexes (Optional)
+
+The search and map features work without PostGIS, using standard latitude/longitude BTREE indexes. For best performance, run:
+
+```bash
+# In Supabase SQL Editor, execute:
+# scripts/12-geo-indexes.sql
+```
+
+**Note**: PostGIS setup in the script is commented out. The bbox fallback using BTREE indexes on latitude/longitude works without PostGIS and provides good performance for most use cases. If you need distance-based sorting or complex spatial queries, uncomment the PostGIS sections.
+
+### 3. Set Super Admin User
 
 After registering a user account:
 
@@ -39,7 +51,7 @@ SET role = 'super_admin'
 WHERE email = 'your-email@example.com';
 ```
 
-### 3. Configure Environment Variables (Optional)
+### 4. Configure Environment Variables (Optional)
 
 For Cloudinary file uploads, add to `.env.local`:
 
@@ -50,19 +62,63 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
 
 Without these, the system will use placeholder URLs for file uploads.
 
-### 4. Install Dependencies
+### 5. Install Dependencies
 
 ```bash
 npm install --legacy-peer-deps
 ```
 
-### 5. Run Development Server
+### 6. Run Development Server
 
 ```bash
 npm run dev
 ```
 
 ## Testing the System
+
+### Test Search and Map Features
+
+1. **Access Category Search Page**
+   - Navigate to `/k/[category-slug]` (e.g., `/k/paintball`)
+   - The page should load with a list of properties on the left and a map on the right
+   
+2. **Test URL Parameters**
+   - Try `/k/paintball?q=track&sort=price_asc`
+   - Verify that search query filters properties
+   - Verify that sort option works (price ascending)
+   
+3. **Test Map Interactions**
+   - Pan and zoom the map
+   - After ~300ms, the URL should update with bbox parameter
+   - The property list should refresh with properties in the visible map area
+   
+4. **Test Category Navigation**
+   - Click on a category in the CategoryBar
+   - Should navigate to `/k/{slug}` route
+   - Should show filtered properties for that category
+   - Click "Wszystkie" (All) button
+   - Should navigate back to homepage `/`
+
+5. **Test Pagination**
+   - If there are more than 20 results, pagination controls should appear
+   - Click "Next" to go to page 2
+   - URL should update with `page=2` parameter
+   - Click "Previous" to return to page 1
+
+6. **Manual API Testing**
+   ```bash
+   # Test search API directly
+   curl "http://localhost:3000/api/search?q=property&per=5"
+   
+   # Test with bbox (bounding box around Poland)
+   curl "http://localhost:3000/api/search?bbox=14.0,49.0,24.0,55.0&per=10"
+   
+   # Test with category filter
+   curl "http://localhost:3000/api/search?categories=paintball&sort=price_desc"
+   
+   # Test with multiple parameters
+   curl "http://localhost:3000/api/search?q=fun&categories=paintball,gokarty&sort=rating&page=1&per=20"
+   ```
 
 ### Test Super Admin Features
 
