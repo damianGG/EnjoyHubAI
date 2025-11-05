@@ -273,3 +273,77 @@ For issues or questions:
 - Check documentation in `/docs/DYNAMIC_FIELDS_SYSTEM.md`
 - Review code comments in components
 - Check Supabase dashboard for database issues
+
+## Search and Map Feature
+
+The application includes a comprehensive search and map experience with URL-driven state.
+
+### URL Structure
+
+Search pages use the `/k/[categories]` route pattern:
+
+- `/k/all` - All properties (redirects to search with no filters)
+- `/k/paintball` - Properties in the paintball category
+- `/k/paintball,gokarty` - Properties in multiple categories (CSV)
+
+### Query Parameters
+
+The URL supports these query parameters:
+
+- `q` - Text search query (searches property titles)
+- `bbox` - Map bounding box as "west,south,east,north" (e.g., "19.8,50.0,20.2,50.2")
+- `sort` - Sort order: relevance, rating, price_asc, price_desc, newest
+- `page` - Page number (default: 1)
+- `per` - Items per page (default: 20, max: 100)
+- `categories` - Comma-separated category slugs (mirrors the path)
+
+### Example URLs
+
+```
+/k/paintball
+/k/paintball?q=outdoor&sort=price_asc
+/k/paintball,gokarty?q=tor&bbox=19.8,50.0,20.2,50.2&sort=rating&page=1&per=20
+```
+
+### Features
+
+1. **Deep Linking**: All search state is in the URL. Share links to restore exact views.
+2. **Map Auto-Refresh**: Moving the map updates the bbox in the URL (debounced 300ms) and triggers results refresh.
+3. **Category Navigation**: Click categories in the CategoryBar to navigate to `/k/{slug}`.
+4. **Responsive Layout**: Split view with results list (left) and interactive map (right).
+5. **Real-time Updates**: Results update as you pan/zoom the map or change filters.
+
+### API Endpoint
+
+The search is powered by `/api/search` which accepts the same query parameters and returns:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "title": "Property Name",
+      "city": "City",
+      "country": "Country",
+      "latitude": 50.0,
+      "longitude": 19.0,
+      "price_per_night": 100,
+      "category_slug": "paintball",
+      "category_name": "Paintball",
+      "avg_rating": 4.5
+    }
+  ],
+  "total": 42,
+  "page": 1,
+  "per": 20
+}
+```
+
+### Testing Search
+
+1. Navigate to the home page
+2. Click a category (e.g., "Paintball") - this will navigate to `/k/paintball`
+3. Try searching with the search box
+4. Pan and zoom the map - notice the URL updates with bbox
+5. Try different sort options
+6. Copy the URL and open in a new tab - the view should be restored exactly
