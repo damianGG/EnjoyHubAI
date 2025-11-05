@@ -27,6 +27,24 @@ Execute these scripts in order:
 3. `scripts/09-dynamic-fields-system.sql` - Dynamic fields tables and RLS
 4. `scripts/10-set-super-admin.sql` - Set up super admin user
 5. `scripts/11-sample-field-data.sql` - Sample categories and fields (optional)
+6. `scripts/12-geo-indexes.sql` - Geo-spatial indexes for search optimization (optional but recommended)
+
+### 1.1. Geo-spatial Indexes (Optional but Recommended)
+
+The `scripts/12-geo-indexes.sql` script adds indexes for efficient location-based searches and bbox queries. This script:
+
+- Creates indexes on `latitude` and `longitude` columns for fast bbox filtering
+- Adds composite indexes for common query patterns
+- Includes optional PostGIS support (commented out by default)
+- Optimizes category filtering and text search
+
+**To apply:**
+```bash
+# In Supabase SQL Editor
+-- Run the contents of scripts/12-geo-indexes.sql
+```
+
+**Note:** PostGIS extension is optional. The fallback uses standard latitude/longitude numeric filtering which works well for most use cases. If you need advanced geo-spatial features in the future, uncomment the PostGIS-related lines in the script.
 
 ### 2. Set Super Admin User
 
