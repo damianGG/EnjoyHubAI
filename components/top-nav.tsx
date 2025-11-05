@@ -31,7 +31,11 @@ export function TopNav() {
       setUser(session?.user ?? null)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe()
+      }
+    }
   }, [])
 
   const openLoginSheet = () => {
