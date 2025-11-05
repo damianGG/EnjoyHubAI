@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
+interface SearchResult {
+  id: string
+  title: string
+  city: string
+  country: string
+  latitude: number
+  longitude: number
+  price_per_night: number
+  category_slug: string | null
+  category_name: string | null
+  avg_rating: number
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -119,7 +132,7 @@ export async function GET(request: Request) {
     
     // Sort by rating if requested (after computing avg_rating)
     if (sort === "rating") {
-      items.sort((a, b) => b.avg_rating - a.avg_rating)
+      items.sort((a: SearchResult, b: SearchResult) => b.avg_rating - a.avg_rating)
     }
     
     return NextResponse.json({
