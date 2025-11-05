@@ -1,348 +1,378 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
+import { useUrlState } from "@/lib/search/url-state"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Search, Users } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, MapPin, Star, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { CategoryBar } from "@/components/category-bar"
-import { FeaturedProperties } from "@/components/featured-properties"
-import { UserAvatar } from "@/components/user-avatar"
-import PropertyMap from "@/components/property-map"
-import { AuthSheet } from "@/components/auth-sheet"
-import { createClient } from "@/lib/supabase/client"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
-export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null)
-  const [authSheetOpen, setAuthSheetOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
-  const [mapProperties, setMapProperties] = useState<any[]>([])
-  const [mapLoading, setMapLoading] = useState(true)
+interface SearchResult {
+  id: string
+  title: string
+  city: string
+  country: string
+  latitude: number | null
+  longitude: number | null
+  price_per_night: number
+  category_slug: string | null
+  category_name: string | null
+  avg_rating: number
+}
 
+interface SearchResponse {
+  items: SearchResult[]
+  total: number
+  page: number
+  per: number
+}
+
+function HomePageContent() {
+  const urlState = useUrlState()
+  
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [mapInstance, setMapInstance] = useState<any>(null)
+  const [leaflet, setLeaflet] = useState<any>(null)
+  const [markers, setMarkers] = useState<any[]>([])
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInitializedRef = useRef(false)
+  const isFirstRenderRef = useRef(true)
+
+  // Get URL params (no categories param needed for home page - defaults to all)
+  const categories = urlState.get("categories") || ""
+  const q = urlState.get("q") || ""
+  const bbox = urlState.get("bbox") || ""
+  const sort = urlState.get("sort") || "relevance"
+  const page = parseInt(urlState.get("page") || "1", 10)
+  const per = parseInt(urlState.get("per") || "20", 10)
+
+  // Fetch results when search params change
   useEffect(() => {
-    const supabase = createClient()
-
-    // Get initial user
-    const getUser = async () => {
+    const fetchResults = async () => {
+      setLoading(true)
       try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser()
+        const searchParams = new URLSearchParams()
+        if (q) searchParams.set("q", q)
+        if (bbox) searchParams.set("bbox", bbox)
+        if (categories) searchParams.set("categories", categories)
+        if (sort) searchParams.set("sort", sort)
+        searchParams.set("page", String(page))
+        searchParams.set("per", String(per))
 
-        if (error) {
-          setUser(null)
+        const response = await fetch(`/api/search?${searchParams.toString()}`)
+        if (response.ok) {
+          const data: SearchResponse = await response.json()
+          setResults(data.items)
+          setTotal(data.total)
         } else {
-          setUser(user)
+          console.error("Failed to fetch results")
+          setResults([])
+          setTotal(0)
         }
       } catch (error) {
-        setUser(null)
+        console.error("Error fetching results:", error)
+        setResults([])
+        setTotal(0)
       } finally {
         setLoading(false)
       }
     }
 
-    getUser()
+    fetchResults()
+  }, [q, bbox, categories, sort, page, per])
 
-    // Listen for auth changes
-    try {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
+  // Initialize Leaflet map
+  useEffect(() => {
+    if (typeof window === "undefined" || !mapRef.current || mapInitializedRef.current) return
+
+    const initMap = async () => {
+      const L = (await import("leaflet")).default
+      setLeaflet(L)
+
+      // Fix default marker icon
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
       })
 
-      return () => subscription.unsubscribe()
-    } catch (error) {
-      setLoading(false)
+      // Default center on Poland
+      const mapInstance = L.map(mapRef.current!, {
+        center: [52.0, 19.0], // Poland center
+        zoom: 6,
+        zoomControl: true,
+      })
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(mapInstance)
+
+      // If bbox exists in URL, fit to bbox
+      if (bbox) {
+        const parts = bbox.split(",").map((s) => parseFloat(s))
+        if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
+          const [west, south, east, north] = parts
+          mapInstance.fitBounds([[south, west], [north, east]])
+        }
+      }
+
+      // Listen to moveend event with debounce
+      let moveTimeout: NodeJS.Timeout | null = null
+      mapInstance.on("moveend", () => {
+        if (moveTimeout) clearTimeout(moveTimeout)
+        moveTimeout = setTimeout(() => {
+          const bounds = mapInstance.getBounds()
+          const sw = bounds.getSouthWest()
+          const ne = bounds.getNorthEast()
+          
+          // Format with 6 decimal places
+          const newBbox = `${sw.lng.toFixed(6)},${sw.lat.toFixed(6)},${ne.lng.toFixed(6)},${ne.lat.toFixed(6)}`
+          
+          // Only update if bbox has changed significantly
+          const currentBbox = urlState.get("bbox")
+          if (newBbox !== currentBbox) {
+            urlState.setMany({ bbox: newBbox, page: 1 }, { debounce: true, debounceMs: 300 })
+          }
+        }, 300)
+      })
+
+      setMapInstance(mapInstance)
+      mapInitializedRef.current = true
+
+      // Trigger initial moveend if no bbox in URL
+      if (!bbox && isFirstRenderRef.current) {
+        isFirstRenderRef.current = false
+        setTimeout(() => {
+          mapInstance.fire("moveend")
+        }, 500)
+      }
+    }
+
+    initMap()
+
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove()
+      }
     }
   }, [])
 
-  // Fetch properties for the map
+  // Update map markers when results change
   useEffect(() => {
-    const fetchMapProperties = async () => {
-      setMapLoading(true)
-      const supabase = createClient()
+    if (!mapInstance || !leaflet || !results.length) return
 
-      let query = supabase
-        .from("properties")
-        .select(`
-          *,
-          reviews (
-            rating
-          ),
-          categories (
-            slug
-          )
-        `)
-        .eq("is_active", true)
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
+    // Clear existing markers
+    markers.forEach((marker) => mapInstance.removeLayer(marker))
 
-      const { data, error } = await query
+    const newMarkers: any[] = []
 
-      if (error) {
-        console.error("Error fetching map properties:", error)
-        setMapProperties([])
-      } else {
-        // Filter by category if selected
-        let filteredData = data || []
-        if (selectedCategory) {
-          filteredData = data?.filter((property: any) => property.categories?.slug === selectedCategory) || []
-        }
+    results.forEach((result) => {
+      if (!result.latitude || !result.longitude) return
 
-        // Transform data to match PropertyMap's expected format
-        const transformedData = filteredData.map((property: any) => {
-          const ratings = property.reviews?.map((r: any) => r.rating) || []
-          const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0
-          const roundedRating = Math.round(avgRating * 10) / 10
+      const markerHtml = `
+        <div class="relative cursor-pointer">
+          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-gray-200 transition-all duration-200">
+            <div class="px-2 py-1 bg-primary rounded-full flex items-center justify-center min-w-[40px]">
+              <span class="text-primary-foreground text-xs font-bold">$${result.price_per_night}</span>
+            </div>
+          </div>
+        </div>
+      `
 
-          return {
-            id: property.id,
-            title: property.title,
-            city: property.city,
-            country: property.country,
-            latitude: property.latitude,
-            longitude: property.longitude,
-            price_per_night: property.price_per_night,
-            property_type: property.property_type,
-            max_guests: property.max_guests,
-            bedrooms: property.bedrooms,
-            bathrooms: property.bathrooms,
-            images: property.images,
-            avgRating: roundedRating,
-            reviewCount: ratings.length,
-          }
-        })
+      const customIcon = leaflet.divIcon({
+        html: markerHtml,
+        className: "custom-leaflet-marker",
+        iconSize: [60, 40],
+        iconAnchor: [30, 40],
+      })
 
-        setMapProperties(transformedData)
-      }
-      setMapLoading(false)
-    }
+      const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
-    fetchMapProperties()
-  }, [selectedCategory])
+      const popupContent = `
+        <div class="p-2">
+          <h3 class="font-semibold text-sm mb-1">${result.title}</h3>
+          <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
+          <p class="text-xs font-bold mt-1">$${result.price_per_night}/night</p>
+          ${result.avg_rating > 0 ? `<p class="text-xs mt-1">⭐ ${result.avg_rating}</p>` : ""}
+        </div>
+      `
+
+      marker.bindPopup(popupContent)
+      newMarkers.push(marker)
+    })
+
+    setMarkers(newMarkers)
+  }, [results, mapInstance, leaflet])
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">E</span>
-            </div>
-            <span className="text-xl font-bold">EnjoyHub</span>
-          </div>
-
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/host" className="text-muted-foreground hover:text-foreground">
-              Zostań gospodarzem
+      <header className="border-b bg-background sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold">E</span>
+              </div>
+              <span className="text-xl font-bold">EnjoyHub</span>
             </Link>
-            {user && (
-              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
-                Dashboard
-              </Link>
-            )}
 
-            {!loading &&
-              (user ? (
-                <UserAvatar user={user} />
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setAuthMode("login")
-                      setAuthSheetOpen(true)
-                    }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    Zaloguj się
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setAuthMode("signup")
-                      setAuthSheetOpen(true)
-                    }}
-                  >
-                    Zarejestruj się
-                  </Button>
-                </>
-              ))}
-          </nav>
+            <div className="flex items-center space-x-4 flex-1 max-w-2xl mx-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search properties..."
+                  value={q}
+                  onChange={(e) => urlState.setMany({ q: e.target.value, page: 1 }, { debounce: true, debounceMs: 500 })}
+                  className="pl-10"
+                />
+              </div>
 
-          <div className="md:hidden">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col space-y-4 mt-6">
-                  <Link
-                    href="/host"
-                    className="text-lg font-medium hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Zostań gospodarzem
-                  </Link>
-
-                  {user && (
-                    <Link
-                      href="/dashboard"
-                      className="text-lg font-medium hover:text-primary transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                  )}
-
-                  {!loading && (
-                    <>
-                      {user ? (
-                        <div className="pt-4 border-t">
-                          <UserAvatar user={user} />
-                        </div>
-                      ) : (
-                        <div className="flex flex-col space-y-3 pt-4 border-t">
-                          <Button
-                            variant="outline"
-                            className="w-full bg-transparent"
-                            onClick={() => {
-                              setMobileMenuOpen(false)
-                              setAuthMode("login")
-                              setAuthSheetOpen(true)
-                            }}
-                          >
-                            Zaloguj się
-                          </Button>
-                          <Button
-                            className="w-full"
-                            onClick={() => {
-                              setMobileMenuOpen(false)
-                              setAuthMode("signup")
-                              setAuthSheetOpen(true)
-                            }}
-                          >
-                            Zarejestruj się
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+              <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="rating">Rating</SelectItem>
+                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                  <SelectItem value="newest">Newest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Search Bar */}
-      <section className="py-6 px-4 border-b">
-        <div className="container mx-auto">
-          <div className="bg-card border rounded-2xl md:rounded-full p-2 max-w-4xl mx-auto shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div className="flex items-center space-x-3 px-4 py-3">
-                <Users className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                <div className="text-left flex-1">
-                  <div className="text-sm font-medium">Ile osób</div>
-                  <input
-                    type="text"
-                    placeholder="Dodaj liczbę osób"
-                    className="text-sm text-muted-foreground bg-transparent border-none outline-none w-full"
-                  />
-                </div>
-              </div>
+      {/* Main content: Results + Map */}
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Results List - Left Half */}
+        <div className="w-1/2 overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold mb-2">
+                {categories && categories !== "all" 
+                  ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
+                  : "All Properties"}
+              </h1>
+              <p className="text-muted-foreground">
+                {loading ? "Loading..." : `${total} properties found`}
+              </p>
+            </div>
 
-              <div className="flex items-center space-x-3 px-4 py-3 md:border-l">
-                <div className="text-left flex-1">
-                  <div className="text-sm font-medium">Budżet</div>
-                  <div className="text-sm text-muted-foreground">Wybierz zakres</div>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : results.length > 0 ? (
+              <div className="space-y-4">
+                {results.map((result) => (
+                  <Card key={result.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-4">
+                      <Link href={`/properties/${result.id}`}>
+                        <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
+                          {result.title}
+                        </h3>
+                      </Link>
+                      
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {result.city}, {result.country}
+                      </div>
 
-              <div className="flex items-center justify-between px-4 py-3 md:border-l">
-                <div className="flex items-center space-x-3 flex-1">
-                  <div className="text-left">
-                    <div className="text-sm font-medium">Wiek</div>
-                    <div className="text-sm text-muted-foreground">Dla kogo</div>
+                      {result.category_name && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          Category: {result.category_name}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {result.avg_rating > 0 && (
+                            <div className="flex items-center text-sm">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                              {result.avg_rating}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-lg font-bold">
+                          ${result.price_per_night}
+                          <span className="text-sm font-normal text-muted-foreground">/night</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Pagination */}
+                {total > per && (
+                  <div className="flex items-center justify-center space-x-2 pt-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => urlState.set("page", page - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {page} of {Math.ceil(total / per)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= Math.ceil(total / per)}
+                      onClick={() => urlState.set("page", page + 1)}
+                    >
+                      Next
+                    </Button>
                   </div>
-                </div>
-                <Link href="/properties">
-                  <Button size="sm" className="rounded-full ml-2">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Category Bar Section */}
-      <section className="border-b bg-background">
-        <div className="container mx-auto">
-          <CategoryBar selectedCategory={selectedCategory} onCategorySelect={setSelectedCategory} />
-        </div>
-      </section>
-
-      <section className="flex-1">
-        <div className="flex h-[calc(100vh-200px)]">
-          {/* Properties List - Left Half */}
-          <div className="w-1/2 overflow-y-auto p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">
-                {selectedCategory ? "Obiekty w wybranej kategorii" : "Polecane miejsca"}
-              </h2>
-              <p className="text-muted-foreground">Odkryj najlepsze miejsca rozrywki</p>
-            </div>
-
-            <FeaturedProperties selectedCategory={selectedCategory} />
-
-            <div className="mt-6">
-              <Link href="/properties">
-                <Button variant="outline" size="lg" className="w-full bg-transparent">
-                  Zobacz wszystkie obiekty
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Map - Right Half */}
-          <div className="w-1/2 h-full border-l">
-            {mapLoading ? (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Ładowanie mapy...</p>
-                </div>
+                )}
               </div>
             ) : (
-              <PropertyMap
-                properties={mapProperties}
-                selectedProperty={selectedProperty}
-                onPropertySelect={setSelectedProperty}
-                className="h-full"
-              />
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
+              </div>
             )}
           </div>
         </div>
-      </section>
 
-      {/* Auth Sheet */}
-      <AuthSheet open={authSheetOpen} onOpenChange={setAuthSheetOpen} mode={authMode} onModeChange={setAuthMode} />
+        {/* Map - Right Half */}
+        <div className="w-1/2 h-full border-l relative">
+          <div ref={mapRef} className="w-full h-full" />
+          <style jsx global>{`
+            .leaflet-container {
+              height: 100%;
+              width: 100%;
+            }
+            .custom-leaflet-marker {
+              background: transparent;
+              border: none;
+            }
+          `}</style>
+        </div>
+      </div>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   )
 }
