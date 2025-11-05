@@ -42,7 +42,7 @@ function HomePageContent() {
   const mapInitializedRef = useRef(false)
   const isFirstRenderRef = useRef(true)
 
-  // Get URL params (no categories param needed for home page - defaults to all)
+  // Get URL params - categories come from query params, defaults to empty string (all categories)
   const categories = urlState.get("categories") || ""
   const q = urlState.get("q") || ""
   const bbox = urlState.get("bbox") || ""
@@ -93,7 +93,8 @@ function HomePageContent() {
       const L = (await import("leaflet")).default
       setLeaflet(L)
 
-      // Fix default marker icon
+      // Fix default marker icon - Leaflet requires this workaround to properly load marker icons
+      // when using a bundler. See: https://github.com/Leaflet/Leaflet/issues/4968
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
