@@ -98,9 +98,18 @@ export async function GET(request: Request) {
 
     // Filter by categories if provided
     if (categories.length > 0) {
-      // Use 'in' filter on categories.slug
-      // PostgREST syntax: filter on related table
-      query = query.in("categories.slug", categories)
+      // First, we need to get category IDs from slugs
+      // For now, we'll use a subquery approach
+      // Alternative: Filter by matching slug in the join
+      const { data: categoryData } = await supabase
+        .from("categories")
+        .select("id")
+        .in("slug", categories)
+      
+      if (categoryData && categoryData.length > 0) {
+        const categoryIds = categoryData.map((c: any) => c.id)
+        query = query.in("category_id", categoryIds)
+      }
     }
 
     // Filter by bbox if provided (fallback lat/lng filtering)

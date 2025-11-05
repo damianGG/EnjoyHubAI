@@ -45,7 +45,9 @@ function SearchPageContent() {
   const isFirstRenderRef = useRef(true)
 
   // Get URL params
-  const categories = params.categories as string || ""
+  const categoriesParam = params.categories as string || ""
+  // Handle "all" as empty categories
+  const categories = categoriesParam === "all" ? "" : categoriesParam
   const q = urlState.get("q") || ""
   const bbox = urlState.get("bbox") || ""
   const sort = urlState.get("sort") || "relevance"
@@ -54,7 +56,7 @@ function SearchPageContent() {
 
   // Sync categories to query param on mount
   useEffect(() => {
-    if (categories && !urlState.get("categories")) {
+    if (categories && categories !== "all" && !urlState.get("categories")) {
       urlState.set("categories", categories)
     }
   }, [categories])
@@ -268,7 +270,9 @@ function SearchPageContent() {
           <div className="p-6">
             <div className="mb-4">
               <h1 className="text-2xl font-bold mb-2">
-                {categories ? `Exploring: ${categories.replace(/,/g, ", ")}` : "All Properties"}
+                {categories && categories !== "all" 
+                  ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
+                  : "All Properties"}
               </h1>
               <p className="text-muted-foreground">
                 {loading ? "Loading..." : `${total} properties found`}
