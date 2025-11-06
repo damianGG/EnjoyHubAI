@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, MapPin, Star, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { TopNav } from "@/components/top-nav"
+import { CategoryBar } from "@/components/category-bar"
 
 interface SearchResult {
   id: string
@@ -211,50 +213,55 @@ function HomePageContent() {
     setMarkers(newMarkers)
   }, [results, mapInstance, leaflet])
 
+  // Handler for category selection
+  const handleCategorySelect = (categorySlug: string | null) => {
+    urlState.setMany({ categories: categorySlug || "", page: 1 })
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background sticky top-0 z-10">
+      {/* Top Navigation Bar */}
+      <TopNav />
+
+      {/* Category Bar */}
+      <CategoryBar 
+        selectedCategory={categories || undefined}
+        onCategorySelect={handleCategorySelect}
+      />
+
+      {/* Search Bar */}
+      <div className="border-b bg-background">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">E</span>
-              </div>
-              <span className="text-xl font-bold">EnjoyHub</span>
-            </Link>
-
-            <div className="flex items-center space-x-4 flex-1 max-w-2xl mx-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search properties..."
-                  value={q}
-                  onChange={(e) => urlState.setMany({ q: e.target.value, page: 1 }, { debounce: true, debounceMs: 500 })}
-                  className="pl-10"
-                />
-              </div>
-
-              <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="rating">Rating</SelectItem>
-                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                  <SelectItem value="newest">Newest</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Szukaj nieruchomości..."
+                value={q}
+                onChange={(e) => urlState.setMany({ q: e.target.value, page: 1 }, { debounce: true, debounceMs: 500 })}
+                className="pl-10"
+              />
             </div>
+
+            <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sortuj" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Trafność</SelectItem>
+                <SelectItem value="rating">Ocena</SelectItem>
+                <SelectItem value="price_asc">Cena: rosnąco</SelectItem>
+                <SelectItem value="price_desc">Cena: malejąco</SelectItem>
+                <SelectItem value="newest">Najnowsze</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main content: Results + Map */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100vh-205px)]">
         {/* Results List - Left Half */}
         <div className="w-1/2 overflow-y-auto">
           <div className="p-6">

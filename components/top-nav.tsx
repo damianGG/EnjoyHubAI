@@ -1,0 +1,109 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { UserAvatar } from "@/components/user-avatar"
+import { AuthSheet } from "@/components/auth-sheet"
+import { Home, LogIn, UserPlus } from "lucide-react"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import type { User } from "@supabase/supabase-js"
+
+export function TopNav() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [authSheetOpen, setAuthSheetOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe()
+      }
+    }
+  }, [])
+
+  const openLoginSheet = () => {
+    setAuthMode("login")
+    setAuthSheetOpen(true)
+  }
+
+  const openSignupSheet = () => {
+    setAuthMode("signup")
+    setAuthSheetOpen(true)
+  }
+
+  return (
+    <>
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold">E</span>
+              </div>
+              <span className="text-xl font-bold">EnjoyHub</span>
+            </Link>
+
+            {/* Right side - Auth controls */}
+            <div className="flex items-center space-x-4">
+              {loading ? (
+                <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+              ) : user ? (
+                <>
+                  <Link href="/host">
+                    <Button variant="ghost" size="sm">
+                      <Home className="mr-2 h-4 w-4" />
+                      Zostań gospodarzem
+                    </Button>
+                  </Link>
+                  <UserAvatar user={user} />
+                </>
+              ) : (
+                <>
+                  <Link href="/host">
+                    <Button variant="ghost" size="sm">
+                      <Home className="mr-2 h-4 w-4" />
+                      Zostań gospodarzem
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" size="sm" onClick={openLoginSheet}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Zaloguj się
+                  </Button>
+                  <Button variant="default" size="sm" onClick={openSignupSheet}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Zarejestruj się
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AuthSheet
+        open={authSheetOpen}
+        onOpenChange={setAuthSheetOpen}
+        mode={authMode}
+        onModeChange={setAuthMode}
+      />
+    </>
+  )
+}
