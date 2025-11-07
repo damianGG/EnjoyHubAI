@@ -282,7 +282,7 @@ function HomePageContent() {
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-205px)] relative">
         {/* Results List - Full width on mobile, half on desktop */}
-        <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
+        <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -374,12 +374,13 @@ function HomePageContent() {
         </div>
 
         {/* Map - Full width on mobile, half on desktop */}
-        <div className={`w-full md:w-1/2 ${mobileView === 'map' ? 'h-full' : 'min-h-[40vh] h-[40vh]'} md:h-full border-t md:border-t-0 md:border-l relative ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+        <div className={`w-full md:w-1/2 ${mobileView === 'map' ? 'h-full' : 'min-h-[40vh] h-[40vh]'} md:h-full border-t md:border-t-0 md:border-l relative z-0 ${mobileView === 'list' ? 'hidden md:block' : ''}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
               height: 100%;
               width: 100%;
+              z-index: 0;
             }
             .custom-leaflet-marker {
               background: transparent;
@@ -389,7 +390,7 @@ function HomePageContent() {
         </div>
         
         {/* Floating toggle button - Mobile only */}
-        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
           <Button
             onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
             className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
