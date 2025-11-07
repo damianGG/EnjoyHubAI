@@ -171,10 +171,16 @@ function HomePageContent() {
 
   // Update map markers when results change
   useEffect(() => {
-    if (!mapInstance || !leaflet || !results.length) return
+    if (!mapInstance || !leaflet) return
 
     // Clear existing markers
     markers.forEach((marker) => mapInstance.removeLayer(marker))
+
+    // If no results, just clear markers and return
+    if (!results.length) {
+      setMarkers([])
+      return
+    }
 
     const newMarkers: any[] = []
 
@@ -215,6 +221,16 @@ function HomePageContent() {
 
     setMarkers(newMarkers)
   }, [results, mapInstance, leaflet])
+
+  // Invalidate map size when switching to map view
+  useEffect(() => {
+    if (mapInstance && mobileView === 'map') {
+      // Small delay to ensure the container is visible and has dimensions
+      setTimeout(() => {
+        mapInstance.invalidateSize()
+      }, 100)
+    }
+  }, [mobileView, mapInstance])
 
   // Handler for category selection
   const handleCategorySelect = (categorySlug: string | null) => {
