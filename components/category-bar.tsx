@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { SlidersHorizontal } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import Link from "next/link"
 
 interface Category {
   id: string
@@ -20,7 +21,7 @@ interface CategoryBarProps {
   onCategorySelect?: (categorySlug: string | null) => void
 }
 
-export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarProps) {
+export function CategoryBar({ selectedCategory, onCategorySelect, useNavigation = false }: CategoryBarProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -70,7 +71,24 @@ export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarP
 
         {/* Category Buttons */}
         {categories.map((category) => {
-          return (
+          const buttonContent = (
+            <>
+              <span className="text-2xl md:text-3xl">{category.icon}</span>
+              <span className="text-xs font-medium text-center leading-tight">{category.name}</span>
+            </>
+          )
+
+          return useNavigation ? (
+            <Link href={`/k/${category.slug}`} key={category.id}>
+              <Button
+                variant={selectedCategory === category.slug ? "default" : "ghost"}
+                size="sm"
+                className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                {buttonContent}
+              </Button>
+            </Link>
+          ) : (
             <Button
               key={category.id}
               variant={selectedCategory === category.slug ? "default" : "ghost"}
@@ -81,8 +99,7 @@ export function CategoryBar({ selectedCategory, onCategorySelect }: CategoryBarP
               }}
               className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
             >
-              <span className="text-2xl md:text-3xl">{category.icon}</span>
-              <span className="text-xs font-medium text-center leading-tight">{category.name}</span>
+              {buttonContent}
             </Button>
           )
         })}
