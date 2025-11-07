@@ -46,7 +46,7 @@ export default async function HostDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -56,26 +56,26 @@ export default async function HostDashboard() {
             </Link>
           </div>
 
-          <nav className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">Welcome, {profile?.full_name}</span>
-            <Link href="/host/properties/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Property
+          <nav className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
+            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Welcome, {profile?.full_name}</span>
+            <Link href="/host/properties/new" className="flex-1 sm:flex-initial">
+              <Button className="w-full sm:w-auto" size="sm">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="ml-2 sm:ml-0">Add Property</span>
               </Button>
             </Link>
           </nav>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Host Dashboard</h1>
-          <p className="text-muted-foreground">Manage your properties and bookings</p>
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Host Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your properties and bookings</p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
