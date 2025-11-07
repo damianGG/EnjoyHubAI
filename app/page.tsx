@@ -260,22 +260,20 @@ function HomePageContent() {
         </div>
       </div>
 
-      {/* Category Bar Section */}
-      <section className="border-b bg-background">
-        <div className="container mx-auto">
-          <CategoryBar selectedCategory={selectedCategory ?? undefined} onCategorySelect={setSelectedCategory} />
-        </div>
-      </section>
-
-      <section className="flex-1">
-        <div className="flex h-[calc(100vh-200px)]">
-          {/* Properties List - Left Half */}
-          <div className="w-1/2 overflow-y-auto p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">
-                {selectedCategory ? "Obiekty w wybranej kategorii" : "Polecane miejsca"}
-              </h2>
-              <p className="text-muted-foreground">Odkryj najlepsze miejsca rozrywki</p>
+      {/* Main content: Results + Map */}
+      <div className="flex h-[calc(100vh-205px)]">
+        {/* Results List - Left Half */}
+        <div className="w-1/2 overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-4">
+              <h1 className="text-2xl font-bold mb-2">
+                {categories && categories !== "all" 
+                  ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
+                  : "All Properties"}
+              </h1>
+              <p className="text-muted-foreground">
+                {loading ? "Loading..." : `${total} properties found`}
+              </p>
             </div>
 
             {loading ? (
