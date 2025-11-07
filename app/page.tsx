@@ -263,7 +263,7 @@ function HomePageContent() {
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-205px)]">
         {/* Results List - Full width on mobile, half on desktop */}
-        <div className="w-full md:w-1/2 overflow-y-auto max-h-[50vh] md:max-h-full">
+        <div className="w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full">
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -355,7 +355,7 @@ function HomePageContent() {
         </div>
 
         {/* Map - Full width on mobile, half on desktop */}
-        <div className="w-full md:w-1/2 h-[50vh] md:h-full border-t md:border-t-0 md:border-l relative">
+        <div className="w-full md:w-1/2 min-h-[40vh] h-[40vh] md:h-full border-t md:border-t-0 md:border-l relative">
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {

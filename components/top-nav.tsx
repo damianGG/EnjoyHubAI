@@ -100,7 +100,7 @@ export function TopNav() {
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" aria-label="Open navigation menu">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
