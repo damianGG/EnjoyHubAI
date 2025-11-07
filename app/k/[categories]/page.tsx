@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState, useRef, Suspense } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { useUrlState } from "@/lib/search/url-state"
+import PropertyMap from "@/components/property-map"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, MapPin, Star, Loader2 } from "lucide-react"
+import { Loader2, MapPin, Star } from "lucide-react"
 import Link from "next/link"
 
 interface SearchResult {
@@ -15,8 +16,8 @@ interface SearchResult {
   title: string
   city: string
   country: string
-  latitude: number | null
-  longitude: number | null
+  latitude: number
+  longitude: number
   price_per_night: number
   category_slug: string | null
   category_name: string | null
@@ -30,360 +31,312 @@ interface SearchResponse {
   per: number
 }
 
-function SearchPageContent() {
+export default function CategorySearchPage() {
   const params = useParams()
-  const urlState = useUrlState()
+  const categoriesParam = params?.categories as string | undefined
+  const { get, setMany } = useUrlState()
   
   const [results, setResults] = useState<SearchResult[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [mapInstance, setMapInstance] = useState<any>(null)
-  const [leaflet, setLeaflet] = useState<any>(null)
-  const [markers, setMarkers] = useState<any[]>([])
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInitializedRef = useRef(false)
-  const isFirstRenderRef = useRef(true)
-
-  // Get URL params
-  const categoriesParam = params.categories as string || ""
-  // Handle "all" as empty categories
-  const categories = categoriesParam === "all" ? "" : categoriesParam
-  const q = urlState.get("q") || ""
-  const bbox = urlState.get("bbox") || ""
-  const sort = urlState.get("sort") || "relevance"
-  const page = parseInt(urlState.get("page") || "1", 10)
-  const per = parseInt(urlState.get("per") || "20", 10)
-
-  // Sync categories to query param on mount
+  const mapMoveEndTimerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Get current URL params
+  const q = get("q") || ""
+  const bbox = get("bbox") || ""
+  const categories = get("categories") || ""
+  const sort = get("sort") || "relevance"
+  const page = parseInt(get("page") || "1", 10)
+  const per = parseInt(get("per") || "20", 10)
+  
+  // Sync route param to query param on mount
   useEffect(() => {
-    if (categories && categories !== "all" && !urlState.get("categories")) {
-      urlState.set("categories", categories)
+    if (categoriesParam && categoriesParam !== categories) {
+      setMany({ categories: categoriesParam })
     }
-  }, [categories])
-
-  // Fetch results when search params change
-  useEffect(() => {
-    const fetchResults = async () => {
-      setLoading(true)
-      try {
-        const searchParams = new URLSearchParams()
-        if (q) searchParams.set("q", q)
-        if (bbox) searchParams.set("bbox", bbox)
-        if (categories) searchParams.set("categories", categories)
-        if (sort) searchParams.set("sort", sort)
-        searchParams.set("page", String(page))
-        searchParams.set("per", String(per))
-
-        const response = await fetch(`/api/search?${searchParams.toString()}`)
-        if (response.ok) {
-          const data: SearchResponse = await response.json()
-          setResults(data.items)
-          setTotal(data.total)
-        } else {
-          console.error("Failed to fetch results")
-          setResults([])
-          setTotal(0)
-        }
-      } catch (error) {
-        console.error("Error fetching results:", error)
-        setResults([])
-        setTotal(0)
-      } finally {
-        setLoading(false)
+  }, [categoriesParam])
+  
+  // Fetch search results
+  const fetchResults = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const params = new URLSearchParams()
+      if (q) params.set("q", q)
+      if (bbox) params.set("bbox", bbox)
+      if (categories) params.set("categories", categories)
+      if (sort) params.set("sort", sort)
+      params.set("page", String(page))
+      params.set("per", String(per))
+      
+      const response = await fetch(`/api/search?${params.toString()}`)
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch results")
       }
+      
+      const data: SearchResponse = await response.json()
+      setResults(data.items)
+      setTotal(data.total)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+      setResults([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
     }
-
-    fetchResults()
   }, [q, bbox, categories, sort, page, per])
-
-  // Initialize Leaflet map
+  
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current || mapInitializedRef.current) return
-
+    fetchResults()
+  }, [fetchResults])
+  
+  // Handle map initialization and moveend
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
     const initMap = async () => {
       const L = (await import("leaflet")).default
-      setLeaflet(L)
-
-      // Fix default marker icon
-      delete (L.Icon.Default.prototype as any)._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-      })
-
-      // Default center on Poland
-      const mapInstance = L.map(mapRef.current!, {
-        center: [52.0, 19.0], // Poland center
+      
+      // Wait for map element to be available
+      const mapElement = document.getElementById("search-map")
+      if (!mapElement || mapInstance) return
+      
+      const map = L.map(mapElement, {
+        center: [52.0, 19.0], // Center on Poland
         zoom: 6,
         zoomControl: true,
       })
-
+      
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
-      }).addTo(mapInstance)
-
-      // If bbox exists in URL, fit to bbox
+      }).addTo(map)
+      
+      // If bbox exists initially, fitBounds
       if (bbox) {
-        const parts = bbox.split(",").map((s) => parseFloat(s))
-        if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
-          const [west, south, east, north] = parts
-          mapInstance.fitBounds([[south, west], [north, east]])
+        const [west, south, east, north] = bbox.split(",").map(parseFloat)
+        if (!isNaN(west) && !isNaN(south) && !isNaN(east) && !isNaN(north)) {
+          map.fitBounds([
+            [south, west],
+            [north, east],
+          ])
         }
       }
-
-      // Listen to moveend event with debounce
-      let moveTimeout: NodeJS.Timeout | null = null
-      mapInstance.on("moveend", () => {
-        if (moveTimeout) clearTimeout(moveTimeout)
-        moveTimeout = setTimeout(() => {
-          const bounds = mapInstance.getBounds()
-          const sw = bounds.getSouthWest()
-          const ne = bounds.getNorthEast()
+      
+      // Handle map moveend with debounce
+      map.on("moveend", () => {
+        if (mapMoveEndTimerRef.current) {
+          clearTimeout(mapMoveEndTimerRef.current)
+        }
+        
+        mapMoveEndTimerRef.current = setTimeout(() => {
+          const bounds = map.getBounds()
+          const newBbox = [
+            bounds.getWest().toFixed(6),
+            bounds.getSouth().toFixed(6),
+            bounds.getEast().toFixed(6),
+            bounds.getNorth().toFixed(6),
+          ].join(",")
           
-          // Format with 6 decimal places
-          const newBbox = `${sw.lng.toFixed(6)},${sw.lat.toFixed(6)},${ne.lng.toFixed(6)},${ne.lat.toFixed(6)}`
-          
-          // Only update if bbox has changed significantly
-          const currentBbox = urlState.get("bbox")
-          if (newBbox !== currentBbox) {
-            urlState.setMany({ bbox: newBbox, page: 1 }, { debounce: true, debounceMs: 300 })
-          }
+          setMany({ bbox: newBbox, page: "1" }, { debounce: 300 })
         }, 300)
       })
-
-      setMapInstance(mapInstance)
-      mapInitializedRef.current = true
-
-      // Trigger initial moveend if no bbox in URL
-      if (!bbox && isFirstRenderRef.current) {
-        isFirstRenderRef.current = false
-        setTimeout(() => {
-          mapInstance.fire("moveend")
-        }, 500)
-      }
+      
+      setMapInstance(map)
     }
-
+    
     initMap()
-
+    
     return () => {
       if (mapInstance) {
         mapInstance.remove()
       }
     }
   }, [])
-
-  // Update map markers when results change
-  useEffect(() => {
-    if (!mapInstance || !leaflet || !results.length) return
-
-    // Clear existing markers
-    markers.forEach((marker) => mapInstance.removeLayer(marker))
-
-    const newMarkers: any[] = []
-
-    results.forEach((result) => {
-      if (!result.latitude || !result.longitude) return
-
-      const markerHtml = `
-        <div class="relative cursor-pointer">
-          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-gray-200 transition-all duration-200">
-            <div class="px-2 py-1 bg-primary rounded-full flex items-center justify-center min-w-[40px]">
-              <span class="text-primary-foreground text-xs font-bold">$${result.price_per_night}</span>
-            </div>
-          </div>
-        </div>
-      `
-
-      const customIcon = leaflet.divIcon({
-        html: markerHtml,
-        className: "custom-leaflet-marker",
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
-      })
-
-      const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
-
-      const popupContent = `
-        <div class="p-2">
-          <h3 class="font-semibold text-sm mb-1">${result.title}</h3>
-          <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
-          <p class="text-xs font-bold mt-1">$${result.price_per_night}/night</p>
-          ${result.avg_rating > 0 ? `<p class="text-xs mt-1">⭐ ${result.avg_rating}</p>` : ""}
-        </div>
-      `
-
-      marker.bindPopup(popupContent)
-      newMarkers.push(marker)
-    })
-
-    setMarkers(newMarkers)
-  }, [results, mapInstance, leaflet])
-
+  
+  // Handle search input
+  const handleSearchChange = (value: string) => {
+    setMany({ q: value, page: "1" }, { debounce: 300 })
+  }
+  
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    setMany({ sort: value, page: "1" })
+  }
+  
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    setMany({ page: String(newPage) })
+  }
+  
+  // Transform results for PropertyMap component
+  const mapProperties = results.map((item) => ({
+    id: item.id,
+    title: item.title,
+    city: item.city,
+    country: item.country,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    price_per_night: item.price_per_night,
+    property_type: item.category_name || "Property",
+    max_guests: 0,
+    bedrooms: 0,
+    bathrooms: 0,
+    images: [],
+    avgRating: item.avg_rating,
+    reviewCount: 0,
+  }))
+  
+  const totalPages = Math.ceil(total / per)
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">E</span>
-              </div>
-              <span className="text-xl font-bold">EnjoyHub</span>
-            </Link>
-
-            <div className="flex items-center space-x-4 flex-1 max-w-2xl mx-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search properties..."
-                  value={q}
-                  onChange={(e) => urlState.setMany({ q: e.target.value, page: 1 }, { debounce: true, debounceMs: 500 })}
-                  className="pl-10"
-                />
-              </div>
-
-              <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="rating">Rating</SelectItem>
-                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                  <SelectItem value="newest">Newest</SelectItem>
-                </SelectContent>
-              </Select>
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">E</span>
             </div>
-          </div>
+            <span className="text-xl font-bold">EnjoyHub</span>
+          </Link>
         </div>
       </header>
-
-      {/* Main content: Results + Map */}
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Results List - Left Half */}
-        <div className="w-1/2 overflow-y-auto">
-          <div className="p-6">
-            <div className="mb-4">
-              <h1 className="text-2xl font-bold mb-2">
-                {categories && categories !== "all" 
-                  ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
-                  : "All Properties"}
-              </h1>
-              <p className="text-muted-foreground">
-                {loading ? "Loading..." : `${total} properties found`}
-              </p>
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : results.length > 0 ? (
-              <div className="space-y-4">
-                {results.map((result) => (
-                  <Card key={result.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <Link href={`/properties/${result.id}`}>
-                        <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
-                          {result.title}
-                        </h3>
-                      </Link>
-                      
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {result.city}, {result.country}
-                      </div>
-
-                      {result.category_name && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Category: {result.category_name}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {result.avg_rating > 0 && (
-                            <div className="flex items-center text-sm">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                              {result.avg_rating}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-lg font-bold">
-                          ${result.price_per_night}
-                          <span className="text-sm font-normal text-muted-foreground">/night</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {/* Pagination */}
-                {total > per && (
-                  <div className="flex items-center justify-center space-x-2 pt-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => urlState.set("page", page - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Page {page} of {Math.ceil(total / per)}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= Math.ceil(total / per)}
-                      onClick={() => urlState.set("page", page + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
-              </div>
-            )}
+      
+      {/* Search & Filter Bar */}
+      <div className="border-b bg-muted/50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              type="text"
+              placeholder="Search properties..."
+              defaultValue={q}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="flex-1"
+            />
+            
+            <Select value={sort} onValueChange={handleSortChange}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="rating">Rating</SelectItem>
+                <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-
+      </div>
+      
+      {/* Main Content: List + Map */}
+      <div className="flex h-[calc(100vh-180px)]">
+        {/* Properties List - Left Half */}
+        <div className="w-full md:w-1/2 overflow-y-auto p-4 md:p-6">
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold mb-2">
+              {categories ? `Properties in ${categories.split(",").join(", ")}` : "Search Results"}
+            </h1>
+            <p className="text-muted-foreground">
+              {loading ? "Loading..." : `${total} properties found`}
+            </p>
+          </div>
+          
+          {error && (
+            <Card className="mb-4 border-destructive">
+              <CardContent className="p-4 text-destructive">
+                {error}
+              </CardContent>
+            </Card>
+          )}
+          
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+          
+          {!loading && results.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No properties found</h3>
+                <p className="text-muted-foreground">Try adjusting your search or filters</p>
+              </CardContent>
+            </Card>
+          )}
+          
+          <div className="space-y-4">
+            {results.map((property) => (
+              <Link key={property.id} href={`/properties/${property.id}`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
+                    <div className="flex items-center text-sm text-muted-foreground mb-2">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      {property.city}, {property.country}
+                    </div>
+                    {property.avg_rating > 0 && (
+                      <div className="flex items-center text-sm mb-2">
+                        <Star className="h-4 w-4 text-yellow-400 mr-1 fill-current" />
+                        <span className="font-medium">{property.avg_rating.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {property.category_name && (
+                      <div className="text-sm text-muted-foreground mb-2">
+                        Category: {property.category_name}
+                      </div>
+                    )}
+                    <div className="flex items-baseline">
+                      <span className="text-xl font-bold">${property.price_per_night}</span>
+                      <span className="text-sm text-muted-foreground ml-1">/night</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => handlePageChange(page - 1)}
+              >
+                Previous
+              </Button>
+              
+              <span className="text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => handlePageChange(page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+        
         {/* Map - Right Half */}
-        <div className="w-1/2 h-full border-l relative">
-          <div ref={mapRef} className="w-full h-full" />
-          <style jsx global>{`
-            .leaflet-container {
-              height: 100%;
-              width: 100%;
-            }
-            .custom-leaflet-marker {
-              background: transparent;
-              border: none;
-            }
-          `}</style>
+        <div className="hidden md:block w-1/2 h-full border-l">
+          <div id="search-map" className="w-full h-full" />
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         </div>
       </div>
     </div>
-  )
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    }>
-      <SearchPageContent />
-    </Suspense>
   )
 }
