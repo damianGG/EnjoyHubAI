@@ -54,12 +54,12 @@ export function TopNav() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo */}
+            {/* Logo - Icon only on mobile, full on desktop */}
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">E</span>
               </div>
-              <span className="text-xl font-bold">EnjoyHub</span>
+              <span className="text-xl font-bold hidden md:inline">EnjoyHub</span>
             </Link>
 
             {/* Desktop Navigation */}
