@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, MapPin, Star, Loader2 } from "lucide-react"
+import { Search, MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
@@ -43,6 +43,9 @@ function HomePageContent() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInitializedRef = useRef(false)
   const isFirstRenderRef = useRef(true)
+  
+  // Mobile view state: 'list' or 'map'
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
 
   // Get URL params - categories come from query params, defaults to empty string (all categories)
   const categories = urlState.get("categories") || ""
@@ -261,9 +264,9 @@ function HomePageContent() {
       </div>
 
       {/* Main content: Results + Map */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-205px)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-205px)] relative">
         {/* Results List - Full width on mobile, half on desktop */}
-        <div className="w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full">
+        <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -355,7 +358,7 @@ function HomePageContent() {
         </div>
 
         {/* Map - Full width on mobile, half on desktop */}
-        <div className="w-full md:w-1/2 min-h-[40vh] h-[40vh] md:h-full border-t md:border-t-0 md:border-l relative">
+        <div className={`w-full md:w-1/2 ${mobileView === 'map' ? 'h-full' : 'min-h-[40vh] h-[40vh]'} md:h-full border-t md:border-t-0 md:border-l relative ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
@@ -367,6 +370,27 @@ function HomePageContent() {
               border: none;
             }
           `}</style>
+        </div>
+        
+        {/* Floating toggle button - Mobile only */}
+        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+          <Button
+            onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
+            className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
+            size="lg"
+          >
+            {mobileView === 'list' ? (
+              <>
+                <Map className="h-5 w-5" />
+                <span className="font-medium">Mapa</span>
+              </>
+            ) : (
+              <>
+                <List className="h-5 w-5" />
+                <span className="font-medium">Lista</span>
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
