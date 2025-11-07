@@ -64,29 +64,29 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <Link href="/properties" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Properties
+            <span className="text-sm sm:text-base">Back to Properties</span>
           </Link>
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm">
-              <Heart className="h-4 w-4 mr-2" />
-              Save
+              <Heart className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Save</span>
             </Button>
             <Button variant="outline" size="sm">
-              Share
+              <span className="text-sm">Share</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Property Title and Rating */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between mb-2">
-            <h1 className="text-3xl font-bold">{property.title}</h1>
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold">{property.title}</h1>
             {avgRating > 0 && (
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-1">
@@ -98,7 +98,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             )}
           </div>
 
-          <div className="flex items-center space-x-4 text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
             <div className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
               <span>
@@ -110,36 +110,36 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
         </div>
 
         {/* Image Gallery */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <PropertyGallery images={property.images || []} title={property.title} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
             {/* Property Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Hosted by {property.users?.full_name}</span>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <span className="text-lg sm:text-xl">Hosted by {property.users?.full_name}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
+                      <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       <span>{property.max_guests} guests</span>
                     </div>
                     <div className="flex items-center">
-                      <Bed className="h-4 w-4 mr-1" />
+                      <Bed className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       <span>{property.bedrooms} bedrooms</span>
                     </div>
                     <div className="flex items-center">
-                      <Bath className="h-4 w-4 mr-1" />
+                      <Bath className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       <span>{property.bathrooms} bathrooms</span>
                     </div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">{property.description}</p>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{property.description}</p>
               </CardContent>
             </Card>
 
@@ -147,18 +147,18 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             {property.amenities && property.amenities.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>What this place offers</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">What this place offers</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                     {property.amenities.map((amenity: string) => {
                       const IconComponent = amenityIcons[amenity]
                       return (
-                        <div key={amenity} className="flex items-center space-x-2">
+                        <div key={amenity} className="flex items-center space-x-2 text-sm sm:text-base">
                           {IconComponent ? (
-                            <IconComponent className="h-5 w-5 text-muted-foreground" />
+                            <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                           ) : (
-                            <div className="w-5 h-5 bg-muted rounded-full" />
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 bg-muted rounded-full flex-shrink-0" />
                           )}
                           <span>{amenity}</span>
                         </div>
@@ -172,8 +172,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             {/* Location */}
             <Card>
               <CardHeader>
-                <CardTitle>Where you'll be</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Where you'll be</CardTitle>
+                <CardDescription className="text-sm sm:text-base">
                   {property.address}, {property.city}, {property.country}
                 </CardDescription>
               </CardHeader>
@@ -197,7 +197,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                       reviewCount: ratings.length,
                     },
                   ]}
-                  className="h-96"
+                  className="h-64 sm:h-96"
                 />
               </CardContent>
             </Card>

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, MapPin, Star, Loader2 } from "lucide-react"
+import { Search, MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
@@ -43,6 +43,26 @@ function HomePageContent() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInitializedRef = useRef(false)
   const isFirstRenderRef = useRef(true)
+  
+  // Mobile view state: 'list' or 'map'
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  
+  // Track if we're on mobile and should disable bbox updates
+  const shouldUpdateBboxRef = useRef(true)
+  
+  // Detect if we're on mobile and update the ref
+  useEffect(() => {
+    const checkAndUpdate = () => {
+      const isMobileSize = window.innerWidth < 768
+      // On desktop: always update bbox
+      // On mobile: only update if in map view
+      shouldUpdateBboxRef.current = !isMobileSize || mobileView === 'map'
+    }
+    
+    checkAndUpdate()
+    window.addEventListener('resize', checkAndUpdate)
+    return () => window.removeEventListener('resize', checkAndUpdate)
+  }, [mobileView])
 
   // Get URL params - categories come from query params, defaults to empty string (all categories)
   const categories = urlState.get("categories") || ""
@@ -130,6 +150,9 @@ function HomePageContent() {
       mapInstance.on("moveend", () => {
         if (moveTimeout) clearTimeout(moveTimeout)
         moveTimeout = setTimeout(() => {
+          // Check if we should update bbox (ref updated by useEffect above)
+          if (!shouldUpdateBboxRef.current) return
+          
           const bounds = mapInstance.getBounds()
           const sw = bounds.getSouthWest()
           const ne = bounds.getNorthEast()
@@ -168,10 +191,16 @@ function HomePageContent() {
 
   // Update map markers when results change
   useEffect(() => {
-    if (!mapInstance || !leaflet || !results.length) return
+    if (!mapInstance || !leaflet) return
 
     // Clear existing markers
     markers.forEach((marker) => mapInstance.removeLayer(marker))
+
+    // If no results, just clear markers and return
+    if (!results.length) {
+      setMarkers([])
+      return
+    }
 
     const newMarkers: any[] = []
 
@@ -213,6 +242,16 @@ function HomePageContent() {
     setMarkers(newMarkers)
   }, [results, mapInstance, leaflet])
 
+  // Invalidate map size when switching to map view
+  useEffect(() => {
+    if (mapInstance && mobileView === 'map') {
+      // Small delay to ensure the container is visible and has dimensions
+      setTimeout(() => {
+        mapInstance.invalidateSize()
+      }, 100)
+    }
+  }, [mobileView, mapInstance])
+
   // Handler for category selection
   const handleCategorySelect = (categorySlug: string | null) => {
     urlState.setMany({ categories: categorySlug || "", page: 1 })
@@ -232,8 +271,8 @@ function HomePageContent() {
       {/* Search Bar */}
       <div className="border-b bg-background">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-2xl">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-4">
+            <div className="relative flex-1 max-w-full md:max-w-2xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -245,7 +284,7 @@ function HomePageContent() {
             </div>
 
             <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Sortuj" />
               </SelectTrigger>
               <SelectContent>
@@ -261,17 +300,17 @@ function HomePageContent() {
       </div>
 
       {/* Main content: Results + Map */}
-      <div className="flex h-[calc(100vh-205px)]">
-        {/* Results List - Left Half */}
-        <div className="w-1/2 overflow-y-auto">
-          <div className="p-6">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-205px)] relative">
+        {/* Results List - Full width on mobile, half on desktop */}
+        <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
+          <div className="p-4 md:p-6">
             <div className="mb-4">
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
                   ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
                   : "All Properties"}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 {loading ? "Loading..." : `${total} properties found`}
               </p>
             </div>
@@ -286,18 +325,18 @@ function HomePageContent() {
                   <Card key={result.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-4">
                       <Link href={`/properties/${result.id}`}>
-                        <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
                           {result.title}
                         </h3>
                       </Link>
                       
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
+                      <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
+                        <MapPin className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                         {result.city}, {result.country}
                       </div>
 
                       {result.category_name && (
-                        <div className="text-sm text-muted-foreground mb-2">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-2">
                           Category: {result.category_name}
                         </div>
                       )}
@@ -305,16 +344,16 @@ function HomePageContent() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {result.avg_rating > 0 && (
-                            <div className="flex items-center text-sm">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                            <div className="flex items-center text-xs md:text-sm">
+                              <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 mr-1" />
                               {result.avg_rating}
                             </div>
                           )}
                         </div>
                         
-                        <div className="text-lg font-bold">
+                        <div className="text-base md:text-lg font-bold">
                           ${result.price_per_night}
-                          <span className="text-sm font-normal text-muted-foreground">/night</span>
+                          <span className="text-xs md:text-sm font-normal text-muted-foreground">/night</span>
                         </div>
                       </div>
                     </CardContent>
@@ -332,7 +371,7 @@ function HomePageContent() {
                     >
                       Previous
                     </Button>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-xs md:text-sm text-muted-foreground">
                       Page {page} of {Math.ceil(total / per)}
                     </span>
                     <Button
@@ -348,25 +387,47 @@ function HomePageContent() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
+                <p className="text-sm md:text-base text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Map - Right Half */}
-        <div className="w-1/2 h-full border-l relative">
+        {/* Map - Full width on mobile, half on desktop */}
+        <div className={`w-full md:w-1/2 ${mobileView === 'map' ? 'h-full' : 'min-h-[40vh] h-[40vh]'} md:h-full border-t md:border-t-0 md:border-l relative z-0 ${mobileView === 'list' ? 'hidden md:block' : ''}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
               height: 100%;
               width: 100%;
+              z-index: 0;
             }
             .custom-leaflet-marker {
               background: transparent;
               border: none;
             }
           `}</style>
+        </div>
+        
+        {/* Floating toggle button - Mobile only */}
+        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <Button
+            onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
+            className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
+            size="lg"
+          >
+            {mobileView === 'list' ? (
+              <>
+                <Map className="h-5 w-5" />
+                <span className="font-medium">Mapa</span>
+              </>
+            ) : (
+              <>
+                <List className="h-5 w-5" />
+                <span className="font-medium">Lista</span>
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>

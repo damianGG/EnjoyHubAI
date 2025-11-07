@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
 import { AuthSheet } from "@/components/auth-sheet"
-import { Home, LogIn, UserPlus } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Home, LogIn, UserPlus, Menu } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
@@ -53,16 +54,16 @@ export function TopNav() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo */}
+            {/* Logo - Icon only on mobile, full on desktop */}
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">E</span>
               </div>
-              <span className="text-xl font-bold">EnjoyHub</span>
+              <span className="text-xl font-bold hidden md:inline">EnjoyHub</span>
             </Link>
 
-            {/* Right side - Auth controls */}
-            <div className="flex items-center space-x-4">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               {loading ? (
                 <div className="h-10 w-32 bg-muted rounded animate-pulse" />
               ) : user ? (
@@ -93,6 +94,64 @@ export function TopNav() {
                   </Button>
                 </>
               )}
+            </div>
+
+            {/* Mobile Navigation */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" aria-label="Open navigation menu">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col space-y-4 mt-6">
+                    {loading ? (
+                      <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                    ) : user ? (
+                      <>
+                        <UserAvatar user={user} />
+                        <Link href="/host" className="w-full">
+                          <Button variant="ghost" size="lg" className="w-full justify-start">
+                            <Home className="mr-2 h-4 w-4" />
+                            Zostań gospodarzem
+                          </Button>
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/host" className="w-full">
+                          <Button variant="ghost" size="lg" className="w-full justify-start">
+                            <Home className="mr-2 h-4 w-4" />
+                            Zostań gospodarzem
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="ghost" 
+                          size="lg" 
+                          className="w-full justify-start" 
+                          onClick={openLoginSheet}
+                        >
+                          <LogIn className="mr-2 h-4 w-4" />
+                          Zaloguj się
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="lg" 
+                          className="w-full justify-start" 
+                          onClick={openSignupSheet}
+                        >
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Zarejestruj się
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
