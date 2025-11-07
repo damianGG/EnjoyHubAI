@@ -232,8 +232,8 @@ function HomePageContent() {
       {/* Search Bar */}
       <div className="border-b bg-background">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-2xl">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-4">
+            <div className="relative flex-1 max-w-full md:max-w-2xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -245,7 +245,7 @@ function HomePageContent() {
             </div>
 
             <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Sortuj" />
               </SelectTrigger>
               <SelectContent>
@@ -261,17 +261,17 @@ function HomePageContent() {
       </div>
 
       {/* Main content: Results + Map */}
-      <div className="flex h-[calc(100vh-205px)]">
-        {/* Results List - Left Half */}
-        <div className="w-1/2 overflow-y-auto">
-          <div className="p-6">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-205px)]">
+        {/* Results List - Full width on mobile, half on desktop */}
+        <div className="w-full md:w-1/2 overflow-y-auto max-h-[50vh] md:max-h-full">
+          <div className="p-4 md:p-6">
             <div className="mb-4">
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
                   ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
                   : "All Properties"}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 {loading ? "Loading..." : `${total} properties found`}
               </p>
             </div>
@@ -286,18 +286,18 @@ function HomePageContent() {
                   <Card key={result.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-4">
                       <Link href={`/properties/${result.id}`}>
-                        <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
                           {result.title}
                         </h3>
                       </Link>
                       
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
+                      <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
+                        <MapPin className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                         {result.city}, {result.country}
                       </div>
 
                       {result.category_name && (
-                        <div className="text-sm text-muted-foreground mb-2">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-2">
                           Category: {result.category_name}
                         </div>
                       )}
@@ -305,16 +305,16 @@ function HomePageContent() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {result.avg_rating > 0 && (
-                            <div className="flex items-center text-sm">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                            <div className="flex items-center text-xs md:text-sm">
+                              <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 mr-1" />
                               {result.avg_rating}
                             </div>
                           )}
                         </div>
                         
-                        <div className="text-lg font-bold">
+                        <div className="text-base md:text-lg font-bold">
                           ${result.price_per_night}
-                          <span className="text-sm font-normal text-muted-foreground">/night</span>
+                          <span className="text-xs md:text-sm font-normal text-muted-foreground">/night</span>
                         </div>
                       </div>
                     </CardContent>
@@ -332,7 +332,7 @@ function HomePageContent() {
                     >
                       Previous
                     </Button>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-xs md:text-sm text-muted-foreground">
                       Page {page} of {Math.ceil(total / per)}
                     </span>
                     <Button
@@ -348,14 +348,14 @@ function HomePageContent() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
+                <p className="text-sm md:text-base text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Map - Right Half */}
-        <div className="w-1/2 h-full border-l relative">
+        {/* Map - Full width on mobile, half on desktop */}
+        <div className="w-full md:w-1/2 h-[50vh] md:h-full border-t md:border-t-0 md:border-l relative">
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
