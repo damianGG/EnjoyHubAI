@@ -46,6 +46,23 @@ function HomePageContent() {
   
   // Mobile view state: 'list' or 'map'
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  
+  // Track if we're on mobile and should disable bbox updates
+  const shouldUpdateBboxRef = useRef(true)
+  
+  // Detect if we're on mobile and update the ref
+  useEffect(() => {
+    const checkAndUpdate = () => {
+      const isMobileSize = window.innerWidth < 768
+      // On desktop: always update bbox
+      // On mobile: only update if in map view
+      shouldUpdateBboxRef.current = !isMobileSize || mobileView === 'map'
+    }
+    
+    checkAndUpdate()
+    window.addEventListener('resize', checkAndUpdate)
+    return () => window.removeEventListener('resize', checkAndUpdate)
+  }, [mobileView])
 
   // Get URL params - categories come from query params, defaults to empty string (all categories)
   const categories = urlState.get("categories") || ""
@@ -133,6 +150,9 @@ function HomePageContent() {
       mapInstance.on("moveend", () => {
         if (moveTimeout) clearTimeout(moveTimeout)
         moveTimeout = setTimeout(() => {
+          // Check if we should update bbox (ref updated by useEffect above)
+          if (!shouldUpdateBboxRef.current) return
+          
           const bounds = mapInstance.getBounds()
           const sw = bounds.getSouthWest()
           const ne = bounds.getNorthEast()
