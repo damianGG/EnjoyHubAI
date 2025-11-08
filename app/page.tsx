@@ -4,9 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react"
 import { useUrlState } from "@/lib/search/url-state"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, MapPin, Star, Loader2, Map, List } from "lucide-react"
+import { MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
@@ -265,39 +263,8 @@ function HomePageContent() {
         onCategorySelect={handleCategorySelect}
       />
 
-      {/* Search Bar */}
-      <div className="border-b bg-background">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-4">
-            <div className="relative flex-1 max-w-full md:max-w-2xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Szukaj nieruchomości..."
-                value={q}
-                onChange={(e) => urlState.setMany({ q: e.target.value, page: 1 }, { debounce: true, debounceMs: 500 })}
-                className="pl-10"
-              />
-            </div>
-
-            <Select value={sort} onValueChange={(value) => urlState.setMany({ sort: value, page: 1 })}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Sortuj" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Trafność</SelectItem>
-                <SelectItem value="rating">Ocena</SelectItem>
-                <SelectItem value="price_asc">Cena: rosnąco</SelectItem>
-                <SelectItem value="price_desc">Cena: malejąco</SelectItem>
-                <SelectItem value="newest">Najnowsze</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
       {/* Main content: Results + Map */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-205px)] relative">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
         {/* Results List - Full width on mobile, half on desktop */}
         <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
           <div className="p-4 md:p-6">
