@@ -21,6 +21,7 @@ interface SearchResult {
   price_per_night: number
   category_slug: string | null
   category_name: string | null
+  category_icon: string | null
   avg_rating: number
 }
 
@@ -208,20 +209,16 @@ function HomePageContent() {
       if (!result.latitude || !result.longitude) return
 
       const markerHtml = `
-        <div class="relative cursor-pointer">
-          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-gray-200 transition-all duration-200">
-            <div class="px-2 py-1 bg-primary rounded-full flex items-center justify-center min-w-[40px]">
-              <span class="text-primary-foreground text-xs font-bold">$${result.price_per_night}</span>
-            </div>
-          </div>
+        <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
+          <span class="text-2xl">${result.category_icon || '📍'}</span>
         </div>
       `
 
       const customIcon = leaflet.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
       })
 
       const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)

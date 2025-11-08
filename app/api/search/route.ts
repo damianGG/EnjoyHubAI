@@ -11,6 +11,7 @@ interface SearchResult {
   price_per_night: number
   category_slug: string | null
   category_name: string | null
+  category_icon: string | null
   avg_rating: number
 }
 
@@ -43,7 +44,8 @@ export async function GET(request: Request) {
         category_id,
         categories (
           slug,
-          name
+          name,
+          icon
         ),
         reviews (
           rating
@@ -126,6 +128,7 @@ export async function GET(request: Request) {
         price_per_night: property.price_per_night,
         category_slug: property.categories?.slug || null,
         category_name: property.categories?.name || null,
+        category_icon: property.categories?.icon || null,
         avg_rating: avgRating,
       }
     })

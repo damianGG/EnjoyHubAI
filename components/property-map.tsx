@@ -15,6 +15,8 @@ interface Property {
   longitude?: number
   price_per_night: number
   property_type: string
+  category_slug?: string | null
+  category_icon?: string | null
   max_guests: number
   bedrooms: number
   bathrooms: number
@@ -112,22 +114,18 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
       const isHovered = hoveredProperty === property.id
 
       const markerHtml = `
-        <div class="relative cursor-pointer">
-          <div class="bg-white rounded-full p-1 shadow-lg border-2 ${
-            isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
-          } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200">
-            <div class="px-2 py-1 bg-red-500 rounded-full flex items-center justify-center min-w-[40px]">
-              <span class="text-white text-xs font-bold">$${property.price_per_night}</span>
-            </div>
-          </div>
+        <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
+          isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
+        } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10">
+          <span class="text-2xl">${property.category_icon || '📍'}</span>
         </div>
       `
 
       const customIcon = leaflet.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
       })
 
       const marker = leaflet.marker([lat, lng], { icon: customIcon }).addTo(map)

@@ -21,6 +21,7 @@ interface SearchResult {
   price_per_night: number
   category_slug: string | null
   category_name: string | null
+  category_icon: string | null
   avg_rating: number
 }
 
@@ -183,6 +184,8 @@ export default function CategorySearchPage() {
     longitude: item.longitude,
     price_per_night: item.price_per_night,
     property_type: item.category_name || "Property",
+    category_slug: item.category_slug,
+    category_icon: item.category_icon,
     max_guests: 0,
     bedrooms: 0,
     bathrooms: 0,
