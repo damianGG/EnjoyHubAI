@@ -183,6 +183,7 @@ export default function CategorySearchPage() {
     longitude: item.longitude,
     price_per_night: item.price_per_night,
     property_type: item.category_name || "Property",
+    category_slug: item.category_slug,
     max_guests: 0,
     bedrooms: 0,
     bathrooms: 0,

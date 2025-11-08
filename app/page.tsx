@@ -50,6 +50,27 @@ function HomePageContent() {
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
   
+  // Helper function to get SVG path for category icons
+  const getIconSVG = (category: string | null) => {
+    const iconPaths: Record<string, string> = {
+      gaming:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>',
+      music:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3-2zM9 10l12-3"/>',
+      photography:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>',
+      food: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16l3-1m-3 1l-3-1"/>',
+      fitness:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077l1.41-.513m14.095-5.13l1.41-.513M5.106 17.785l1.15-.964m11.49-9.642l1.149-.964m0 17.726l-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205L12 12"/>',
+      art: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z"/>',
+      automotive:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 6H4L2 4H1m4 8V9a1 1 0 011-1h1m0 0l1.68-2.55A2 2 0 0110.43 5h1.14a2 2 0 011.75 1.05L15 9m0 0h4a1 1 0 011 1v2M9 17h6"/>',
+      nature:
+        '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2z"/>',
+    }
+    return iconPaths[category || "gaming"] || iconPaths.gaming
+  }
+  
   // Detect if we're on mobile and update the ref
   useEffect(() => {
     const checkAndUpdate = () => {
@@ -208,20 +229,18 @@ function HomePageContent() {
       if (!result.latitude || !result.longitude) return
 
       const markerHtml = `
-        <div class="relative cursor-pointer">
-          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-gray-200 transition-all duration-200">
-            <div class="px-2 py-1 bg-primary rounded-full flex items-center justify-center min-w-[40px]">
-              <span class="text-primary-foreground text-xs font-bold">$${result.price_per_night}</span>
-            </div>
-          </div>
+        <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${getIconSVG(result.category_slug)}
+          </svg>
         </div>
       `
 
       const customIcon = leaflet.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
-        iconSize: [60, 40],
-        iconAnchor: [30, 40],
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
       })
 
       const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
