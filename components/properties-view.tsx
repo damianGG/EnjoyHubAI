@@ -250,7 +250,7 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
             </div>
           ) : (
             /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredAndSortedProperties.map((property) => (
                 <Link key={property.id} href={`/properties/${property.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
@@ -266,33 +266,33 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                           <MapPin className="h-12 w-12 text-muted-foreground" />
                         </div>
                       )}
-                      <div className="absolute top-2 right-2">
+                      <div className="absolute top-2 right-2 hidden md:block">
                         <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
                           {property.property_type}
                         </Badge>
                       </div>
                     </div>
 
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold line-clamp-1">{property.title}</h3>
+                    <CardContent className="p-2 md:p-4">
+                      <div className="flex items-start justify-between mb-1 md:mb-2">
+                        <h3 className="font-semibold line-clamp-1 text-xs md:text-sm">{property.title}</h3>
                         {property.avgRating != null && property.avgRating > 0 && (
-                          <div className="flex items-center space-x-1 text-sm">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <div className="flex items-center space-x-1 text-xs md:text-sm flex-shrink-0">
+                            <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400" />
                             <span>{property.avgRating}</span>
-                            <span className="text-muted-foreground">({property.reviewCount || 0})</span>
+                            <span className="text-muted-foreground hidden md:inline">({property.reviewCount || 0})</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span>
+                      <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-1 md:mb-2">
+                        <MapPin className="h-3 w-3 md:h-4 md:w-4 mr-1 flex-shrink-0" />
+                        <span className="line-clamp-1">
                           {property.city}, {property.country}
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3 hidden md:flex">
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
                           <span>{property.max_guests}</span>
@@ -307,12 +307,12 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between md:justify-between">
                         <div>
-                          <span className="font-semibold text-lg">${property.price_per_night}</span>
-                          <span className="text-muted-foreground text-sm"> / night</span>
+                          <span className="font-semibold text-sm md:text-lg">${property.price_per_night}</span>
+                          <span className="text-muted-foreground text-xs md:text-sm"> / noc</span>
                         </div>
-                        <div className="text-sm text-muted-foreground">Host: {property.users?.full_name}</div>
+                        <div className="text-sm text-muted-foreground hidden md:block">Host: {property.users?.full_name}</div>
                       </div>
                     </CardContent>
                   </Card>
