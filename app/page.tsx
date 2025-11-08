@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
+import { CategoryBar } from "@/components/category-bar"
 
 interface SearchResult {
   id: string
@@ -246,13 +247,24 @@ function HomePageContent() {
     }
   }, [mobileView, mapInstance])
 
+  // Handler for category selection
+  const handleCategorySelect = (categorySlug: string | null) => {
+    urlState.setMany({ categories: categorySlug || "", page: 1 })
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation Bar */}
       <TopNav />
 
+      {/* Category Bar */}
+      <CategoryBar 
+        selectedCategory={categories || undefined}
+        onCategorySelect={handleCategorySelect}
+      />
+
       {/* Main content: Results + Map */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-80px)] relative">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
         {/* Results List - Full width and height */}
         <div className={`w-full h-full overflow-y-auto ${mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
@@ -346,7 +358,7 @@ function HomePageContent() {
         </div>
 
         {/* Map - Overlay on top when visible */}
-        <div className={`fixed inset-0 top-[80px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
+        <div className={`fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
