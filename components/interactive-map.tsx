@@ -1,5 +1,5 @@
 "use client"
-import "leaflet/dist/leaflet.css" 
+import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Gamepad2, Music, Camera, UtensilsCrossed, Dumbbell, Palette, Car, TreePine } from "lucide-react"
