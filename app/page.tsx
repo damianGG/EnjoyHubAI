@@ -253,8 +253,8 @@ function HomePageContent() {
 
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-80px)] relative">
-        {/* Results List - Full width on mobile, half on desktop */}
-        <div className={`w-full md:w-1/2 overflow-y-auto min-h-[40vh] max-h-[60vh] md:max-h-full ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
+        {/* Results List - Full width and height */}
+        <div className={`w-full h-full overflow-y-auto ${mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -345,8 +345,8 @@ function HomePageContent() {
           </div>
         </div>
 
-        {/* Map - Full width on mobile, half on desktop */}
-        <div className={`w-full md:w-1/2 ${mobileView === 'map' ? 'h-full' : 'min-h-[40vh] h-[40vh]'} md:h-full border-t md:border-t-0 md:border-l relative z-0 ${mobileView === 'list' ? 'hidden md:block' : ''}`}>
+        {/* Map - Overlay on top when visible */}
+        <div className={`fixed inset-0 top-[80px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
@@ -361,8 +361,8 @@ function HomePageContent() {
           `}</style>
         </div>
         
-        {/* Floating toggle button - Mobile only */}
-        <div className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+        {/* Floating toggle button - Always visible */}
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
           <Button
             onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
             className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
