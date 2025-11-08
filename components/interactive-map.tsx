@@ -174,13 +174,10 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
                   ${getIconSVG(property.category_slug)}
                 </svg>
               </div>
-              <div class="bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium mt-1 whitespace-nowrap">
-                ${property.price_per_night} zł
-              </div>
             `,
             className: "custom-marker",
-            iconSize: [60, 80],
-            iconAnchor: [30, 80],
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
           })
 
           const marker = L.marker([property.latitude, property.longitude], {
