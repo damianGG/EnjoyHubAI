@@ -4,13 +4,14 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
 import { AuthSheet } from "@/components/auth-sheet"
+import { SearchDialog } from "@/components/search-dialog"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Home, LogIn, UserPlus, Menu } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
-export function TopNav() {
+export function TopNav({ searchDialogOpen, onSearchDialogChange }: { searchDialogOpen?: boolean, onSearchDialogChange?: (open: boolean) => void }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
@@ -61,6 +62,11 @@ export function TopNav() {
               </div>
               <span className="text-xl font-bold hidden md:inline">EnjoyHub</span>
             </Link>
+
+            {/* Search Dialog - Centered */}
+            <div className="flex-1 flex justify-center">
+              <SearchDialog open={searchDialogOpen} onOpenChange={onSearchDialogChange} />
+            </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
