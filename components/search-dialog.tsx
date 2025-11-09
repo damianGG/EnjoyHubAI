@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, MapPin, X } from "lucide-react"
 import { useUrlState } from "@/lib/search/url-state"
+import { createClient } from "@/lib/supabase/client"
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+  icon: string
+  description: string
+}
 
 interface SearchDialogProps {
   open?: boolean
@@ -14,9 +23,12 @@ interface SearchDialogProps {
 
 export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnOpenChange }: SearchDialogProps) {
   const [open, setOpen] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const urlState = useUrlState()
   
   // Filter state
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [location, setLocation] = useState("")
   const [ageMin, setAgeMin] = useState("")
   const [ageMax, setAgeMax] = useState("")
@@ -25,9 +37,23 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const isOpen = isControlled ? controlledOpen : open
   const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setOpen
 
+  useEffect(() => {
+    const s = createClient()
+    s.from("categories")
+      .select("id,name,slug,icon,description")
+      .order("name")
+      .then(({ data, error }) => {
+        if (!error && data) setCategories(data)
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
   // Load current filters from URL when dialog opens
   useEffect(() => {
     if (isOpen) {
+      const currentCategories = urlState.get("categories") || ""
+      setSelectedCategories(currentCategories ? currentCategories.split(",") : [])
+      
       const currentLocation = urlState.get("q") || ""
       setLocation(currentLocation)
       
@@ -38,9 +64,25 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     }
   }, [isOpen])
 
+  const toggleCategory = (categorySlug: string) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categorySlug)) {
+        return prev.filter((s) => s !== categorySlug)
+      } else {
+        return [...prev, categorySlug]
+      }
+    })
+  }
+
   const handleSearch = () => {
     const updates: Record<string, any> = {
       page: 1,
+    }
+
+    if (selectedCategories.length > 0) {
+      updates.categories = selectedCategories.join(",")
+    } else {
+      updates.categories = ""
     }
 
     if (location.trim()) {
@@ -66,11 +108,13 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   }
 
   const handleClearAll = () => {
+    setSelectedCategories([])
     setLocation("")
     setAgeMin("")
     setAgeMax("")
     
     urlState.setMany({
+      categories: "",
       q: "",
       age_min: "",
       age_max: "",
@@ -96,6 +140,34 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
         </button>
 
         <div className="p-6 space-y-6">
+          {/* Categories Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Kategorie</h3>
+            {loading ? (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategories.includes(category.slug) ? "default" : "outline"}
+                    onClick={() => toggleCategory(category.slug)}
+                    className="h-auto py-2 px-2 flex flex-col items-center space-y-1 text-xs"
+                  >
+                    <span className="text-xl">{category.icon}</span>
+                    <span className="font-medium text-center leading-tight">
+                      {category.name}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Where Section */}
           <div className="space-y-4">
             <h2 className="text-3xl font-bold">Gdzie?</h2>
