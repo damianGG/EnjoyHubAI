@@ -46,6 +46,9 @@ function HomePageContent() {
   // Mobile view state: 'list' or 'map'
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   
+  // Search dialog state
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
+  
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
   
@@ -70,6 +73,15 @@ function HomePageContent() {
   const sort = urlState.get("sort") || "relevance"
   const page = parseInt(urlState.get("page") || "1", 10)
   const per = parseInt(urlState.get("per") || "20", 10)
+  const ageMin = urlState.get("age_min") || ""
+  const ageMax = urlState.get("age_max") || ""
+
+  // Calculate active filters count (excluding bbox and page/per)
+  const activeFiltersCount = [
+    q ? 1 : 0,
+    ageMin ? 1 : 0,
+    ageMax ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
 
   // Fetch results when search params change
   useEffect(() => {
@@ -255,12 +267,17 @@ function HomePageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation Bar */}
-      <TopNav />
+      <TopNav 
+        searchDialogOpen={searchDialogOpen}
+        onSearchDialogChange={setSearchDialogOpen}
+      />
 
       {/* Category Bar */}
       <CategoryBar 
         selectedCategory={categories || undefined}
         onCategorySelect={handleCategorySelect}
+        onFiltersClick={() => setSearchDialogOpen(true)}
+        activeFiltersCount={activeFiltersCount}
       />
 
       {/* Main content: Results + Map */}

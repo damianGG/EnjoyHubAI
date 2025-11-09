@@ -19,9 +19,11 @@ interface Category {
 interface CategoryBarProps {
   selectedCategory?: string
   onCategorySelect?: (categorySlug: string | null) => void
+  onFiltersClick?: () => void
+  activeFiltersCount?: number
 }
 
-export function CategoryBar({ selectedCategory, onCategorySelect, useNavigation = false }: CategoryBarProps) {
+export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick, activeFiltersCount, useNavigation = false }: CategoryBarProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -107,10 +109,16 @@ export function CategoryBar({ selectedCategory, onCategorySelect, useNavigation 
         <Button
           variant="outline"
           size="sm"
-          className="flex items-center space-x-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl bg-transparent border-2"
+          onClick={onFiltersClick}
+          className="flex items-center space-x-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl bg-transparent border-2 relative"
         >
           <SlidersHorizontal className="w-4 md:w-5 h-4 md:h-5" />
           <span className="text-xs font-medium">Filtry</span>
+          {activeFiltersCount && activeFiltersCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {activeFiltersCount}
+            </span>
+          )}
         </Button>
       </div>
       <ScrollBar orientation="horizontal" />

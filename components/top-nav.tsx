@@ -11,7 +11,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
-export function TopNav() {
+export function TopNav({ searchDialogOpen, onSearchDialogChange }: { searchDialogOpen?: boolean, onSearchDialogChange?: (open: boolean) => void }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
@@ -65,7 +65,7 @@ export function TopNav() {
 
             {/* Search Dialog - Centered */}
             <div className="flex-1 flex justify-center">
-              <SearchDialog />
+              <SearchDialog open={searchDialogOpen} onOpenChange={onSearchDialogChange} />
             </div>
 
             {/* Desktop Navigation */}
