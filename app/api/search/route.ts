@@ -55,9 +55,9 @@ export async function GET(request: Request) {
       )
       .eq("is_active", true)
     
-    // Filter by search query (ilike on title)
+    // Filter by search query (ilike on title or city)
     if (q) {
-      query = query.ilike("title", `%${q}%`)
+      query = query.or(`title.ilike.%${q}%,city.ilike.%${q}%`)
     }
     
     // Filter by categories

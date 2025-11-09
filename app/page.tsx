@@ -257,14 +257,16 @@ function HomePageContent() {
       {/* Top Navigation Bar */}
       <TopNav />
 
-      {/* Category Bar */}
-      <CategoryBar 
-        selectedCategory={categories || undefined}
-        onCategorySelect={handleCategorySelect}
-      />
+      {/* Category Bar - Hidden on mobile, shown on desktop */}
+      <div className="hidden md:block">
+        <CategoryBar 
+          selectedCategory={categories || undefined}
+          onCategorySelect={handleCategorySelect}
+        />
+      </div>
 
       {/* Main content: Results + Map */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-60px)] md:h-[calc(100vh-140px)] relative">
         {/* Results List - Full width and height */}
         <div className={`w-full h-full overflow-y-auto ${mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
@@ -358,7 +360,7 @@ function HomePageContent() {
         </div>
 
         {/* Map - Overlay on top when visible */}
-        <div className={`fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
+        <div className={`fixed inset-0 top-[60px] md:top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
 import { AuthSheet } from "@/components/auth-sheet"
+import { SearchSheet } from "@/components/search-sheet"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Home, LogIn, UserPlus, Menu } from "lucide-react"
+import { Home, LogIn, UserPlus, Menu, Search } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
@@ -15,6 +16,7 @@ export function TopNav() {
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -53,7 +55,7 @@ export function TopNav() {
     <>
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             {/* Logo - Icon only on mobile, full on desktop */}
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -61,6 +63,16 @@ export function TopNav() {
               </div>
               <span className="text-xl font-bold hidden md:inline">EnjoyHub</span>
             </Link>
+
+            {/* Mobile Search Button */}
+            <Button
+              variant="outline"
+              onClick={() => setSearchSheetOpen(true)}
+              className="md:hidden flex-1 justify-start text-left h-10 px-4"
+            >
+              <Search className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="text-sm text-muted-foreground truncate">Wyszukaj...</span>
+            </Button>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
@@ -162,6 +174,11 @@ export function TopNav() {
         onOpenChange={setAuthSheetOpen}
         mode={authMode}
         onModeChange={setAuthMode}
+      />
+      
+      <SearchSheet
+        open={searchSheetOpen}
+        onOpenChange={setSearchSheetOpen}
       />
     </>
   )

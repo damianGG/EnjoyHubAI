@@ -57,5 +57,12 @@ export function useUrlState() {
     [searchParams, router, pathname]
   )
 
-  return { get, setMany }
+  const set = useCallback(
+    (key: string, value: string | number | null | undefined) => {
+      setMany({ [key]: value })
+    },
+    [setMany]
+  )
+
+  return { get, set, setMany }
 }
