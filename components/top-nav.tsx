@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
 import { AuthSheet } from "@/components/auth-sheet"
+import { SearchDialog } from "@/components/search-dialog"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Home, LogIn, UserPlus, Menu } from "lucide-react"
 import Link from "next/link"
@@ -61,6 +62,11 @@ export function TopNav() {
               </div>
               <span className="text-xl font-bold hidden md:inline">EnjoyHub</span>
             </Link>
+
+            {/* Search Dialog - Centered */}
+            <div className="flex-1 flex justify-center">
+              <SearchDialog />
+            </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
