@@ -275,30 +275,40 @@ export default function CategorySearchPage() {
             </Card>
           )}
           
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:gap-4">
             {results.map((property) => (
               <Link key={property.id} href={`/properties/${property.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
-                    <div className="flex items-center text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4 mr-1" />
+                <Card className="overflow-hidden border-0 md:border hover:shadow-lg transition-shadow cursor-pointer bg-transparent md:bg-card">
+                  <div className="aspect-[4/3] md:aspect-auto bg-muted relative rounded-xl md:rounded-none overflow-hidden md:hidden">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <MapPin className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-2 md:p-4">
+                    <div className="flex items-start justify-between mb-0.5 md:mb-2">
+                      <h3 className="font-semibold line-clamp-1 text-sm md:text-lg flex-1">{property.title}</h3>
+                      {property.avg_rating > 0 && (
+                        <div className="flex items-center space-x-0.5 md:space-x-1 text-xs md:text-sm flex-shrink-0 ml-1">
+                          <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="font-medium">{property.avg_rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 line-clamp-1">
                       {property.city}, {property.country}
                     </div>
-                    {property.avg_rating > 0 && (
-                      <div className="flex items-center text-sm mb-2">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1 fill-current" />
-                        <span className="font-medium">{property.avg_rating.toFixed(1)}</span>
-                      </div>
-                    )}
+                    
                     {property.category_name && (
-                      <div className="text-sm text-muted-foreground mb-2">
+                      <div className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2 hidden md:block">
                         Category: {property.category_name}
                       </div>
                     )}
-                    <div className="flex items-baseline">
-                      <span className="text-xl font-bold">${property.price_per_night}</span>
-                      <span className="text-sm text-muted-foreground ml-1">/night</span>
+                    
+                    <div className="flex items-baseline mt-1 md:mt-0">
+                      <span className="font-semibold text-sm md:text-xl">${property.price_per_night}</span>
+                      <span className="text-xs md:text-sm text-muted-foreground ml-1">/night</span>
                     </div>
                   </CardContent>
                 </Card>
