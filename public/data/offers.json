@@ -1,0 +1,146 @@
+[
+  {
+    "id": "1",
+    "image": "/placeholder.jpg",
+    "title": "Paintball Adventure Park Warszawa",
+    "city": "Warszawa",
+    "price": 89,
+    "rating": 4.8,
+    "category": "paintball"
+  },
+  {
+    "id": "2",
+    "image": "/placeholder.jpg",
+    "title": "Extreme Paintball Arena Kraków",
+    "city": "Kraków",
+    "price": 75,
+    "rating": 4.9,
+    "category": "paintball"
+  },
+  {
+    "id": "3",
+    "image": "/placeholder.jpg",
+    "title": "Tor Kartingowy Speed Warszawa",
+    "city": "Warszawa",
+    "price": 120,
+    "rating": 4.7,
+    "category": "gokarty"
+  },
+  {
+    "id": "4",
+    "image": "/placeholder.jpg",
+    "title": "Karting Arena Gdańsk",
+    "city": "Gdańsk",
+    "price": 110,
+    "rating": 4.6,
+    "category": "gokarty"
+  },
+  {
+    "id": "5",
+    "image": "/placeholder.jpg",
+    "title": "Mystery Escape Room Wrocław",
+    "city": "Wrocław",
+    "price": 95,
+    "rating": 4.9,
+    "category": "escape-room"
+  },
+  {
+    "id": "6",
+    "image": "/placeholder.jpg",
+    "title": "Lost Temple Escape Poznań",
+    "city": "Poznań",
+    "price": 85,
+    "rating": 4.8,
+    "category": "escape-room"
+  },
+  {
+    "id": "7",
+    "image": "/placeholder.jpg",
+    "title": "Park Linowy Adventure Zakopane",
+    "city": "Zakopane",
+    "price": 65,
+    "rating": 4.7,
+    "category": "park-linowy"
+  },
+  {
+    "id": "8",
+    "image": "/placeholder.jpg",
+    "title": "Canopy Park Warszawa",
+    "city": "Warszawa",
+    "price": 55,
+    "rating": 4.5,
+    "category": "park-linowy"
+  },
+  {
+    "id": "9",
+    "image": "/placeholder.jpg",
+    "title": "Jump Arena Trampoliny Łódź",
+    "city": "Łódź",
+    "price": 45,
+    "rating": 4.6,
+    "category": "trampoliny"
+  },
+  {
+    "id": "10",
+    "image": "/placeholder.jpg",
+    "title": "Sky Zone Trampoliny Katowice",
+    "city": "Katowice",
+    "price": 50,
+    "rating": 4.7,
+    "category": "trampoliny"
+  },
+  {
+    "id": "11",
+    "image": "/placeholder.jpg",
+    "title": "Aquapark Sopot",
+    "city": "Sopot",
+    "price": 70,
+    "rating": 4.8,
+    "category": "aquapark"
+  },
+  {
+    "id": "12",
+    "image": "/placeholder.jpg",
+    "title": "Aquapark Reda Family",
+    "city": "Reda",
+    "price": 60,
+    "rating": 4.6,
+    "category": "aquapark"
+  },
+  {
+    "id": "13",
+    "image": "/placeholder.jpg",
+    "title": "Strzelnica Sportowa Warszawa",
+    "city": "Warszawa",
+    "price": 150,
+    "rating": 4.9,
+    "category": "strzelnica"
+  },
+  {
+    "id": "14",
+    "image": "/placeholder.jpg",
+    "title": "Target Shooting Range Kraków",
+    "city": "Kraków",
+    "price": 140,
+    "rating": 4.8,
+    "category": "strzelnica"
+  },
+  {
+    "id": "15",
+    "image": "/placeholder.jpg",
+    "title": "Quady Adventure Mazury",
+    "city": "Mazury",
+    "price": 200,
+    "rating": 4.9,
+    "category": "quady-offroad"
+  },
+  {
+    "id": "16",
+    "image": "/placeholder.jpg",
+    "title": "Offroad Experience Bieszczady",
+    "city": "Bieszczady",
+    "price": 180,
+    "rating": 4.7,
+    "category": "quady-offroad"
+  }
+]
