@@ -26,6 +26,8 @@ export async function GET(request: Request) {
     const sort = searchParams.get("sort") || "relevance"
     const page = parseInt(searchParams.get("page") || "1", 10)
     const per = parseInt(searchParams.get("per") || "20", 10)
+    const ageMin = searchParams.get("age_min")
+    const ageMax = searchParams.get("age_max")
     
     const supabase = createClient()
     
@@ -49,6 +51,12 @@ export async function GET(request: Request) {
         ),
         reviews (
           rating
+        ),
+        object_field_values (
+          value,
+          category_fields (
+            field_name
+          )
         )
         `,
         { count: "exact" }
@@ -112,11 +120,17 @@ export async function GET(request: Request) {
     }
     
     // Transform data to match expected format
-    const items = (data || []).map((property: any) => {
+    let items = (data || []).map((property: any) => {
       const ratings = property.reviews?.map((r: any) => r.rating) || []
       const avgRating = ratings.length > 0 
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 0
+      
+      // Extract minimum_age from object_field_values
+      const minimumAgeField = property.object_field_values?.find(
+        (fv: any) => fv.category_fields?.field_name === 'minimum_age'
+      )
+      const minimumAge = minimumAgeField?.value ? parseInt(minimumAgeField.value) : null
       
       return {
         id: property.id,
@@ -130,8 +144,24 @@ export async function GET(request: Request) {
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
         avg_rating: avgRating,
+        minimum_age: minimumAge,
       }
     })
+    
+    // Filter by age range if provided
+    if (ageMin || ageMax) {
+      const minAge = ageMin ? parseInt(ageMin) : 0
+      const maxAge = ageMax ? parseInt(ageMax) : 999
+      
+      items = items.filter((item: any) => {
+        // If property doesn't have a minimum age requirement, include it
+        if (item.minimum_age === null) return true
+        
+        // Property's minimum age requirement should be within the user's selected range
+        // This means if someone selects 18-30, they can see properties with min age 18, 20, 25, etc.
+        return item.minimum_age >= minAge && item.minimum_age <= maxAge
+      })
+    }
     
     // Sort by rating if requested (after computing avg_rating)
     if (sort === "rating") {
