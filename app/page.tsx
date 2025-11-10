@@ -46,8 +46,8 @@ function HomePageContent() {
   // Mobile view state: 'list' or 'map'
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   
-  // Track if we're on desktop
-  const [isDesktop, setIsDesktop] = useState(false)
+  // Track if we're on desktop - start as null to indicate not yet determined
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null)
   
   // Search dialog state
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
@@ -125,6 +125,9 @@ function HomePageContent() {
   // Initialize Leaflet map - only when needed (desktop or mobile map view)
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInitializedRef.current) return
+    
+    // Wait until we know if we're desktop or mobile
+    if (isDesktop === null) return
     
     // Only initialize map if:
     // 1. We're on desktop, OR
@@ -296,7 +299,7 @@ function HomePageContent() {
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
         {/* Results List */}
-        <div className={`w-full md:w-1/2 h-full overflow-y-auto ${!isDesktop && mobileView === 'map' ? 'hidden' : ''}`}>
+        <div className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -388,27 +391,29 @@ function HomePageContent() {
         </div>
 
         {/* Map - Desktop: always visible on right side, Mobile: overlay when map view active */}
-        <div className={`${
-          isDesktop 
-            ? 'w-1/2 h-full relative' 
-            : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
-        }`}>
-          <div ref={mapRef} className="w-full h-full" />
-          <style jsx global>{`
-            .leaflet-container {
-              height: 100%;
-              width: 100%;
-              z-index: 0;
-            }
-            .custom-leaflet-marker {
-              background: transparent;
-              border: none;
-            }
-          `}</style>
-        </div>
+        {isDesktop !== null && (
+          <div className={`${
+            isDesktop 
+              ? 'w-1/2 h-full relative' 
+              : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
+          }`}>
+            <div ref={mapRef} className="w-full h-full" />
+            <style jsx global>{`
+              .leaflet-container {
+                height: 100%;
+                width: 100%;
+                z-index: 0;
+              }
+              .custom-leaflet-marker {
+                background: transparent;
+                border: none;
+              }
+            `}</style>
+          </div>
+        )}
         
         {/* Floating toggle button - Only visible on mobile */}
-        {!isDesktop && (
+        {isDesktop === false && (
           <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
             <Button
               onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
