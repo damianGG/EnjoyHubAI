@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star, MapPin, Users, Bed, Bath, Map, Grid3X3 } from "lucide-react"
 import Link from "next/link"
-import PropertyMap from "@/components/property-map"
-import PropertyFilters, { type FilterState } from "@/components/property-filters"
+import AttractionMap from "@/components/attraction-map"
+import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 
-interface Property {
+interface Attraction {
   id: string
   title: string
   city: string
@@ -30,14 +30,14 @@ interface Property {
   }
 }
 
-interface PropertiesViewProps {
-  properties: Property[]
+interface AttractionsViewProps {
+  attractions: Attraction[]
 }
 
-export default function PropertiesView({ properties }: PropertiesViewProps) {
+export default function AttractionsView({ attractions }: AttractionsViewProps) {
   const [isMounted, setIsMounted] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid")
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null)
+  const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
     location: "",
     checkIn: "",
@@ -45,7 +45,7 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
     guests: "1",
     priceRange: [0, 1000],
     ageRange: [0, 18],
-    propertyTypes: [],
+    attractionTypes: [],
     amenities: [],
     sortBy: "newest",
   })
@@ -55,15 +55,15 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
     setIsMounted(true)
   }, [])
 
-  const filteredAndSortedProperties = useMemo(() => {
-    // Ensure properties is an array
-    if (!Array.isArray(properties)) {
+  const filteredAndSortedAttractions = useMemo(() => {
+    // Ensure attractions is an array
+    if (!Array.isArray(attractions)) {
       return []
     }
 
-    const filtered = properties.filter((property) => {
+    const filtered = attractions.filter((attraction) => {
       // Safety checks for required fields
-      if (!property || !property.city || !property.country || !property.title) {
+      if (!attraction || !attraction.city || !attraction.country || !attraction.title) {
         return false
       }
 
@@ -71,33 +71,33 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
       if (filters.location) {
         const searchTerm = filters.location.toLowerCase()
         const matchesLocation =
-          property.city.toLowerCase().includes(searchTerm) ||
-          property.country.toLowerCase().includes(searchTerm) ||
-          property.title.toLowerCase().includes(searchTerm)
+          attraction.city.toLowerCase().includes(searchTerm) ||
+          attraction.country.toLowerCase().includes(searchTerm) ||
+          attraction.title.toLowerCase().includes(searchTerm)
         if (!matchesLocation) return false
       }
 
       // Guests filter
-      if (Number.parseInt(filters.guests) > property.max_guests) return false
+      if (Number.parseInt(filters.guests) > attraction.max_guests) return false
 
       // Price range filter
-      if (property.price_per_night < filters.priceRange[0] || property.price_per_night > filters.priceRange[1])
+      if (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1])
         return false
 
-      // Property type filter
-      if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(property.property_type)) return false
+      // Attraction type filter
+      if (filters.attractionTypes.length > 0 && !filters.attractionTypes.includes(attraction.property_type)) return false
 
       // Amenities filter
       if (filters.amenities.length > 0) {
-        const propertyAmenities = property.amenities || []
-        const hasAllAmenities = filters.amenities.every((amenity) => propertyAmenities.includes(amenity))
+        const attractionAmenities = attraction.amenities || []
+        const hasAllAmenities = filters.amenities.every((amenity) => attractionAmenities.includes(amenity))
         if (!hasAllAmenities) return false
       }
 
       return true
     })
 
-    // Sort properties
+    // Sort attractions
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
         case "price_low":
@@ -115,7 +115,7 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
     })
 
     return filtered
-  }, [properties, filters])
+  }, [attractions, filters])
 
   const handleSearch = () => {
     // Search is handled by the filtering logic above
@@ -133,11 +133,11 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
       {/* Search and Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
-          <PropertyFilters
+          <AttractionFilters
             filters={filters}
             onFiltersChange={setFilters}
             onSearch={handleSearch}
-            totalResults={filteredAndSortedProperties.length}
+            totalResults={filteredAndSortedAttractions.length}
           />
         </div>
 
@@ -164,21 +164,21 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
             /* Map View */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {filteredAndSortedProperties.map((property) => (
+                {filteredAndSortedAttractions.map((attraction) => (
                   <Card
-                    key={property.id}
+                    key={attraction.id}
                     className={`cursor-pointer transition-all ${
-                      selectedProperty === property.id ? "ring-2 ring-primary" : ""
+                      selectedAttraction === attraction.id ? "ring-2 ring-primary" : ""
                     }`}
-                    onClick={() => setSelectedProperty(property.id)}
+                    onClick={() => setSelectedAttraction(attraction.id)}
                   >
                     <CardContent className="p-4">
                       <div className="flex space-x-4">
                         <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {Array.isArray(property.images) && property.images.length > 0 ? (
+                          {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
                             <img
-                              src={property.images[0] || "/placeholder.svg?height=96&width=96"}
-                              alt={property.title || 'Property'}
+                              src={attraction.images[0] || "/placeholder.svg?height=96&width=96"}
+                              alt={attraction.title || 'Attraction'}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -190,11 +190,11 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold line-clamp-1">{property.title}</h3>
-                            {property.avgRating != null && property.avgRating > 0 && (
+                            <h3 className="font-semibold line-clamp-1">{attraction.title}</h3>
+                            {attraction.avgRating != null && attraction.avgRating > 0 && (
                               <div className="flex items-center space-x-1 text-sm">
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span>{property.avgRating}</span>
+                                <span>{attraction.avgRating}</span>
                               </div>
                             )}
                           </div>
@@ -202,31 +202,31 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                           <div className="flex items-center text-sm text-muted-foreground mb-2">
                             <MapPin className="h-4 w-4 mr-1" />
                             <span>
-                              {property.city}, {property.country}
+                              {attraction.city}, {attraction.country}
                             </span>
                           </div>
 
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-2">
                             <div className="flex items-center">
                               <Users className="h-4 w-4 mr-1" />
-                              <span>{property.max_guests}</span>
+                              <span>{attraction.max_guests}</span>
                             </div>
                             <div className="flex items-center">
                               <Bed className="h-4 w-4 mr-1" />
-                              <span>{property.bedrooms}</span>
+                              <span>{attraction.bedrooms}</span>
                             </div>
                             <div className="flex items-center">
                               <Bath className="h-4 w-4 mr-1" />
-                              <span>{property.bathrooms}</span>
+                              <span>{attraction.bathrooms}</span>
                             </div>
                           </div>
 
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="font-semibold">${property.price_per_night}</span>
+                              <span className="font-semibold">${attraction.price_per_night}</span>
                               <span className="text-muted-foreground text-sm"> / night</span>
                             </div>
-                            <Link href={`/properties/${property.id}`}>
+                            <Link href={`/attractions/${attraction.id}`}>
                               <Button variant="outline" size="sm">
                                 View Details
                               </Button>
@@ -240,10 +240,10 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
               </div>
 
               <div className="sticky top-8">
-                <PropertyMap
-                  properties={filteredAndSortedProperties}
-                  selectedProperty={selectedProperty}
-                  onPropertySelect={setSelectedProperty}
+                <AttractionMap
+                  attractions={filteredAndSortedAttractions}
+                  selectedAttraction={selectedAttraction}
+                  onAttractionSelect={setSelectedAttraction}
                   className="h-[600px]"
                 />
               </div>
@@ -251,14 +251,14 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
           ) : (
             /* Grid View */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedProperties.map((property) => (
-                <Link key={property.id} href={`/properties/${property.id}`}>
+              {filteredAndSortedAttractions.map((attraction) => (
+                <Link key={attraction.id} href={`/attractions/${attraction.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                     <div className="aspect-square bg-muted relative">
-                      {Array.isArray(property.images) && property.images.length > 0 ? (
+                      {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
                         <img
-                          src={property.images[0] || "/placeholder.svg?height=300&width=300"}
-                          alt={property.title || 'Property'}
+                          src={attraction.images[0] || "/placeholder.svg?height=300&width=300"}
+                          alt={attraction.title || 'Attraction'}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -268,19 +268,19 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                       )}
                       <div className="absolute top-2 right-2">
                         <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
-                          {property.property_type}
+                          {attraction.property_type}
                         </Badge>
                       </div>
                     </div>
 
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold line-clamp-1">{property.title}</h3>
-                        {property.avgRating != null && property.avgRating > 0 && (
+                        <h3 className="font-semibold line-clamp-1">{attraction.title}</h3>
+                        {attraction.avgRating != null && attraction.avgRating > 0 && (
                           <div className="flex items-center space-x-1 text-sm">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{property.avgRating}</span>
-                            <span className="text-muted-foreground">({property.reviewCount || 0})</span>
+                            <span>{attraction.avgRating}</span>
+                            <span className="text-muted-foreground">({attraction.reviewCount || 0})</span>
                           </div>
                         )}
                       </div>
@@ -288,31 +288,31 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                       <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <MapPin className="h-4 w-4 mr-1" />
                         <span>
-                          {property.city}, {property.country}
+                          {attraction.city}, {attraction.country}
                         </span>
                       </div>
 
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          <span>{property.max_guests}</span>
+                          <span>{attraction.max_guests}</span>
                         </div>
                         <div className="flex items-center">
                           <Bed className="h-4 w-4 mr-1" />
-                          <span>{property.bedrooms}</span>
+                          <span>{attraction.bedrooms}</span>
                         </div>
                         <div className="flex items-center">
                           <Bath className="h-4 w-4 mr-1" />
-                          <span>{property.bathrooms}</span>
+                          <span>{attraction.bathrooms}</span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-semibold text-lg">${property.price_per_night}</span>
+                          <span className="font-semibold text-lg">${attraction.price_per_night}</span>
                           <span className="text-muted-foreground text-sm"> / night</span>
                         </div>
-                        <div className="text-sm text-muted-foreground">Host: {property.users?.full_name}</div>
+                        <div className="text-sm text-muted-foreground">Host: {attraction.users?.full_name}</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -322,14 +322,14 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
           )}
 
           {/* No Results */}
-          {filteredAndSortedProperties.length === 0 && (
+          {filteredAndSortedAttractions.length === 0 && (
             <Card>
               <CardContent className="text-center py-12">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <MapPin className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No properties found</h3>
-                <p className="text-muted-foreground mb-4">Try adjusting your search criteria or filters</p>
+                <h3 className="text-lg font-semibold mb-2">Nie znaleziono atrakcji</h3>
+                <p className="text-muted-foreground mb-4">Spróbuj zmienić kryteria wyszukiwania lub filtry</p>
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -340,13 +340,13 @@ export default function PropertiesView({ properties }: PropertiesViewProps) {
                       guests: "1",
                       priceRange: [0, 1000],
                       ageRange: [0, 18],
-                      propertyTypes: [],
+                      attractionTypes: [],
                       amenities: [],
                       sortBy: "newest",
                     })
                   }
                 >
-                  Clear All Filters
+                  Wyczyść wszystkie filtry
                 </Button>
               </CardContent>
             </Card>

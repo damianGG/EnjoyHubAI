@@ -18,7 +18,7 @@ import DynamicFormFields from "./dynamic-form-fields"
 import type { Category, CategoryField } from "@/lib/types/dynamic-fields"
 import { toast } from "sonner"
 
-interface AddPropertyFormProps {
+interface AddAttractionFormProps {
   userId: string
 }
 
@@ -41,7 +41,7 @@ const AMENITIES = [
   "Prysznice",
 ]
 
-export default function AddPropertyForm({ userId }: AddPropertyFormProps) {
+export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])

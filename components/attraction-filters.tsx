@@ -18,19 +18,19 @@ export interface FilterState {
   guests: string
   priceRange: [number, number]
   ageRange?: [number, number]
-  propertyTypes: string[]
+  attractionTypes: string[]
   amenities: string[]
   sortBy: string
 }
 
-interface PropertyFiltersProps {
+interface AttractionFiltersProps {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
   onSearch: () => void
   totalResults: number
 }
 
-const PROPERTY_TYPES = [
+const ATTRACTION_TYPES = [
   "gaming_center",
   "escape_room",
   "bowling",
@@ -69,18 +69,18 @@ const SORT_OPTIONS = [
   { value: "reviews", label: "Most reviewed" },
 ]
 
-export default function PropertyFilters({ filters, onFiltersChange, onSearch, totalResults }: PropertyFiltersProps) {
+export default function AttractionFilters({ filters, onFiltersChange, onSearch, totalResults }: AttractionFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     onFiltersChange({ ...filters, [key]: value })
   }
 
-  const togglePropertyType = (type: string) => {
-    const newTypes = filters.propertyTypes.includes(type)
-      ? filters.propertyTypes.filter((t) => t !== type)
-      : [...filters.propertyTypes, type]
-    updateFilter("propertyTypes", newTypes)
+  const toggleAttractionType = (type: string) => {
+    const newTypes = filters.attractionTypes.includes(type)
+      ? filters.attractionTypes.filter((t) => t !== type)
+      : [...filters.attractionTypes, type]
+    updateFilter("attractionTypes", newTypes)
   }
 
   const toggleAmenity = (amenity: string) => {
@@ -98,7 +98,7 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
       guests: "1",
       priceRange: [0, 500],
       ageRange: [0, 18],
-      propertyTypes: [],
+      attractionTypes: [],
       amenities: [],
       sortBy: "newest",
     })
@@ -109,7 +109,7 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
     if (filters.guests !== "1") count++
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 500) count++
     if (filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)) count++
-    if (filters.propertyTypes.length > 0) count++
+    if (filters.attractionTypes.length > 0) count++
     if (filters.amenities.length > 0) count++
     return count
   }
@@ -212,16 +212,16 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
         </div>
       </div>
 
-      {/* Property Types */}
+      {/* Attraction Types */}
       <div className="space-y-4">
         <Label className="text-sm font-medium">Typ rozrywki</Label>
         <div className="grid grid-cols-1 gap-2">
-          {PROPERTY_TYPES.map((type) => (
+          {ATTRACTION_TYPES.map((type) => (
             <div key={type} className="flex items-center space-x-2">
               <Checkbox
                 id={`type-${type}`}
-                checked={filters.propertyTypes.includes(type)}
-                onCheckedChange={() => togglePropertyType(type)}
+                checked={filters.attractionTypes.includes(type)}
+                onCheckedChange={() => toggleAttractionType(type)}
               />
               <Label htmlFor={`type-${type}`} className="text-sm capitalize">
                 {type.replace("_", " ")}
@@ -274,10 +274,10 @@ export default function PropertyFilters({ filters, onFiltersChange, onSearch, to
               <Badge variant="secondary">
                 {getActiveFiltersCount()} filtr{getActiveFiltersCount() !== 1 ? "y" : ""} aktywne
               </Badge>
-              {filters.propertyTypes.map((type) => (
+              {filters.attractionTypes.map((type) => (
                 <Badge key={type} variant="outline" className="capitalize">
                   {type.replace("_", " ")}
-                  <button onClick={() => togglePropertyType(type)} className="ml-1 hover:bg-muted rounded-full">
+                  <button onClick={() => toggleAttractionType(type)} className="ml-1 hover:bg-muted rounded-full">
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
