@@ -93,7 +93,7 @@ export default async function BookingsPage() {
               <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No bookings yet</h3>
               <p className="text-muted-foreground mb-6">Start exploring amazing places and make your first booking</p>
-              <Link href="/properties">
+              <Link href="/attractions">
                 <Button>Browse Properties</Button>
               </Link>
             </CardContent>
@@ -213,9 +213,9 @@ function BookingCard({ booking }: { booking: any }) {
             </div>
 
             <div className="flex space-x-2">
-              <Link href={`/properties/${booking.properties.id}`}>
+              <Link href={`/attractions/${booking.properties.id}`}>
                 <Button variant="outline" size="sm">
-                  View Property
+                  Zobacz atrakcję
                 </Button>
               </Link>
               {isPast && booking.status === "completed" && (

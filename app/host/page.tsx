@@ -61,7 +61,7 @@ export default async function HostDashboard() {
             <Link href="/host/properties/new" className="flex-1 sm:flex-initial">
               <Button className="w-full sm:w-auto" size="sm">
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="ml-2 sm:ml-0">Add Property</span>
+                <span className="ml-2 sm:ml-0">Dodaj atrakcję</span>
               </Button>
             </Link>
           </nav>

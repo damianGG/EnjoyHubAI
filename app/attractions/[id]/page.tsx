@@ -10,7 +10,7 @@ import BookingCard from "@/components/booking-card"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 
-interface PropertyPageProps {
+interface AttractionPageProps {
   params: {
     id: string
   }
@@ -22,7 +22,7 @@ const amenityIcons: Record<string, any> = {
   // Add more icons as needed
 }
 
-export default async function PropertyPage({ params }: PropertyPageProps) {
+export default async function AttractionPage({ params }: AttractionPageProps) {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -33,8 +33,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   const supabase = createClient()
 
-  // Get property details with host info and reviews
-  const { data: property } = await supabase
+  // Get attraction details with host info and reviews
+  const { data: attraction } = await supabase
     .from("properties")
     .select(`
       *,
@@ -51,12 +51,12 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     .eq("is_active", true)
     .single()
 
-  if (!property) {
+  if (!attraction) {
     notFound()
   }
 
   // Calculate average rating
-  const ratings = property.reviews?.map((r: any) => r.rating) || []
+  const ratings = attraction.reviews?.map((r: any) => r.rating) || []
   const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0
   const roundedRating = Math.round(avgRating * 10) / 10
 
@@ -65,28 +65,28 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <Link href="/properties" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm sm:text-base">Back to Properties</span>
+            <span className="text-sm sm:text-base">Powrót do atrakcji</span>
           </Link>
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm">
               <Heart className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Save</span>
+              <span className="hidden sm:inline">Zapisz</span>
             </Button>
             <Button variant="outline" size="sm">
-              <span className="text-sm">Share</span>
+              <span className="text-sm">Udostępnij</span>
             </Button>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-4 sm:py-8">
-        {/* Property Title and Rating */}
+        {/* Attraction Title and Rating */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">{property.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">{attraction.title}</h1>
             {avgRating > 0 && (
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-1">
@@ -102,56 +102,56 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <div className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
               <span>
-                {property.city}, {property.country}
+                {attraction.city}, {attraction.country}
               </span>
             </div>
-            <Badge variant="secondary">{property.property_type}</Badge>
+            <Badge variant="secondary">{attraction.property_type}</Badge>
           </div>
         </div>
 
         {/* Image Gallery */}
         <div className="mb-6 sm:mb-8">
-          <AttractionGallery images={property.images || []} title={property.title} />
+          <AttractionGallery images={attraction.images || []} title={attraction.title} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-            {/* Property Info */}
+            {/* Attraction Info */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <span className="text-lg sm:text-xl">Hosted by {property.users?.full_name}</span>
+                  <span className="text-lg sm:text-xl">Hosted by {attraction.users?.full_name}</span>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{property.max_guests} guests</span>
+                      <span>{attraction.max_guests} guests</span>
                     </div>
                     <div className="flex items-center">
                       <Bed className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{property.bedrooms} bedrooms</span>
+                      <span>{attraction.bedrooms} bedrooms</span>
                     </div>
                     <div className="flex items-center">
                       <Bath className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{property.bathrooms} bathrooms</span>
+                      <span>{attraction.bathrooms} bathrooms</span>
                     </div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{property.description}</p>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{attraction.description}</p>
               </CardContent>
             </Card>
 
             {/* Amenities */}
-            {property.amenities && property.amenities.length > 0 && (
+            {attraction.amenities && attraction.amenities.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg sm:text-xl">What this place offers</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                    {property.amenities.map((amenity: string) => {
+                    {attraction.amenities.map((amenity: string) => {
                       const IconComponent = amenityIcons[amenity]
                       return (
                         <div key={amenity} className="flex items-center space-x-2 text-sm sm:text-base">
@@ -172,27 +172,27 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             {/* Location */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Where you'll be</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Gdzie będziesz</CardTitle>
                 <CardDescription className="text-sm sm:text-base">
-                  {property.address}, {property.city}, {property.country}
+                  {attraction.address}, {attraction.city}, {attraction.country}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <AttractionMap
-                  properties={[
+                  attractions={[
                     {
-                      id: property.id,
-                      title: property.title,
-                      city: property.city,
-                      country: property.country,
-                      latitude: property.latitude,
-                      longitude: property.longitude,
-                      price_per_night: property.price_per_night,
-                      property_type: property.property_type,
-                      max_guests: property.max_guests,
-                      bedrooms: property.bedrooms,
-                      bathrooms: property.bathrooms,
-                      images: property.images,
+                      id: attraction.id,
+                      title: attraction.title,
+                      city: attraction.city,
+                      country: attraction.country,
+                      latitude: attraction.latitude,
+                      longitude: attraction.longitude,
+                      price_per_night: attraction.price_per_night,
+                      property_type: attraction.property_type,
+                      max_guests: attraction.max_guests,
+                      bedrooms: attraction.bedrooms,
+                      bathrooms: attraction.bathrooms,
+                      images: attraction.images,
                       avgRating: roundedRating,
                       reviewCount: ratings.length,
                     },
@@ -203,16 +203,16 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             </Card>
 
             {/* Reviews */}
-            <ReviewsList reviews={property.reviews || []} avgRating={roundedRating} />
+            <ReviewsList reviews={attraction.reviews || []} avgRating={roundedRating} />
           </div>
 
           {/* Booking Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <BookingCard
-                propertyId={property.id}
-                pricePerNight={property.price_per_night}
-                maxGuests={property.max_guests}
+                propertyId={attraction.id}
+                pricePerNight={attraction.price_per_night}
+                maxGuests={attraction.max_guests}
                 avgRating={roundedRating}
                 reviewCount={ratings.length}
               />

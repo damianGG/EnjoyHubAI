@@ -103,7 +103,7 @@ export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
       {properties.map((property) => (
-        <Link key={property.id} href={`/properties/${property.id}`}>
+        <Link key={property.id} href={`/attractions/${property.id}`}>
           <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
             <div className="aspect-square relative">
               <Image

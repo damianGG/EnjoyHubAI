@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Maximize2, Minimize2 } from "lucide-react"
 
-interface Property {
+interface Attraction {
   id: string
   title: string
   city: string
@@ -25,10 +25,10 @@ interface Property {
   reviewCount?: number
 }
 
-interface PropertyMapProps {
-  properties: Property[]
-  selectedProperty?: string | null
-  onPropertySelect?: (propertyId: string | null) => void
+interface AttractionMapProps {
+  attractions: Attraction[]
+  selectedAttraction?: string | null
+  onAttractionSelect?: (attractionId: string | null) => void
   className?: string
 }
 
@@ -49,13 +49,13 @@ const getMockCoordinates = (city: string, country: string) => {
   return locations[key] || [40.7128 + (Math.random() - 0.5) * 0.1, -74.006 + (Math.random() - 0.5) * 0.1]
 }
 
-export default function PropertyMap({ properties, selectedProperty, onPropertySelect, className }: PropertyMapProps) {
+export default function AttractionMap({ attractions, selectedAttraction, onAttractionSelect, className }: AttractionMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
   const [leaflet, setLeaflet] = useState<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [hoveredProperty, setHoveredProperty] = useState<string | null>(null)
+  const [hoveredAttraction, setHoveredAttraction] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current) return
@@ -95,29 +95,29 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
   }, [])
 
   useEffect(() => {
-    if (!map || !leaflet || !properties.length) return
+    if (!map || !leaflet || !attractions.length) return
 
     markers.forEach((marker) => map.removeLayer(marker))
 
     const newMarkers: any[] = []
     const bounds = leaflet.latLngBounds([])
 
-    properties.forEach((property) => {
+    attractions.forEach((attraction) => {
       const [lat, lng] =
-        property.latitude && property.longitude
-          ? [property.latitude, property.longitude]
-          : getMockCoordinates(property.city, property.country)
+        attraction.latitude && attraction.longitude
+          ? [attraction.latitude, attraction.longitude]
+          : getMockCoordinates(attraction.city, attraction.country)
 
       bounds.extend([lat, lng])
 
-      const isSelected = selectedProperty === property.id
-      const isHovered = hoveredProperty === property.id
+      const isSelected = selectedAttraction === attraction.id
+      const isHovered = hoveredAttraction === attraction.id
 
       const markerHtml = `
         <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
           isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
         } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10">
-          <span class="text-2xl">${property.category_icon || '📍'}</span>
+          <span class="text-2xl">${attraction.category_icon || '📍'}</span>
         </div>
       `
 
@@ -131,22 +131,22 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
       const marker = leaflet.marker([lat, lng], { icon: customIcon }).addTo(map)
 
       marker.on("click", () => {
-        onPropertySelect?.(property.id)
+        onAttractionSelect?.(attraction.id)
       })
 
       const popupContent = `
         <div class="p-3 min-w-[280px] max-w-[320px]">
           <div class="aspect-video mb-3 rounded-lg overflow-hidden">
-            <img src="${property.images?.[0] || "/placeholder.svg?height=150&width=280"}" 
-                 alt="${property.title}" 
+            <img src="${attraction.images?.[0] || "/placeholder.svg?height=150&width=280"}" 
+                 alt="${attraction.title}" 
                  class="w-full h-full object-cover" />
           </div>
-          <h3 class="font-semibold text-base mb-2 line-clamp-2">${property.title}</h3>
+          <h3 class="font-semibold text-base mb-2 line-clamp-2">${attraction.title}</h3>
           <p class="text-sm text-gray-600 mb-3 flex items-center">
             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path>
             </svg>
-            ${property.city}, ${property.country}
+            ${attraction.city}, ${attraction.country}
           </p>
           <div class="flex items-center justify-between text-sm mb-3">
             <div class="flex items-center space-x-3 text-gray-600">
@@ -154,30 +154,30 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
                 <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8A6 6 0 006 8c0 7-3 9-3 9s3-2 3-9a6 6 0 0112 0c0 7 3 9 3 9s-3-2-3-9z"></path>
                 </svg>
-                ${property.max_guests} guests
+                ${attraction.max_guests} guests
               </span>
               <span class="flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.25 9.035 14.394 6.92a1 1 0 00.788-1.84l-7-3z"></path>
                 </svg>
-                ${property.bedrooms} bed
+                ${attraction.bedrooms} bed
               </span>
               <span class="flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"></path>
                 </svg>
-                ${property.bathrooms} bath
+                ${attraction.bathrooms} bath
               </span>
             </div>
             ${
-              property.avgRating
+              attraction.avgRating
                 ? `
               <div class="flex items-center">
                 <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                 </svg>
-                <span class="text-sm font-medium">${property.avgRating}</span>
-                <span class="text-xs text-gray-500 ml-1">(${property.reviewCount})</span>
+                <span class="text-sm font-medium">${attraction.avgRating}</span>
+                <span class="text-xs text-gray-500 ml-1">(${attraction.reviewCount})</span>
               </div>
             `
                 : ""
@@ -185,10 +185,10 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
           </div>
           <div class="flex items-center justify-between pt-3 border-t">
             <div>
-              <span class="font-bold text-lg">$${property.price_per_night}</span>
+              <span class="font-bold text-lg">$${attraction.price_per_night}</span>
               <span class="text-gray-600 text-sm">/night</span>
             </div>
-            <a href="/properties/${property.id}" 
+            <a href="/attractions/${attraction.id}" 
                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               View Details
             </a>
@@ -206,24 +206,24 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
     setMarkers(newMarkers)
 
-    if (properties.length > 0 && bounds.isValid()) {
+    if (attractions.length > 0 && bounds.isValid()) {
       map.fitBounds(bounds, {
         padding: [50, 50],
         maxZoom: 15,
       })
     }
-  }, [map, leaflet, properties, selectedProperty, hoveredProperty])
+  }, [map, leaflet, attractions, selectedAttraction, hoveredAttraction])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
   }
 
-  if (!properties.length) {
+  if (!attractions.length) {
     return (
       <Card className={className}>
         <CardContent className="p-6 text-center">
           <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No properties to display on map</p>
+          <p className="text-muted-foreground">Brak atrakcji do wyświetlenia na mapie</p>
         </CardContent>
       </Card>
     )
@@ -255,7 +255,7 @@ export default function PropertyMap({ properties, selectedProperty, onPropertySe
 
           <div className="absolute bottom-4 left-4 z-10">
             <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm">
-              {properties.length} properties
+              {attractions.length} atrakcji
             </Badge>
           </div>
         </CardContent>

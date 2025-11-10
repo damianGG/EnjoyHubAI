@@ -73,7 +73,7 @@ export default async function FavoritesPage() {
               <p className="text-muted-foreground mb-6">
                 Start exploring properties and save your favorites for easy access
               </p>
-              <Link href="/properties">
+              <Link href="/attractions">
                 <Button>Browse Properties</Button>
               </Link>
             </CardContent>
@@ -115,8 +115,8 @@ export default async function FavoritesPage() {
                       <span className="text-lg font-bold">${favorite.properties.price_per_night}</span>
                       <span className="text-muted-foreground"> / night</span>
                     </div>
-                    <Link href={`/properties/${favorite.properties.id}`}>
-                      <Button size="sm">View Details</Button>
+                    <Link href={`/attractions/${favorite.properties.id}`}>
+                      <Button size="sm">Zobacz szczegóły</Button>
                     </Link>
                   </div>
                 </CardContent>

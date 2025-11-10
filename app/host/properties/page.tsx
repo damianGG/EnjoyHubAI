@@ -46,7 +46,7 @@ export default async function PropertiesPage() {
           <Link href="/host/properties/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Add Property
+              Dodaj atrakcję
             </Button>
           </Link>
         </div>
@@ -54,8 +54,8 @@ export default async function PropertiesPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Your Properties</h1>
-          <p className="text-muted-foreground">Manage all your listed properties</p>
+          <h1 className="text-3xl font-bold mb-2">Twoje atrakcje</h1>
+          <p className="text-muted-foreground">Zarządzaj wszystkimi swoimi atrakcjami</p>
         </div>
 
         {!properties || properties.length === 0 ? (
@@ -64,12 +64,12 @@ export default async function PropertiesPage() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
+              <h3 className="text-lg font-semibold mb-2">Nie masz jeszcze atrakcji</h3>
               <p className="text-muted-foreground mb-4">Start earning by listing your first property on EnjoyHub</p>
               <Link href="/host/properties/new">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Property
+                  Dodaj swoją pierwszą atrakcję
                 </Button>
               </Link>
             </CardContent>
@@ -119,7 +119,7 @@ export default async function PropertiesPage() {
                         Manage
                       </Button>
                     </Link>
-                    <Link href={`/properties/${property.id}`}>
+                    <Link href={`/attractions/${property.id}`}>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
