@@ -277,7 +277,7 @@ export default function CategorySearchPage() {
           
           <div className="space-y-4">
             {results.map((property) => (
-              <Link key={property.id} href={`/properties/${property.id}`}>
+              <Link key={property.id} href={`/attractions/${property.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{property.title}</h3>

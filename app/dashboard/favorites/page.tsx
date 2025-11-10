@@ -73,7 +73,7 @@ export default async function FavoritesPage() {
               <p className="text-muted-foreground mb-6">
                 Start exploring properties and save your favorites for easy access
               </p>
-              <Link href="/properties">
+              <Link href="/attractions">
                 <Button>Browse Properties</Button>
               </Link>
             </CardContent>
