@@ -4,7 +4,8 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useCallback, useRef } from "react"
 
 interface SetManyOptions {
-  debounce?: number
+  debounce?: number | boolean
+  debounceMs?: number
 }
 
 export function useUrlState() {
@@ -38,7 +39,12 @@ export function useUrlState() {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
       }
 
-      if (options?.debounce && options.debounce > 0) {
+      // Determine debounce value
+      const debounceValue = typeof options?.debounce === 'number' 
+        ? options.debounce 
+        : options?.debounceMs || (options?.debounce ? 300 : 0)
+
+      if (debounceValue > 0) {
         // Clear existing timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current)
@@ -48,7 +54,7 @@ export function useUrlState() {
         debounceTimerRef.current = setTimeout(() => {
           performUpdate()
           debounceTimerRef.current = null
-        }, options.debounce)
+        }, debounceValue)
       } else {
         // Execute immediately
         performUpdate()

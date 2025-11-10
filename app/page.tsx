@@ -46,24 +46,28 @@ function HomePageContent() {
   // Mobile view state: 'list' or 'map'
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   
+  // Track if we're on desktop
+  const [isDesktop, setIsDesktop] = useState(false)
+  
   // Search dialog state
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
   
-  // Detect if we're on mobile and update the ref
+  // Detect if we're on desktop/mobile
   useEffect(() => {
-    const checkAndUpdate = () => {
-      const isMobileSize = window.innerWidth < 768
+    const checkScreenSize = () => {
+      const isDesktopSize = window.innerWidth >= 768
+      setIsDesktop(isDesktopSize)
       // On desktop: always update bbox
       // On mobile: only update if in map view
-      shouldUpdateBboxRef.current = !isMobileSize || mobileView === 'map'
+      shouldUpdateBboxRef.current = isDesktopSize || mobileView === 'map'
     }
     
-    checkAndUpdate()
-    window.addEventListener('resize', checkAndUpdate)
-    return () => window.removeEventListener('resize', checkAndUpdate)
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
   }, [mobileView])
 
   // Get URL params - categories come from query params, defaults to empty string (all categories)
@@ -118,9 +122,15 @@ function HomePageContent() {
     fetchResults()
   }, [q, bbox, categories, sort, page, per])
 
-  // Initialize Leaflet map
+  // Initialize Leaflet map - only when needed (desktop or mobile map view)
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInitializedRef.current) return
+    
+    // Only initialize map if:
+    // 1. We're on desktop, OR
+    // 2. We're on mobile AND user has switched to map view
+    const shouldInitMap = isDesktop || mobileView === 'map'
+    if (!shouldInitMap) return
 
     const initMap = async () => {
       const L = (await import("leaflet")).default
@@ -174,7 +184,7 @@ function HomePageContent() {
           // Only update if bbox has changed significantly
           const currentBbox = urlState.get("bbox")
           if (newBbox !== currentBbox) {
-            urlState.setMany({ bbox: newBbox, page: 1 }, { debounce: true, debounceMs: 300 })
+            urlState.setMany({ bbox: newBbox, page: 1 }, { debounce: 300 })
           }
         }, 300)
       })
@@ -182,12 +192,15 @@ function HomePageContent() {
       setMapInstance(mapInstance)
       mapInitializedRef.current = true
 
-      // Trigger initial moveend if no bbox in URL
-      if (!bbox && isFirstRenderRef.current) {
+      // Only trigger initial moveend on desktop or if bbox already exists
+      // Don't auto-trigger on mobile when first opening map view
+      if (isDesktop && !bbox && isFirstRenderRef.current) {
         isFirstRenderRef.current = false
         setTimeout(() => {
           mapInstance.fire("moveend")
         }, 500)
+      } else {
+        isFirstRenderRef.current = false
       }
     }
 
@@ -198,7 +211,7 @@ function HomePageContent() {
         mapInstance.remove()
       }
     }
-  }, [])
+  }, [isDesktop, mobileView])
 
   // Update map markers when results change
   useEffect(() => {
@@ -282,8 +295,8 @@ function HomePageContent() {
 
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
-        {/* Results List - Full width and height */}
-        <div className={`w-full h-full overflow-y-auto ${mobileView === 'map' ? 'hidden' : ''}`}>
+        {/* Results List */}
+        <div className={`w-full md:w-1/2 h-full overflow-y-auto ${!isDesktop && mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
@@ -348,7 +361,7 @@ function HomePageContent() {
                       variant="outline"
                       size="sm"
                       disabled={page <= 1}
-                      onClick={() => urlState.set("page", page - 1)}
+                      onClick={() => urlState.setMany({ page: page - 1 })}
                     >
                       Previous
                     </Button>
@@ -359,7 +372,7 @@ function HomePageContent() {
                       variant="outline"
                       size="sm"
                       disabled={page >= Math.ceil(total / per)}
-                      onClick={() => urlState.set("page", page + 1)}
+                      onClick={() => urlState.setMany({ page: page + 1 })}
                     >
                       Next
                     </Button>
@@ -374,8 +387,12 @@ function HomePageContent() {
           </div>
         </div>
 
-        {/* Map - Overlay on top when visible */}
-        <div className={`fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`}>
+        {/* Map - Desktop: always visible on right side, Mobile: overlay when map view active */}
+        <div className={`${
+          isDesktop 
+            ? 'w-1/2 h-full relative' 
+            : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
+        }`}>
           <div ref={mapRef} className="w-full h-full" />
           <style jsx global>{`
             .leaflet-container {
@@ -390,26 +407,28 @@ function HomePageContent() {
           `}</style>
         </div>
         
-        {/* Floating toggle button - Always visible */}
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-          <Button
-            onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
-            className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
-            size="lg"
-          >
-            {mobileView === 'list' ? (
-              <>
-                <Map className="h-5 w-5" />
-                <span className="font-medium">Mapa</span>
-              </>
-            ) : (
-              <>
-                <List className="h-5 w-5" />
-                <span className="font-medium">Lista</span>
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Floating toggle button - Only visible on mobile */}
+        {!isDesktop && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <Button
+              onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
+              className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
+              size="lg"
+            >
+              {mobileView === 'list' ? (
+                <>
+                  <Map className="h-5 w-5" />
+                  <span className="font-medium">Mapa</span>
+                </>
+              ) : (
+                <>
+                  <List className="h-5 w-5" />
+                  <span className="font-medium">Lista</span>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
