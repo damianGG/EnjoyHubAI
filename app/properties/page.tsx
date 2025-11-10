@@ -1,7 +1,7 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
-import PropertiesView from "@/components/properties-view"
+import AttractionsView from "@/components/attractions-view"
 
 export default async function PropertiesPage() {
   if (!isSupabaseConfigured) {
@@ -60,7 +60,7 @@ export default async function PropertiesPage() {
       </div>
 
       <section>
-        <PropertiesView properties={data || []} />
+        <AttractionsView attractions={data || []} />
       </section>
     </div>
   )

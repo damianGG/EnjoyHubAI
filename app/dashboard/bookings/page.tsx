@@ -213,9 +213,9 @@ function BookingCard({ booking }: { booking: any }) {
             </div>
 
             <div className="flex space-x-2">
-              <Link href={`/properties/${booking.properties.id}`}>
+              <Link href={`/attractions/${booking.properties.id}`}>
                 <Button variant="outline" size="sm">
-                  View Property
+                  Zobacz atrakcję
                 </Button>
               </Link>
               {isPast && booking.status === "completed" && (

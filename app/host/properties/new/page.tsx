@@ -1,6 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import AddPropertyForm from "@/components/add-property-form"
+import AddAttractionForm from "@/components/add-attraction-form"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -42,7 +42,7 @@ export default async function AddPropertyPage() {
           <p className="text-muted-foreground">Wypełnij szczegóły poniżej, aby wystawić swój obiekt na EnjoyHub</p>
         </div>
 
-        <AddPropertyForm userId={user.id} />
+        <AddAttractionForm userId={user.id} />
       </div>
     </div>
   )

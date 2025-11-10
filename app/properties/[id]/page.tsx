@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "lucide-react"
 import Link from "next/link"
-import PropertyGallery from "@/components/property-gallery"
+import AttractionGallery from "@/components/attraction-gallery"
 import BookingCard from "@/components/booking-card"
 import ReviewsList from "@/components/reviews-list"
-import PropertyMap from "@/components/property-map"
+import AttractionMap from "@/components/attraction-map"
 
 interface PropertyPageProps {
   params: {
@@ -111,7 +111,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
         {/* Image Gallery */}
         <div className="mb-6 sm:mb-8">
-          <PropertyGallery images={property.images || []} title={property.title} />
+          <AttractionGallery images={property.images || []} title={property.title} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -178,7 +178,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PropertyMap
+                <AttractionMap
                   properties={[
                     {
                       id: property.id,
