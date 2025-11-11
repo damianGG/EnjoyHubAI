@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation"
 import { useUrlState } from "@/lib/search/url-state"
 import PropertyMap from "@/components/property-map"
 import { Card, CardContent } from "@/components/ui/card"
@@ -36,6 +36,9 @@ export default function CategorySearchPage() {
   const params = useParams()
   const categoriesParam = params?.categories as string | undefined
   const { get, setMany } = useUrlState()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
   
   const [results, setResults] = useState<SearchResult[]>([])
   const [total, setTotal] = useState(0)
@@ -43,6 +46,17 @@ export default function CategorySearchPage() {
   const [error, setError] = useState<string | null>(null)
   const [mapInstance, setMapInstance] = useState<any>(null)
   const mapMoveEndTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const categoriesRef = useRef<string>("")
+  const routerRef = useRef(router)
+  const searchParamsRef = useRef(searchParams)
+  const pathnameRef = useRef(pathname)
+  
+  // Keep refs updated
+  useEffect(() => {
+    routerRef.current = router
+    searchParamsRef.current = searchParams
+    pathnameRef.current = pathname
+  }, [router, searchParams, pathname])
   
   // Get current URL params
   const q = get("q") || ""
@@ -51,6 +65,11 @@ export default function CategorySearchPage() {
   const sort = get("sort") || "relevance"
   const page = parseInt(get("page") || "1", 10)
   const per = parseInt(get("per") || "20", 10)
+  
+  // Keep ref updated with current category
+  useEffect(() => {
+    categoriesRef.current = categoriesParam || categories || ""
+  }, [categoriesParam, categories])
   
   // Sync route param to query param on mount
   useEffect(() => {
@@ -143,8 +162,24 @@ export default function CategorySearchPage() {
             bounds.getNorth().toFixed(6),
           ].join(",")
           
-          setMany({ bbox: newBbox, page: "1" }, { debounce: 300 })
-        }, 300)
+          // Get current search params and preserve all parameters
+          const currentParams = new URLSearchParams(searchParamsRef.current.toString())
+          
+          // Update bbox
+          currentParams.set("bbox", newBbox)
+          
+          // Make sure categories is set (from route param or existing query param)
+          const categoryToPreserve = categoriesRef.current || currentParams.get("categories") || ""
+          if (categoryToPreserve) {
+            currentParams.set("categories", categoryToPreserve)
+          }
+          
+          // Reset to page 1
+          currentParams.set("page", "1")
+          
+          // Update URL with all preserved parameters
+          routerRef.current.replace(`${pathnameRef.current}?${currentParams.toString()}`, { scroll: false })
+        }, 600) // Increased debounce to 600ms to avoid rapid updates
       })
       
       setMapInstance(map)
