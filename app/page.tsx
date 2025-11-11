@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense } from "react"
 import { useUrlState } from "@/lib/search/url-state"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MapPin, Star, Loader2, Map, List } from "lucide-react"
@@ -32,6 +33,9 @@ interface SearchResponse {
 
 function HomePageContent() {
   const urlState = useUrlState()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
   
   const [results, setResults] = useState<SearchResult[]>([])
   const [total, setTotal] = useState(0)
@@ -54,6 +58,18 @@ function HomePageContent() {
   
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
+  
+  // Refs to hold latest router, searchParams, pathname for use in event handlers
+  const routerRef = useRef(router)
+  const searchParamsRef = useRef(searchParams)
+  const pathnameRef = useRef(pathname)
+  
+  // Keep refs updated
+  useEffect(() => {
+    routerRef.current = router
+    searchParamsRef.current = searchParams
+    pathnameRef.current = pathname
+  }, [router, searchParams, pathname])
   
   // Detect if we're on desktop/mobile
   useEffect(() => {
@@ -185,12 +201,18 @@ function HomePageContent() {
           const newBbox = `${sw.lng.toFixed(6)},${sw.lat.toFixed(6)},${ne.lng.toFixed(6)},${ne.lat.toFixed(6)}`
           
           // Only update if bbox has changed significantly
-          const currentBbox = urlState.get("bbox")
+          const currentBbox = searchParamsRef.current.get("bbox")
           if (newBbox !== currentBbox) {
-            // Update bbox without resetting page to preserve pagination state
-            urlState.setMany({ bbox: newBbox }, { debounce: 300 })
+            // Get current search params and preserve all parameters
+            const currentParams = new URLSearchParams(searchParamsRef.current.toString())
+            
+            // Update bbox
+            currentParams.set("bbox", newBbox)
+            
+            // Update URL with all preserved parameters (including categories if present)
+            routerRef.current.replace(`${pathnameRef.current}?${currentParams.toString()}`, { scroll: false })
           }
-        }, 300)
+        }, 600) // Increased debounce to 600ms
       })
 
       setMapInstance(mapInstance)
