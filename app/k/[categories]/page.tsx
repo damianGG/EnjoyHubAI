@@ -43,6 +43,7 @@ export default function CategorySearchPage() {
   const [error, setError] = useState<string | null>(null)
   const [mapInstance, setMapInstance] = useState<any>(null)
   const mapMoveEndTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const categoriesRef = useRef<string>("")
   
   // Get current URL params
   const q = get("q") || ""
@@ -51,6 +52,11 @@ export default function CategorySearchPage() {
   const sort = get("sort") || "relevance"
   const page = parseInt(get("page") || "1", 10)
   const per = parseInt(get("per") || "20", 10)
+  
+  // Keep ref updated with current category
+  useEffect(() => {
+    categoriesRef.current = categoriesParam || categories || ""
+  }, [categoriesParam, categories])
   
   // Sync route param to query param on mount
   useEffect(() => {
@@ -143,7 +149,12 @@ export default function CategorySearchPage() {
             bounds.getNorth().toFixed(6),
           ].join(",")
           
-          setMany({ bbox: newBbox, page: "1" }, { debounce: 300 })
+          // Preserve categories from ref when updating bbox
+          const updates: Record<string, string> = { bbox: newBbox, page: "1" }
+          if (categoriesRef.current) {
+            updates.categories = categoriesRef.current
+          }
+          setMany(updates, { debounce: 300 })
         }, 300)
       })
       

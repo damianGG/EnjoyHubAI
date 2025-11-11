@@ -187,7 +187,8 @@ function HomePageContent() {
           // Only update if bbox has changed significantly
           const currentBbox = urlState.get("bbox")
           if (newBbox !== currentBbox) {
-            urlState.setMany({ bbox: newBbox, page: 1 }, { debounce: 300 })
+            // Update bbox without resetting page to preserve pagination state
+            urlState.setMany({ bbox: newBbox }, { debounce: 300 })
           }
         }, 300)
       })
