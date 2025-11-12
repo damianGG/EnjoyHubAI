@@ -9,6 +9,7 @@ import { MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
+import { generateAttractionUrl } from "@/lib/utils/url-helpers"
 
 interface SearchResult {
   id: string
@@ -272,9 +273,18 @@ function HomePageContent() {
 
       const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
+      const attractionUrl = generateAttractionUrl({
+        city: result.city,
+        activity: result.category_slug,
+        title: result.title,
+        id: result.id
+      })
+
       const popupContent = `
         <div class="p-2">
-          <h3 class="font-semibold text-sm mb-1">${result.title}</h3>
+          <a href="${attractionUrl}" class="hover:text-primary">
+            <h3 class="font-semibold text-sm mb-1">${result.title}</h3>
+          </a>
           <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
           <p class="text-xs font-bold mt-1">$${result.price_per_night}/night</p>
           ${result.avg_rating > 0 ? `<p class="text-xs mt-1">⭐ ${result.avg_rating}</p>` : ""}
@@ -344,7 +354,14 @@ function HomePageContent() {
                 {results.map((result) => (
                   <Card key={result.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-4">
-                      <Link href={`/properties/${result.id}`}>
+                      <Link 
+                        href={generateAttractionUrl({
+                          city: result.city,
+                          activity: result.category_slug,
+                          title: result.title,
+                          id: result.id
+                        })}
+                      >
                         <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
                           {result.title}
                         </h3>
@@ -379,6 +396,7 @@ function HomePageContent() {
                     </CardContent>
                   </Card>
                 ))}
+
 
                 {/* Pagination */}
                 {total > per && (
