@@ -1,15 +1,16 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, MapPin, Share2 } from "lucide-react"
+import { Star, MapPin } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AttractionGallery } from "@/components/attraction-gallery"
 import { WorthKnowing } from "@/components/worth-knowing"
 import { HostAttractions } from "@/components/host-attractions"
 import { NearbyAttractions } from "@/components/nearby-attractions"
 import { AttractionReviews } from "@/components/attraction-reviews"
+import { ExpandableDescription } from "@/components/expandable-description"
+import { ShareButton } from "@/components/share-button"
 import PropertyMap from "@/components/property-map"
 import { Metadata } from "next"
 
@@ -262,16 +263,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             </div>
 
             {/* Description */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Opis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {attraction.description}
-                </p>
-              </CardContent>
-            </Card>
+            <ExpandableDescription description={attraction.description || "Brak opisu"} />
 
             {/* Worth Knowing */}
             <WorthKnowing items={worthKnowingItems} />
@@ -313,11 +305,12 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
                   ]}
                   className="h-96"
                 />
-                <div className="mt-4 flex gap-2">
-                  <Button variant="outline" className="flex-1">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Udostępnij
-                  </Button>
+                <div className="mt-4">
+                  <ShareButton
+                    title={attraction.title}
+                    description={attraction.description || ""}
+                    className="w-full"
+                  />
                 </div>
               </CardContent>
             </Card>

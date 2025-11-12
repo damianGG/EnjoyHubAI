@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Heart, ChevronLeft, ChevronRight, Share2 } from "lucide-react"
+import { Heart, ChevronLeft, ChevronRight } from "lucide-react"
+import { ShareButton } from "@/components/share-button"
 import Image from "next/image"
 import {
   Carousel,
@@ -16,10 +17,9 @@ import {
 interface AttractionGalleryProps {
   images: string[]
   title: string
-  onShare?: () => void
 }
 
-export function AttractionGallery({ images, title, onShare }: AttractionGalleryProps) {
+export function AttractionGallery({ images, title }: AttractionGalleryProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
 
@@ -67,17 +67,12 @@ export function AttractionGallery({ images, title, onShare }: AttractionGalleryP
                 className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
               />
             </Button>
-            {onShare && (
-              <Button
-                variant="secondary"
-                size="icon"
-                className="bg-white/90 backdrop-blur-sm hover:bg-white"
-                onClick={onShare}
-                aria-label="Udostępnij"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-            )}
+            <ShareButton
+              title={title}
+              variant="secondary"
+              size="icon"
+              className="bg-white/90 backdrop-blur-sm hover:bg-white"
+            />
           </div>
 
           {/* Image Counter */}
