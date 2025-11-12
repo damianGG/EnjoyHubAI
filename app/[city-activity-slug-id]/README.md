@@ -9,8 +9,9 @@ The page uses a dynamic route pattern: `/{city}-{activity}-{slug}-{id}`
 Example URLs:
 - `/krakow-hiking-wieliczka-salt-mine-abc123`
 - `/warsaw-museum-national-museum-def456`
+- `/zakopane-skiing-kasprowy-wierch-ghi789`
 
-The route parser extracts the `id` (last segment) to fetch attraction data from Supabase.
+The route parser extracts the `id` (last segment after final hyphen) to fetch attraction data from Supabase.
 
 ## Features
 
