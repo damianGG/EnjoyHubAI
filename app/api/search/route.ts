@@ -43,7 +43,6 @@ export async function GET(request: Request) {
         title,
         city,
         country,
-        region,
         latitude,
         longitude,
         price_per_night,
@@ -136,7 +135,7 @@ export async function GET(request: Request) {
         title: property.title,
         city: property.city,
         country: property.country,
-        region: property.region || property.city,
+        region: property.city,  // region column doesn't exist, use city instead
         latitude: property.latitude,
         longitude: property.longitude,
         price_per_night: property.price_per_night,
