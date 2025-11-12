@@ -7,6 +7,7 @@ import { Star, MapPin, Users } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import Image from "next/image"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface Attraction {
   id: string
@@ -102,17 +103,25 @@ export function FeaturedAttractions({ selectedCategory }: FeaturedAttractionsPro
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-      {attractions.map((attraction) => (
-        <Link key={attraction.id} href={`/attractions/${attraction.id}`}>
-          <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
-            <div className="aspect-square relative">
-              <Image
-                src={
-                  attraction.images?.[0] ||
-                  `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(attraction.title) || "/placeholder.svg"}`
-                }
-                alt={attraction.title}
-                fill
+      {attractions.map((attraction) => {
+        const slug = generateAttractionSlug({
+          city: attraction.city,
+          category: attraction.categories?.slug || null,
+          title: attraction.title,
+          id: attraction.id
+        })
+        
+        return (
+          <Link key={attraction.id} href={`/attractions/${slug}`}>
+            <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <div className="aspect-square relative">
+                <Image
+                  src={
+                    attraction.images?.[0] ||
+                    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(attraction.title) || "/placeholder.svg"}`
+                  }
+                  alt={attraction.title}
+                  fill
                 className="object-cover"
               />
               {attraction.categories && (
@@ -148,7 +157,8 @@ export function FeaturedAttractions({ selectedCategory }: FeaturedAttractionsPro
             </CardContent>
           </Card>
         </Link>
-      ))}
+        )
+      })}
     </div>
   )
 }

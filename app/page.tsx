@@ -9,6 +9,7 @@ import { MapPin, Star, Loader2, Map, List } from "lucide-react"
 import Link from "next/link"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface SearchResult {
   id: string
@@ -341,14 +342,22 @@ function HomePageContent() {
               </div>
             ) : results.length > 0 ? (
               <div className="space-y-4">
-                {results.map((result) => (
-                  <Card key={result.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <Link href={`/attractions/${result.id}`}>
-                        <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
-                          {result.title}
-                        </h3>
-                      </Link>
+                {results.map((result) => {
+                  const slug = generateAttractionSlug({
+                    city: result.city,
+                    category: result.category_slug,
+                    title: result.title,
+                    id: result.id
+                  })
+                  
+                  return (
+                    <Card key={result.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-4">
+                        <Link href={`/attractions/${slug}`}>
+                          <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
+                            {result.title}
+                          </h3>
+                        </Link>
                       
                       <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
                         <MapPin className="h-3 w-3 md:h-4 md:w-4 mr-1" />
@@ -378,7 +387,8 @@ function HomePageContent() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
 
                 {/* Pagination */}
                 {total > per && (

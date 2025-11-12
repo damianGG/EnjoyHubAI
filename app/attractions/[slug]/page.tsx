@@ -9,10 +9,11 @@ import AttractionGallery from "@/components/attraction-gallery"
 import BookingCard from "@/components/booking-card"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
+import { extractIdFromSlug } from "@/lib/utils"
 
 interface AttractionPageProps {
   params: {
-    id: string
+    slug: string
   }
 }
 
@@ -32,8 +33,11 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   }
 
   const supabase = createClient()
+  
+  // Extract ID from slug
+  const id = extractIdFromSlug(params.slug)
 
-  // Get property details with host info and reviews
+  // Get attraction details with host info and reviews
   const { data: attraction } = await supabase
     .from("properties")
     .select(`
@@ -47,7 +51,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
         users!reviews_guest_id_fkey (full_name)
       )
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("is_active", true)
     .single()
 

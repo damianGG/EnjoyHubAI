@@ -8,6 +8,7 @@ import { Star, MapPin, Users, Bed, Bath, Map, Grid3X3 } from "lucide-react"
 import Link from "next/link"
 import AttractionMap from "@/components/attraction-map"
 import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface Attraction {
   id: string
@@ -226,7 +227,12 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                               <span className="font-semibold">${attraction.price_per_night}</span>
                               <span className="text-muted-foreground text-sm"> / night</span>
                             </div>
-                            <Link href={`/attractions/${attraction.id}`}>
+                            <Link href={`/attractions/${generateAttractionSlug({
+                              city: attraction.city,
+                              category: attraction.property_type,
+                              title: attraction.title,
+                              id: attraction.id
+                            })}`}>
                               <Button variant="outline" size="sm">
                                 View Details
                               </Button>
@@ -251,12 +257,20 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
           ) : (
             /* Grid View */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedAttractions.map((attraction) => (
-                <Link key={attraction.id} href={`/attractions/${attraction.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                    <div className="aspect-square bg-muted relative">
-                      {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
-                        <img
+              {filteredAndSortedAttractions.map((attraction) => {
+                const slug = generateAttractionSlug({
+                  city: attraction.city,
+                  category: attraction.property_type,
+                  title: attraction.title,
+                  id: attraction.id
+                })
+                
+                return (
+                  <Link key={attraction.id} href={`/attractions/${slug}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                      <div className="aspect-square bg-muted relative">
+                        {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
+                          <img
                           src={attraction.images[0] || "/placeholder.svg?height=300&width=300"}
                           alt={attraction.title || 'Attraction'}
                           className="w-full h-full object-cover"
@@ -317,7 +331,8 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                     </CardContent>
                   </Card>
                 </Link>
-              ))}
+                )
+              })}
             </div>
           )}
 

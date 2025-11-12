@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Maximize2, Minimize2 } from "lucide-react"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface Attraction {
   id: string
@@ -112,6 +113,14 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
 
       const isSelected = selectedAttraction === attraction.id
       const isHovered = hoveredAttraction === attraction.id
+      
+      // Generate slug for the attraction
+      const slug = generateAttractionSlug({
+        city: attraction.city,
+        category: attraction.property_type,
+        title: attraction.title,
+        id: attraction.id
+      })
 
       const markerHtml = `
         <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
@@ -188,7 +197,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
               <span class="font-bold text-lg">$${attraction.price_per_night}</span>
               <span class="text-gray-600 text-sm">/night</span>
             </div>
-            <a href="/attractions/${attraction.id}" 
+            <a href="/attractions/${slug}" 
                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               View Details
             </a>
