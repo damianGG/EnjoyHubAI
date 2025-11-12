@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 // Temporarily disabled Google Fonts due to network restrictions in build environment
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 // const geist = Geist({ 
@@ -49,6 +50,7 @@ export default function RootLayout({
         className="font-sans antialiased min-h-screen bg-gradient-to-br from-sky-400/20 via-violet-500/20 to-rose-400/20 dark:from-[#0b1220] dark:via-[#0f172a] dark:to-[#0b1220]"
       >
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>
