@@ -11,15 +11,17 @@ import AttractionReviews from "@/components/attraction-reviews"
 import NearbyAttractions from "@/components/nearby-attractions"
 
 interface AttractionPageProps {
-  params: {
+  params: Promise<{
     city: string
     activity: string
     slug: string
     id: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: AttractionPageProps): Promise<Metadata> {
+  const resolvedParams = await params
+  
   if (!isSupabaseConfigured) {
     return {
       title: "Attraction Details",
@@ -31,7 +33,7 @@ export async function generateMetadata({ params }: AttractionPageProps): Promise
   const { data: property } = await supabase
     .from("properties")
     .select("title, description, images, city, country")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("is_active", true)
     .single()
 
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: AttractionPageProps): Promise
     }
   }
 
-  const canonicalUrl = `/${params.city}-${params.activity}-${params.slug}-${params.id}`
+  const canonicalUrl = `/${resolvedParams.city}-${resolvedParams.activity}-${resolvedParams.slug}-${resolvedParams.id}`
   
   return {
     title: `${property.title} - ${property.city}, ${property.country}`,
@@ -60,6 +62,8 @@ export async function generateMetadata({ params }: AttractionPageProps): Promise
 }
 
 export default async function AttractionPage({ params }: AttractionPageProps) {
+  const resolvedParams = await params
+  
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -110,7 +114,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
         )
       )
     `)
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("is_active", true)
     .single()
 
@@ -129,7 +133,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
     .select("id, title, images, city, price_per_night, latitude, longitude")
     .eq("host_id", property.host_id)
     .eq("is_active", true)
-    .neq("id", params.id)
+    .neq("id", resolvedParams.id)
     .limit(6)
 
   // Fetch nearby attractions in the same city
@@ -147,7 +151,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
     `)
     .eq("city", property.city)
     .eq("is_active", true)
-    .neq("id", params.id)
+    .neq("id", resolvedParams.id)
     .limit(8)
 
   // Transform nearby attractions to include rating

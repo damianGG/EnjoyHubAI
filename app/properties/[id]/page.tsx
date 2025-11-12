@@ -11,9 +11,9 @@ import ReviewsList from "@/components/reviews-list"
 import PropertyMap from "@/components/property-map"
 
 interface PropertyPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 const amenityIcons: Record<string, any> = {
@@ -23,6 +23,8 @@ const amenityIcons: Record<string, any> = {
 }
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
+  const resolvedParams = await params
+  
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -47,7 +49,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
         users!reviews_guest_id_fkey (full_name)
       )
     `)
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("is_active", true)
     .single()
 
