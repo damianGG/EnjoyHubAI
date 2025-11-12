@@ -35,7 +35,7 @@ export default function AttractionGallery({ images, title, propertyId }: Attract
 
   return (
     <div className="relative w-full">
-      <Carousel className="w-full">
+      <Carousel className="w-full" opts={{ loop: true }}>
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem key={index}>
@@ -44,6 +44,7 @@ export default function AttractionGallery({ images, title, propertyId }: Attract
                   src={image || "/placeholder.svg?height=500&width=1200"}
                   alt={`${title} - Image ${index + 1}`}
                   className="w-full h-full object-cover"
+                  role="img"
                 />
               </div>
             </CarouselItem>
@@ -51,10 +52,16 @@ export default function AttractionGallery({ images, title, propertyId }: Attract
         </CarouselContent>
         
         {/* Navigation Arrows */}
-        <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white">
+        <CarouselPrevious 
+          className="left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+          aria-label="Previous image"
+        >
           <ChevronLeft className="h-6 w-6" />
         </CarouselPrevious>
-        <CarouselNext className="right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white">
+        <CarouselNext 
+          className="right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+          aria-label="Next image"
+        >
           <ChevronRight className="h-6 w-6" />
         </CarouselNext>
       </Carousel>
