@@ -3,12 +3,11 @@
 import { useEffect, useState, useRef, Suspense } from "react"
 import { useUrlState } from "@/lib/search/url-state"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MapPin, Star, Loader2, Map, List } from "lucide-react"
-import Link from "next/link"
+import { Loader2, Map, List } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
+import AttractionCard from "@/components/AttractionCard"
 
 interface SearchResult {
   id: string
@@ -22,6 +21,9 @@ interface SearchResult {
   category_name: string | null
   category_icon: string | null
   avg_rating: number
+  images?: string[]
+  region?: string
+  review_count?: number
 }
 
 interface SearchResponse {
@@ -272,16 +274,37 @@ function HomePageContent() {
 
       const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
+      // Enhanced card-like popup with image
+      const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.svg?height=200&width=300'
       const popupContent = `
-        <div class="p-2">
-          <h3 class="font-semibold text-sm mb-1">${result.title}</h3>
-          <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
-          <p class="text-xs font-bold mt-1">$${result.price_per_night}/night</p>
-          ${result.avg_rating > 0 ? `<p class="text-xs mt-1">⭐ ${result.avg_rating}</p>` : ""}
+        <div class="min-w-[250px] max-w-[280px]">
+          <div class="relative h-40 mb-2 rounded-lg overflow-hidden">
+            <img src="${imageUrl}" alt="${result.title}" class="w-full h-full object-cover" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="font-semibold text-sm line-clamp-2">${result.title}</h3>
+            <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
+            <div class="flex items-center justify-between pt-1">
+              ${result.avg_rating > 0 ? `
+                <div class="flex items-center text-xs">
+                  <span class="mr-1">⭐</span>
+                  <span class="font-medium">${result.avg_rating.toFixed(1)}</span>
+                  ${result.review_count ? `<span class="text-gray-500 ml-1">(${result.review_count})</span>` : ''}
+                </div>
+              ` : '<div></div>'}
+              <div class="text-sm">
+                <span class="font-bold">${result.price_per_night} zł</span>
+                <span class="text-xs text-gray-500"> / noc</span>
+              </div>
+            </div>
+          </div>
         </div>
       `
 
-      marker.bindPopup(popupContent)
+      marker.bindPopup(popupContent, {
+        maxWidth: 300,
+        className: 'custom-popup'
+      })
       newMarkers.push(marker)
     })
 
@@ -340,49 +363,27 @@ function HomePageContent() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : results.length > 0 ? (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {results.map((result) => (
-                  <Card key={result.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <Link href={`/properties/${result.id}`}>
-                        <h3 className="font-semibold text-base md:text-lg mb-2 hover:text-primary transition-colors">
-                          {result.title}
-                        </h3>
-                      </Link>
-                      
-                      <div className="flex items-center text-xs md:text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                        {result.city}, {result.country}
-                      </div>
-
-                      {result.category_name && (
-                        <div className="text-xs md:text-sm text-muted-foreground mb-2">
-                          Category: {result.category_name}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {result.avg_rating > 0 && (
-                            <div className="flex items-center text-xs md:text-sm">
-                              <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                              {result.avg_rating}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-base md:text-lg font-bold">
-                          ${result.price_per_night}
-                          <span className="text-xs md:text-sm font-normal text-muted-foreground">/night</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <AttractionCard
+                    key={result.id}
+                    id={result.id}
+                    images={result.images || []}
+                    title={result.title}
+                    city={result.city}
+                    region={result.region || result.category_name || ''}
+                    country={result.country}
+                    rating={result.avg_rating || 0}
+                    reviewsCount={result.review_count || 0}
+                    price={result.price_per_night}
+                    priceUnit="noc"
+                    href={`/properties/${result.id}`}
+                  />
                 ))}
 
                 {/* Pagination */}
                 {total > per && (
-                  <div className="flex items-center justify-center space-x-2 pt-6">
+                  <div className="col-span-full flex items-center justify-center space-x-2 pt-6">
                     <Button
                       variant="outline"
                       size="sm"
@@ -430,6 +431,20 @@ function HomePageContent() {
               .custom-leaflet-marker {
                 background: transparent;
                 border: none;
+              }
+              .custom-popup .leaflet-popup-content-wrapper {
+                border-radius: 12px;
+                padding: 8px;
+              }
+              .custom-popup .leaflet-popup-content {
+                margin: 0;
+                line-height: 1.4;
+              }
+              .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
               }
             `}</style>
           </div>

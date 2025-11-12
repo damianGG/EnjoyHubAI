@@ -13,6 +13,9 @@ interface SearchResult {
   category_name: string | null
   category_icon: string | null
   avg_rating: number
+  images?: string[]
+  region?: string
+  review_count?: number
 }
 
 export async function GET(request: Request) {
@@ -40,9 +43,11 @@ export async function GET(request: Request) {
         title,
         city,
         country,
+        region,
         latitude,
         longitude,
         price_per_night,
+        images,
         category_id,
         categories (
           slug,
@@ -137,13 +142,16 @@ export async function GET(request: Request) {
         title: property.title,
         city: property.city,
         country: property.country,
+        region: property.region || property.city,
         latitude: property.latitude,
         longitude: property.longitude,
         price_per_night: property.price_per_night,
+        images: property.images || [],
         category_slug: property.categories?.slug || null,
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
         avg_rating: avgRating,
+        review_count: ratings.length,
         minimum_age: minimumAge,
       }
     })
