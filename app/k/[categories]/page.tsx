@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, MapPin, Star } from "lucide-react"
 import Link from "next/link"
+import { generateAttractionUrl } from "@/lib/utils/url-helpers"
 
 interface SearchResult {
   id: string
@@ -312,7 +313,15 @@ export default function CategorySearchPage() {
           
           <div className="space-y-4">
             {results.map((property) => (
-              <Link key={property.id} href={`/properties/${property.id}`}>
+              <Link 
+                key={property.id} 
+                href={generateAttractionUrl({
+                  city: property.city,
+                  activity: property.category_slug,
+                  title: property.title,
+                  id: property.id
+                })}
+              >
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
