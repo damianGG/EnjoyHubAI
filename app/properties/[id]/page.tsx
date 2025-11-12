@@ -65,9 +65,9 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <Link href="/properties" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm sm:text-base">Back to Properties</span>
+            <span className="text-sm sm:text-base">Back to Attractions</span>
           </Link>
 
           <div className="flex items-center space-x-2">
