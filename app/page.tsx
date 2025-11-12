@@ -351,10 +351,10 @@ function HomePageContent() {
               <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
                   ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
-                  : "All Properties"}
+                  : "All Attractions"}
               </h1>
               <p className="text-sm md:text-base text-muted-foreground">
-                {loading ? "Loading..." : `${total} properties found`}
+                {loading ? "Loading..." : `${total} attractions found`}
               </p>
             </div>
 
@@ -408,7 +408,7 @@ function HomePageContent() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-sm md:text-base text-muted-foreground">No properties found. Try adjusting your filters or search area.</p>
+                <p className="text-sm md:text-base text-muted-foreground">No attractions found. Try adjusting your filters or search area.</p>
               </div>
             )}
           </div>

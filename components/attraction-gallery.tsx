@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, Grid3X3 } from "lucide-react"
 
-interface PropertyGalleryProps {
+interface AttractionGalleryProps {
   images: string[]
   title: string
 }
 
-export default function PropertyGallery({ images, title }: PropertyGalleryProps) {
+export default function AttractionGallery({ images, title }: AttractionGalleryProps) {
   const [currentImage, setCurrentImage] = useState(0)
 
   if (!Array.isArray(images) || images.length === 0) {

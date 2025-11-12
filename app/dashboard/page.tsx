@@ -101,7 +101,7 @@ export default async function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Link href="/properties">
+          <Link href="/attractions">
             <Card className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg">Browse Properties</CardTitle>
@@ -164,7 +164,7 @@ export default async function DashboardPage() {
                     <p className="text-muted-foreground mb-4">
                       Start exploring amazing places and make your first booking
                     </p>
-                    <Link href="/properties">
+                    <Link href="/attractions">
                       <Button>Browse Properties</Button>
                     </Link>
                   </div>

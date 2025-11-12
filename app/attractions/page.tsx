@@ -1,9 +1,9 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
-import PropertiesView from "@/components/properties-view"
+import AttractionsView from "@/components/attractions-view"
 
-export default async function PropertiesPage() {
+export default async function AttractionsPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -24,7 +24,7 @@ export default async function PropertiesPage() {
 
   const supabase = createClient()
 
-  // Get all active properties with user information
+  // Get all active attractions with user information
   const { data, error } = await supabase
     .from("properties")
     .select(`
@@ -45,7 +45,7 @@ export default async function PropertiesPage() {
             </div>
             <h3 className="text-lg font-semibold mb-2 text-destructive">Błąd pobierania danych</h3>
             <p className="text-muted-foreground">
-              Wystąpił błąd podczas pobierania listy nieruchomości. Spróbuj odświeżyć stronę.
+              Wystąpił błąd podczas pobierania listy atrakcji. Spróbuj odświeżyć stronę.
             </p>
           </CardContent>
         </Card>
@@ -56,11 +56,11 @@ export default async function PropertiesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Wszystkie obiekty</h1>
+        <h1 className="text-3xl font-bold mb-2">Wszystkie atrakcje</h1>
       </div>
 
       <section>
-        <PropertiesView properties={data || []} />
+        <AttractionsView attractions={data || []} />
       </section>
     </div>
   )

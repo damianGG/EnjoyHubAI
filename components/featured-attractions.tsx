@@ -7,8 +7,9 @@ import { Star, MapPin, Users } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import Image from "next/image"
+import { generateAttractionSlug } from "@/lib/utils"
 
-interface Property {
+interface Attraction {
   id: string
   title: string
   city: string
@@ -23,17 +24,17 @@ interface Property {
   }
 }
 
-interface FeaturedPropertiesProps {
+interface FeaturedAttractionsProps {
   selectedCategory?: string | null
 }
 
-export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps) {
-  const [properties, setProperties] = useState<Property[]>([])
+export function FeaturedAttractions({ selectedCategory }: FeaturedAttractionsProps) {
+  const [attractions, setAttractions] = useState<Attraction[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchProperties() {
-      console.log("[v0] Loading properties with category:", selectedCategory)
+    async function fetchAttractions() {
+      console.log("[v0] Loading attractions with category:", selectedCategory)
       setLoading(true)
       const supabase = createClient()
 
@@ -52,23 +53,23 @@ export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps
       const { data, error } = await query
 
       if (error) {
-        console.error("Error fetching properties:", error)
-        setProperties([])
+        console.error("Error fetching attractions:", error)
+        setAttractions([])
       } else {
         console.log("[v0] Raw data loaded:", data?.length || 0)
         let filteredData = data || []
 
         if (selectedCategory) {
-          filteredData = data?.filter((property) => property.categories?.slug === selectedCategory) || []
+          filteredData = data?.filter((attraction) => attraction.categories?.slug === selectedCategory) || []
         }
 
-        console.log("[v0] Filtered properties:", filteredData.length)
-        setProperties(filteredData)
+        console.log("[v0] Filtered attractions:", filteredData.length)
+        setAttractions(filteredData)
       }
       setLoading(false)
     }
 
-    fetchProperties()
+    fetchAttractions()
   }, [selectedCategory])
 
   if (loading) {
@@ -90,11 +91,11 @@ export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps
     )
   }
 
-  if (properties.length === 0) {
+  if (attractions.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          {selectedCategory ? "Brak obiektów w tej kategorii." : "Brak dostępnych obiektów."}
+          {selectedCategory ? "Brak atrakcji w tej kategorii." : "Brak dostępnych atrakcji."}
         </p>
       </div>
     )
@@ -102,38 +103,46 @@ export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-      {properties.map((property) => (
-        <Link key={property.id} href={`/properties/${property.id}`}>
-          <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
-            <div className="aspect-square relative">
-              <Image
-                src={
-                  property.images?.[0] ||
-                  `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(property.title) || "/placeholder.svg"}`
-                }
-                alt={property.title}
-                fill
+      {attractions.map((attraction) => {
+        const slug = generateAttractionSlug({
+          city: attraction.city,
+          category: attraction.categories?.slug || null,
+          title: attraction.title,
+          id: attraction.id
+        })
+        
+        return (
+          <Link key={attraction.id} href={`/attractions/${slug}`}>
+            <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <div className="aspect-square relative">
+                <Image
+                  src={
+                    attraction.images?.[0] ||
+                    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(attraction.title) || "/placeholder.svg"}`
+                  }
+                  alt={attraction.title}
+                  fill
                 className="object-cover"
               />
-              {property.categories && (
+              {attraction.categories && (
                 <Badge className="absolute top-2 left-2 bg-white/90 text-black text-xs">
-                  {property.categories.name}
+                  {attraction.categories.name}
                 </Badge>
               )}
             </div>
             <CardContent className="p-3 md:p-4">
               <div className="space-y-1.5 md:space-y-2">
-                <h3 className="font-semibold line-clamp-1 text-sm md:text-base">{property.title}</h3>
+                <h3 className="font-semibold line-clamp-1 text-sm md:text-base">{attraction.title}</h3>
                 <div className="flex items-center text-xs md:text-sm text-muted-foreground">
                   <MapPin className="w-3 md:w-4 h-3 md:h-4 mr-1 flex-shrink-0" />
                   <span className="truncate">
-                    {property.city}, {property.country}
+                    {attraction.city}, {attraction.country}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center text-xs md:text-sm text-muted-foreground">
                     <Users className="w-3 md:w-4 h-3 md:h-4 mr-1 flex-shrink-0" />
-                    Do {property.max_guests} osób
+                    Do {attraction.max_guests} osób
                   </div>
                   <div className="flex items-center">
                     <Star className="w-3 md:w-4 h-3 md:h-4 text-yellow-400 fill-current" />
@@ -141,14 +150,15 @@ export function FeaturedProperties({ selectedCategory }: FeaturedPropertiesProps
                   </div>
                 </div>
                 <div className="text-base md:text-lg font-semibold">
-                  {property.price_per_night} zł{" "}
+                  {attraction.price_per_night} zł{" "}
                   <span className="text-xs md:text-sm font-normal text-muted-foreground">/ noc</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </Link>
-      ))}
+        )
+      })}
     </div>
   )
 }

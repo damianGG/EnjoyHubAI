@@ -81,7 +81,7 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
           )
 
           return useNavigation ? (
-            <Link href={`/k/${category.slug}`} key={category.id}>
+            <Link href={`/attractions?categories=${category.slug}`} key={category.id}>
               <Button
                 variant={selectedCategory === category.slug ? "default" : "ghost"}
                 size="sm"
@@ -96,7 +96,7 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
               variant={selectedCategory === category.slug ? "default" : "ghost"}
               size="sm"
               onClick={() => {
-                router.push(`/k/${category.slug}`)
+                router.push(`/attractions?categories=${category.slug}`)
                 onCategorySelect?.(category.slug)
               }}
               className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
