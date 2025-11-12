@@ -49,15 +49,15 @@ export async function GET(request: Request) {
         price_per_night,
         images,
         category_id,
-        categories (
+        categories!left (
           slug,
           name,
           icon
         ),
-        reviews (
+        reviews!left (
           rating
         ),
-        object_field_values (
+        object_field_values!left (
           value,
           category_fields (
             field_name
