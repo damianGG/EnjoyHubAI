@@ -49,19 +49,13 @@ export async function GET(request: Request) {
         price_per_night,
         images,
         category_id,
-        categories!left (
+        categories (
           slug,
           name,
           icon
         ),
-        reviews!left (
+        reviews (
           rating
-        ),
-        object_field_values!left (
-          value,
-          category_fields (
-            field_name
-          )
         )
         `,
         { count: "exact" }
