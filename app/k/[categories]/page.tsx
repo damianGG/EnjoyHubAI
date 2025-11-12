@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, MapPin, Star } from "lucide-react"
 import Link from "next/link"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface SearchResult {
   id: string
@@ -251,7 +252,7 @@ export default function CategorySearchPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <Input
               type="text"
-              placeholder="Search properties..."
+              placeholder="Search attractions..."
               defaultValue={q}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="flex-1"
@@ -279,10 +280,10 @@ export default function CategorySearchPage() {
         <div className="w-full md:w-1/2 overflow-y-auto p-4 md:p-6">
           <div className="mb-4">
             <h1 className="text-2xl font-bold mb-2">
-              {categories ? `Properties in ${categories.split(",").join(", ")}` : "Search Results"}
+              {categories ? `Attractions in ${categories.split(",").join(", ")}` : "Search Results"}
             </h1>
             <p className="text-muted-foreground">
-              {loading ? "Loading..." : `${total} properties found`}
+              {loading ? "Loading..." : `${total} attractions found`}
             </p>
           </div>
           
@@ -304,25 +305,33 @@ export default function CategorySearchPage() {
             <Card>
               <CardContent className="p-12 text-center">
                 <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No properties found</h3>
+                <h3 className="text-lg font-semibold mb-2">No attractions found</h3>
                 <p className="text-muted-foreground">Try adjusting your search or filters</p>
               </CardContent>
             </Card>
           )}
           
           <div className="space-y-4">
-            {results.map((property) => (
-              <Link key={property.id} href={`/properties/${property.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
-                    <div className="flex items-center text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {property.city}, {property.country}
-                    </div>
-                    {property.avg_rating > 0 && (
-                      <div className="flex items-center text-sm mb-2">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1 fill-current" />
+            {results.map((property) => {
+              const slug = generateAttractionSlug({
+                city: property.city,
+                category: property.category_slug,
+                title: property.title,
+                id: property.id
+              })
+              
+              return (
+                <Link key={property.id} href={`/attractions/${slug}`}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {property.city}, {property.country}
+                      </div>
+                      {property.avg_rating > 0 && (
+                        <div className="flex items-center text-sm mb-2">
+                          <Star className="h-4 w-4 text-yellow-400 mr-1 fill-current" />
                         <span className="font-medium">{property.avg_rating.toFixed(1)}</span>
                       </div>
                     )}
@@ -338,7 +347,8 @@ export default function CategorySearchPage() {
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+              )
+            })}
           </div>
           
           {/* Pagination */}
