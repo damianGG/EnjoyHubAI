@@ -8,6 +8,7 @@ import { Loader2, Map, List } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
+import { generateAttractionSlug } from "@/lib/utils"
 
 interface SearchResult {
   id: string
@@ -364,22 +365,31 @@ function HomePageContent() {
               </div>
             ) : results.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                {results.map((result) => (
-                  <AttractionCard
-                    key={result.id}
-                    id={result.id}
-                    images={result.images || []}
-                    title={result.title}
-                    city={result.city}
-                    region={result.region || result.category_name || ''}
-                    country={result.country}
-                    rating={result.avg_rating || 0}
-                    reviewsCount={result.review_count || 0}
-                    price={result.price_per_night}
-                    priceUnit="noc"
-                    href={`/properties/${result.id}`}
-                  />
-                ))}
+                {results.map((result) => {
+                  const slug = generateAttractionSlug({
+                    city: result.city,
+                    category: result.category_slug,
+                    title: result.title,
+                    id: result.id
+                  })
+                  
+                  return (
+                    <AttractionCard
+                      key={result.id}
+                      id={result.id}
+                      images={result.images || []}
+                      title={result.title}
+                      city={result.city}
+                      region={result.region || result.category_name || ''}
+                      country={result.country}
+                      rating={result.avg_rating || 0}
+                      reviewsCount={result.review_count || 0}
+                      price={result.price_per_night}
+                      priceUnit="noc"
+                      href={`/attractions/${slug}`}
+                    />
+                  )
+                })}
 
                 {/* Pagination */}
                 {total > per && (
