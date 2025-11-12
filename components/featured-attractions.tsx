@@ -120,7 +120,7 @@ export function FeaturedAttractions({ selectedCategory }: FeaturedAttractionsPro
                     attraction.images?.[0] ||
                     `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(attraction.title) || "/placeholder.svg"}`
                   }
-                  alt={attraction.title}
+                  alt={`${attraction.title} – zdjęcie 1`}
                   fill
                 className="object-cover"
               />

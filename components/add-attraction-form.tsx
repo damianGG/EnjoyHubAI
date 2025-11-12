@@ -45,13 +45,14 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<Array<{ url: string; publicId: string }>>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("")
   const [location, setLocation] = useState<{ lat: number; lng: number }>({ lat: 52.2297, lng: 21.0122 })
   const [categoryFields, setCategoryFields] = useState<CategoryField[]>([])
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, any>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -116,15 +117,65 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
     }
   }
 
-  const handleImageAdd = () => {
-    const imageUrl = prompt("Enter image URL:")
-    if (imageUrl && imageUrl.trim()) {
-      setImages([...images, imageUrl.trim()])
+  const handleImageAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingImage(true)
+
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData()
+        formData.append("image", file)
+        formData.append("userId", userId)
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          toast.error(`Failed to upload ${file.name}: ${error.error}`)
+          continue
+        }
+
+        const data = await response.json()
+        setImages((prev) => [...prev, { url: data.secure_url, publicId: data.public_id }])
+        toast.success(`Uploaded ${file.name}`)
+      }
+    } catch (error) {
+      console.error("Error uploading images:", error)
+      toast.error("An error occurred while uploading images")
+    } finally {
+      setUploadingImage(false)
+      // Reset the file input
+      e.target.value = ""
     }
   }
 
-  const handleImageRemove = (index: number) => {
-    setImages(images.filter((_, i) => i !== index))
+  const handleImageRemove = async (index: number) => {
+    const image = images[index]
+    
+    try {
+      const response = await fetch("/api/delete-image", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId: image.publicId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(`Failed to delete image: ${error.error}`)
+        return
+      }
+
+      setImages(images.filter((_, i) => i !== index))
+      toast.success("Image deleted successfully")
+    } catch (error) {
+      console.error("Error deleting image:", error)
+      toast.error("An error occurred while deleting the image")
+    }
   }
 
   const handleLocationSelect = (lat: number, lng: number) => {
@@ -230,7 +281,7 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
           price_per_night: Number.parseFloat(formData.get("price_per_night") as string),
           max_guests: Number.parseInt(formData.get("max_guests") as string),
           amenities: selectedAmenities,
-          images: images,
+          images: images.map((img) => img.url),
           is_active: true,
         })
         .select()
@@ -436,17 +487,35 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
           <CardDescription>Dodaj zdjęcia swojego obiektu</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button type="button" variant="outline" onClick={handleImageAdd}>
-            <Upload className="h-4 w-4 mr-2" />
-            Dodaj URL zdjęcia
-          </Button>
+          <div>
+            <Label htmlFor="image-upload" className="cursor-pointer">
+              <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="text-center">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {uploadingImage ? "Przesyłanie..." : "Kliknij, aby wybrać zdjęcia"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP do 10MB</p>
+                </div>
+              </div>
+            </Label>
+            <Input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageAdd}
+              disabled={uploadingImage}
+              className="hidden"
+            />
+          </div>
 
           {images.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {images.map((image, index) => (
                 <div key={index} className="relative">
                   <img
-                    src={image || "/placeholder.svg"}
+                    src={image.url || "/placeholder.svg"}
                     alt={`Zdjęcie obiektu ${index + 1}`}
                     className="w-full h-32 object-cover rounded-lg"
                   />
