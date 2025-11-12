@@ -174,12 +174,12 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Where you'll be</CardTitle>
                 <CardDescription className="text-sm sm:text-base">
-                  {property.address}, {attraction.city}, {attraction.country}
+                  {attraction.address}, {attraction.city}, {attraction.country}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <AttractionMap
-                  properties={[
+                  attractions={[
                     {
                       id: attraction.id,
                       title: attraction.title,
