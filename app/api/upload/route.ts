@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { cloudinary } from "@/lib/cloudinary"
 
 // POST - Upload file to Cloudinary
 export async function POST(request: Request) {
@@ -15,10 +16,20 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData()
-    const file = formData.get("file") as File
+    const file = formData.get("image") as File
+    const userId = formData.get("userId") as string
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
+    }
+
+    // Verify the userId matches the authenticated user
+    if (userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized - user ID mismatch" }, { status: 403 })
     }
 
     // Validate file type - only allow images
@@ -33,41 +44,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File size must be less than 10MB" }, { status: 400 })
     }
 
-    // Check if Cloudinary is configured
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    // Convert file to buffer
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-    if (!cloudName || !uploadPreset) {
-      // Fallback: return a placeholder URL if Cloudinary is not configured
-      // Sanitize filename for URL
-      const safeName = encodeURIComponent(file.name.replace(/[^a-zA-Z0-9.-]/g, "_"))
-      console.warn("Cloudinary is not configured. Using placeholder.")
-      return NextResponse.json({
-        url: `https://via.placeholder.com/400x300.png?text=${safeName}`,
-        public_id: `placeholder-${Date.now()}`,
-      })
-    }
-
-    // Upload to Cloudinary
-    const cloudinaryFormData = new FormData()
-    cloudinaryFormData.append("file", file)
-    cloudinaryFormData.append("upload_preset", uploadPreset)
-    cloudinaryFormData.append("folder", "enjoyhub")
-
-    const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: "POST",
-      body: cloudinaryFormData,
+    // Upload to Cloudinary using upload_stream
+    const result = await new Promise<any>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `users/${userId}`,
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) reject(error)
+          else resolve(result)
+        }
+      )
+      uploadStream.end(buffer)
     })
 
-    if (!cloudinaryResponse.ok) {
-      const errorData = await cloudinaryResponse.json()
-      return NextResponse.json({ error: errorData.error?.message || "Upload failed" }, { status: 400 })
-    }
-
-    const result = await cloudinaryResponse.json()
-
     return NextResponse.json({
-      url: result.secure_url,
+      secure_url: result.secure_url,
       public_id: result.public_id,
     })
   } catch (error) {
