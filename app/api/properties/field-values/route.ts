@@ -105,6 +105,11 @@ export async function POST(request: Request) {
   }
 }
 
+// PUT - Update field values for a property (same as POST, for convenience)
+export async function PUT(request: Request) {
+  return POST(request)
+}
+
 // DELETE - Delete a field value
 export async function DELETE(request: Request) {
   try {
