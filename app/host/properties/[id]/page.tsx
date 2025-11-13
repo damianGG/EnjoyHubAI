@@ -4,7 +4,7 @@ import EditAttractionForm from "@/components/edit-attraction-form"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
-export default async function EditPropertyPage({ params }: { params: { id: string } }) {
+export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -12,6 +12,9 @@ export default async function EditPropertyPage({ params }: { params: { id: strin
       </div>
     )
   }
+
+  // Await params if it's a Promise (Next.js 15+)
+  const resolvedParams = await Promise.resolve(params)
 
   const supabase = createClient()
   const {
@@ -26,7 +29,7 @@ export default async function EditPropertyPage({ params }: { params: { id: strin
   const { data: property } = await supabase
     .from("properties")
     .select("id, title")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("host_id", user.id)
     .single()
 
@@ -54,7 +57,7 @@ export default async function EditPropertyPage({ params }: { params: { id: strin
           <p className="text-muted-foreground">Zaktualizuj szczegóły swojego obiektu rozrywkowego</p>
         </div>
 
-        <EditAttractionForm propertyId={params.id} userId={user.id} />
+        <EditAttractionForm propertyId={resolvedParams.id} userId={user.id} />
       </div>
     </div>
   )
