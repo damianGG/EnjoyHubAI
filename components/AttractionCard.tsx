@@ -94,6 +94,7 @@ export default function AttractionCard({
                     src={image}
                     alt={`${title} photo ${index + 1}`}
                     fill
+                    unoptimized
                     className="object-cover rounded-t-xl"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
