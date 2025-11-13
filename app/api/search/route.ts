@@ -13,6 +13,9 @@ interface SearchResult {
   category_name: string | null
   category_icon: string | null
   avg_rating: number
+  images?: string[]
+  region?: string
+  review_count?: number
 }
 
 export async function GET(request: Request) {
@@ -43,6 +46,7 @@ export async function GET(request: Request) {
         latitude,
         longitude,
         price_per_night,
+        images,
         category_id,
         categories (
           slug,
@@ -51,12 +55,6 @@ export async function GET(request: Request) {
         ),
         reviews (
           rating
-        ),
-        object_field_values (
-          value,
-          category_fields (
-            field_name
-          )
         )
         `,
         { count: "exact" }
@@ -137,13 +135,16 @@ export async function GET(request: Request) {
         title: property.title,
         city: property.city,
         country: property.country,
+        region: property.city,  // region column doesn't exist, use city instead
         latitude: property.latitude,
         longitude: property.longitude,
         price_per_night: property.price_per_night,
+        images: property.images || [],
         category_slug: property.categories?.slug || null,
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
         avg_rating: avgRating,
+        review_count: ratings.length,
         minimum_age: minimumAge,
       }
     })
