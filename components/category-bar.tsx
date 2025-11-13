@@ -21,6 +21,7 @@ interface CategoryBarProps {
   onCategorySelect?: (categorySlug: string | null) => void
   onFiltersClick?: () => void
   activeFiltersCount?: number
+  useNavigation?: boolean
 }
 
 export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick, activeFiltersCount, useNavigation = false }: CategoryBarProps) {
@@ -60,7 +61,9 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
           variant={!selectedCategory ? "default" : "ghost"}
           size="sm"
           onClick={() => {
-            router.push("/")
+            if (useNavigation) {
+              router.push("/attractions")
+            }
             onCategorySelect?.(null)
           }}
           className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl"
@@ -96,7 +99,9 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
               variant={selectedCategory === category.slug ? "default" : "ghost"}
               size="sm"
               onClick={() => {
-                router.push(`/attractions?categories=${category.slug}`)
+                if (useNavigation) {
+                  router.push(`/attractions?categories=${category.slug}`)
+                }
                 onCategorySelect?.(category.slug)
               }}
               className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
