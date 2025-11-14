@@ -8,7 +8,10 @@ import { Loader2, Map, List } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
+import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
+import MapSkeleton from "@/components/MapSkeleton"
 import { generateAttractionSlug } from "@/lib/utils"
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
 interface SearchResult {
   id: string
@@ -281,12 +284,18 @@ function HomePageContent() {
 
       const marker = L.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
-      // Enhanced card-like popup with image
+      // Enhanced card-like popup with optimized image
       const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.jpg'
+      const optimizedImageUrl = optimizeCloudinaryUrl(imageUrl, {
+        width: 400,
+        quality: 'auto',
+        format: 'auto',
+        crop: 'fill'
+      })
       const popupContent = `
         <div class="min-w-[250px] max-w-[280px]">
           <div class="relative h-40 mb-2 rounded-lg overflow-hidden">
-            <img src="${imageUrl}" alt="${result.title}" class="w-full h-full object-cover" />
+            <img src="${optimizedImageUrl}" alt="${result.title}" class="w-full h-full object-cover" loading="lazy" />
           </div>
           <div class="space-y-1">
             <h3 class="font-semibold text-sm line-clamp-2">${result.title}</h3>
@@ -366,8 +375,10 @@ function HomePageContent() {
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <AttractionCardSkeleton key={index} />
+                ))}
               </div>
             ) : results.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
@@ -437,7 +448,11 @@ function HomePageContent() {
               ? 'w-1/2 h-full relative' 
               : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
           }`}>
-            <div ref={mapRef} className="w-full h-full" />
+            {!mapInstance ? (
+              <MapSkeleton />
+            ) : (
+              <div ref={mapRef} className="w-full h-full" />
+            )}
             <style jsx global>{`
               .leaflet-container {
                 height: 100%;

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Maximize2, Minimize2 } from "lucide-react"
 import { generateAttractionSlug } from "@/lib/utils"
+import MapSkeleton from "@/components/MapSkeleton"
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
 interface Attraction {
   id: string
@@ -150,12 +152,22 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
         onAttractionSelect?.(attraction.id)
       })
 
+      // Optimize image URL for popup
+      const imageUrl = attraction.images?.[0] || "/placeholder.jpg"
+      const optimizedImageUrl = optimizeCloudinaryUrl(imageUrl, {
+        width: 400,
+        quality: 'auto',
+        format: 'auto',
+        crop: 'fill'
+      })
+
       const popupContent = `
         <div class="p-3 min-w-[280px] max-w-[320px]">
           <div class="aspect-video mb-3 rounded-lg overflow-hidden">
-            <img src="${attraction.images?.[0] || "/placeholder.jpg"}" 
+            <img src="${optimizedImageUrl}" 
                  alt="${attraction.title}" 
-                 class="w-full h-full object-cover" />
+                 class="w-full h-full object-cover" 
+                 loading="lazy" />
           </div>
           <h3 class="font-semibold text-base mb-2 line-clamp-2">${attraction.title}</h3>
           <p class="text-sm text-gray-600 mb-3 flex items-center">
