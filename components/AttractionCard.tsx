@@ -78,10 +78,24 @@ export default function AttractionCard({
   const scrollPrev = () => api?.scrollPrev()
   const scrollNext = () => api?.scrollNext()
 
-  // Ensure images is an array and filter out any invalid entries
-  const validImages = Array.isArray(images) 
-    ? images.filter(img => img && typeof img === 'string' && img.trim() !== '')
-    : []
+  // Ensure images is an array - handle both array and stringified array
+  let imageArray: string[] = []
+  if (Array.isArray(images)) {
+    imageArray = images
+  } else if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) {
+        imageArray = parsed
+      }
+    } catch {
+      // If parsing fails, treat as empty array
+      imageArray = []
+    }
+  }
+  
+  // Filter out any invalid entries
+  const validImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '')
   
   // Use valid images or fallback to placeholder
   const imageList = validImages.length > 0 ? validImages : ["/placeholder.jpg"]
