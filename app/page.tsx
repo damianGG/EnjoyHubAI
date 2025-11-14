@@ -448,10 +448,11 @@ function HomePageContent() {
               ? 'w-1/2 h-full relative' 
               : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
           }`}>
-            {!mapInstance ? (
-              <MapSkeleton />
-            ) : (
-              <div ref={mapRef} className="w-full h-full" />
+            <div ref={mapRef} className="w-full h-full" />
+            {!mapInstance && (
+              <div className="absolute inset-0 z-10">
+                <MapSkeleton />
+              </div>
             )}
             <style jsx global>{`
               .leaflet-container {
