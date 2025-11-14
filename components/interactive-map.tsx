@@ -2,8 +2,6 @@
 import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
-import MapSkeleton from "@/components/MapSkeleton"
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
 interface Property {
   id: string
@@ -193,7 +191,14 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
   }, [properties, onPropertySelect])
 
   if (loading) {
-    return <MapSkeleton />
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Ładowanie mapy...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

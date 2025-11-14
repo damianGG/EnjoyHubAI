@@ -9,9 +9,7 @@ import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
 import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
-import MapSkeleton from "@/components/MapSkeleton"
 import { generateAttractionSlug } from "@/lib/utils"
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
 interface SearchResult {
   id: string
@@ -284,18 +282,12 @@ function HomePageContent() {
 
       const marker = L.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
-      // Enhanced card-like popup with optimized image
+      // Enhanced card-like popup with image
       const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.jpg'
-      const optimizedImageUrl = optimizeCloudinaryUrl(imageUrl, {
-        width: 400,
-        quality: 'auto',
-        format: 'auto',
-        crop: 'fill'
-      })
       const popupContent = `
         <div class="min-w-[250px] max-w-[280px]">
           <div class="relative h-40 mb-2 rounded-lg overflow-hidden">
-            <img src="${optimizedImageUrl}" alt="${result.title}" class="w-full h-full object-cover" loading="lazy" />
+            <img src="${imageUrl}" alt="${result.title}" class="w-full h-full object-cover" />
           </div>
           <div class="space-y-1">
             <h3 class="font-semibold text-sm line-clamp-2">${result.title}</h3>
@@ -449,11 +441,6 @@ function HomePageContent() {
               : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
           }`}>
             <div ref={mapRef} className="w-full h-full" />
-            {!mapInstance && (
-              <div className="absolute inset-0 z-10">
-                <MapSkeleton />
-              </div>
-            )}
             <style jsx global>{`
               .leaflet-container {
                 height: 100%;
