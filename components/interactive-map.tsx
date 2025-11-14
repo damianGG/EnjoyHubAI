@@ -117,10 +117,11 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
       // Initialize map centered on Poland
       const map = L.map(mapRef.current).setView([52.0693, 19.4803], 6)
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
+      // Using Wikimedia maps with better internationalization support
+      // Displays local language names including Polish
+      L.tileLayer("https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a>',
+        maxZoom: 19,
       }).addTo(map)
 
       mapInstanceRef.current = map
