@@ -11,8 +11,8 @@ export function optimizeCloudinaryUrl(
     crop?: 'fill' | 'fit' | 'scale' | 'crop'
   } = {}
 ): string {
-  // If not a Cloudinary URL, return as-is
-  if (!url.includes('res.cloudinary.com')) {
+  // Strict validation: URL must start with https://res.cloudinary.com/
+  if (!url.startsWith('https://res.cloudinary.com/')) {
     return url
   }
 
@@ -75,7 +75,8 @@ export function optimizeCloudinaryUrl(
  * Generate srcset for responsive Cloudinary images
  */
 export function generateCloudinarySrcSet(url: string, widths: number[] = [400, 800, 1200, 1600]): string {
-  if (!url.includes('res.cloudinary.com')) {
+  // Strict validation: URL must start with https://res.cloudinary.com/
+  if (!url.startsWith('https://res.cloudinary.com/')) {
     return ''
   }
 
