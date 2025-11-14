@@ -277,7 +277,7 @@ function HomePageContent() {
       const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
       // Enhanced card-like popup with image
-      const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.svg?height=200&width=300'
+      const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.jpg'
       const popupContent = `
         <div class="min-w-[250px] max-w-[280px]">
           <div class="relative h-40 mb-2 rounded-lg overflow-hidden">

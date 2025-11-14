@@ -147,7 +147,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
       const popupContent = `
         <div class="p-3 min-w-[280px] max-w-[320px]">
           <div class="aspect-video mb-3 rounded-lg overflow-hidden">
-            <img src="${attraction.images?.[0] || "/placeholder.svg?height=150&width=280"}" 
+            <img src="${attraction.images?.[0] || "/placeholder.jpg"}" 
                  alt="${attraction.title}" 
                  class="w-full h-full object-cover" />
           </div>

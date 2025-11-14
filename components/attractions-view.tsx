@@ -178,7 +178,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                         <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                           {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
                             <img
-                              src={attraction.images[0] || "/placeholder.svg?height=96&width=96"}
+                              src={attraction.images[0] || "/placeholder.jpg"}
                               alt={attraction.title || 'Attraction'}
                               className="w-full h-full object-cover"
                             />
@@ -271,7 +271,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                       <div className="aspect-square bg-muted relative">
                         {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
                           <img
-                          src={attraction.images[0] || "/placeholder.svg?height=300&width=300"}
+                          src={attraction.images[0] || "/placeholder.jpg"}
                           alt={attraction.title || 'Attraction'}
                           className="w-full h-full object-cover"
                         />

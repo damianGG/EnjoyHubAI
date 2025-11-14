@@ -57,6 +57,7 @@ export default function AttractionCard({
   const [api, setApi] = useState<CarouselApi>()
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   // Update scroll state when carousel changes
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function AttractionCard({
     const updateScrollState = () => {
       setCanScrollPrev(api.canScrollPrev())
       setCanScrollNext(api.canScrollNext())
+      setCurrentSlide(api.selectedScrollSnap())
     }
 
     updateScrollState()
@@ -78,8 +80,27 @@ export default function AttractionCard({
   const scrollPrev = () => api?.scrollPrev()
   const scrollNext = () => api?.scrollNext()
 
-  // Ensure at least one image
-  const imageList = images.length > 0 ? images : ["/placeholder.svg?height=400&width=400"]
+  // Ensure images is an array - handle both array and stringified array
+  let imageArray: string[] = []
+  if (Array.isArray(images)) {
+    imageArray = images
+  } else if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) {
+        imageArray = parsed
+      }
+    } catch {
+      // If parsing fails, treat as empty array
+      imageArray = []
+    }
+  }
+  
+  // Filter out any invalid entries
+  const validImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '')
+  
+  // Use valid images or fallback to placeholder
+  const imageList = validImages.length > 0 ? validImages : ["/placeholder.jpg"]
 
   const cardContent = (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
@@ -87,30 +108,38 @@ export default function AttractionCard({
       <div className="relative aspect-square">
         <Carousel setApi={setApi} className="w-full h-full">
           <CarouselContent className="h-full">
-            {imageList.map((image, index) => (
-              <CarouselItem key={index} className="h-full">
-                <div className="relative w-full h-full">
-                  <Image
-                    src={image}
-                    alt={`${title} photo ${index + 1}`}
-                    fill
-                    unoptimized
-                    className="object-cover rounded-t-xl"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </div>
-              </CarouselItem>
-            ))}
+            {imageList.map((image, index) => {
+              // Preload current slide and 2 slides ahead for smoother navigation
+              const shouldPreload = index >= currentSlide && index <= currentSlide + 2
+              const isFirstImage = index === 0
+              
+              return (
+                <CarouselItem key={index} className="h-full">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={image}
+                      alt={`${title} photo ${index + 1}`}
+                      fill
+                      priority={isFirstImage}
+                      loading={isFirstImage ? undefined : (shouldPreload ? "eager" : "lazy")}
+                      className="object-cover rounded-t-xl"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  </div>
+                </CarouselItem>
+              )
+            })}
           </CarouselContent>
 
-          {/* Navigation Arrows - Always visible on hover */}
+          {/* Navigation Arrows - Visible on mobile, hover on desktop */}
           {imageList.length > 1 && (
             <>
               <Button
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "absolute left-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                  "absolute left-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
+                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
                   !canScrollPrev && "hidden"
                 )}
                 onClick={(e) => {
@@ -126,7 +155,8 @@ export default function AttractionCard({
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                  "absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
+                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
                   !canScrollNext && "hidden"
                 )}
                 onClick={(e) => {
@@ -138,6 +168,28 @@ export default function AttractionCard({
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </>
+          )}
+
+          {/* Pagination Dots */}
+          {imageList.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {imageList.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    api?.scrollTo(index)
+                  }}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all",
+                    currentSlide === index 
+                      ? "bg-white w-4" 
+                      : "bg-white/60 hover:bg-white/80"
+                  )}
+                  aria-label={`Go to image ${index + 1}`}
+                />
+              ))}
+            </div>
           )}
         </Carousel>
 

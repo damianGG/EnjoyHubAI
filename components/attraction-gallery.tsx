@@ -37,7 +37,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
         {/* Main Image */}
         <div className="col-span-2 row-span-2 relative">
           <Image
-            src={images[0] || "/placeholder.svg?height=400&width=600"}
+            src={images[0] || "/placeholder.jpg"}
             alt={`${title} – zdjęcie 1`}
             fill
             className="object-cover rounded-l-lg"
@@ -49,7 +49,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
         {images.slice(1, 5).map((image, index) => (
           <div key={index} className="relative">
             <Image
-              src={image || "/placeholder.svg?height=200&width=300"}
+              src={image || "/placeholder.jpg"}
               alt={`${title} – zdjęcie ${index + 2}`}
               fill
               className={`object-cover ${
@@ -70,7 +70,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
                     <div className="relative">
                       <div className="relative w-full h-auto max-h-[70vh]">
                         <Image
-                          src={images[currentImage] || "/placeholder.svg?height=600&width=800"}
+                          src={images[currentImage] || "/placeholder.jpg"}
                           alt={`${title} – zdjęcie ${currentImage + 1}`}
                           width={800}
                           height={600}
@@ -115,7 +115,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
                           }`}
                         >
                           <Image
-                            src={image || "/placeholder.svg?height=64&width=64"}
+                            src={image || "/placeholder.jpg"}
                             alt={`${title} – miniatura ${index + 1}`}
                             fill
                             className="object-cover"
