@@ -116,10 +116,7 @@ export function FeaturedAttractions({ selectedCategory }: FeaturedAttractionsPro
             <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
               <div className="aspect-square relative">
                 <Image
-                  src={
-                    attraction.images?.[0] ||
-                    `/placeholder.svg?height=300&width=300&query=${encodeURIComponent(attraction.title) || "/placeholder.svg"}`
-                  }
+                  src={attraction.images?.[0] || "/placeholder.jpg"}
                   alt={`${attraction.title} – zdjęcie 1`}
                   fill
                 className="object-cover"
