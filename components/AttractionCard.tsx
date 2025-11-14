@@ -57,6 +57,7 @@ export default function AttractionCard({
   const [api, setApi] = useState<CarouselApi>()
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   // Update scroll state when carousel changes
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function AttractionCard({
     const updateScrollState = () => {
       setCanScrollPrev(api.canScrollPrev())
       setCanScrollNext(api.canScrollNext())
+      setCurrentSlide(api.selectedScrollSnap())
     }
 
     updateScrollState()
@@ -122,14 +124,15 @@ export default function AttractionCard({
             ))}
           </CarouselContent>
 
-          {/* Navigation Arrows - Always visible on hover */}
+          {/* Navigation Arrows - Visible on mobile, hover on desktop */}
           {imageList.length > 1 && (
             <>
               <Button
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "absolute left-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                  "absolute left-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
+                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
                   !canScrollPrev && "hidden"
                 )}
                 onClick={(e) => {
@@ -145,7 +148,8 @@ export default function AttractionCard({
                 variant="outline"
                 size="icon"
                 className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                  "absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
+                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
                   !canScrollNext && "hidden"
                 )}
                 onClick={(e) => {
@@ -157,6 +161,28 @@ export default function AttractionCard({
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </>
+          )}
+
+          {/* Pagination Dots */}
+          {imageList.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {imageList.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    api?.scrollTo(index)
+                  }}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all",
+                    currentSlide === index 
+                      ? "bg-white w-4" 
+                      : "bg-white/60 hover:bg-white/80"
+                  )}
+                  aria-label={`Go to image ${index + 1}`}
+                />
+              ))}
+            </div>
           )}
         </Carousel>
 
