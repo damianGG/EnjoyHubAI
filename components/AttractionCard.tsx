@@ -78,8 +78,13 @@ export default function AttractionCard({
   const scrollPrev = () => api?.scrollPrev()
   const scrollNext = () => api?.scrollNext()
 
-  // Ensure at least one image
-  const imageList = images.length > 0 ? images : ["/placeholder.svg?height=400&width=400"]
+  // Ensure images is an array and filter out any invalid entries
+  const validImages = Array.isArray(images) 
+    ? images.filter(img => img && typeof img === 'string' && img.trim() !== '')
+    : []
+  
+  // Use valid images or fallback to placeholder
+  const imageList = validImages.length > 0 ? validImages : ["/placeholder.jpg"]
 
   const cardContent = (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
