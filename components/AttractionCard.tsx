@@ -8,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
 export interface AttractionCardProps {
   /** Array of image URLs for the slider */
@@ -58,6 +60,7 @@ export default function AttractionCard({
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [imageLoadingStates, setImageLoadingStates] = useState<Record<number, boolean>>({})
 
   // Update scroll state when carousel changes
   useEffect(() => {
@@ -102,28 +105,46 @@ export default function AttractionCard({
   // Use valid images or fallback to placeholder
   const imageList = validImages.length > 0 ? validImages : ["/placeholder.jpg"]
 
+  // Optimize Cloudinary URLs for faster loading
+  const optimizedImages = imageList.map(img => optimizeCloudinaryUrl(img, {
+    width: 800,
+    quality: 'auto',
+    format: 'auto',
+    crop: 'fill'
+  }))
+
   const cardContent = (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
       {/* Image Carousel */}
       <div className="relative aspect-square">
         <Carousel setApi={setApi} className="w-full h-full">
           <CarouselContent className="h-full">
-            {imageList.map((image, index) => {
+            {optimizedImages.map((image, index) => {
               // Preload current slide and 2 slides ahead for smoother navigation
               const shouldPreload = index >= currentSlide && index <= currentSlide + 2
               const isFirstImage = index === 0
+              const isLoading = imageLoadingStates[index] !== false
               
               return (
                 <CarouselItem key={index} className="h-full">
                   <div className="relative w-full h-full">
+                    {isLoading && (
+                      <Skeleton className="absolute inset-0 rounded-t-xl" />
+                    )}
                     <Image
                       src={image}
                       alt={`${title} photo ${index + 1}`}
                       fill
                       priority={isFirstImage}
                       loading={isFirstImage ? undefined : (shouldPreload ? "eager" : "lazy")}
-                      className="object-cover rounded-t-xl"
+                      className={cn(
+                        "object-cover rounded-t-xl transition-opacity duration-300",
+                        isLoading ? "opacity-0" : "opacity-100"
+                      )}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      onLoad={() => {
+                        setImageLoadingStates(prev => ({ ...prev, [index]: false }))
+                      }}
                     />
                   </div>
                 </CarouselItem>
@@ -132,7 +153,7 @@ export default function AttractionCard({
           </CarouselContent>
 
           {/* Navigation Arrows - Visible on mobile, hover on desktop */}
-          {imageList.length > 1 && (
+          {optimizedImages.length > 1 && (
             <>
               <Button
                 variant="outline"
@@ -171,9 +192,9 @@ export default function AttractionCard({
           )}
 
           {/* Pagination Dots */}
-          {imageList.length > 1 && (
+          {optimizedImages.length > 1 && (
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-              {imageList.map((_, index) => (
+              {optimizedImages.map((_, index) => (
                 <button
                   key={index}
                   onClick={(e) => {

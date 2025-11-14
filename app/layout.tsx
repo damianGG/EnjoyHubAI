@@ -44,6 +44,14 @@ export default function RootLayout({
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossOrigin=""
         />
+        {/* Preconnect to Cloudinary for faster image loading */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        {/* Preconnect to CDN for map tiles */}
+        <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+        <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
+        <link rel="preconnect" href="https://c.basemaps.cartocdn.com" />
+        <link rel="preconnect" href="https://d.basemaps.cartocdn.com" />
       </head>
       <body
         className="font-sans antialiased min-h-screen bg-gradient-to-br from-sky-400/20 via-violet-500/20 to-rose-400/20 dark:from-[#0b1220] dark:via-[#0f172a] dark:to-[#0b1220]"

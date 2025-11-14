@@ -8,6 +8,7 @@ import { Loader2, Map, List } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
+import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
 import { generateAttractionSlug } from "@/lib/utils"
 
 interface SearchResult {
@@ -366,8 +367,10 @@ function HomePageContent() {
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <AttractionCardSkeleton key={index} />
+                ))}
               </div>
             ) : results.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
