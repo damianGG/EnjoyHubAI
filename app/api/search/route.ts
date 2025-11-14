@@ -34,6 +34,20 @@ export async function GET(request: Request) {
     
     const supabase = createClient()
     
+    // Get category IDs if filtering by categories
+    let categoryIds: string[] | null = null
+    if (categoriesParam) {
+      const categoryArray = categoriesParam.split(",").map((c) => c.trim())
+      const { data: categoryData } = await supabase
+        .from("categories")
+        .select("id")
+        .in("slug", categoryArray)
+      
+      if (categoryData && categoryData.length > 0) {
+        categoryIds = categoryData.map((c) => c.id)
+      }
+    }
+    
     // Start building query
     let query = supabase
       .from("properties")
@@ -67,9 +81,8 @@ export async function GET(request: Request) {
     }
     
     // Filter by categories
-    if (categoriesParam) {
-      const categoryArray = categoriesParam.split(",").map((c) => c.trim())
-      query = query.in("categories.slug", categoryArray)
+    if (categoryIds && categoryIds.length > 0) {
+      query = query.in("category_id", categoryIds)
     }
     
     // Filter by bounding box (bbox format: "w,s,e,n")
