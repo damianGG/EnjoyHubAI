@@ -16,6 +16,14 @@ const nextConfig = {
       },
     ],
   },
+  // Optimize runtime chunks for better caching
+  experimental: {
+    optimizePackageImports: ['leaflet'],
+  },
+  // Add compression
+  compress: true,
+  // Enable React strict mode for better development experience
+  reactStrictMode: true,
 }
 
 export default nextConfig

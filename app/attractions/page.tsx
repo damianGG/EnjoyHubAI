@@ -3,6 +3,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AttractionsView from "@/components/attractions-view"
 
+// Enable ISR - revalidate every 60 seconds
+export const revalidate = 60
+
 export default async function AttractionsPage() {
   if (!isSupabaseConfigured) {
     return (
