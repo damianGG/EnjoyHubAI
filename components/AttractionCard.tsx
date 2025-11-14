@@ -108,20 +108,27 @@ export default function AttractionCard({
       <div className="relative aspect-square">
         <Carousel setApi={setApi} className="w-full h-full">
           <CarouselContent className="h-full">
-            {imageList.map((image, index) => (
-              <CarouselItem key={index} className="h-full">
-                <div className="relative w-full h-full">
-                  <Image
-                    src={image}
-                    alt={`${title} photo ${index + 1}`}
-                    fill
-                    unoptimized
-                    className="object-cover rounded-t-xl"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </div>
-              </CarouselItem>
-            ))}
+            {imageList.map((image, index) => {
+              // Preload current slide and 2 slides ahead for smoother navigation
+              const shouldPreload = index >= currentSlide && index <= currentSlide + 2
+              const isFirstImage = index === 0
+              
+              return (
+                <CarouselItem key={index} className="h-full">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={image}
+                      alt={`${title} photo ${index + 1}`}
+                      fill
+                      priority={isFirstImage}
+                      loading={isFirstImage ? undefined : (shouldPreload ? "eager" : "lazy")}
+                      className="object-cover rounded-t-xl"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  </div>
+                </CarouselItem>
+              )
+            })}
           </CarouselContent>
 
           {/* Navigation Arrows - Visible on mobile, hover on desktop */}
