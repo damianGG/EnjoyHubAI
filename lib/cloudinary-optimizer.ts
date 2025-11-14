@@ -60,6 +60,7 @@ export function optimizeCloudinaryUrl(
     // Add fetch format and other optimizations
     transformations.push('fl_progressive') // Progressive JPEG loading
     transformations.push('fl_lossy') // Allow lossy compression for better file size
+    transformations.push('fl_preserve_transparency') // Preserve transparency for PNGs
 
     // Construct the optimized URL
     const transformationString = transformations.join(',')
@@ -81,4 +82,20 @@ export function generateCloudinarySrcSet(url: string, widths: number[] = [400, 8
   return widths
     .map(width => `${optimizeCloudinaryUrl(url, { width })} ${width}w`)
     .join(', ')
+}
+
+/**
+ * Preload images for faster loading
+ * This can be used to preload critical images like the first carousel image
+ */
+export function preloadCloudinaryImage(url: string, options: { width?: number; quality?: number | 'auto' } = {}) {
+  if (typeof window === 'undefined') return
+
+  const optimizedUrl = optimizeCloudinaryUrl(url, options)
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = optimizedUrl
+  link.setAttribute('fetchpriority', 'high')
+  document.head.appendChild(link)
 }
