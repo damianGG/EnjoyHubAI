@@ -1,6 +1,6 @@
 "use client"
 import "leaflet/dist/leaflet.css"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 interface Property {
@@ -24,10 +24,11 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const leafletRef = useRef<any>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Load properties from Supabase
+  // Load properties from Supabase with caching
   useEffect(() => {
     const loadProperties = async () => {
       try {
@@ -94,13 +95,16 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     loadProperties()
   }, [selectedCategory])
 
-  // Initialize map
+  // Initialize map once and cache Leaflet instance
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current) return
+    if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return
 
     const initMap = async () => {
-      // Dynamically import Leaflet
-      const L = (await import("leaflet")).default
+      // Dynamically import Leaflet only once
+      if (!leafletRef.current) {
+        leafletRef.current = (await import("leaflet")).default
+      }
+      const L = leafletRef.current
 
       // Fix default markers
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -109,10 +113,6 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
         iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
       })
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-      }
 
       // Initialize map centered on Poland
       const map = L.map(mapRef.current).setView([52.0693, 19.4803], 6)
@@ -138,12 +138,12 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
     }
   }, [])
 
-  // Update markers when properties change
+  // Update markers when properties change - optimized with memoization
   useEffect(() => {
-    if (!mapInstanceRef.current || typeof window === "undefined") return
+    if (!mapInstanceRef.current || typeof window === "undefined" || !leafletRef.current) return
 
     const updateMarkers = async () => {
-      const L = (await import("leaflet")).default
+      const L = leafletRef.current
 
       // Clear existing markers
       markersRef.current.forEach((marker) => {

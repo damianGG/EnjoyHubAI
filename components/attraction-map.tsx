@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -53,17 +53,21 @@ const getMockCoordinates = (city: string, country: string) => {
 export default function AttractionMap({ attractions, selectedAttraction, onAttractionSelect, className }: AttractionMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
-  const [leaflet, setLeaflet] = useState<any>(null)
+  const leafletRef = useRef<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredAttraction, setHoveredAttraction] = useState<string | null>(null)
 
+  // Initialize map once - optimized to load Leaflet only once
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current) return
+    if (typeof window === "undefined" || !mapRef.current || map) return
 
     const initMap = async () => {
-      const L = (await import("leaflet")).default
-      setLeaflet(L)
+      // Cache Leaflet instance to avoid re-importing
+      if (!leafletRef.current) {
+        leafletRef.current = (await import("leaflet")).default
+      }
+      const L = leafletRef.current
 
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -96,13 +100,15 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
     }
   }, [])
 
+  // Update markers - optimized to use cached Leaflet instance
   useEffect(() => {
-    if (!map || !leaflet || !attractions.length) return
+    if (!map || !leafletRef.current || !attractions.length) return
 
+    const L = leafletRef.current
     markers.forEach((marker) => map.removeLayer(marker))
 
     const newMarkers: any[] = []
-    const bounds = leaflet.latLngBounds([])
+    const bounds = L.latLngBounds([])
 
     attractions.forEach((attraction) => {
       const [lat, lng] =
@@ -131,14 +137,14 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
         </div>
       `
 
-      const customIcon = leaflet.divIcon({
+      const customIcon = L.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
         iconSize: [40, 40],
         iconAnchor: [20, 40],
       })
 
-      const marker = leaflet.marker([lat, lng], { icon: customIcon }).addTo(map)
+      const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map)
 
       marker.on("click", () => {
         onAttractionSelect?.(attraction.id)

@@ -44,7 +44,7 @@ function HomePageContent() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [mapInstance, setMapInstance] = useState<any>(null)
-  const [leaflet, setLeaflet] = useState<any>(null)
+  const leafletRef = useRef<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInitializedRef = useRef(false)
@@ -155,8 +155,11 @@ function HomePageContent() {
     if (!shouldInitMap) return
 
     const initMap = async () => {
-      const L = (await import("leaflet")).default
-      setLeaflet(L)
+      // Cache Leaflet to avoid re-importing on every render
+      if (!leafletRef.current) {
+        leafletRef.current = (await import("leaflet")).default
+      }
+      const L = leafletRef.current
 
       // Fix default marker icon - Leaflet requires this workaround to properly load marker icons
       // when using a bundler. See: https://github.com/Leaflet/Leaflet/issues/4968
@@ -243,9 +246,11 @@ function HomePageContent() {
     }
   }, [isDesktop, mobileView])
 
-  // Update map markers when results change
+  // Update map markers when results change - optimized
   useEffect(() => {
-    if (!mapInstance || !leaflet) return
+    if (!mapInstance || !leafletRef.current) return
+
+    const L = leafletRef.current
 
     // Clear existing markers
     markers.forEach((marker) => mapInstance.removeLayer(marker))
@@ -267,14 +272,14 @@ function HomePageContent() {
         </div>
       `
 
-      const customIcon = leaflet.divIcon({
+      const customIcon = L.divIcon({
         html: markerHtml,
         className: "custom-leaflet-marker",
         iconSize: [40, 40],
         iconAnchor: [20, 40],
       })
 
-      const marker = leaflet.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
+      const marker = L.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
       // Enhanced card-like popup with image
       const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.svg?height=200&width=300'
@@ -311,7 +316,7 @@ function HomePageContent() {
     })
 
     setMarkers(newMarkers)
-  }, [results, mapInstance, leaflet])
+  }, [results, mapInstance])
 
   // Invalidate map size when switching to map view
   useEffect(() => {

@@ -18,6 +18,9 @@ interface SearchResult {
   review_count?: number
 }
 
+// Enable caching for this route - revalidate every 60 seconds
+export const revalidate = 60
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -182,12 +185,17 @@ export async function GET(request: Request) {
       items.sort((a: SearchResult, b: SearchResult) => b.avg_rating - a.avg_rating)
     }
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       items,
       total: count || 0,
       page,
       per,
     })
+    
+    // Add cache headers for better performance
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+    
+    return response
   } catch (error) {
     console.error("Search error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

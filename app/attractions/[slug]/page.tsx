@@ -11,6 +11,9 @@ import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
 
+// Enable ISR - revalidate every 120 seconds
+export const revalidate = 120
+
 interface AttractionPageProps {
   params: {
     slug: string
