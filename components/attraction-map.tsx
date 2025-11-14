@@ -228,7 +228,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
         maxZoom: 15,
       })
     }
-  }, [map, leaflet, attractions, selectedAttraction, hoveredAttraction])
+  }, [map, attractions, selectedAttraction, hoveredAttraction])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
