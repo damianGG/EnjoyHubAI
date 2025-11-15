@@ -256,7 +256,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
             </div>
           ) : (
             /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedAttractions.map((attraction) => {
                 const slug = generateAttractionSlug({
                   city: attraction.city,
