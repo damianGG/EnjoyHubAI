@@ -6,6 +6,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Loader2, Map, List, X } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
+import { BottomNav } from "@/components/bottom-nav"
+import { SearchDialog } from "@/components/search-dialog"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
 import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
@@ -310,12 +312,12 @@ function HomePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top Navigation Bar */}
-      <TopNav 
-        searchDialogOpen={searchDialogOpen}
-        onSearchDialogChange={setSearchDialogOpen}
-      />
+    <div className="min-h-screen bg-background pb-20">
+      {/* Top Navigation Bar with Large Search Button */}
+      <TopNav onSearchClick={() => setSearchDialogOpen(true)} />
+
+      {/* Search Dialog */}
+      <SearchDialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen} />
 
       {/* Category Bar */}
       <CategoryBar 
@@ -481,7 +483,7 @@ function HomePageContent() {
         
         {/* Floating toggle button - Only visible on mobile */}
         {isDesktop === false && (
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50">
             <Button
               onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
               className="shadow-lg px-6 py-6 rounded-full flex items-center space-x-2"
@@ -502,6 +504,9 @@ function HomePageContent() {
           </div>
         )}
       </div>
+
+      {/* Bottom Navigation Bar */}
+      <BottomNav onSearchClick={() => setSearchDialogOpen(true)} />
     </div>
   )
 }
