@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Maximize2, Minimize2 } from "lucide-react"
+import { MapPin, Maximize2, Minimize2, X } from "lucide-react"
 import { generateAttractionSlug } from "@/lib/utils"
+import AttractionCard from "@/components/AttractionCard"
 
 interface Attraction {
   id: string
@@ -57,6 +58,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
   const [markers, setMarkers] = useState<any[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredAttraction, setHoveredAttraction] = useState<string | null>(null)
+  const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
 
   // Initialize map once - optimized to load Leaflet only once
   useEffect(() => {
@@ -148,73 +150,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
 
       marker.on("click", () => {
         onAttractionSelect?.(attraction.id)
-      })
-
-      const popupContent = `
-        <div class="p-3 min-w-[280px] max-w-[320px]">
-          <div class="aspect-video mb-3 rounded-lg overflow-hidden">
-            <img src="${attraction.images?.[0] || "/placeholder.jpg"}" 
-                 alt="${attraction.title}" 
-                 class="w-full h-full object-cover" />
-          </div>
-          <h3 class="font-semibold text-base mb-2 line-clamp-2">${attraction.title}</h3>
-          <p class="text-sm text-gray-600 mb-3 flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path>
-            </svg>
-            ${attraction.city}, ${attraction.country}
-          </p>
-          <div class="flex items-center justify-between text-sm mb-3">
-            <div class="flex items-center space-x-3 text-gray-600">
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8A6 6 0 006 8c0 7-3 9-3 9s3-2 3-9a6 6 0 0112 0c0 7 3 9 3 9s-3-2-3-9z"></path>
-                </svg>
-                ${attraction.max_guests} guests
-              </span>
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.25 9.035 14.394 6.92a1 1 0 00.788-1.84l-7-3z"></path>
-                </svg>
-                ${attraction.bedrooms} bed
-              </span>
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"></path>
-                </svg>
-                ${attraction.bathrooms} bath
-              </span>
-            </div>
-            ${
-              attraction.avgRating
-                ? `
-              <div class="flex items-center">
-                <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                </svg>
-                <span class="text-sm font-medium">${attraction.avgRating}</span>
-                <span class="text-xs text-gray-500 ml-1">(${attraction.reviewCount})</span>
-              </div>
-            `
-                : ""
-            }
-          </div>
-          <div class="flex items-center justify-between pt-3 border-t">
-            <div>
-              <span class="font-bold text-lg">$${attraction.price_per_night}</span>
-              <span class="text-gray-600 text-sm">/night</span>
-            </div>
-            <a href="/attractions/${slug}" 
-               class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              View Details
-            </a>
-          </div>
-        </div>
-      `
-
-      marker.bindPopup(popupContent, {
-        maxWidth: 350,
-        className: "custom-popup",
+        setPopupAttraction(attraction)
       })
 
       newMarkers.push(marker)
@@ -274,6 +210,40 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
               {attractions.length} attractions
             </Badge>
           </div>
+
+          {/* Popup Card Overlay */}
+          {popupAttraction && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-[400px]">
+              <div className="relative bg-white rounded-lg shadow-2xl">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-30 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md"
+                  onClick={() => setPopupAttraction(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <AttractionCard
+                  id={popupAttraction.id}
+                  images={popupAttraction.images || []}
+                  title={popupAttraction.title}
+                  city={popupAttraction.city}
+                  region={popupAttraction.country}
+                  country={popupAttraction.country}
+                  rating={popupAttraction.avgRating || 0}
+                  reviewsCount={popupAttraction.reviewCount || 0}
+                  price={popupAttraction.price_per_night}
+                  priceUnit="noc"
+                  href={`/attractions/${generateAttractionSlug({
+                    city: popupAttraction.city,
+                    category: popupAttraction.property_type,
+                    title: popupAttraction.title,
+                    id: popupAttraction.id
+                  })}`}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

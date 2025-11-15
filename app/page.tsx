@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react"
 import { useUrlState } from "@/lib/search/url-state"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Loader2, Map, List } from "lucide-react"
+import { Loader2, Map, List, X } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
 import AttractionCard from "@/components/AttractionCard"
@@ -50,6 +50,7 @@ function HomePageContent() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInitializedRef = useRef(false)
   const isFirstRenderRef = useRef(true)
+  const [popupAttraction, setPopupAttraction] = useState<SearchResult | null>(null)
   
   // Mobile view state: 'list' or 'map'
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
@@ -282,37 +283,11 @@ function HomePageContent() {
 
       const marker = L.marker([result.latitude, result.longitude], { icon: customIcon }).addTo(mapInstance)
 
-      // Enhanced card-like popup with image
-      const imageUrl = result.images && result.images.length > 0 ? result.images[0] : '/placeholder.jpg'
-      const popupContent = `
-        <div class="min-w-[250px] max-w-[280px]">
-          <div class="relative h-40 mb-2 rounded-lg overflow-hidden">
-            <img src="${imageUrl}" alt="${result.title}" class="w-full h-full object-cover" />
-          </div>
-          <div class="space-y-1">
-            <h3 class="font-semibold text-sm line-clamp-2">${result.title}</h3>
-            <p class="text-xs text-gray-600">${result.city}, ${result.country}</p>
-            <div class="flex items-center justify-between pt-1">
-              ${result.avg_rating > 0 ? `
-                <div class="flex items-center text-xs">
-                  <span class="mr-1">⭐</span>
-                  <span class="font-medium">${result.avg_rating.toFixed(1)}</span>
-                  ${result.review_count ? `<span class="text-gray-500 ml-1">(${result.review_count})</span>` : ''}
-                </div>
-              ` : '<div></div>'}
-              <div class="text-sm">
-                <span class="font-bold">${result.price_per_night} zł</span>
-                <span class="text-xs text-gray-500"> / noc</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      `
-
-      marker.bindPopup(popupContent, {
-        maxWidth: 300,
-        className: 'custom-popup'
+      // Set popup attraction on click
+      marker.on("click", () => {
+        setPopupAttraction(result)
       })
+
       newMarkers.push(marker)
     })
 
@@ -441,6 +416,41 @@ function HomePageContent() {
               : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
           }`}>
             <div ref={mapRef} className="w-full h-full" />
+            
+            {/* Popup Card Overlay */}
+            {popupAttraction && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-[90%] max-w-[400px]">
+                <div className="relative bg-white rounded-lg shadow-2xl">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 z-[1001] h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md"
+                    onClick={() => setPopupAttraction(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <AttractionCard
+                    id={popupAttraction.id}
+                    images={popupAttraction.images || []}
+                    title={popupAttraction.title}
+                    city={popupAttraction.city}
+                    region={popupAttraction.region || popupAttraction.category_name || ''}
+                    country={popupAttraction.country}
+                    rating={popupAttraction.avg_rating || 0}
+                    reviewsCount={popupAttraction.review_count || 0}
+                    price={popupAttraction.price_per_night}
+                    priceUnit="noc"
+                    href={`/attractions/${generateAttractionSlug({
+                      city: popupAttraction.city,
+                      category: popupAttraction.category_slug,
+                      title: popupAttraction.title,
+                      id: popupAttraction.id
+                    })}`}
+                  />
+                </div>
+              </div>
+            )}
+            
             <style jsx global>{`
               .leaflet-container {
                 height: 100%;
