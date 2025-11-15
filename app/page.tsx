@@ -328,7 +328,7 @@ function HomePageContent() {
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
         {/* Results List */}
-        <div className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}>
+        <div className={`w-full md:w-1/2 h-full overflow-y-auto bg-gray-50 ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
