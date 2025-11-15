@@ -109,7 +109,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
                   : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
               }`}
             >
-              <Search className="h-6 w-6" />
+              <Search className="h-4 w-4" />
               <span className="text-xs font-medium">Szukaj</span>
             </button>
 
@@ -120,9 +120,9 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex flex-col items-center justify-center space-y-1 px-4 py-2 rounded-lg transition-colors hover:bg-primary/5">
-                    <Avatar className="h-6 w-6">
+                    <Avatar className="h-4 w-4">
                       <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -175,7 +175,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                 }`}
               >
-                <UserIcon className="h-6 w-6" />
+                <UserIcon className="h-4 w-4" />
                 <span className="text-xs font-medium">Zaloguj</span>
               </button>
             )}
