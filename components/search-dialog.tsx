@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, MapPin, X } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { useUrlState } from "@/lib/search/url-state"
 import { createClient } from "@/lib/supabase/client"
 
@@ -124,12 +124,6 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center space-x-2">
-          <Search className="h-4 w-4" />
-          <span className="hidden md:inline">Wyszukaj</span>
-        </Button>
-      </DialogTrigger>
       <DialogContent className="max-w-2xl p-0 gap-0" showCloseButton={false}>
         {/* Close button in top right */}
         <button
