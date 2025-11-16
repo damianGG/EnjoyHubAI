@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { LogOut, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useScrollDirection } from "@/hooks/use-scroll-direction"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface BottomNavProps {
   onSearchClick?: () => void
@@ -42,6 +44,11 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const scrollDirection = useScrollDirection()
+  const isMobile = useIsMobile()
+
+  // Determine if menu should be hidden (only on mobile when scrolling down)
+  const isHidden = isMobile && scrollDirection === 'down'
 
   useEffect(() => {
     const supabase = createClient()
@@ -97,7 +104,9 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
+      <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg transition-transform duration-300 ease-in-out ${
+        isHidden ? 'translate-y-full' : 'translate-y-0'
+      }`}>
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-around max-w-2xl mx-auto">
             {/* Search/Explore Button */}
