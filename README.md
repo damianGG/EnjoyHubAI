@@ -8,6 +8,14 @@ Krótki opis: EnjoyHubAI to projekt ... (polish)
 2. Uruchom w trybie deweloperskim
    npm run dev
 
+## Konfiguracja OAuth
+Aplikacja obsługuje logowanie przez:
+- Google
+- Facebook
+- Instagram
+
+Szczegółowe instrukcje konfiguracji znajdziesz w [docs/OAUTH_SETUP.md](docs/OAUTH_SETUP.md)
+
 ## Testy
 - Uruchom testy: npm test
 
