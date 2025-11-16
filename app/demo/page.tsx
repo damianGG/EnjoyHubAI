@@ -110,7 +110,8 @@ export default function DemoPage() {
   ]
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">AttractionCard Component Demo</h1>
         <p className="text-muted-foreground">
@@ -151,6 +152,7 @@ export default function DemoPage() {
           <li>Accessibility features with proper alt text and ARIA labels</li>
           <li>Hover effects for enhanced interactivity</li>
         </ul>
+      </div>
       </div>
     </div>
   )

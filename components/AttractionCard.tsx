@@ -114,7 +114,7 @@ export default function AttractionCard({
   }))
 
   const cardContent = (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-0">
       {/* Image Carousel */}
       <div className="relative aspect-square">
         <Carousel setApi={setApi} className="w-full h-full">
@@ -191,9 +191,9 @@ export default function AttractionCard({
             </>
           )}
 
-          {/* Pagination Dots */}
+          {/* Pagination Dots - Always visible */}
           {optimizedImages.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
               {optimizedImages.map((_, index) => (
                 <button
                   key={index}
@@ -202,10 +202,10 @@ export default function AttractionCard({
                     api?.scrollTo(index)
                   }}
                   className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
+                    "h-2 rounded-full transition-all shadow-lg",
                     currentSlide === index 
-                      ? "bg-white w-4" 
-                      : "bg-white/60 hover:bg-white/80"
+                      ? "bg-white w-6" 
+                      : "bg-white/80 hover:bg-white w-2"
                   )}
                   aria-label={`Go to image ${index + 1}`}
                 />
