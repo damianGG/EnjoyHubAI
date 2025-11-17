@@ -3,6 +3,28 @@ ALTER TABLE categories
 ADD COLUMN IF NOT EXISTS image_url TEXT,
 ADD COLUMN IF NOT EXISTS image_public_id TEXT;
 
+-- Add RLS policy for categories to allow super admin to manage them
+-- First, drop existing policy if it exists to avoid conflicts
+DROP POLICY IF EXISTS "Super admin can manage categories" ON categories;
+
+-- Create policy for super admin to INSERT/UPDATE/DELETE categories
+CREATE POLICY "Super admin can manage categories" ON categories
+  FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'super_admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'super_admin'
+    )
+  );
+
 -- Create subcategories table
 CREATE TABLE IF NOT EXISTS subcategories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,6 +54,13 @@ CREATE POLICY "Anyone can view subcategories" ON subcategories
 CREATE POLICY "Super admin can manage subcategories" ON subcategories
   FOR ALL TO authenticated
   USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role = 'super_admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM users 
       WHERE users.id = auth.uid() 
