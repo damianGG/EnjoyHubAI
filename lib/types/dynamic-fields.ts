@@ -46,10 +46,29 @@ export interface Category {
   slug: string;
   icon: string;
   description?: string;
+  image_url?: string;
+  image_public_id?: string;
+  created_at: string;
+}
+
+export interface Subcategory {
+  id: string;
+  parent_category_id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  description?: string;
+  image_url?: string;
+  image_public_id?: string;
   created_at: string;
 }
 
 export interface CategoryWithFields extends Category {
+  fields: CategoryField[];
+  subcategories?: Subcategory[];
+}
+
+export interface SubcategoryWithFields extends Subcategory {
   fields: CategoryField[];
 }
 
@@ -86,6 +105,7 @@ export interface Property {
   images?: string[];
   is_active: boolean;
   category_id?: string;
+  subcategory_id?: string;
   created_at: string;
   updated_at: string;
 }
