@@ -22,6 +22,7 @@ export function CategoryBar({
 }: CategoryBarProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [localSelectedCategory, setLocalSelectedCategory] = useState<string | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
@@ -65,20 +66,21 @@ export function CategoryBar({
   }, [])
 
   const handleCategorySelect = (categorySlug: string | null) => {
+    setLocalSelectedCategory(categorySlug)
     setSelectedSubcategory(null)
     onCategorySelect?.(categorySlug)
   }
 
   const handleSubcategorySelect = (subcategorySlug: string | null) => {
     setSelectedSubcategory(subcategorySlug)
-    // When a subcategory is selected, pass it to the parent handler
-    // but keep the category bar open by not changing selectedCategory
+    // Pass subcategory to parent but keep the category bar open
     onCategorySelect?.(subcategorySlug)
   }
 
   const handleCloseSubcategories = () => {
+    setLocalSelectedCategory(null)
     setSelectedSubcategory(null)
-    handleCategorySelect(null)
+    onCategorySelect?.(null)
   }
 
   if (loading) {
@@ -94,18 +96,18 @@ export function CategoryBar({
     )
   }
 
-  const selectedCategoryData = categories.find((cat) => cat.slug === selectedCategory)
+  const selectedCategoryData = categories.find((cat) => cat.slug === localSelectedCategory)
 
   return (
     <>
       <ScrollableCategoryNav
         categories={categories}
-        selectedCategory={selectedCategory}
+        selectedCategory={localSelectedCategory}
         onCategorySelect={handleCategorySelect}
         useNavigation={useNavigation}
       />
 
-      {selectedCategory && selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
+      {localSelectedCategory && selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
         <ScrollableSubcategoryNav
           subcategories={selectedCategoryData.subcategories}
           selectedSubcategory={selectedSubcategory}
