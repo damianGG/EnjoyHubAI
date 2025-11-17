@@ -4,10 +4,27 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import Image from "next/image"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+interface Subcategory {
+  id: string
+  parent_category_id: string
+  name: string
+  slug: string
+  icon?: string
+  description?: string
+  image_url?: string
+  image_public_id?: string
+}
 
 interface Category {
   id: string
@@ -17,6 +34,7 @@ interface Category {
   description: string
   image_url?: string
   image_public_id?: string
+  subcategories?: Subcategory[]
 }
 
 interface CategoryBarProps {
@@ -33,14 +51,43 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
   const router = useRouter()
 
   useEffect(() => {
-    const s = createClient()
-    s.from("categories")
-      .select("id,name,slug,icon,description,image_url,image_public_id")
-      .order("name")
-      .then(({ data, error }) => {
-        if (!error && data) setCategories(data)
-      })
-      .finally(() => setLoading(false))
+    const loadCategoriesWithSubcategories = async () => {
+      const s = createClient()
+      
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await s
+        .from("categories")
+        .select("id,name,slug,icon,description,image_url,image_public_id")
+        .order("name")
+      
+      if (categoriesError || !categoriesData) {
+        setLoading(false)
+        return
+      }
+      
+      // Load all subcategories
+      const { data: subcategoriesData, error: subcategoriesError } = await s
+        .from("subcategories")
+        .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
+        .order("name")
+      
+      if (!subcategoriesError && subcategoriesData) {
+        // Group subcategories by parent category
+        const categoriesWithSubs = categoriesData.map((cat) => ({
+          ...cat,
+          subcategories: subcategoriesData.filter(
+            (sub) => sub.parent_category_id === cat.id
+          ),
+        }))
+        setCategories(categoriesWithSubs)
+      } else {
+        setCategories(categoriesData)
+      }
+      
+      setLoading(false)
+    }
+
+    loadCategoriesWithSubcategories()
   }, [])
 
   if (loading) {
@@ -94,9 +141,86 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
                 <span className="text-2xl md:text-3xl">{category.icon}</span>
               )}
               <span className="text-xs font-medium text-center leading-tight">{category.name}</span>
+              {category.subcategories && category.subcategories.length > 0 && (
+                <ChevronDown className="w-3 h-3 ml-1" />
+              )}
             </>
           )
 
+          // If category has subcategories, use dropdown
+          if (category.subcategories && category.subcategories.length > 0) {
+            return (
+              <DropdownMenu key={category.id}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={selectedCategory === category.slug ? "default" : "ghost"}
+                    size="sm"
+                    className="flex flex-col items-center space-y-1 md:space-y-2 h-auto py-2 md:py-3 px-3 md:px-4 min-w-[70px] md:min-w-[80px] flex-shrink-0 rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    {buttonContent}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {/* Main category option */}
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (useNavigation) {
+                        router.push(`/attractions?categories=${category.slug}`)
+                      }
+                      onCategorySelect?.(category.slug)
+                    }}
+                    className="font-medium"
+                  >
+                    {category.image_url ? (
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
+                        <Image
+                          src={category.image_url}
+                          alt={category.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <span className="mr-2 text-lg">{category.icon}</span>
+                    )}
+                    Wszystkie {category.name}
+                  </DropdownMenuItem>
+                  
+                  {/* Subcategories */}
+                  {category.subcategories.map((subcategory) => (
+                    <DropdownMenuItem
+                      key={subcategory.id}
+                      onClick={() => {
+                        if (useNavigation) {
+                          router.push(`/attractions?categories=${subcategory.slug}`)
+                        }
+                        onCategorySelect?.(subcategory.slug)
+                      }}
+                      className="pl-4"
+                    >
+                      {subcategory.image_url ? (
+                        <div className="relative w-5 h-5 rounded-full overflow-hidden mr-2">
+                          <Image
+                            src={subcategory.image_url}
+                            alt={subcategory.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : subcategory.icon ? (
+                        <span className="mr-2 text-base">{subcategory.icon}</span>
+                      ) : (
+                        <span className="mr-2">•</span>
+                      )}
+                      {subcategory.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+
+          // Category without subcategories
           return useNavigation ? (
             <Link href={`/attractions?categories=${category.slug}`} key={category.id}>
               <Button
