@@ -12,6 +12,7 @@ interface SearchResult {
   category_slug: string | null
   category_name: string | null
   category_icon: string | null
+  category_image_url: string | null
   avg_rating: number
   images?: string[]
   region?: string
@@ -37,10 +38,13 @@ export async function GET(request: Request) {
     
     const supabase = createClient()
     
-    // Get category IDs if filtering by categories
+    // Get category IDs and subcategory IDs if filtering by categories/subcategories
     let categoryIds: string[] | null = null
+    let subcategoryIds: string[] | null = null
     if (categoriesParam) {
       const categoryArray = categoriesParam.split(",").map((c) => c.trim())
+      
+      // Check categories table
       const { data: categoryData } = await supabase
         .from("categories")
         .select("id")
@@ -48,6 +52,16 @@ export async function GET(request: Request) {
       
       if (categoryData && categoryData.length > 0) {
         categoryIds = categoryData.map((c) => c.id)
+      }
+      
+      // Check subcategories table
+      const { data: subcategoryData } = await supabase
+        .from("subcategories")
+        .select("id")
+        .in("slug", categoryArray)
+      
+      if (subcategoryData && subcategoryData.length > 0) {
+        subcategoryIds = subcategoryData.map((c) => c.id)
       }
     }
     
@@ -68,7 +82,8 @@ export async function GET(request: Request) {
         categories (
           slug,
           name,
-          icon
+          icon,
+          image_url
         ),
         reviews (
           rating
@@ -83,8 +98,12 @@ export async function GET(request: Request) {
       query = query.ilike("title", `%${q}%`)
     }
     
-    // Filter by categories
-    if (categoryIds && categoryIds.length > 0) {
+    // Filter by categories or subcategories
+    if (subcategoryIds && subcategoryIds.length > 0) {
+      // If subcategories are specified, filter by subcategory_id
+      query = query.in("subcategory_id", subcategoryIds)
+    } else if (categoryIds && categoryIds.length > 0) {
+      // If only categories are specified, filter by category_id
       query = query.in("category_id", categoryIds)
     }
     
@@ -159,6 +178,7 @@ export async function GET(request: Request) {
         category_slug: property.categories?.slug || null,
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
+        category_image_url: property.categories?.image_url || null,
         avg_rating: avgRating,
         review_count: ratings.length,
         minimum_age: minimumAge,

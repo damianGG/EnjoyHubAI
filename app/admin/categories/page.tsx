@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import CategoryManagementClient from "@/components/category-management"
+import CategoryManagementEnhanced from "@/components/category-management-enhanced"
 
 export default async function CategoriesPage() {
   const supabase = createClient()
@@ -36,7 +36,7 @@ export default async function CategoriesPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <CategoryManagementClient />
+        <CategoryManagementEnhanced />
       </div>
     </div>
   )

@@ -15,7 +15,7 @@ import { Loader2, Upload, X } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import LocationPicker from "./location-picker"
 import DynamicFormFields from "./dynamic-form-fields"
-import type { Category, CategoryField } from "@/lib/types/dynamic-fields"
+import type { Category, CategoryField, Subcategory } from "@/lib/types/dynamic-fields"
 import { toast } from "sonner"
 
 interface AddAttractionFormProps {
@@ -48,6 +48,8 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
   const [images, setImages] = useState<Array<{ url: string; publicId: string }>>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("")
   const [location, setLocation] = useState<{ lat: number; lng: number }>({ lat: 52.2297, lng: 21.0122 })
   const [categoryFields, setCategoryFields] = useState<CategoryField[]>([])
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, any>>({})
@@ -79,6 +81,38 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
 
     loadCategories()
   }, [])
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!selectedCategory) {
+        setSubcategories([])
+        setSelectedSubcategory("")
+        return
+      }
+
+      console.log("[Subcategories] Loading subcategories for category:", selectedCategory)
+
+      try {
+        const response = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[Subcategories] Loaded subcategories:", data)
+          setSubcategories(data || [])
+          // Reset selected subcategory when category changes
+          setSelectedSubcategory("")
+        } else {
+          console.error("[Subcategories] Failed to load subcategories:", response.status)
+          setSubcategories([])
+        }
+      } catch (error) {
+        console.error("[Subcategories] Error loading subcategories:", error)
+        setSubcategories([])
+      }
+    }
+
+    loadSubcategories()
+  }, [selectedCategory])
 
   // Load fields when category changes
   useEffect(() => {
@@ -273,6 +307,7 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
           description: formData.get("description") as string,
           property_type: "entertainment", // Added property_type with default value for entertainment objects
           category_id: selectedCategory,
+          subcategory_id: selectedSubcategory || null,
           address: formData.get("address") as string,
           city: formData.get("city") as string,
           country: formData.get("country") as string,
@@ -368,6 +403,31 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Subcategory selector - shown only when category is selected and has subcategories */}
+          {selectedCategory && (
+            <div>
+              <Label htmlFor="subcategory">Podkategoria (opcjonalna)</Label>
+              {subcategories.length > 0 ? (
+                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz podkategorię" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                        {subcategory.icon && `${subcategory.icon} `}{subcategory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ta kategoria nie ma podkategorii
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
