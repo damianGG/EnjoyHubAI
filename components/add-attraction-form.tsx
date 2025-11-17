@@ -91,19 +91,22 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
         return
       }
 
+      console.log("[Subcategories] Loading subcategories for category:", selectedCategory)
+
       try {
         const response = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory}`)
         if (response.ok) {
           const data = await response.json()
+          console.log("[Subcategories] Loaded subcategories:", data)
           setSubcategories(data || [])
           // Reset selected subcategory when category changes
           setSelectedSubcategory("")
         } else {
-          console.error("Failed to load subcategories")
+          console.error("[Subcategories] Failed to load subcategories:", response.status)
           setSubcategories([])
         }
       } catch (error) {
-        console.error("Error loading subcategories:", error)
+        console.error("[Subcategories] Error loading subcategories:", error)
         setSubcategories([])
       }
     }
@@ -402,21 +405,27 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
           </div>
 
           {/* Subcategory selector - shown only when category is selected and has subcategories */}
-          {selectedCategory && subcategories.length > 0 && (
+          {selectedCategory && (
             <div>
               <Label htmlFor="subcategory">Podkategoria (opcjonalna)</Label>
-              <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Wybierz podkategorię" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.id} value={subcategory.id}>
-                      {subcategory.icon && `${subcategory.icon} `}{subcategory.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {subcategories.length > 0 ? (
+                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz podkategorię" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                        {subcategory.icon && `${subcategory.icon} `}{subcategory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ta kategoria nie ma podkategorii
+                </p>
+              )}
             </div>
           )}
         </CardContent>
