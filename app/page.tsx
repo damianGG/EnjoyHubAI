@@ -24,6 +24,7 @@ interface SearchResult {
   category_slug: string | null
   category_name: string | null
   category_icon: string | null
+  category_image_url: string | null
   avg_rating: number
   images?: string[]
   region?: string
@@ -270,11 +271,17 @@ function HomePageContent() {
     results.forEach((result) => {
       if (!result.latitude || !result.longitude) return
 
-      const markerHtml = `
-        <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
-          <span class="text-2xl">${result.category_icon || '📍'}</span>
-        </div>
-      `
+      const markerHtml = result.category_image_url 
+        ? `
+          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10 overflow-hidden">
+            <img src="${result.category_image_url}" alt="${result.category_name || 'Category'}" class="w-full h-full object-cover rounded-full" />
+          </div>
+        `
+        : `
+          <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
+            <span class="text-2xl">${result.category_icon || '📍'}</span>
+          </div>
+        `
 
       const customIcon = L.divIcon({
         html: markerHtml,

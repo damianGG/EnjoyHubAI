@@ -12,6 +12,7 @@ interface SearchResult {
   category_slug: string | null
   category_name: string | null
   category_icon: string | null
+  category_image_url: string | null
   avg_rating: number
   images?: string[]
   region?: string
@@ -68,7 +69,8 @@ export async function GET(request: Request) {
         categories (
           slug,
           name,
-          icon
+          icon,
+          image_url
         ),
         reviews (
           rating
@@ -159,6 +161,7 @@ export async function GET(request: Request) {
         category_slug: property.categories?.slug || null,
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
+        category_image_url: property.categories?.image_url || null,
         avg_rating: avgRating,
         review_count: ratings.length,
         minimum_age: minimumAge,

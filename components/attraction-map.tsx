@@ -19,6 +19,7 @@ interface Attraction {
   property_type: string
   category_slug?: string | null
   category_icon?: string | null
+  category_image_url?: string | null
   max_guests: number
   bedrooms: number
   bathrooms: number
@@ -131,13 +132,21 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
         id: attraction.id
       })
 
-      const markerHtml = `
-        <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
-          isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
-        } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10">
-          <span class="text-2xl">${attraction.category_icon || '📍'}</span>
-        </div>
-      `
+      const markerHtml = attraction.category_image_url
+        ? `
+          <div class="bg-white rounded-full p-1 shadow-lg border-2 ${
+            isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
+          } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10 overflow-hidden">
+            <img src="${attraction.category_image_url}" alt="${attraction.category_slug || 'Category'}" class="w-full h-full object-cover rounded-full" />
+          </div>
+        `
+        : `
+          <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
+            isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
+          } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10">
+            <span class="text-2xl">${attraction.category_icon || '📍'}</span>
+          </div>
+        `
 
       const customIcon = L.divIcon({
         html: markerHtml,

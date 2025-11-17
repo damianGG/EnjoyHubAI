@@ -7,6 +7,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { SlidersHorizontal } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Category {
   id: string
@@ -14,6 +15,8 @@ interface Category {
   slug: string
   icon: string
   description: string
+  image_url?: string
+  image_public_id?: string
 }
 
 interface CategoryBarProps {
@@ -32,7 +35,7 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
   useEffect(() => {
     const s = createClient()
     s.from("categories")
-      .select("id,name,slug,icon,description")
+      .select("id,name,slug,icon,description,image_url,image_public_id")
       .order("name")
       .then(({ data, error }) => {
         if (!error && data) setCategories(data)
@@ -78,7 +81,18 @@ export function CategoryBar({ selectedCategory, onCategorySelect, onFiltersClick
         {categories.map((category) => {
           const buttonContent = (
             <>
-              <span className="text-2xl md:text-3xl">{category.icon}</span>
+              {category.image_url ? (
+                <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden">
+                  <Image
+                    src={category.image_url}
+                    alt={category.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <span className="text-2xl md:text-3xl">{category.icon}</span>
+              )}
               <span className="text-xs font-medium text-center leading-tight">{category.name}</span>
             </>
           )
