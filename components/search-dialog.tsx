@@ -4,9 +4,21 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, X } from "lucide-react"
+import { Search, X, ChevronDown, ChevronUp } from "lucide-react"
 import { useUrlState } from "@/lib/search/url-state"
 import { createClient } from "@/lib/supabase/client"
+import Image from "next/image"
+
+interface Subcategory {
+  id: string
+  parent_category_id: string
+  name: string
+  slug: string
+  icon?: string
+  description?: string
+  image_url?: string
+  image_public_id?: string
+}
 
 interface Category {
   id: string
@@ -14,6 +26,9 @@ interface Category {
   slug: string
   icon: string
   description: string
+  image_url?: string
+  image_public_id?: string
+  subcategories?: Subcategory[]
 }
 
 interface SearchDialogProps {
@@ -25,6 +40,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [open, setOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const urlState = useUrlState()
   
   // Filter state
@@ -38,14 +54,43 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setOpen
 
   useEffect(() => {
-    const s = createClient()
-    s.from("categories")
-      .select("id,name,slug,icon,description")
-      .order("name")
-      .then(({ data, error }) => {
-        if (!error && data) setCategories(data)
-      })
-      .finally(() => setLoading(false))
+    const loadCategoriesWithSubcategories = async () => {
+      const s = createClient()
+      
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await s
+        .from("categories")
+        .select("id,name,slug,icon,description,image_url,image_public_id")
+        .order("name")
+      
+      if (categoriesError || !categoriesData) {
+        setLoading(false)
+        return
+      }
+      
+      // Load all subcategories
+      const { data: subcategoriesData, error: subcategoriesError } = await s
+        .from("subcategories")
+        .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
+        .order("name")
+      
+      if (!subcategoriesError && subcategoriesData) {
+        // Group subcategories by parent category
+        const categoriesWithSubs = categoriesData.map((cat) => ({
+          ...cat,
+          subcategories: subcategoriesData.filter(
+            (sub) => sub.parent_category_id === cat.id
+          ),
+        }))
+        setCategories(categoriesWithSubs)
+      } else {
+        setCategories(categoriesData)
+      }
+      
+      setLoading(false)
+    }
+
+    loadCategoriesWithSubcategories()
   }, [])
 
   // Load current filters from URL when dialog opens
@@ -71,6 +116,18 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       } else {
         return [...prev, categorySlug]
       }
+    })
+  }
+
+  const toggleCategoryExpansion = (categorySlug: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(categorySlug)) {
+        newSet.delete(categorySlug)
+      } else {
+        newSet.add(categorySlug)
+      }
+      return newSet
     })
   }
 
@@ -144,19 +201,80 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+              <div className="space-y-3">
                 {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategories.includes(category.slug) ? "default" : "outline"}
-                    onClick={() => toggleCategory(category.slug)}
-                    className="h-auto py-2 px-2 flex flex-col items-center space-y-1 text-xs"
-                  >
-                    <span className="text-xl">{category.icon}</span>
-                    <span className="font-medium text-center leading-tight">
-                      {category.name}
-                    </span>
-                  </Button>
+                  <div key={category.id} className="space-y-2">
+                    {/* Main Category */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={selectedCategories.includes(category.slug) ? "default" : "outline"}
+                        onClick={() => toggleCategory(category.slug)}
+                        className="flex-1 h-auto py-3 px-3 flex items-center justify-start space-x-3 text-sm"
+                      >
+                        {category.image_url ? (
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                            <Image
+                              src={category.image_url}
+                              alt={category.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-2xl flex-shrink-0">{category.icon}</span>
+                        )}
+                        <span className="font-medium text-left flex-1">{category.name}</span>
+                      </Button>
+                      
+                      {/* Expand/Collapse button for subcategories */}
+                      {category.subcategories && category.subcategories.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleCategoryExpansion(category.slug)}
+                          className="flex-shrink-0 h-12 w-12"
+                        >
+                          {expandedCategories.has(category.slug) ? (
+                            <ChevronUp className="h-5 w-5" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Subcategories - shown when expanded */}
+                    {category.subcategories && 
+                     category.subcategories.length > 0 && 
+                     expandedCategories.has(category.slug) && (
+                      <div className="pl-4 space-y-1">
+                        {category.subcategories.map((subcategory) => (
+                          <Button
+                            key={subcategory.id}
+                            variant={selectedCategories.includes(subcategory.slug) ? "default" : "outline"}
+                            onClick={() => toggleCategory(subcategory.slug)}
+                            className="w-full h-auto py-2 px-3 flex items-center justify-start space-x-2 text-sm"
+                          >
+                            {subcategory.image_url ? (
+                              <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                                <Image
+                                  src={subcategory.image_url}
+                                  alt={subcategory.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : subcategory.icon ? (
+                              <span className="text-lg flex-shrink-0">{subcategory.icon}</span>
+                            ) : (
+                              <span className="text-lg flex-shrink-0">•</span>
+                            )}
+                            <span className="font-normal text-left flex-1">{subcategory.name}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
