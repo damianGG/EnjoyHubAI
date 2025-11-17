@@ -72,7 +72,13 @@ export function CategoryBar({
   const handleSubcategorySelect = (subcategorySlug: string | null) => {
     setSelectedSubcategory(subcategorySlug)
     // When a subcategory is selected, pass it to the parent handler
+    // but keep the category bar open by not changing selectedCategory
     onCategorySelect?.(subcategorySlug)
+  }
+
+  const handleCloseSubcategories = () => {
+    setSelectedSubcategory(null)
+    handleCategorySelect(null)
   }
 
   if (loading) {
@@ -104,7 +110,7 @@ export function CategoryBar({
           subcategories={selectedCategoryData.subcategories}
           selectedSubcategory={selectedSubcategory}
           onSubcategorySelect={handleSubcategorySelect}
-          onClose={() => handleCategorySelect(null)}
+          onClose={handleCloseSubcategories}
           parentCategoryName={selectedCategoryData.name}
         />
       )}
