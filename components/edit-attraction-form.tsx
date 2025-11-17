@@ -15,7 +15,7 @@ import { Loader2, Upload, X, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import LocationPicker from "./location-picker"
 import DynamicFormFields from "./dynamic-form-fields"
-import type { Category, CategoryField } from "@/lib/types/dynamic-fields"
+import type { Category, CategoryField, Subcategory } from "@/lib/types/dynamic-fields"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -61,6 +61,8 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
   const [images, setImages] = useState<Array<{ url: string; publicId: string }>>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("")
   const [location, setLocation] = useState<{ lat: number; lng: number }>({ lat: 52.2297, lng: 21.0122 })
   const [categoryFields, setCategoryFields] = useState<CategoryField[]>([])
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, any>>({})
@@ -95,6 +97,7 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
 
         setPropertyData(data)
         setSelectedCategory(data.category_id || "")
+        setSelectedSubcategory(data.subcategory_id || "")
         setSelectedAmenities(data.amenities || [])
         setLocation({ lat: data.latitude || 52.2297, lng: data.longitude || 21.0122 })
         
@@ -131,6 +134,35 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
 
     loadCategories()
   }, [])
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!selectedCategory) {
+        setSubcategories([])
+        return
+      }
+
+      console.log("[Edit] Loading subcategories for category:", selectedCategory)
+
+      try {
+        const response = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[Edit] Loaded subcategories:", data)
+          setSubcategories(data || [])
+        } else {
+          console.error("[Edit] Failed to load subcategories:", response.status)
+          setSubcategories([])
+        }
+      } catch (error) {
+        console.error("[Edit] Error loading subcategories:", error)
+        setSubcategories([])
+      }
+    }
+
+    loadSubcategories()
+  }, [selectedCategory])
 
   // Load fields when category changes or property data is loaded
   useEffect(() => {
@@ -305,6 +337,7 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
           title: formData.get("title") as string,
           description: formData.get("description") as string,
           category_id: selectedCategory,
+          subcategory_id: selectedSubcategory || null,
           address: formData.get("address") as string,
           city: formData.get("city") as string,
           country: formData.get("country") as string,
@@ -455,6 +488,31 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
               </SelectContent>
             </Select>
           </div>
+
+          {selectedCategory && (
+            <div>
+              <Label htmlFor="subcategory">Podkategoria (opcjonalna)</Label>
+              {subcategories.length > 0 ? (
+                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz podkategorię" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Brak podkategorii</SelectItem>
+                    {subcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                        {subcategory.icon} {subcategory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Ta kategoria nie ma podkategorii
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
