@@ -25,6 +25,10 @@ interface SearchResult {
   category_name: string | null
   category_icon: string | null
   category_image_url: string | null
+  subcategory_slug: string | null
+  subcategory_name: string | null
+  subcategory_icon: string | null
+  subcategory_image_url: string | null
   avg_rating: number
   images?: string[]
   region?: string
@@ -271,7 +275,20 @@ function HomePageContent() {
     results.forEach((result) => {
       if (!result.latitude || !result.longitude) return
 
-      const markerHtml = result.category_image_url 
+      // Determine marker content with priority: subcategory image > subcategory icon > category image > category icon
+      const markerHtml = result.subcategory_image_url 
+        ? `
+          <div class="bg-white rounded-full p-1 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10 overflow-hidden">
+            <img src="${result.subcategory_image_url}" alt="${result.subcategory_name || 'Subcategory'}" class="w-full h-full object-cover rounded-full" />
+          </div>
+        `
+        : result.subcategory_icon
+        ? `
+          <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
+            <span class="text-2xl">${result.subcategory_icon}</span>
+          </div>
+        `
+        : result.category_image_url 
         ? `
           <div class="bg-white rounded-full p-1 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10 overflow-hidden">
             <img src="${result.category_image_url}" alt="${result.category_name || 'Category'}" class="w-full h-full object-cover rounded-full" />

@@ -9,6 +9,11 @@ interface Property {
   category_name: string
   category_slug: string
   category_icon: string
+  category_image_url: string | null
+  subcategory_name: string | null
+  subcategory_slug: string | null
+  subcategory_icon: string | null
+  subcategory_image_url: string | null
   price_per_night: number
   latitude: number
   longitude: number
@@ -45,10 +50,18 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
             longitude,
             images,
             category_id,
+            subcategory_id,
             categories (
               name,
               slug,
-              icon
+              icon,
+              image_url
+            ),
+            subcategories (
+              name,
+              slug,
+              icon,
+              image_url
             )
           `)
           .not("latitude", "is", null)
@@ -78,6 +91,11 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
           category_name: item.categories?.name || "Unknown",
           category_slug: item.categories?.slug || "gaming",
           category_icon: item.categories?.icon || "gamepad",
+          category_image_url: item.categories?.image_url || null,
+          subcategory_name: item.subcategories?.name || null,
+          subcategory_slug: item.subcategories?.slug || null,
+          subcategory_icon: item.subcategories?.icon || null,
+          subcategory_image_url: item.subcategories?.image_url || null,
           price_per_night: item.price_per_night,
           latitude: item.latitude,
           longitude: item.longitude,
@@ -154,13 +172,34 @@ export function InteractiveMap({ selectedCategory, onPropertySelect }: Interacti
       // Add new markers
       properties.forEach((property) => {
         if (property.latitude && property.longitude) {
-          // Create custom HTML marker with emoji icon from database
-          const customIcon = L.divIcon({
-            html: `
+          // Determine marker content with priority: subcategory image > subcategory icon > category image > category icon
+          const markerHtml = property.subcategory_image_url
+            ? `
+              <div class="bg-white rounded-full p-1 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10 overflow-hidden">
+                <img src="${property.subcategory_image_url}" alt="${property.subcategory_name || 'Subcategory'}" class="w-full h-full object-cover rounded-full" />
+              </div>
+            `
+            : property.subcategory_icon
+            ? `
+              <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
+                <span class="text-2xl">${property.subcategory_icon}</span>
+              </div>
+            `
+            : property.category_image_url
+            ? `
+              <div class="bg-white rounded-full p-1 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10 overflow-hidden">
+                <img src="${property.category_image_url}" alt="${property.category_name || 'Category'}" class="w-full h-full object-cover rounded-full" />
+              </div>
+            `
+            : `
               <div class="bg-white rounded-full p-2 shadow-lg border-2 border-primary flex items-center justify-center w-10 h-10">
                 <span class="text-2xl">${property.category_icon}</span>
               </div>
-            `,
+            `
+            
+          // Create custom HTML marker with emoji icon from database
+          const customIcon = L.divIcon({
+            html: markerHtml,
             className: "custom-marker",
             iconSize: [40, 40],
             iconAnchor: [20, 40],
