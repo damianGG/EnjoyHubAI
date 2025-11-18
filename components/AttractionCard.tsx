@@ -114,9 +114,9 @@ export default function AttractionCard({
   }))
 
   const cardContent = (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border border-border">
       {/* Image Carousel */}
-      <div className="relative aspect-square">
+      <div className="relative aspect-video">
         <Carousel setApi={setApi} className="w-full h-full">
           <CarouselContent className="h-full">
             {optimizedImages.map((image, index) => {
@@ -232,8 +232,8 @@ export default function AttractionCard({
       </div>
 
       {/* Content */}
-      <CardContent className="p-3">
-        <div className="space-y-1">
+      <CardContent className="p-2">
+        <div className="space-y-0.5">
           {/* Title and Rating */}
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold text-sm line-clamp-2 flex-1">

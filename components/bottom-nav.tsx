@@ -98,12 +98,12 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-4 py-1.5">
           <div className="flex items-center justify-around max-w-2xl mx-auto">
             {/* Search/Explore Button */}
             <button
               onClick={onSearchClick}
-              className={`flex flex-col items-center justify-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                 isActive('/') 
                   ? 'text-primary bg-primary/10' 
                   : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
@@ -116,7 +116,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             {/* Favorites Button */}
             <Link href="/dashboard/favorites">
               <button
-                className={`flex flex-col items-center justify-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                   isActive('/dashboard/favorites') 
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
@@ -130,7 +130,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             {/* Add Object Button */}
             <Link href="/host/properties/new">
               <button
-                className={`flex flex-col items-center justify-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                   isActive('/host/properties/new') 
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
@@ -147,7 +147,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex flex-col items-center justify-center space-y-1 px-3 py-2 rounded-lg transition-colors hover:bg-primary/5">
+                  <button className="flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors hover:bg-primary/5">
                     <Avatar className="h-4 w-4">
                       <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
@@ -197,7 +197,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             ) : (
               <button
                 onClick={openLoginSheet}
-                className={`flex flex-col items-center justify-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                   authSheetOpen 
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'

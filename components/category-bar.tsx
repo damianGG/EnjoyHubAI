@@ -11,6 +11,7 @@ interface CategoryBarProps {
   onFiltersClick?: () => void
   activeFiltersCount?: number
   useNavigation?: boolean
+  compact?: boolean
 }
 
 export function CategoryBar({ 
@@ -18,7 +19,8 @@ export function CategoryBar({
   onCategorySelect, 
   onFiltersClick, 
   activeFiltersCount, 
-  useNavigation = false 
+  useNavigation = false,
+  compact = false
 }: CategoryBarProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -105,6 +107,7 @@ export function CategoryBar({
         selectedCategory={localSelectedCategory}
         onCategorySelect={handleCategorySelect}
         useNavigation={useNavigation}
+        compact={compact}
       />
 
       {localSelectedCategory && selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (

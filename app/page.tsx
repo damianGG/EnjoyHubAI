@@ -80,6 +80,10 @@ function HomePageContent() {
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
   
+  // Track scroll state for compact category bar
+  const [isScrolled, setIsScrolled] = useState(false)
+  const resultsContainerRef = useRef<HTMLDivElement>(null)
+  
   // Refs to hold latest router, searchParams, pathname for use in event handlers
   const routerRef = useRef(router)
   const searchParamsRef = useRef(searchParams)
@@ -161,6 +165,22 @@ function HomePageContent() {
     
     return () => observer.disconnect()
   }, [categories])
+
+  // Detect scroll on results container to enable compact mode
+  useEffect(() => {
+    const handleScroll = () => {
+      if (resultsContainerRef.current) {
+        const scrollTop = resultsContainerRef.current.scrollTop
+        setIsScrolled(scrollTop > 50)
+      }
+    }
+    
+    const container = resultsContainerRef.current
+    if (container) {
+      container.addEventListener('scroll', handleScroll)
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   // Fetch results when search params change
   useEffect(() => {
@@ -395,6 +415,7 @@ function HomePageContent() {
           onCategorySelect={handleCategorySelect}
           onFiltersClick={() => setSearchDialogOpen(true)}
           activeFiltersCount={activeFiltersCount}
+          compact={isScrolled}
         />
       </div>
 
@@ -404,7 +425,10 @@ function HomePageContent() {
       {/* Main content: Results + Map */}
       <div className="flex flex-col md:flex-row relative" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
         {/* Results List */}
-        <div className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}>
+        <div 
+          ref={resultsContainerRef}
+          className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}
+        >
           <div className="p-4 md:p-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
