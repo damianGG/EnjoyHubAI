@@ -13,6 +13,10 @@ interface SearchResult {
   category_name: string | null
   category_icon: string | null
   category_image_url: string | null
+  subcategory_slug: string | null
+  subcategory_name: string | null
+  subcategory_icon: string | null
+  subcategory_image_url: string | null
   avg_rating: number
   images?: string[]
   region?: string
@@ -79,7 +83,14 @@ export async function GET(request: Request) {
         price_per_night,
         images,
         category_id,
+        subcategory_id,
         categories (
+          slug,
+          name,
+          icon,
+          image_url
+        ),
+        subcategories (
           slug,
           name,
           icon,
@@ -179,6 +190,10 @@ export async function GET(request: Request) {
         category_name: property.categories?.name || null,
         category_icon: property.categories?.icon || null,
         category_image_url: property.categories?.image_url || null,
+        subcategory_slug: property.subcategories?.slug || null,
+        subcategory_name: property.subcategories?.name || null,
+        subcategory_icon: property.subcategories?.icon || null,
+        subcategory_image_url: property.subcategories?.image_url || null,
         avg_rating: avgRating,
         review_count: ratings.length,
         minimum_age: minimumAge,

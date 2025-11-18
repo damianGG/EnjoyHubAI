@@ -20,6 +20,9 @@ interface Attraction {
   category_slug?: string | null
   category_icon?: string | null
   category_image_url?: string | null
+  subcategory_slug?: string | null
+  subcategory_icon?: string | null
+  subcategory_image_url?: string | null
   max_guests: number
   bedrooms: number
   bathrooms: number
@@ -132,7 +135,24 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
         id: attraction.id
       })
 
-      const markerHtml = attraction.category_image_url
+      // Determine marker content with priority: subcategory image > subcategory icon > category image > category icon
+      const markerHtml = attraction.subcategory_image_url
+        ? `
+          <div class="bg-white rounded-full p-1 shadow-lg border-2 ${
+            isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
+          } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10 overflow-hidden">
+            <img src="${attraction.subcategory_image_url}" alt="${attraction.subcategory_slug || 'Subcategory'}" class="w-full h-full object-cover rounded-full" />
+          </div>
+        `
+        : attraction.subcategory_icon
+        ? `
+          <div class="bg-white rounded-full p-2 shadow-lg border-2 ${
+            isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
+          } ${isSelected || isHovered ? "scale-110" : ""} transition-all duration-200 flex items-center justify-center w-10 h-10">
+            <span class="text-2xl">${attraction.subcategory_icon}</span>
+          </div>
+        `
+        : attraction.category_image_url
         ? `
           <div class="bg-white rounded-full p-1 shadow-lg border-2 ${
             isSelected ? "border-blue-500" : isHovered ? "border-gray-400" : "border-gray-200"
