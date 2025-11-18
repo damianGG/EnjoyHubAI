@@ -109,6 +109,23 @@ function HomePageContent() {
     }
   }, [searchParams, pathname, router])
   
+  // Get URL params - categories come from query params, defaults to empty string (all categories)
+  const categories = urlState.get("categories") || ""
+  const q = urlState.get("q") || ""
+  const bbox = urlState.get("bbox") || ""
+  const sort = urlState.get("sort") || "relevance"
+  const page = parseInt(urlState.get("page") || "1", 10)
+  const per = parseInt(urlState.get("per") || "20", 10)
+  const ageMin = urlState.get("age_min") || ""
+  const ageMax = urlState.get("age_max") || ""
+
+  // Calculate active filters count (excluding bbox and page/per)
+  const activeFiltersCount = [
+    q ? 1 : 0,
+    ageMin ? 1 : 0,
+    ageMax ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
+  
   // Detect if we're on desktop/mobile
   useEffect(() => {
     const checkScreenSize = () => {
@@ -144,23 +161,6 @@ function HomePageContent() {
     
     return () => observer.disconnect()
   }, [categories])
-
-  // Get URL params - categories come from query params, defaults to empty string (all categories)
-  const categories = urlState.get("categories") || ""
-  const q = urlState.get("q") || ""
-  const bbox = urlState.get("bbox") || ""
-  const sort = urlState.get("sort") || "relevance"
-  const page = parseInt(urlState.get("page") || "1", 10)
-  const per = parseInt(urlState.get("per") || "20", 10)
-  const ageMin = urlState.get("age_min") || ""
-  const ageMax = urlState.get("age_max") || ""
-
-  // Calculate active filters count (excluding bbox and page/per)
-  const activeFiltersCount = [
-    q ? 1 : 0,
-    ageMin ? 1 : 0,
-    ageMax ? 1 : 0,
-  ].reduce((a, b) => a + b, 0)
 
   // Fetch results when search params change
   useEffect(() => {
