@@ -87,10 +87,10 @@ export function ScrollableSubcategoryNav({
   }
 
   return (
-    <div className="relative w-full border-b border-border bg-card transition-all duration-300 ease-in-out">
+    <div className="relative w-full border-b border-border bg-card">
       <div className="relative flex items-center">
         {!compact && (
-          <div className="flex items-center gap-2 pl-4 transition-all duration-300 ease-in-out">
+          <div className="flex items-center gap-2 pl-4">
             <span className="text-xs font-medium text-muted-foreground">
               {parentCategoryName}
             </span>
@@ -119,7 +119,7 @@ export function ScrollableSubcategoryNav({
         <div
           ref={scrollContainerRef}
           className={cn(
-            "hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4 transition-all duration-300 ease-in-out",
+            "hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4",
             compact ? "py-1.5" : "py-2"
           )}
           style={{
@@ -133,20 +133,20 @@ export function ScrollableSubcategoryNav({
               onClick={() => onSubcategorySelect(subcategory.slug)}
               className={cn(
                 compact 
-                  ? 'flex items-center gap-1.5 rounded-full px-3 py-1 transition-all duration-300 ease-in-out whitespace-nowrap'
-                  : 'flex min-w-[70px] max-w-[90px] flex-col items-center gap-1 rounded-lg px-2 py-2 transition-all duration-300 ease-in-out',
+                  ? 'flex items-center gap-1.5 rounded-full px-3 py-1 whitespace-nowrap'
+                  : 'flex min-w-[70px] max-w-[90px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                 selectedSubcategory === subcategory.slug
                   ? 'bg-accent text-accent-foreground shadow-sm'
                   : 'bg-card text-card-foreground hover:bg-card/80'
               )}
             >
               {!compact && (
-                <div className="flex h-5 w-5 items-center justify-center transition-all duration-300 ease-in-out">
+                <div className="flex h-5 w-5 items-center justify-center">
                   {renderSubcategoryIcon(subcategory)}
                 </div>
               )}
               <span className={cn(
-                "block truncate text-center font-medium transition-all duration-300 ease-in-out",
+                "block truncate text-center font-medium",
                 compact ? "text-xs" : "w-full text-[10px]"
               )}>
                 {subcategory.name}
