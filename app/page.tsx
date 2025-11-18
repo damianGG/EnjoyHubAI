@@ -9,6 +9,7 @@ import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
 import { SearchDialog } from "@/components/search-dialog"
 import { CategoryBar } from "@/components/category-bar"
+import { AuthSheet } from "@/components/auth-sheet"
 import AttractionCard from "@/components/AttractionCard"
 import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
 import { generateAttractionSlug } from "@/lib/utils"
@@ -68,6 +69,14 @@ function HomePageContent() {
   // Search dialog state
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   
+  // Auth sheet state for protected route redirects
+  const [authSheetOpen, setAuthSheetOpen] = useState(false)
+  const [returnToPath, setReturnToPath] = useState<string | null>(null)
+  
+  // Track header height for mobile map positioning
+  const [headerHeight, setHeaderHeight] = useState(140)
+  const headerRef = useRef<HTMLDivElement>(null)
+  
   // Track if we're on mobile and should disable bbox updates
   const shouldUpdateBboxRef = useRef(true)
   
@@ -83,21 +92,23 @@ function HomePageContent() {
     pathnameRef.current = pathname
   }, [router, searchParams, pathname])
   
-  // Detect if we're on desktop/mobile
+  // Check for login requirement from protected route redirect
   useEffect(() => {
-    const checkScreenSize = () => {
-      const isDesktopSize = window.innerWidth >= 768
-      setIsDesktop(isDesktopSize)
-      // On desktop: always update bbox
-      // On mobile: only update if in map view
-      shouldUpdateBboxRef.current = isDesktopSize || mobileView === 'map'
-    }
+    const loginRequired = searchParams.get("login")
+    const returnTo = searchParams.get("returnTo")
     
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [mobileView])
-
+    if (loginRequired === "required") {
+      setAuthSheetOpen(true)
+      setReturnToPath(returnTo)
+      
+      // Clean up URL parameters
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.delete("login")
+      newSearchParams.delete("returnTo")
+      router.replace(`${pathname}?${newSearchParams.toString()}`, { scroll: false })
+    }
+  }, [searchParams, pathname, router])
+  
   // Get URL params - categories come from query params, defaults to empty string (all categories)
   const categories = urlState.get("categories") || ""
   const q = urlState.get("q") || ""
@@ -114,6 +125,42 @@ function HomePageContent() {
     ageMin ? 1 : 0,
     ageMax ? 1 : 0,
   ].reduce((a, b) => a + b, 0)
+  
+  // Detect if we're on desktop/mobile
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const isDesktopSize = window.innerWidth >= 768
+      setIsDesktop(isDesktopSize)
+      // On desktop: always update bbox
+      // On mobile: only update if in map view
+      shouldUpdateBboxRef.current = isDesktopSize || mobileView === 'map'
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [mobileView])
+
+  // Update header height when layout changes
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight
+        setHeaderHeight(height)
+      }
+    }
+    
+    // Update on mount and when categories/subcategories change
+    updateHeaderHeight()
+    
+    // Use ResizeObserver to detect height changes
+    const observer = new ResizeObserver(updateHeaderHeight)
+    if (headerRef.current) {
+      observer.observe(headerRef.current)
+    }
+    
+    return () => observer.disconnect()
+  }, [categories])
 
   // Fetch results when search params change
   useEffect(() => {
@@ -337,22 +384,25 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Top Navigation Bar with Large Search Button */}
-      <TopNav onSearchClick={() => setSearchDialogOpen(true)} />
+      {/* Header with TopNav and CategoryBar */}
+      <div ref={headerRef} className="sticky top-0 z-50">
+        {/* Top Navigation Bar with Large Search Button */}
+        <TopNav onSearchClick={() => setSearchDialogOpen(true)} />
+
+        {/* Category Bar */}
+        <CategoryBar 
+          selectedCategory={categories || undefined}
+          onCategorySelect={handleCategorySelect}
+          onFiltersClick={() => setSearchDialogOpen(true)}
+          activeFiltersCount={activeFiltersCount}
+        />
+      </div>
 
       {/* Search Dialog */}
       <SearchDialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen} />
 
-      {/* Category Bar */}
-      <CategoryBar 
-        selectedCategory={categories || undefined}
-        onCategorySelect={handleCategorySelect}
-        onFiltersClick={() => setSearchDialogOpen(true)}
-        activeFiltersCount={activeFiltersCount}
-      />
-
       {/* Main content: Results + Map */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] relative">
+      <div className="flex flex-col md:flex-row relative" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
         {/* Results List */}
         <div className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}>
           <div className="p-4 md:p-6">
@@ -436,11 +486,14 @@ function HomePageContent() {
 
         {/* Map - Desktop: always visible on right side, Mobile: overlay when map view active */}
         {isDesktop !== null && (
-          <div className={`${
-            isDesktop 
-              ? 'w-1/2 h-full relative' 
-              : `fixed inset-0 top-[140px] z-40 ${mobileView === 'list' ? 'hidden' : ''}`
-          }`}>
+          <div 
+            className={`${
+              isDesktop 
+                ? 'w-1/2 h-full relative' 
+                : `fixed inset-x-0 bottom-0 z-40 ${mobileView === 'list' ? 'hidden' : ''}`
+            }`}
+            style={!isDesktop ? { top: `${headerHeight}px` } : undefined}
+          >
             <div ref={mapRef} className="w-full h-full" />
             
             {/* Popup Card Overlay */}
@@ -528,6 +581,20 @@ function HomePageContent() {
           </div>
         )}
       </div>
+
+      {/* Auth Sheet for protected route redirects */}
+      <AuthSheet
+        open={authSheetOpen}
+        onOpenChange={(open) => {
+          setAuthSheetOpen(open)
+          if (!open) {
+            setReturnToPath(null)
+          }
+        }}
+        mode="login"
+        onModeChange={() => {}}
+        returnToPath={returnToPath}
+      />
 
       {/* Bottom Navigation Bar */}
       <BottomNav onSearchClick={() => setSearchDialogOpen(true)} />

@@ -127,7 +127,7 @@ export function ScrollableCategoryNav({
 
         <div
           ref={scrollContainerRef}
-          className="hide-scrollbar flex gap-2 overflow-x-auto px-4 py-3"
+          className="hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4 py-3"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
