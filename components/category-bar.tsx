@@ -117,6 +117,7 @@ export function CategoryBar({
           onSubcategorySelect={handleSubcategorySelect}
           onClose={handleCloseSubcategories}
           parentCategoryName={selectedCategoryData.name}
+          compact={compact}
         />
       )}
     </>

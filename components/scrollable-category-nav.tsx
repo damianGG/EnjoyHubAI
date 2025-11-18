@@ -114,7 +114,7 @@ export function ScrollableCategoryNav({
   }
 
   return (
-    <div className="relative w-full border-b border-border bg-card">
+    <div className="relative w-full border-b border-border bg-card transition-all duration-300 ease-in-out">
       <div className="relative flex items-center">
         {showLeftButton && (
           <Button
@@ -130,7 +130,7 @@ export function ScrollableCategoryNav({
         <div
           ref={scrollContainerRef}
           className={cn(
-            "hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4",
+            "hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4 transition-all duration-300 ease-in-out",
             compact ? "py-2" : "py-3"
           )}
           style={{
@@ -148,20 +148,20 @@ export function ScrollableCategoryNav({
             }}
             className={cn(
               compact 
-                ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200 whitespace-nowrap'
-                : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+                ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-300 ease-in-out whitespace-nowrap'
+                : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-300 ease-in-out',
               !selectedCategory
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
             {!compact && (
-              <div className="flex h-6 w-6 items-center justify-center">
+              <div className="flex h-6 w-6 items-center justify-center transition-all duration-300 ease-in-out">
                 <div className="w-4 h-4 border-2 border-current rounded" />
               </div>
             )}
             <span className={cn(
-              "block truncate text-center font-medium",
+              "block truncate text-center font-medium transition-all duration-300 ease-in-out",
               compact ? "text-xs" : "text-xs w-full"
             )}>
               Wszystkie
@@ -190,8 +190,8 @@ export function ScrollableCategoryNav({
                   onClick={() => onCategorySelect(category.slug)}
                   className={cn(
                     compact 
-                      ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200 whitespace-nowrap'
-                      : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+                      ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-300 ease-in-out whitespace-nowrap'
+                      : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-300 ease-in-out',
                     selectedCategory === category.slug
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : selectedCategory && selectedCategory !== category.slug
@@ -208,8 +208,8 @@ export function ScrollableCategoryNav({
                 onClick={() => handleCategoryClick(category.slug)}
                 className={cn(
                   compact 
-                    ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200 whitespace-nowrap'
-                    : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+                    ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-300 ease-in-out whitespace-nowrap'
+                    : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-300 ease-in-out',
                   selectedCategory === category.slug
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : selectedCategory && selectedCategory !== category.slug
