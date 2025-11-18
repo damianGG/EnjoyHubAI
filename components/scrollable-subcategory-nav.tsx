@@ -114,7 +114,7 @@ export function ScrollableSubcategoryNav({
 
         <div
           ref={scrollContainerRef}
-          className="hide-scrollbar flex flex-1 gap-2 overflow-x-auto px-4 py-2"
+          className="hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4 py-2"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',

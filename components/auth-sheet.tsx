@@ -11,15 +11,18 @@ interface AuthSheetProps {
   onOpenChange: (open: boolean) => void
   mode: "login" | "signup"
   onModeChange?: (mode: "login" | "signup") => void
+  returnToPath?: string | null
 }
 
-export function AuthSheet({ open, onOpenChange, mode, onModeChange }: AuthSheetProps) {
+export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
   const [currentMode, setCurrentMode] = useState(mode)
 
   const handleSuccess = () => {
     onOpenChange(false)
-    router.refresh()
+    // Navigate to the return path if provided, otherwise to dashboard
+    const destination = returnToPath || "/dashboard"
+    router.push(destination)
   }
 
   const handleSwitchToSignUp = () => {

@@ -52,21 +52,28 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/auth/callback"
 
   const isHostRoute = request.nextUrl.pathname.startsWith("/host")
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
 
-  if (isHostRoute && !isAuthRoute) {
+  if ((isHostRoute || isDashboardRoute) && !isAuthRoute) {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
       if (!session) {
-        const redirectUrl = new URL("/auth/login", request.url)
+        // Redirect to home page instead of login page
+        // The home page will detect the need for login and show the auth sheet
+        const redirectUrl = new URL("/", request.url)
+        redirectUrl.searchParams.set("login", "required")
+        redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
     } catch (error) {
       console.error("[v0] Protected route auth check error:", error)
-      // Redirect to login on auth error
-      const redirectUrl = new URL("/auth/login", request.url)
+      // Redirect to home with login prompt on auth error
+      const redirectUrl = new URL("/", request.url)
+      redirectUrl.searchParams.set("login", "required")
+      redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
     }
   }
