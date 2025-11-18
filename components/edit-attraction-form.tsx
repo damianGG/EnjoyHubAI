@@ -97,7 +97,8 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
 
         setPropertyData(data)
         setSelectedCategory(data.category_id || "")
-        setSelectedSubcategory(data.subcategory_id || "")
+        // Convert null/empty subcategory to "none" for the Select component
+        setSelectedSubcategory(data.subcategory_id || "none")
         setSelectedAmenities(data.amenities || [])
         setLocation({ lat: data.latitude || 52.2297, lng: data.longitude || 21.0122 })
         
@@ -337,7 +338,8 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
           title: formData.get("title") as string,
           description: formData.get("description") as string,
           category_id: selectedCategory,
-          subcategory_id: selectedSubcategory || null,
+          // Convert "none" back to null when saving
+          subcategory_id: selectedSubcategory === "none" ? null : selectedSubcategory || null,
           address: formData.get("address") as string,
           city: formData.get("city") as string,
           country: formData.get("country") as string,
@@ -498,7 +500,7 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
                     <SelectValue placeholder="Wybierz podkategorię" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Brak podkategorii</SelectItem>
+                    <SelectItem value="none">Brak podkategorii</SelectItem>
                     {subcategories.map((subcategory) => (
                       <SelectItem key={subcategory.id} value={subcategory.id}>
                         {subcategory.icon} {subcategory.name}
