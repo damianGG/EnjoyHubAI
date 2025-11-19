@@ -141,3 +141,46 @@ export async function signInWithGoogle() {
     redirect(data.url)
   }
 }
+
+// Facebook OAuth sign in action
+export async function signInWithFacebook() {
+  const supabase = createSupabaseServerClient()
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    console.error("Facebook OAuth error:", error)
+    return { error: "OAuth sign-in failed" }
+  }
+
+  if (data?.url) {
+    redirect(data.url)
+  }
+}
+
+// Instagram OAuth sign in action (Instagram uses Facebook's OAuth)
+export async function signInWithInstagram() {
+  const supabase = createSupabaseServerClient()
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+      scopes: "instagram_basic",
+    },
+  })
+
+  if (error) {
+    console.error("Instagram OAuth error:", error)
+    return { error: "OAuth sign-in failed" }
+  }
+
+  if (data?.url) {
+    redirect(data.url)
+  }
+}
