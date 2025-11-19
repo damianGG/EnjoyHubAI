@@ -97,7 +97,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
         <div className="container mx-auto px-4 py-1.5">
           <div className="flex items-center justify-around max-w-2xl mx-auto">
             {/* Search/Explore Button */}
