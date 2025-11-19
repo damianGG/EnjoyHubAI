@@ -35,6 +35,7 @@ interface ScrollableCategoryNavProps {
   selectedCategory?: string | null
   onCategorySelect: (categorySlug: string | null) => void
   useNavigation?: boolean
+  compact?: boolean
 }
 
 export function ScrollableCategoryNav({
@@ -42,6 +43,7 @@ export function ScrollableCategoryNav({
   selectedCategory,
   onCategorySelect,
   useNavigation = false,
+  compact = false,
 }: ScrollableCategoryNavProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftButton, setShowLeftButton] = useState(false)
@@ -127,7 +129,10 @@ export function ScrollableCategoryNav({
 
         <div
           ref={scrollContainerRef}
-          className="hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4 py-3"
+          className={cn(
+            "hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4",
+            compact ? "py-2" : "py-3"
+          )}
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -142,22 +147,33 @@ export function ScrollableCategoryNav({
               onCategorySelect(null)
             }}
             className={cn(
-              'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+              compact 
+                ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
+                : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
               !selectedCategory
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
-            <div className="flex h-6 w-6 items-center justify-center">
-              <div className="w-4 h-4 border-2 border-current rounded" />
-            </div>
-            <span className="block w-full truncate text-center text-xs font-medium">
+            {!compact && (
+              <div className="flex h-6 w-6 items-center justify-center">
+                <div className="w-4 h-4 border-2 border-current rounded" />
+              </div>
+            )}
+            <span className={cn(
+              "block truncate text-center font-medium",
+              compact ? "text-xs" : "text-xs w-full"
+            )}>
               Wszystkie
             </span>
           </button>
 
           {categories.map((category) => {
-            const buttonContent = (
+            const buttonContent = compact ? (
+              <span className="block truncate text-center text-xs font-medium whitespace-nowrap">
+                {category.name}
+              </span>
+            ) : (
               <>
                 <div className="flex h-6 w-6 items-center justify-center">
                   {renderCategoryIcon(category)}
@@ -173,7 +189,9 @@ export function ScrollableCategoryNav({
                 <button
                   onClick={() => onCategorySelect(category.slug)}
                   className={cn(
-                    'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+                    compact 
+                      ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
+                      : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
                     selectedCategory === category.slug
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : selectedCategory && selectedCategory !== category.slug
@@ -189,7 +207,9 @@ export function ScrollableCategoryNav({
                 key={category.id}
                 onClick={() => handleCategoryClick(category.slug)}
                 className={cn(
-                  'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3 transition-all duration-200',
+                  compact 
+                    ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
+                    : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
                   selectedCategory === category.slug
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : selectedCategory && selectedCategory !== category.slug

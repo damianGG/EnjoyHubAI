@@ -13,6 +13,7 @@ interface ScrollableSubcategoryNavProps {
   onSubcategorySelect: (subcategorySlug: string | null) => void
   onClose: () => void
   parentCategoryName: string
+  compact?: boolean
 }
 
 export function ScrollableSubcategoryNav({
@@ -21,6 +22,7 @@ export function ScrollableSubcategoryNav({
   onSubcategorySelect,
   onClose,
   parentCategoryName,
+  compact = false,
 }: ScrollableSubcategoryNavProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftButton, setShowLeftButton] = useState(false)
@@ -85,27 +87,29 @@ export function ScrollableSubcategoryNav({
   }
 
   return (
-    <div className="relative w-full border-b border-border bg-muted/30">
+    <div className="relative w-full border-b border-border bg-card">
       <div className="relative flex items-center">
-        <div className="flex items-center gap-2 pl-4">
-          <span className="text-xs font-medium text-muted-foreground">
-            {parentCategoryName}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={onClose}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
+        {!compact && (
+          <div className="flex items-center gap-2 pl-4">
+            <span className="text-xs font-medium text-muted-foreground">
+              {parentCategoryName}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onClose}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
 
         {showLeftButton && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-0 z-10 h-full rounded-none bg-gradient-to-r from-muted/30 via-muted/30 to-transparent px-2 hover:bg-muted/30"
+            className="absolute left-0 z-10 h-full rounded-none bg-gradient-to-r from-card via-card to-transparent px-2 hover:bg-card"
             onClick={() => scroll('left')}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -114,7 +118,10 @@ export function ScrollableSubcategoryNav({
 
         <div
           ref={scrollContainerRef}
-          className="hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4 py-2"
+          className={cn(
+            "hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4",
+            compact ? "py-1.5" : "py-2"
+          )}
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -125,16 +132,23 @@ export function ScrollableSubcategoryNav({
               key={subcategory.id}
               onClick={() => onSubcategorySelect(subcategory.slug)}
               className={cn(
-                'flex min-w-[70px] max-w-[90px] flex-col items-center gap-1 rounded-lg px-2 py-2 transition-all duration-200',
+                compact 
+                  ? 'flex items-center gap-1.5 rounded-full px-3 py-1 whitespace-nowrap'
+                  : 'flex min-w-[70px] max-w-[90px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                 selectedSubcategory === subcategory.slug
                   ? 'bg-accent text-accent-foreground shadow-sm'
                   : 'bg-card text-card-foreground hover:bg-card/80'
               )}
             >
-              <div className="flex h-5 w-5 items-center justify-center">
-                {renderSubcategoryIcon(subcategory)}
-              </div>
-              <span className="block w-full truncate text-center text-[10px] font-medium">
+              {!compact && (
+                <div className="flex h-5 w-5 items-center justify-center">
+                  {renderSubcategoryIcon(subcategory)}
+                </div>
+              )}
+              <span className={cn(
+                "block truncate text-center font-medium",
+                compact ? "text-xs" : "w-full text-[10px]"
+              )}>
                 {subcategory.name}
               </span>
             </button>
@@ -145,7 +159,7 @@ export function ScrollableSubcategoryNav({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 z-10 h-full rounded-none bg-gradient-to-l from-muted/30 via-muted/30 to-transparent px-2 hover:bg-muted/30"
+            className="absolute right-0 z-10 h-full rounded-none bg-gradient-to-l from-card via-card to-transparent px-2 hover:bg-card"
             onClick={() => scroll('right')}
           >
             <ChevronRight className="h-4 w-4" />
