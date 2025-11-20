@@ -403,7 +403,7 @@ function HomePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header with TopNav and CategoryBar */}
       <div ref={headerRef} className="sticky top-0 z-50">
         {/* Top Navigation Bar with Large Search Button */}
