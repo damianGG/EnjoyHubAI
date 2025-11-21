@@ -442,13 +442,13 @@ function HomePageContent() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <AttractionCardSkeleton key={index} />
                 ))}
               </div>
             ) : results.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {results.map((result) => {
                   const slug = generateAttractionSlug({
                     city: result.city,
@@ -643,7 +643,7 @@ export default function Home() {
             <div className="h-8 w-48 bg-muted/20 animate-pulse rounded-md mb-2"></div>
             <div className="h-5 w-32 bg-muted/20 animate-pulse rounded-md"></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <AttractionCardSkeleton key={index} />
             ))}

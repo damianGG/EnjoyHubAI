@@ -8,7 +8,7 @@ export default function AttractionCardSkeleton() {
       <Skeleton className="aspect-video w-full rounded-t-xl" />
 
       {/* Content skeleton */}
-      <CardContent className="p-2">
+      <CardContent className="p-0">
         <div className="space-y-0.5">
           {/* Title and rating row */}
           <div className="flex items-start justify-between gap-2">
