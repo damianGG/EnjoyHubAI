@@ -232,7 +232,7 @@ export default function AttractionCard({
       </div>
 
       {/* Content */}
-      <CardContent className="p-2">
+      <CardContent className="p-0">
         <div className="space-y-0.5">
           {/* Title and Rating */}
           <div className="flex items-start justify-between gap-2">
