@@ -429,7 +429,7 @@ function HomePageContent() {
           ref={resultsContainerRef}
           className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}
         >
-          <div className="p-4 md:p-6">
+          <div>
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
@@ -442,13 +442,13 @@ function HomePageContent() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <AttractionCardSkeleton key={index} />
                 ))}
               </div>
             ) : results.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {results.map((result) => {
                   const slug = generateAttractionSlug({
                     city: result.city,
@@ -631,19 +631,19 @@ export default function Home() {
     <Suspense fallback={
       <div className="min-h-screen bg-background pb-20 md:pb-0">
         <div className="sticky top-0 z-50">
-          <div className="bg-card border-b">
+          <div className="bg-card">
             <div className="container mx-auto px-4 h-16"></div>
           </div>
-          <div className="bg-card border-b">
+          <div className="bg-card">
             <div className="container mx-auto px-4 h-14"></div>
           </div>
         </div>
-        <div className="p-4 md:p-6">
+        <div>
           <div className="mb-4">
             <div className="h-8 w-48 bg-muted/20 animate-pulse rounded-md mb-2"></div>
             <div className="h-5 w-32 bg-muted/20 animate-pulse rounded-md"></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <AttractionCardSkeleton key={index} />
             ))}
