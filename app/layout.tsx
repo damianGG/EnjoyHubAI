@@ -54,7 +54,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://d.basemaps.cartocdn.com" />
       </head>
       <body
-        className="font-sans antialiased min-h-screen bg-background dark:from-[#0b1220] dark:via-[#0f172a] dark:to-[#0b1220]"
+        className="font-sans antialiased min-h-screen bg-background"
       >
         {children}
         <Analytics />
