@@ -343,6 +343,14 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
           >
             Wyczyść wszystko
           </Button>
+          
+          {/* Selection Counter */}
+          {selectedCategories.length > 0 && (
+            <div className="text-sm text-gray-600 font-medium">
+              Wybrano: {selectedCategories.length}
+            </div>
+          )}
+          
           <Button 
             onClick={handleSearch}
             className="bg-pink-600 hover:bg-pink-700 text-white px-8 rounded-lg"
