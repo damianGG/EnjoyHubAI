@@ -24,9 +24,9 @@ CREATE TABLE IF NOT EXISTS offers (
 CREATE TABLE IF NOT EXISTS offer_availability (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
-  weekday INTEGER NOT NULL CHECK (weekday >= 0 AND weekday <= 6), -- 0 = Monday, 1 = Tuesday, ..., 6 = Sunday (custom convention, not ISO 8601)
+  weekday INTEGER NOT NULL CHECK (weekday >= 0 AND weekday <= 6), -- 0 = Monday, 1 = Tuesday, ..., 6 = Sunday (aligns with common JS libraries like date-fns)
   start_time TIME NOT NULL, -- start of availability window (e.g., '10:00')
-  end_time TIME NOT NULL, -- end of availability window (e.g., '20:00')
+  end_time TIME NOT NULL CHECK (end_time > start_time), -- end of availability window (e.g., '20:00')
   slot_length_minutes INTEGER NOT NULL, -- length of each bookable slot (e.g., 60, 90)
   max_bookings_per_slot INTEGER NOT NULL DEFAULT 1, -- 1 for exclusive (birthday party), >1 for shared (open entry)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS offer_bookings (
   place_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE, -- duplicated for easier querying
   booking_date DATE NOT NULL, -- the date of the booking
   start_time TIME NOT NULL, -- chosen slot start time
-  end_time TIME NOT NULL, -- derived from start_time + duration_minutes
+  end_time TIME NOT NULL CHECK (end_time > start_time), -- derived from start_time + duration_minutes
   persons INTEGER NOT NULL, -- number of participants
   -- Status field: tracks the booking lifecycle
   -- 'pending' = newly created, awaiting confirmation
