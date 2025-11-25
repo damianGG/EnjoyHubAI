@@ -130,6 +130,9 @@ export type OfferBookingStatus = 'pending' | 'confirmed' | 'cancelled';
 // - 'failed': payment attempt failed
 export type OfferPaymentStatus = 'not_required' | 'pending' | 'paid' | 'failed';
 
+// Source: tracks where booking originated
+export type OfferBookingSource = 'online_enjoyhub' | 'phone' | 'walk_in';
+
 export interface Offer {
   id: string;
   place_id: string; // FK to properties table
@@ -169,6 +172,7 @@ export interface OfferBooking {
   customer_name: string;
   customer_email: string;
   customer_phone?: string;
-  source: string; // e.g., 'online_enjoyhub', 'phone', 'walk_in'
+  user_id?: string; // optional link to registered user
+  source: OfferBookingSource;
   created_at: string;
 }

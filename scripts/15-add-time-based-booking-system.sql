@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS offers (
 CREATE TABLE IF NOT EXISTS offer_availability (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
-  weekday INTEGER NOT NULL CHECK (weekday >= 0 AND weekday <= 6), -- 0 = Monday, 6 = Sunday
+  weekday INTEGER NOT NULL CHECK (weekday >= 0 AND weekday <= 6), -- 0 = Monday, 1 = Tuesday, ..., 6 = Sunday (custom convention, not ISO 8601)
   start_time TIME NOT NULL, -- start of availability window (e.g., '10:00')
   end_time TIME NOT NULL, -- end of availability window (e.g., '20:00')
   slot_length_minutes INTEGER NOT NULL, -- length of each bookable slot (e.g., 60, 90)
@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS offer_bookings (
   customer_name TEXT NOT NULL,
   customer_email TEXT NOT NULL,
   customer_phone TEXT,
-  source TEXT DEFAULT 'online_enjoyhub', -- tracks where booking came from (e.g., 'online_enjoyhub', 'phone', 'walk_in')
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- optional link to registered user
+  source TEXT NOT NULL DEFAULT 'online_enjoyhub' CHECK (source IN ('online_enjoyhub', 'phone', 'walk_in')), -- tracks where booking came from
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -129,9 +130,10 @@ CREATE POLICY "Super admins can manage all offer availability" ON offer_availabi
   );
 
 -- RLS Policies for offer_bookings table
--- Authenticated users can view their own bookings
+-- Authenticated users can view their own bookings (by user_id or email)
 CREATE POLICY "Users can view their own offer bookings" ON offer_bookings
   FOR SELECT USING (
+    user_id = auth.uid() OR 
     customer_email = (SELECT email FROM users WHERE id = auth.uid())
   );
 
