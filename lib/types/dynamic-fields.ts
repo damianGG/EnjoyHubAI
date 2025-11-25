@@ -114,3 +114,61 @@ export interface PropertyWithFieldValues extends Property {
   field_values: ObjectFieldValue[];
   category?: CategoryWithFields;
 }
+
+// Time-based booking system types
+
+// Status: tracks booking lifecycle
+// - 'pending': newly created, awaiting confirmation
+// - 'confirmed': booking confirmed (after payment or manual approval)
+// - 'cancelled': booking cancelled by customer or venue
+export type OfferBookingStatus = 'pending' | 'confirmed' | 'cancelled';
+
+// Payment status: ready for future payment integration
+// - 'not_required': free activity or payment handled offline
+// - 'pending': payment required but not yet completed
+// - 'paid': payment successfully processed
+// - 'failed': payment attempt failed
+export type OfferPaymentStatus = 'not_required' | 'pending' | 'paid' | 'failed';
+
+export interface Offer {
+  id: string;
+  place_id: string; // FK to properties table
+  title: string;
+  description?: string;
+  base_price: number; // stored in smallest currency unit (e.g., 100.00 PLN)
+  currency: string; // e.g., 'PLN'
+  duration_minutes: number; // activity duration (e.g., 60, 90, 120)
+  min_participants?: number; // minimum number of people required
+  max_participants?: number; // maximum capacity
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OfferAvailability {
+  id: string;
+  offer_id: string; // FK to offers table
+  weekday: number; // 0 = Monday, 6 = Sunday
+  start_time: string; // start of availability window (e.g., '10:00')
+  end_time: string; // end of availability window (e.g., '20:00')
+  slot_length_minutes: number; // length of each bookable slot (e.g., 60, 90)
+  max_bookings_per_slot: number; // 1 for exclusive (birthday party), >1 for shared (open entry)
+  created_at: string;
+}
+
+export interface OfferBooking {
+  id: string;
+  offer_id: string; // FK to offers table
+  place_id: string; // FK to properties table (duplicated for easier querying)
+  booking_date: string; // the date of the booking (ISO date string)
+  start_time: string; // chosen slot start time
+  end_time: string; // derived from start_time + duration_minutes
+  persons: number; // number of participants
+  status: OfferBookingStatus;
+  payment_status: OfferPaymentStatus;
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  source: string; // e.g., 'online_enjoyhub', 'phone', 'walk_in'
+  created_at: string;
+}
