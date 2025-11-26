@@ -1,14 +1,15 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, CheckCircle, KeyRound } from "lucide-react"
+import { Loader2, CheckCircle, KeyRound, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { updatePassword } from "@/lib/actions"
+import { createClient } from "@/lib/supabase/client"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -33,6 +34,64 @@ function SubmitButton() {
 export default function ResetPasswordForm() {
   const router = useRouter()
   const [state, formAction] = useActionState(updatePassword, null)
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
+  const [tokenError, setTokenError] = useState<string | null>(null)
+
+  // Handle the recovery token from the URL hash
+  useEffect(() => {
+    const handleRecoveryToken = async () => {
+      const hash = window.location.hash
+      
+      if (hash && hash.includes("access_token")) {
+        // Parse the hash fragment
+        const params = new URLSearchParams(hash.substring(1))
+        const accessToken = params.get("access_token")
+        const refreshToken = params.get("refresh_token")
+        const type = params.get("type")
+
+        if (type === "recovery" && accessToken) {
+          try {
+            const supabase = createClient()
+            
+            // Set the session with the recovery token
+            // Supabase requires refresh_token even if empty for recovery flow
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken ?? "",
+            })
+
+            if (error) {
+              setTokenError("Link do resetowania hasła wygasł lub jest nieprawidłowy.")
+              setIsValidToken(false)
+            } else {
+              setIsValidToken(true)
+              // Clear the hash from URL for security
+              window.history.replaceState(null, "", window.location.pathname)
+            }
+          } catch {
+            setTokenError("Wystąpił błąd podczas weryfikacji linku.")
+            setIsValidToken(false)
+          }
+        } else {
+          setTokenError("Nieprawidłowy link do resetowania hasła.")
+          setIsValidToken(false)
+        }
+      } else {
+        // Check if user already has a valid recovery session
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          setIsValidToken(true)
+        } else {
+          setTokenError("Brak tokenu resetowania hasła. Poproś o nowy link.")
+          setIsValidToken(false)
+        }
+      }
+    }
+
+    handleRecoveryToken()
+  }, [])
 
   // Redirect to login after successful password reset
   useEffect(() => {
@@ -43,6 +102,52 @@ export default function ResetPasswordForm() {
       return () => clearTimeout(timer)
     }
   }, [state, router])
+
+  // Loading state while checking token
+  if (isValidToken === null) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Ustaw nowe hasło</CardTitle>
+          <CardDescription>Weryfikacja linku...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Invalid token state
+  if (isValidToken === false) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Ustaw nowe hasło</CardTitle>
+          <CardDescription>Wystąpił problem</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center">
+              <div className="rounded-full bg-destructive/10 p-3">
+                <AlertCircle className="h-8 w-8 text-destructive" />
+              </div>
+            </div>
+            <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded text-center">
+              {tokenError}
+            </div>
+            <div className="text-center">
+              <Link href="/auth/forgot-password" className="text-primary hover:underline">
+                Poproś o nowy link do resetowania hasła
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="w-full max-w-md">
