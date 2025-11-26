@@ -20,7 +20,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createMiddlewareClient({ req: request, res })
 
-  // Check if this is an auth callback
+  // Check if this is an auth callback with a code (PKCE flow)
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
 
@@ -28,7 +28,15 @@ export async function updateSession(request: NextRequest) {
     try {
       // Exchange the code for a session
       await supabase.auth.exchangeCodeForSession(code)
-      // Redirect to home page after successful auth
+      
+      // Check if this is a password reset flow - keep user on reset-password page
+      if (request.nextUrl.pathname === "/auth/reset-password") {
+        // Remove the code from URL and continue to reset-password page
+        const cleanUrl = new URL(request.nextUrl.pathname, request.url)
+        return NextResponse.redirect(cleanUrl)
+      }
+      
+      // For other auth flows, redirect to home page
       return NextResponse.redirect(new URL("/", request.url))
     } catch (error) {
       console.error("[v0] Auth callback error:", error)
