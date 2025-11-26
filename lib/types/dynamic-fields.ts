@@ -176,3 +176,15 @@ export interface OfferBooking {
   source: OfferBookingSource;
   created_at: string;
 }
+
+// Slot availability response types
+export interface Slot {
+  startTime: string; // e.g. "10:00"
+  endTime: string; // e.g. "11:00"
+  available: boolean;
+  capacityLeft: number; // maxBookingsPerSlot - currentActiveBookings
+}
+
+export interface SlotsResponse {
+  slots: Slot[];
+}
