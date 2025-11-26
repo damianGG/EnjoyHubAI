@@ -15,9 +15,13 @@ interface AuthSheetProps {
   returnToPath?: string | null
 }
 
+// Internal mode type that extends the public mode with forgot-password
+type InternalMode = "login" | "signup" | "forgot-password"
+
 export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
-  const [currentMode, setCurrentMode] = useState<"login" | "signup" | "forgot-password">(mode)
+  // Internal mode can be forgot-password, but external API only supports login/signup
+  const [currentMode, setCurrentMode] = useState<InternalMode>(mode)
 
   const handleSuccess = () => {
     onOpenChange(false)
