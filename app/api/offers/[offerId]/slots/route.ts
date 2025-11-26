@@ -28,21 +28,41 @@ function createSupabaseServerClient() {
 }
 
 /**
+ * Parses and validates a date string in ISO format (YYYY-MM-DD)
+ * Returns the Date object if valid, null otherwise
+ */
+function parseDate(dateStr: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return null
+  }
+
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+
+  // Verify the parsed date matches the input components
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+
+  return date
+}
+
+/**
  * Validates a date string in ISO format (YYYY-MM-DD)
  */
 function isValidDateString(dateStr: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return false
-  }
-  const date = new Date(dateStr + "T00:00:00Z")
-  return !isNaN(date.getTime())
+  return parseDate(dateStr) !== null
 }
 
 /**
  * Gets the weekday (0-6, Monday = 0) for a given date string (YYYY-MM-DD)
  */
 function getWeekday(dateStr: string): number {
-  const date = new Date(dateStr + "T00:00:00Z")
+  const date = parseDate(dateStr)!
   // getUTCDay() returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday
   // We need 0 for Monday, ..., 6 for Sunday
   const day = date.getUTCDay()
@@ -51,9 +71,12 @@ function getWeekday(dateStr: string): number {
 
 /**
  * Converts time string "HH:MM" to minutes from midnight
+ * Assumes input is in valid format (from database)
  */
 function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number)
+  const parts = time.split(":")
+  const hours = Number(parts[0])
+  const minutes = Number(parts[1])
   return hours * 60 + minutes
 }
 
@@ -136,7 +159,7 @@ export async function GET(
 
     if (!offer.is_active) {
       return NextResponse.json(
-        { error: "Offer not found" },
+        { error: "Offer is not available" },
         { status: 404 }
       )
     }
