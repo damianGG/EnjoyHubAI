@@ -141,3 +141,72 @@ export async function signInWithGoogle() {
     redirect(data.url)
   }
 }
+
+// Request password reset action
+export async function requestPasswordReset(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Brak danych formularza" }
+
+  const email = formData.get("email")
+
+  if (!email) return { error: "Email jest wymagany" }
+
+  const emailStr = String(email).trim()
+
+  if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+
+  const supabase = createSupabaseServerClient()
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(emailStr, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/reset-password`,
+    })
+
+    if (error) {
+      console.error("Password reset request error:", error)
+      // Don't reveal if email exists or not for security
+      return { ok: true, message: "Jeśli konto z tym adresem email istnieje, otrzymasz link do resetowania hasła." }
+    }
+
+    return { ok: true, message: "Jeśli konto z tym adresem email istnieje, otrzymasz link do resetowania hasła." }
+  } catch (err) {
+    console.error("Password reset error:", err)
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
+  }
+}
+
+// Update password action (after clicking reset link)
+export async function updatePassword(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Brak danych formularza" }
+
+  const password = formData.get("password")
+  const confirmPassword = formData.get("confirmPassword")
+
+  if (!password || !confirmPassword) return { error: "Hasło i potwierdzenie hasła są wymagane" }
+
+  const passwordStr = String(password)
+  const confirmPasswordStr = String(confirmPassword)
+
+  if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
+  if (passwordStr !== confirmPasswordStr) return { error: "Hasła nie są identyczne" }
+
+  const supabase = createSupabaseServerClient()
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: passwordStr,
+    })
+
+    if (error) {
+      console.error("Password update error:", error)
+      if (error.message.includes("expired") || error.message.includes("invalid")) {
+        return { error: "Link do resetowania hasła wygasł lub jest nieprawidłowy. Poproś o nowy link." }
+      }
+      return { error: "Nie udało się zaktualizować hasła. Spróbuj ponownie." }
+    }
+
+    return { ok: true, message: "Hasło zostało zmienione. Możesz się teraz zalogować." }
+  } catch (err) {
+    console.error("Password update error:", err)
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
+  }
+}

@@ -14,6 +14,7 @@ interface LoginFormProps {
   inline?: boolean
   onSuccess?: () => void
   onSwitchToSignUp?: () => void
+  onSwitchToForgotPassword?: () => void
 }
 
 function SubmitButton() {
@@ -70,7 +71,7 @@ function GoogleSignInButton() {
   )
 }
 
-export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp }: LoginFormProps = {}) {
+export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp, onSwitchToForgotPassword }: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
@@ -115,9 +116,24 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp 
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium">
-            Hasło
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="block text-sm font-medium">
+              Hasło
+            </label>
+            {onSwitchToForgotPassword ? (
+              <button
+                type="button"
+                onClick={onSwitchToForgotPassword}
+                className="text-sm text-primary hover:underline"
+              >
+                Zapomniałeś hasła?
+              </button>
+            ) : (
+              <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                Zapomniałeś hasła?
+              </Link>
+            )}
+          </div>
           <Input id="password" name="password" type="password" required />
         </div>
 
