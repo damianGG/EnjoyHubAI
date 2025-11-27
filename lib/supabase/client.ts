@@ -1,11 +1,24 @@
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
+// Check if we're in the browser
+const isBrowser = typeof window !== "undefined"
+
 // Check if Supabase environment variables are available
-export const isSupabaseConfigured =
-  typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
-  typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
+// This check should only be used at runtime, not during SSR/build
+export const isSupabaseConfigured = () => {
+  // During SSR or build, assume Supabase is configured (actual check happens at runtime)
+  if (!isBrowser) {
+    return true
+  }
+  
+  // On the client, check if the env vars were properly injected at build time
+  return (
+    typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
+    typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
+  )
+}
 
 // Create a dummy client when Supabase is not configured (for build time)
 const createDummyClient = () => {
@@ -38,13 +51,33 @@ const createDummyClient = () => {
   }
 }
 
-// Create a singleton instance of the Supabase client for Client Components
+// Create a new instance of the Supabase client for Client Components
+// This should be called inside useEffect or event handlers to ensure it runs on the client
 export function createClient() {
-  if (!isSupabaseConfigured) {
-    console.warn("Supabase environment variables are not set. Using dummy client.")
-    return createDummyClient() as any
+  // In the browser, always try to create the real client
+  // The environment variables should be embedded in the client bundle at build time
+  if (isBrowser) {
+    try {
+      return createClientComponentClient()
+    } catch (error) {
+      console.warn("Failed to create Supabase client:", error)
+      return createDummyClient() as any
+    }
   }
-  return createClientComponentClient()
+  
+  // During SSR, create a real client if env vars are available
+  if (
+    typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
+    typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
+  ) {
+    return createClientComponentClient()
+  }
+  
+  console.warn("Supabase environment variables are not set. Using dummy client.")
+  return createDummyClient() as any
 }
 
+// Legacy export - prefer using createClient() inside useEffect
 export const supabase = createClient()
