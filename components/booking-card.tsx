@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Star, Users, Loader2, Calendar, AlertCircle, CheckCircle } from "lucide-react"
 import { createBooking } from "@/lib/booking-actions"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 interface BookingCardProps {
   propertyId: string
@@ -41,8 +41,10 @@ export default function BookingCard({
 
   const [state, formAction] = useActionState(createBooking, null)
 
-  // Check if user is logged in
+  // Check if user is logged in and listen for auth state changes
   useEffect(() => {
+    const supabase = createClient()
+    
     const getUser = async () => {
       const {
         data: { user },
@@ -50,6 +52,15 @@ export default function BookingCard({
       setUser(user)
     }
     getUser()
+
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Handle successful booking
