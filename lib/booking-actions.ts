@@ -4,8 +4,7 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 
 function createSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerActionClient({ cookies: () => cookieStore })
+  return createServerActionClient({ cookies })
 }
 
 export interface BookingData {

@@ -5,8 +5,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 function createSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerActionClient({ cookies: () => cookieStore })
+  return createServerActionClient({ cookies })
 }
 
 type ActionResult = { ok?: boolean; message?: string; error?: string }
