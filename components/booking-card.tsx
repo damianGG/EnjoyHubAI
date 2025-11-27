@@ -41,7 +41,7 @@ export default function BookingCard({
 
   const [state, formAction] = useActionState(createBooking, null)
 
-  // Check if user is logged in
+  // Check if user is logged in and listen for auth state changes
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -50,6 +50,15 @@ export default function BookingCard({
       setUser(user)
     }
     getUser()
+
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Handle successful booking
