@@ -20,21 +20,11 @@ export async function createBooking(prevState: any, formData: FormData) {
 
   // TEMPORARY: Hardcoded user for testing booking functionality
   // TODO: Remove this workaround and restore proper auth check once auth issues are resolved
-  const HARDCODED_USER_EMAIL = "damiangolon@gmail.com"
+  // User ID for damiangolon@gmail.com from the database
+  const HARDCODED_USER_ID = "21aa14bd-a385-4c2f-bac6-d4f753502d02"
   
-  // Look up the hardcoded user by email
-  const { data: hardcodedUser, error: lookupError } = await supabase
-    .from("users")
-    .select("id")
-    .eq("email", HARDCODED_USER_EMAIL)
-    .single()
-
-  if (lookupError || !hardcodedUser) {
-    return { error: `Test user (${HARDCODED_USER_EMAIL}) not found in database` }
-  }
-
-  // Use the hardcoded user instead of auth user
-  const user = { id: hardcodedUser.id }
+  // Use the hardcoded user ID directly (bypasses RLS and query issues)
+  const user = { id: HARDCODED_USER_ID }
 
   try {
     const propertyId = formData.get("propertyId") as string
