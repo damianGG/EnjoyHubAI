@@ -10,6 +10,8 @@ import BookingCard from "@/components/booking-card"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
+import { TopNav } from "@/components/top-nav"
+import { BottomNav } from "@/components/bottom-nav"
 
 // Enable ISR - revalidate every 120 seconds
 export const revalidate = 120
@@ -68,26 +70,29 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   const roundedRating = Math.round(avgRating * 10) / 10
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Main Navigation Bar */}
+      <TopNav />
+
+      {/* Secondary Navigation */}
+      <div className="border-b">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm sm:text-base">Back to Attractions</span>
+            <span className="text-sm sm:text-base">Powrót do atrakcji</span>
           </Link>
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm">
               <Heart className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Save</span>
+              <span className="hidden sm:inline">Zapisz</span>
             </Button>
             <Button variant="outline" size="sm">
-              <span className="text-sm">Share</span>
+              <span className="text-sm">Udostępnij</span>
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Property Title and Rating */}
@@ -227,6 +232,9 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Bottom Navigation Bar for Mobile */}
+      <BottomNav />
     </div>
   )
 }
