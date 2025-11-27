@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
-import type { Offer, OfferAvailability } from "@/lib/types/dynamic-fields"
+import { z } from "zod"
+import type { OfferAvailability } from "@/lib/types/dynamic-fields"
 
 function createSupabaseServerClient() {
   const cookieStore = cookies()
@@ -25,36 +26,6 @@ function createSupabaseServerClient() {
       },
     }
   )
-}
-
-/**
- * Validates a date string in ISO format (YYYY-MM-DD)
- */
-function isValidDateString(dateStr: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return false
-  }
-
-  const [year, month, day] = dateStr.split("-").map(Number)
-  const date = new Date(Date.UTC(year, month - 1, day))
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  )
-}
-
-/**
- * Validates a time string in HH:mm format
- */
-function isValidTimeString(timeStr: string): boolean {
-  if (!/^\d{2}:\d{2}$/.test(timeStr)) {
-    return false
-  }
-
-  const [hours, minutes] = timeStr.split(":").map(Number)
-  return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
 }
 
 /**
@@ -105,22 +76,36 @@ function isTimeInAvailabilityWindow(
   return startMinutes >= windowStartMinutes && endMinutes <= windowEndMinutes
 }
 
-interface BookingRequestBody {
-  offerId: string
-  date: string
-  startTime: string
-  persons: number
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-}
+// Zod schema for booking request validation
+const bookingRequestSchema = z.object({
+  offerId: z.string().min(1, "offerId is required"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Expected YYYY-MM-DD").refine(
+    (date) => {
+      const [year, month, day] = date.split("-").map(Number)
+      const d = new Date(Date.UTC(year, month - 1, day))
+      return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day
+    },
+    { message: "Invalid date value" }
+  ),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "Invalid startTime format. Expected HH:mm").refine(
+    (time) => {
+      const [hours, minutes] = time.split(":").map(Number)
+      return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
+    },
+    { message: "Invalid startTime value" }
+  ),
+  persons: z.number().int("persons must be an integer").positive("persons must be greater than 0"),
+  customerName: z.string().min(1, "customerName is required").transform(s => s.trim()),
+  customerEmail: z.string().min(1, "customerEmail is required").email("customerEmail must be a valid email address").transform(s => s.trim()),
+  customerPhone: z.string().min(1, "customerPhone is required").transform(s => s.trim()),
+})
 
 export async function POST(request: Request) {
   try {
-    let body: BookingRequestBody
+    let rawBody: unknown
 
     try {
-      body = await request.json()
+      rawBody = await request.json()
     } catch {
       return NextResponse.json(
         { error: "Invalid JSON body" },
@@ -128,87 +113,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const { offerId, date, startTime, persons, customerName, customerEmail, customerPhone } = body
-
-    // Validate required fields
-    if (!offerId || typeof offerId !== "string") {
+    // Validate request body using Zod
+    const parseResult = bookingRequestSchema.safeParse(rawBody)
+    
+    if (!parseResult.success) {
+      const firstError = parseResult.error.errors[0]
       return NextResponse.json(
-        { error: "offerId is required and must be a string" },
+        { error: firstError.message },
         { status: 400 }
       )
     }
 
-    if (!date || typeof date !== "string") {
-      return NextResponse.json(
-        { error: "date is required and must be a string" },
-        { status: 400 }
-      )
-    }
-
-    if (!isValidDateString(date)) {
-      return NextResponse.json(
-        { error: "Invalid date format. Expected YYYY-MM-DD" },
-        { status: 400 }
-      )
-    }
-
-    if (!startTime || typeof startTime !== "string") {
-      return NextResponse.json(
-        { error: "startTime is required and must be a string" },
-        { status: 400 }
-      )
-    }
-
-    if (!isValidTimeString(startTime)) {
-      return NextResponse.json(
-        { error: "Invalid startTime format. Expected HH:mm" },
-        { status: 400 }
-      )
-    }
-
-    if (persons === undefined || persons === null || typeof persons !== "number") {
-      return NextResponse.json(
-        { error: "persons is required and must be a number" },
-        { status: 400 }
-      )
-    }
-
-    if (persons <= 0 || !Number.isInteger(persons)) {
-      return NextResponse.json(
-        { error: "persons must be a positive integer" },
-        { status: 400 }
-      )
-    }
-
-    if (!customerName || typeof customerName !== "string" || customerName.trim() === "") {
-      return NextResponse.json(
-        { error: "customerName is required and must be a non-empty string" },
-        { status: 400 }
-      )
-    }
-
-    if (!customerEmail || typeof customerEmail !== "string" || customerEmail.trim() === "") {
-      return NextResponse.json(
-        { error: "customerEmail is required and must be a non-empty string" },
-        { status: 400 }
-      )
-    }
-
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(customerEmail)) {
-      return NextResponse.json(
-        { error: "customerEmail must be a valid email address" },
-        { status: 400 }
-      )
-    }
-
-    if (!customerPhone || typeof customerPhone !== "string" || customerPhone.trim() === "") {
-      return NextResponse.json(
-        { error: "customerPhone is required and must be a non-empty string" },
-        { status: 400 }
-      )
-    }
+    const { offerId, date, startTime, persons, customerName, customerEmail, customerPhone } = parseResult.data
 
     const supabase = createSupabaseServerClient()
 
@@ -271,7 +187,7 @@ export async function POST(request: Request) {
     // d) Count existing bookings for this slot
     const { count: activeBookingsCount, error: countError } = await supabase
       .from("offer_bookings")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("offer_id", offerId)
       .eq("booking_date", date)
       .eq("start_time", startTime)
@@ -306,9 +222,9 @@ export async function POST(request: Request) {
         persons: persons,
         status: "confirmed",
         payment_status: "not_required",
-        customer_name: customerName.trim(),
-        customer_email: customerEmail.trim(),
-        customer_phone: customerPhone.trim(),
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
         source: "online_enjoyhub",
       })
       .select("id, status, payment_status, booking_date, start_time, end_time, persons, offer_id, place_id")
