@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Star, Users, Loader2, Calendar, AlertCircle, CheckCircle } from "lucide-react"
 import { createBooking } from "@/lib/booking-actions"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 interface BookingCardProps {
   propertyId: string
@@ -43,6 +43,8 @@ export default function BookingCard({
 
   // Check if user is logged in and listen for auth state changes
   useEffect(() => {
+    const supabase = createClient()
+    
     const getUser = async () => {
       const {
         data: { user },
