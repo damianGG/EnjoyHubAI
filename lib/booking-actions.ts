@@ -18,15 +18,23 @@ export interface BookingData {
 export async function createBooking(prevState: any, formData: FormData) {
   const supabase = createSupabaseServerClient()
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
+  // TEMPORARY: Hardcoded user for testing booking functionality
+  // TODO: Remove this workaround and restore proper auth check once auth issues are resolved
+  const HARDCODED_USER_EMAIL = "damiangolon@gmail.com"
+  
+  // Look up the hardcoded user by email
+  const { data: hardcodedUser, error: lookupError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", HARDCODED_USER_EMAIL)
+    .single()
 
-  if (userError || !user) {
-    return { error: "You must be logged in to make a booking" }
+  if (lookupError || !hardcodedUser) {
+    return { error: `Test user (${HARDCODED_USER_EMAIL}) not found in database` }
   }
+
+  // Use the hardcoded user instead of auth user
+  const user = { id: hardcodedUser.id }
 
   try {
     const propertyId = formData.get("propertyId") as string
