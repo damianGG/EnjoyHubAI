@@ -61,7 +61,7 @@ export async function createBooking(prevState: any, formData: FormData) {
       .single()
 
     if (propertyError || !property) {
-      return { error: "Property not found or not available" }
+      return { error: `Property not found or not available. ${propertyError ? `Details: ${propertyError.message}` : ''}` }
     }
 
     // Check if user is trying to book their own property
@@ -83,7 +83,7 @@ export async function createBooking(prevState: any, formData: FormData) {
       .or(`check_in.lte.${checkOut},check_out.gte.${checkIn}`)
 
     if (conflictError) {
-      return { error: "Error checking availability" }
+      return { error: `Error checking availability: ${conflictError.message}` }
     }
 
     if (conflictingBookings && conflictingBookings.length > 0) {
@@ -107,13 +107,14 @@ export async function createBooking(prevState: any, formData: FormData) {
 
     if (bookingError) {
       console.error("Booking creation error:", bookingError)
-      return { error: "Failed to create booking. Please try again." }
+      // Return detailed error for debugging
+      return { error: `Failed to create booking: ${bookingError.message} (Code: ${bookingError.code})` }
     }
 
     return { success: true, bookingId: booking.id }
   } catch (error) {
     console.error("Booking error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}` }
   }
 }
 
