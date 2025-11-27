@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,8 +46,20 @@ function formatDisplayDate(dateStr: string): string {
 }
 
 export default function BookingWidget({ offer }: BookingWidgetProps) {
-  // Date selection
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  // Date selection - initialize as undefined to avoid hydration mismatch
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  
+  // Set default date after mount to avoid hydration issues
+  useEffect(() => {
+    setSelectedDate(new Date())
+  }, [])
+  
+  // Memoize today's date for calendar disabled check
+  const today = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
   
   // Slots state
   const [slots, setSlots] = useState<Slot[]>([])
@@ -110,7 +122,7 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
     const { name, value, type } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "number" ? parseInt(value, 10) || 1 : value,
+      [name]: type === "number" ? Math.max(1, parseInt(value, 10) || 1) : value,
     }))
   }
 
@@ -249,7 +261,7 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+              disabled={(date) => date < today}
               className="rounded-md border"
             />
           </div>
