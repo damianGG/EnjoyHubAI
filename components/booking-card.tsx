@@ -1,17 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useActionState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Star, Users, Loader2, Calendar, AlertCircle, CheckCircle } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Star, Users, Loader2, AlertCircle, CheckCircle } from "lucide-react"
 import { createBooking } from "@/lib/booking-actions"
 import { createClient } from "@/lib/supabase/client"
+import type { DateRange } from "react-day-picker"
 
 interface BookingCardProps {
   propertyId: string
@@ -29,8 +30,7 @@ export default function BookingCard({
   reviewCount,
 }: BookingCardProps) {
   const router = useRouter()
-  const [checkIn, setCheckIn] = useState("")
-  const [checkOut, setCheckOut] = useState("")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [guests, setGuests] = useState("1")
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
   const [availabilityMessage, setAvailabilityMessage] = useState<{
@@ -38,8 +38,40 @@ export default function BookingCard({
     message: string
   } | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [bookedDates, setBookedDates] = useState<Date[]>([])
+  const [isLoadingDates, setIsLoadingDates] = useState(true)
 
   const [state, formAction] = useActionState(createBooking, null)
+
+  // Today's date for calendar
+  const today = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
+
+  // Fetch booked dates for this property
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      setIsLoadingDates(true)
+      try {
+        const response = await fetch(`/api/booked-dates?propertyId=${propertyId}`)
+        const data = await response.json()
+        
+        if (data.bookedDates) {
+          // Convert date strings to Date objects
+          const dates = data.bookedDates.map((dateStr: string) => new Date(dateStr + "T00:00:00"))
+          setBookedDates(dates)
+        }
+      } catch (error) {
+        console.error("Error fetching booked dates:", error)
+      } finally {
+        setIsLoadingDates(false)
+      }
+    }
+
+    fetchBookedDates()
+  }, [propertyId])
 
   // Check if user is logged in and listen for auth state changes
   useEffect(() => {
@@ -70,8 +102,12 @@ export default function BookingCard({
     }
   }, [state, router])
 
+  // Get checkIn and checkOut from dateRange
+  const checkIn = dateRange?.from ? dateRange.from.toISOString().split("T")[0] : ""
+  const checkOut = dateRange?.to ? dateRange.to.toISOString().split("T")[0] : ""
+
   const calculateNights = () => {
-    if (!checkIn || !checkOut) return 0
+    if (!dateRange?.from || !dateRange?.to) return 0
     const start = new Date(checkIn)
     const end = new Date(checkOut)
     const diffTime = Math.abs(end.getTime() - start.getTime())
@@ -141,8 +177,19 @@ export default function BookingCard({
   const isFormValid = checkIn && checkOut && guests && nights > 0
   const isAvailable = availabilityMessage?.type === "success"
 
-  // Get minimum date (today)
-  const today = new Date().toISOString().split("T")[0]
+  // Check if a date should be disabled (past dates or booked dates)
+  const isDateDisabled = (date: Date) => {
+    // Disable past dates
+    if (date < today) return true
+    
+    // Check if the date is in booked dates
+    return bookedDates.some(
+      (bookedDate) => 
+        bookedDate.getFullYear() === date.getFullYear() &&
+        bookedDate.getMonth() === date.getMonth() &&
+        bookedDate.getDate() === date.getDate()
+    )
+  }
 
   return (
     <Card className="shadow-lg">
@@ -179,45 +226,57 @@ export default function BookingCard({
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="totalPrice" value={total.toFixed(2)} />
+          <input type="hidden" name="checkIn" value={checkIn} />
+          <input type="hidden" name="checkOut" value={checkOut} />
 
-          {/* Date Inputs */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="checkin" className="text-xs font-medium">
-                CHECK-IN
-              </Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="checkin"
-                  name="checkIn"
-                  type="date"
-                  min={today}
-                  value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  className="pl-10 text-sm"
-                  disabled={!user}
-                />
+          {/* Calendar Date Picker */}
+          <div>
+            <Label className="text-xs font-medium mb-2 block">SELECT DATES</Label>
+            {isLoadingDates ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading availability...</span>
               </div>
-            </div>
-            <div>
-              <Label htmlFor="checkout" className="text-xs font-medium">
-                CHECK-OUT
-              </Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="checkout"
-                  name="checkOut"
-                  type="date"
-                  min={checkIn || today}
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="pl-10 text-sm"
-                  disabled={!user}
-                />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex justify-center border rounded-md p-2">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    disabled={isDateDisabled}
+                    numberOfMonths={1}
+                    className="rounded-md"
+                  />
+                </div>
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-primary"></div>
+                    <span>Selected</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded bg-muted opacity-50"></div>
+                    <span>Unavailable</span>
+                  </div>
+                </div>
+                {/* Selected dates display */}
+                {dateRange?.from && (
+                  <div className="mt-3 p-2 bg-muted rounded-md text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Check-in:</span>
+                      <span className="font-medium">{dateRange.from.toLocaleDateString()}</span>
+                    </div>
+                    {dateRange.to && (
+                      <div className="flex justify-between mt-1">
+                        <span className="text-muted-foreground">Check-out:</span>
+                        <span className="font-medium">{dateRange.to.toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Guests Selector */}
