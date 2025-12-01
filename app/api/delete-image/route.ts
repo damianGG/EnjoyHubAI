@@ -6,7 +6,7 @@ import { cloudinary } from "@/lib/cloudinary"
 export async function DELETE(request: Request) {
   try {
     // Check if user is authenticated
-    const supabase = await createClient()
+    const supabase = createClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()

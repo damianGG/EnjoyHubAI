@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import FieldManagementClient from "@/components/field-management"
 
 export default async function FieldsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

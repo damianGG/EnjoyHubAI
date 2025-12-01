@@ -36,7 +36,7 @@ export default async function OfferPage({ params }: OfferPageProps) {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createClient()
 
   // Get offer details with place info
   const { data: offer } = await supabase

@@ -13,7 +13,7 @@ export default async function ForgotPasswordPage() {
   }
 
   // Check if user is already logged in
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()

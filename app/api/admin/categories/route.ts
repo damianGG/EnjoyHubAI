@@ -4,7 +4,7 @@ import type { Category } from "@/lib/types/dynamic-fields"
 
 // Helper to check if user is super admin
 async function isSuperAdmin() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -21,7 +21,7 @@ async function isSuperAdmin() {
 // GET - List all categories
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase.from("categories").select("*").order("name")
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
     const body = await request.json()
 
     const { name, slug, icon, description, image_url, image_public_id } = body
@@ -81,7 +81,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
     const body = await request.json()
 
     const { id, name, slug, icon, description, image_url, image_public_id } = body
@@ -117,7 +117,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 

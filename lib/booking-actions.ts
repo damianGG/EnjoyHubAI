@@ -1,6 +1,12 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+
+function createSupabaseServerClient() {
+  const cookieStore = cookies()
+  return createServerActionClient({ cookies: () => cookieStore })
+}
 
 export interface BookingData {
   propertyId: string
@@ -11,7 +17,7 @@ export interface BookingData {
 }
 
 export async function createBooking(prevState: any, formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createSupabaseServerClient()
 
   // Get current user
   const {
@@ -115,7 +121,7 @@ export async function createBooking(prevState: any, formData: FormData) {
 }
 
 export async function checkAvailability(propertyId: string, checkIn: string, checkOut: string) {
-  const supabase = await createClient()
+  const supabase = createSupabaseServerClient()
 
   try {
     const { data: conflictingBookings, error } = await supabase

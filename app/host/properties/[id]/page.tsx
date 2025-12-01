@@ -16,7 +16,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
   // Await params if it's a Promise (Next.js 15+)
   const resolvedParams = await Promise.resolve(params)
 
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

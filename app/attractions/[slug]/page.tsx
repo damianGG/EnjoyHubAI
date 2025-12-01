@@ -37,7 +37,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Extract ID from slug
   const id = extractIdFromSlug(params.slug)

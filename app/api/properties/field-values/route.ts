@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 // Helper to check if user owns the property
 async function userOwnsProperty(propertyId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Property ID is required" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from("object_field_values")
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 // POST - Create or update field values for a property
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const body = await request.json()
 
     const { property_id, field_values } = body
@@ -126,7 +126,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = createClient()
     const { error } = await supabase.from("object_field_values").delete().eq("id", id)
 
     if (error) {

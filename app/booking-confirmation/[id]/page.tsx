@@ -21,7 +21,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
     )
   }
 
-  const supabase = await createClient()
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
