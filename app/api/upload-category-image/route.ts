@@ -4,7 +4,7 @@ import { cloudinary } from "@/lib/cloudinary"
 
 // Helper to check if user is super admin
 async function isSuperAdmin() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

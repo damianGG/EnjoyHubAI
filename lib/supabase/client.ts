@@ -1,4 +1,4 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 
 // Check if we're in the browser
 const isBrowser = typeof window !== "undefined"
@@ -58,7 +58,10 @@ export function createClient() {
   // The environment variables should be embedded in the client bundle at build time
   if (isBrowser) {
     try {
-      return createClientComponentClient()
+      return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
     } catch (error) {
       console.warn("Failed to create Supabase client:", error)
       return createDummyClient() as any
@@ -72,7 +75,10 @@ export function createClient() {
     typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
   ) {
-    return createClientComponentClient()
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
   }
   
   console.warn("Supabase environment variables are not set. Using dummy client.")

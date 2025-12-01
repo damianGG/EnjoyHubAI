@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     const ageMin = searchParams.get("age_min")
     const ageMax = searchParams.get("age_max")
     
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get category IDs and subcategory IDs if filtering by categories/subcategories
     let categoryIds: string[] | null = null

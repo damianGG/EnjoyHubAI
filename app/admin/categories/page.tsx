@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import CategoryManagementEnhanced from "@/components/category-management-enhanced"
 
 export default async function CategoriesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

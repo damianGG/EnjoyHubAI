@@ -4,7 +4,7 @@ import type { Subcategory } from "@/lib/types/dynamic-fields"
 
 // Helper to check if user is super admin
 async function isSuperAdmin() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -21,7 +21,7 @@ async function isSuperAdmin() {
 // GET - List all subcategories or subcategories for a specific category
 export async function GET(request: Request) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get("categoryId")
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
 
     const { parent_category_id, name, slug, icon, description, image_url, image_public_id } = body
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
 
     const { id, parent_category_id, name, slug, icon, description, image_url, image_public_id } = body
@@ -127,7 +127,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 

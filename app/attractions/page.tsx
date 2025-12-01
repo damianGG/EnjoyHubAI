@@ -25,7 +25,7 @@ export default async function AttractionsPage() {
     )
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get all active attractions with user information
   const { data, error } = await supabase
