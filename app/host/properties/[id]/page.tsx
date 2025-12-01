@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured()) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>

@@ -1,8 +1,9 @@
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import { NextResponse, type NextRequest } from "next/server"
 
-// Check if Supabase environment variables are available
-export const isSupabaseConfigured =
+// Check if Supabase environment variables are available at runtime
+// This must be a function, not a constant, to ensure it's evaluated at runtime
+export const isSupabaseConfigured = () =>
   typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
@@ -10,7 +11,7 @@ export const isSupabaseConfigured =
 
 export async function updateSession(request: NextRequest) {
   // If Supabase is not configured, just continue without auth
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured()) {
     return NextResponse.next({
       request,
     })

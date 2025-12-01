@@ -7,7 +7,7 @@ import AttractionsView from "@/components/attractions-view"
 export const revalidate = 60
 
 export default async function AttractionsPage() {
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured()) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="border-destructive">

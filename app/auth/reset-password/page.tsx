@@ -3,7 +3,7 @@ import ResetPasswordForm from "@/components/reset-password-form"
 
 export default async function ResetPasswordPage() {
   // If Supabase is not configured, show setup message directly
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured()) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>

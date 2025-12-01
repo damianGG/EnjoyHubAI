@@ -2,8 +2,9 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
-// Check if Supabase environment variables are available
-export const isSupabaseConfigured =
+// Check if Supabase environment variables are available at runtime
+// This must be a function, not a constant, to ensure it's evaluated at runtime
+export const isSupabaseConfigured = () =>
   typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
@@ -44,7 +45,8 @@ const createDummyQueryBuilder = () => {
 export const createClient = cache(() => {
   const cookieStore = cookies()
 
-  if (!isSupabaseConfigured) {
+  // Check at runtime, not at module load time
+  if (!isSupabaseConfigured()) {
     console.warn("Supabase environment variables are not set. Using dummy client.")
     return {
       auth: {
