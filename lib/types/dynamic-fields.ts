@@ -188,3 +188,74 @@ export interface Slot {
 export interface SlotsResponse {
   slots: Slot[];
 }
+
+// Attraction availability system types
+
+export type BookingMode = 'daily' | 'hourly';
+export type BookingType = 'property' | 'attraction';
+
+export interface SeasonalPrice {
+  start_date: string; // YYYY-MM-DD
+  end_date: string; // YYYY-MM-DD
+  price: number;
+  name: string;
+}
+
+export interface AttractionAvailability {
+  id: string;
+  property_id: string;
+  booking_mode: BookingMode;
+  blocked_dates: string[]; // Array of YYYY-MM-DD strings
+  seasonal_prices: SeasonalPrice[];
+  min_stay: number; // In days for daily mode, in hours for hourly mode
+  max_stay?: number; // Optional maximum stay
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DateAvailability {
+  date: string; // YYYY-MM-DD
+  available: boolean;
+  price: number;
+  isBlocked: boolean;
+  isSeasonal: boolean;
+  seasonalName?: string;
+}
+
+export interface AvailabilityCalendar {
+  property_id: string;
+  booking_mode: BookingMode;
+  min_stay: number;
+  max_stay?: number;
+  dates: DateAvailability[];
+}
+
+export interface ExtendedBooking {
+  id: string;
+  property_id: string;
+  guest_id: string;
+  check_in: string;
+  check_out: string;
+  guests_count: number;
+  total_price: number;
+  status: string;
+  booking_type: BookingType;
+  start_time?: string; // For hourly bookings
+  end_time?: string; // For hourly bookings
+  applied_price_per_unit?: number; // Actual price applied (considering seasonal)
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlockDatesRequest {
+  property_id: string;
+  dates: string[]; // Array of YYYY-MM-DD strings to block/unblock
+  action: 'block' | 'unblock';
+}
+
+export interface BlockDatesResponse {
+  success: boolean;
+  message: string;
+  blocked_dates?: string[];
+}
