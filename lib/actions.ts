@@ -1,12 +1,31 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-function createSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerActionClient({ cookies: () => cookieStore })
+async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    }
+  )
 }
 
 type ActionResult = { ok?: boolean; message?: string; error?: string }
@@ -30,7 +49,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
   if (!validateEmail(emailStr)) return { error: "Invalid email" }
   if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -39,6 +58,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
     })
 
     if (error) {
+      console.error("Sign in error:", error)
       // Avoid leaking provider internals; give a friendly message
       return { error: "Invalid credentials or account not confirmed" }
     }
@@ -68,7 +88,7 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
   if (!validateEmail(emailStr)) return { error: "Invalid email" }
   if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -115,7 +135,7 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
 // Sign out action
 export async function signOut() {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   await supabase.auth.signOut()
   redirect("/auth/login")
@@ -123,7 +143,7 @@ export async function signOut() {
 
 // Google OAuth sign in action
 export async function signInWithGoogle() {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -154,7 +174,7 @@ export async function requestPasswordReset(prevState: any, formData: FormData): 
 
   if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(emailStr, {
@@ -189,7 +209,7 @@ export async function updatePassword(prevState: any, formData: FormData): Promis
   if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
   if (passwordStr !== confirmPasswordStr) return { error: "Hasła nie są identyczne" }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   try {
     const { error } = await supabase.auth.updateUser({
