@@ -7,9 +7,7 @@ import Link from "next/link"
 import AvailabilityManager from "@/components/availability-manager"
 
 interface AvailabilityPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }> | { id: string }
 }
 
 export default async function PropertyAvailabilityPage({ params }: AvailabilityPageProps) {
@@ -20,6 +18,9 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
       </div>
     )
   }
+
+  // Await params if it's a Promise (Next.js 15+)
+  const resolvedParams = await Promise.resolve(params)
 
   const supabase = createClient()
   const {
@@ -34,7 +35,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
   const { data: property } = await supabase
     .from("properties")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("host_id", user.id)
     .single()
 
@@ -46,7 +47,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
   const { data: availability } = await supabase
     .from("attraction_availability")
     .select("*")
-    .eq("property_id", params.id)
+    .eq("property_id", resolvedParams.id)
     .single()
 
   return (
@@ -54,7 +55,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <Link href={`/host/properties/${params.id}`} className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href={`/host/properties/${resolvedParams.id}`} className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Property</span>
           </Link>
@@ -71,7 +72,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
           </div>
 
           <AvailabilityManager 
-            propertyId={params.id}
+            propertyId={resolvedParams.id}
             initialAvailability={availability}
             basePrice={property.price_per_night}
           />

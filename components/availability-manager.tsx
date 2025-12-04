@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar as CalendarIcon, Plus, X, Save, AlertCircle, CheckCircle } from "lucide-react"
 import type { AttractionAvailability, SeasonalPrice, BookingMode } from "@/lib/types/dynamic-fields"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 
 interface AvailabilityManagerProps {
   propertyId: string
@@ -31,7 +31,7 @@ export default function AvailabilityManager({
   const [minStay, setMinStay] = useState(initialAvailability?.min_stay || 1)
   const [maxStay, setMaxStay] = useState(initialAvailability?.max_stay || null)
   const [blockedDates, setBlockedDates] = useState<Date[]>(
-    (initialAvailability?.blocked_dates || []).map(d => new Date(d))
+    (initialAvailability?.blocked_dates || []).map(d => parseISO(d))
   )
   const [selectedDatesToBlock, setSelectedDatesToBlock] = useState<Date[]>([])
   const [seasonalPrices, setSeasonalPrices] = useState<SeasonalPrice[]>(

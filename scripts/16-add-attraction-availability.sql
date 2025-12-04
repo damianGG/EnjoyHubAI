@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS attraction_availability (
   booking_mode TEXT NOT NULL DEFAULT 'daily' CHECK (booking_mode IN ('daily', 'hourly')),
   
   -- Blocked dates stored as array of date strings (YYYY-MM-DD format)
+  -- Using TEXT[] instead of DATE[] for better JSON serialization and API compatibility
+  -- A check constraint ensures all dates follow the YYYY-MM-DD format
   blocked_dates TEXT[] DEFAULT '{}',
   
   -- Seasonal pricing: JSON array of pricing rules
