@@ -36,7 +36,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
   }
 
   // Get booking details
-  const { data: booking } = await supabase
+  const { data: booking, error: bookingError } = await supabase
     .from("bookings")
     .select(`
       *,
@@ -53,7 +53,11 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
     .eq("guest_id", user.id)
     .single()
 
-  if (!booking) {
+  if (bookingError) {
+    console.error("Error fetching booking:", bookingError)
+  }
+
+  if (!booking || !booking.properties) {
     notFound()
   }
 
@@ -111,10 +115,10 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
             {/* Property Info */}
             <div className="flex space-x-4">
               <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                {Array.isArray(booking.properties.images) && booking.properties.images.length > 0 ? (
+                {Array.isArray(booking.properties?.images) && booking.properties.images.length > 0 ? (
                   <img
                     src={booking.properties.images[0] || "/placeholder.svg?height=80&width=80"}
-                    alt={booking.properties.title || 'Property'}
+                    alt={booking.properties?.title || 'Property'}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -124,11 +128,11 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
                 )}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">{booking.properties.title}</h3>
+                <h3 className="font-semibold">{booking.properties?.title || 'Property'}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {booking.properties.city}, {booking.properties.country}
+                  {booking.properties?.city || 'N/A'}, {booking.properties?.country || 'N/A'}
                 </p>
-                <p className="text-sm text-muted-foreground">Host: {booking.properties.users.full_name}</p>
+                <p className="text-sm text-muted-foreground">Host: {booking.properties?.users?.full_name || 'Host'}</p>
               </div>
             </div>
 
