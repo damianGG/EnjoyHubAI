@@ -8,8 +8,8 @@ import type {
   SeasonalPrice 
 } from "@/lib/types/dynamic-fields"
 
-function createSupabaseServerClient() {
-  const cookieStore = cookies()
+async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -122,7 +122,7 @@ export async function GET(
     const start = startDate || defaultStart
     const end = endDate || defaultEndStr
 
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient()
 
     // Get property details
     const { data: property, error: propertyError } = await supabase

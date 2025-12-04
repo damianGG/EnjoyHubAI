@@ -3,8 +3,8 @@ import { cookies } from "next/headers"
 import { NextResponse, type NextRequest } from "next/server"
 import type { BlockDatesRequest, BlockDatesResponse } from "@/lib/types/dynamic-fields"
 
-function createSupabaseServerClient() {
-  const cookieStore = cookies()
+async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -50,7 +50,7 @@ export async function POST(
       )
     }
 
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient()
 
     // Get current user
     const {
