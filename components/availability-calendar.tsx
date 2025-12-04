@@ -86,8 +86,14 @@ export default function AvailabilityCalendar({ offerId, className }: Availabilit
         )
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Nie udało się pobrać dostępności")
+          let errorMessage = "Nie udało się pobrać dostępności"
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch {
+            // If JSON parsing fails, use default error message
+          }
+          throw new Error(errorMessage)
         }
 
         const data: AvailabilityResponse = await response.json()

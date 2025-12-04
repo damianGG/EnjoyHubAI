@@ -66,11 +66,21 @@ function getWeekday(dateStr: string): number {
 
 /**
  * Converts time string "HH:MM" to minutes from midnight
+ * Returns -1 if invalid format
  */
 function timeToMinutes(time: string): number {
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    return -1
+  }
+  
   const parts = time.split(":")
   const hours = Number(parts[0])
   const minutes = Number(parts[1])
+  
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return -1
+  }
+  
   return hours * 60 + minutes
 }
 
@@ -235,36 +245,38 @@ export async function GET(
       }
     }
 
-    // Build response
-    const days: DayAvailability[] = dates.map((date) => {
-      const weekday = getWeekday(date)
-      const hasAvailability = weekdayHasAvailability.get(weekday) || false
-      
-      // For simplicity, consider a day available if it has availability configuration
-      // and not all possible slots are booked
-      // A more accurate implementation would generate all slots and check each one
-      const bookedSlots = dateSlotBookings.get(date)?.size || 0
-      
-      // Get total number of unique slots available for this weekday
+    // Pre-calculate total unique slots per weekday for performance
+    const weekdayTotalSlots = new Map<number, number>()
+    for (let weekday = 0; weekday < 7; weekday++) {
       const dayAvailabilities = availabilities?.filter(a => a.weekday === weekday) || []
-      let totalUniqueSlots = 0
       const seenSlots = new Set<string>()
       
       for (const avail of dayAvailabilities) {
-        // Calculate number of slots in this availability window
         const startMinutes = timeToMinutes(avail.start_time)
         const endMinutes = timeToMinutes(avail.end_time)
         const slotLength = avail.slot_length_minutes
         
+        // Validate time values and slot length
+        if (startMinutes < 0 || endMinutes < 0 || slotLength <= 0) {
+          console.warn(`Invalid availability config for weekday ${weekday}: start=${avail.start_time}, end=${avail.end_time}, slotLength=${slotLength}`)
+          continue
+        }
+        
         for (let current = startMinutes; current < endMinutes; current += slotLength) {
           const slotTime = minutesToTime(current)
-          if (!seenSlots.has(slotTime)) {
-            seenSlots.add(slotTime)
-            totalUniqueSlots++
-          }
+          seenSlots.add(slotTime)
         }
       }
       
+      weekdayTotalSlots.set(weekday, seenSlots.size)
+    }
+
+    // Build response
+    const days: DayAvailability[] = dates.map((date) => {
+      const weekday = getWeekday(date)
+      const hasAvailability = weekdayHasAvailability.get(weekday) || false
+      const bookedSlots = dateSlotBookings.get(date)?.size || 0
+      const totalUniqueSlots = weekdayTotalSlots.get(weekday) || 0
       const isAvailable = hasAvailability && bookedSlots < totalUniqueSlots
 
       return {
