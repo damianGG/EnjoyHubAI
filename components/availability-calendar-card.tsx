@@ -51,8 +51,18 @@ export default function AvailabilityCalendarCard({
       try {
         const {
           data: { user },
+          error,
         } = await supabase.auth.getUser()
+        
+        if (error) {
+          console.error("Error fetching user:", error)
+        }
+        
+        console.log("Auth check - user:", user ? "logged in" : "not logged in")
         setUser(user)
+      } catch (err) {
+        console.error("Exception in getUser:", err)
+        setUser(null)
       } finally {
         setIsLoadingAuth(false)
       }
@@ -60,6 +70,7 @@ export default function AvailabilityCalendarCard({
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed - event:", _event, "session:", session ? "exists" : "null")
       setUser(session?.user ?? null)
       setIsLoadingAuth(false)
     })
@@ -195,6 +206,13 @@ export default function AvailabilityCalendarCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Debug info - can be removed later */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs bg-muted p-2 rounded">
+            Auth Status: {isLoadingAuth ? "Loading..." : user ? `Logged in as ${user.email}` : "Not logged in"}
+          </div>
+        )}
+
         {/* Show loading state while checking authentication */}
         {isLoadingAuth && (
           <div className="flex items-center justify-center py-4">
@@ -276,7 +294,7 @@ export default function AvailabilityCalendarCard({
               <Label htmlFor="guests" className="text-xs font-medium">
                 GUESTS
               </Label>
-              <Select name="guests" value={guests} onValueChange={setGuests} disabled={!user}>
+              <Select name="guests" value={guests} onValueChange={setGuests} disabled={isLoadingAuth || !user}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -326,12 +344,12 @@ export default function AvailabilityCalendarCard({
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={!user || !isFormValid}
+                disabled={isLoadingAuth || !user || !isFormValid}
               >
-                {!user ? "Log in to Reserve" : "Reserve"}
+                {isLoadingAuth ? "Loading..." : !user ? "Log in to Reserve" : "Reserve"}
               </Button>
 
-              {user && isFormValid && <p className="text-center text-sm text-muted-foreground">You won't be charged yet</p>}
+              {!isLoadingAuth && user && isFormValid && <p className="text-center text-sm text-muted-foreground">You won't be charged yet</p>}
             </form>
 
             {/* Price Breakdown */}
