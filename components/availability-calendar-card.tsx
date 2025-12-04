@@ -338,6 +338,7 @@ export default function AvailabilityCalendarCard({
               <input type="hidden" name="propertyId" value={propertyId} />
               <input type="hidden" name="checkIn" value={checkInDate ? format(checkInDate, "yyyy-MM-dd") : ""} />
               <input type="hidden" name="checkOut" value={checkOutDate ? format(checkOutDate, "yyyy-MM-dd") : ""} />
+              <input type="hidden" name="guests" value={guests} />
               <input type="hidden" name="totalPrice" value={total.toFixed(2)} />
 
               <Button
