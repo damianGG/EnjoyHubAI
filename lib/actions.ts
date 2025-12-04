@@ -15,13 +15,9 @@ async function createSupabaseServerClient() {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
         },
       },
     }
@@ -49,10 +45,10 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
   if (!validateEmail(emailStr)) return { error: "Invalid email" }
   if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
 
-  const supabase = await createSupabaseServerClient()
-
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const supabase = await createSupabaseServerClient()
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: emailStr,
       password: passwordStr,
     })
@@ -63,6 +59,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
       return { error: "Invalid credentials or account not confirmed" }
     }
 
+    console.log("Sign in successful for user:", data?.user?.email)
     return { ok: true, message: "Signed in" }
   } catch (err) {
     console.error("Login error:", err)
