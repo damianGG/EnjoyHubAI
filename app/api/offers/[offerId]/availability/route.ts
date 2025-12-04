@@ -65,6 +65,25 @@ function getWeekday(dateStr: string): number {
 }
 
 /**
+ * Converts time string "HH:MM" to minutes from midnight
+ */
+function timeToMinutes(time: string): number {
+  const parts = time.split(":")
+  const hours = Number(parts[0])
+  const minutes = Number(parts[1])
+  return hours * 60 + minutes
+}
+
+/**
+ * Converts minutes from midnight to time string "HH:MM"
+ */
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`
+}
+
+/**
  * Generate array of dates between start and end (inclusive)
  */
 function getDateRange(startDate: Date, endDate: Date): string[] {
@@ -165,7 +184,7 @@ export async function GET(
     // Load all availability configurations for this offer
     const { data: availabilities, error: availError } = await supabase
       .from("offer_availability")
-      .select("weekday, max_bookings_per_slot")
+      .select("weekday, start_time, end_time, slot_length_minutes, max_bookings_per_slot")
       .eq("offer_id", offerId)
 
     if (availError) {
@@ -176,12 +195,11 @@ export async function GET(
       )
     }
 
-    // Create map of weekday -> max bookings (total slots for the day)
-    const weekdaySlots = new Map<number, number>()
-    if (availabilities) {
+    // Create map of weekday -> whether it has any availability
+    const weekdayHasAvailability = new Map<number, boolean>()
+    if (availabilities && availabilities.length > 0) {
       for (const avail of availabilities) {
-        const existing = weekdaySlots.get(avail.weekday) || 0
-        weekdaySlots.set(avail.weekday, existing + avail.max_bookings_per_slot)
+        weekdayHasAvailability.set(avail.weekday, true)
       }
     }
 
@@ -191,7 +209,7 @@ export async function GET(
     // Get all bookings for this offer in the date range
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select("booking_date")
+      .select("booking_date, start_time")
       .eq("offer_id", offerId)
       .gte("booking_date", startDate)
       .lte("booking_date", endDate)
@@ -205,27 +223,55 @@ export async function GET(
       )
     }
 
-    // Count bookings per date
-    const bookingCounts: Record<string, number> = {}
+    // Count unique time slots booked per date
+    const dateSlotBookings = new Map<string, Set<string>>()
     if (bookings) {
       for (const booking of bookings) {
-        bookingCounts[booking.booking_date] = (bookingCounts[booking.booking_date] || 0) + 1
+        const key = booking.booking_date
+        if (!dateSlotBookings.has(key)) {
+          dateSlotBookings.set(key, new Set())
+        }
+        dateSlotBookings.get(key)!.add(booking.start_time)
       }
     }
 
     // Build response
     const days: DayAvailability[] = dates.map((date) => {
       const weekday = getWeekday(date)
-      const totalSlots = weekdaySlots.get(weekday) || 0
-      const bookedSlots = bookingCounts[date] || 0
-      const hasAvailability = totalSlots > 0
-      const isAvailable = hasAvailability && bookedSlots < totalSlots
+      const hasAvailability = weekdayHasAvailability.get(weekday) || false
+      
+      // For simplicity, consider a day available if it has availability configuration
+      // and not all possible slots are booked
+      // A more accurate implementation would generate all slots and check each one
+      const bookedSlots = dateSlotBookings.get(date)?.size || 0
+      
+      // Get total number of unique slots available for this weekday
+      const dayAvailabilities = availabilities?.filter(a => a.weekday === weekday) || []
+      let totalUniqueSlots = 0
+      const seenSlots = new Set<string>()
+      
+      for (const avail of dayAvailabilities) {
+        // Calculate number of slots in this availability window
+        const startMinutes = timeToMinutes(avail.start_time)
+        const endMinutes = timeToMinutes(avail.end_time)
+        const slotLength = avail.slot_length_minutes
+        
+        for (let current = startMinutes; current < endMinutes; current += slotLength) {
+          const slotTime = minutesToTime(current)
+          if (!seenSlots.has(slotTime)) {
+            seenSlots.add(slotTime)
+            totalUniqueSlots++
+          }
+        }
+      }
+      
+      const isAvailable = hasAvailability && bookedSlots < totalUniqueSlots
 
       return {
         date,
         isAvailable,
         hasAvailability,
-        totalSlots,
+        totalSlots: totalUniqueSlots,
         bookedSlots,
       }
     })

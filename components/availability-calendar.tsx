@@ -31,6 +31,25 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+function parseDate(dateStr: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return null
+  }
+
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const date = new Date(year, month - 1, day)
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null
+  }
+
+  return date
+}
+
 function getMonthRange(date: Date): { start: Date; end: Date } {
   const start = new Date(date.getFullYear(), date.getMonth(), 1)
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
@@ -98,15 +117,18 @@ export default function AvailabilityCalendar({ offerId, className }: Availabilit
     const noAvailability: Date[] = []
 
     availability.forEach((dayData) => {
-      const [year, month, day] = dayData.date.split("-").map(Number)
-      const date = new Date(year, month - 1, day)
+      const parsedDate = parseDate(dayData.date)
+      if (!parsedDate) {
+        console.warn(`Invalid date format: ${dayData.date}`)
+        return
+      }
       
       if (!dayData.hasAvailability) {
-        noAvailability.push(date)
+        noAvailability.push(parsedDate)
       } else if (dayData.isAvailable) {
-        available.push(date)
+        available.push(parsedDate)
       } else {
-        fullyBooked.push(date)
+        fullyBooked.push(parsedDate)
       }
     })
 
@@ -143,14 +165,17 @@ export default function AvailabilityCalendar({ offerId, className }: Availabilit
         {/* Legend */}
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
             <div className="w-4 h-4 rounded bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700" />
             <span>Dostępne</span>
           </div>
           <div className="flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
             <div className="w-4 h-4 rounded bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700" />
             <span>Zarezerwowane</span>
           </div>
           <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-muted-foreground opacity-40" />
             <div className="w-4 h-4 rounded bg-muted opacity-40 border" />
             <span>Brak oferty</span>
           </div>
