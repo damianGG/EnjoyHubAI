@@ -36,6 +36,7 @@ export default function AvailabilityCalendarCard({
   const [checkOutDate, setCheckOutDate] = useState<Date | undefined>()
   const [guests, setGuests] = useState("1")
   const [user, setUser] = useState<any>(null)
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
   const [availability, setAvailability] = useState<AvailabilityCalendar | null>(null)
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(true)
   const [dateAvailabilityMap, setDateAvailabilityMap] = useState<Map<string, DateAvailability>>(new Map())
@@ -47,15 +48,20 @@ export default function AvailabilityCalendarCard({
     const supabase = createClient()
     
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        setUser(user)
+      } finally {
+        setIsLoadingAuth(false)
+      }
     }
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      setIsLoadingAuth(false)
     })
 
     return () => {
@@ -189,7 +195,16 @@ export default function AvailabilityCalendarCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {!user && (
+        {/* Show loading state while checking authentication */}
+        {isLoadingAuth && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Checking authentication...</span>
+          </div>
+        )}
+
+        {/* Show login alert only after auth check is complete and user is not logged in */}
+        {!isLoadingAuth && !user && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
