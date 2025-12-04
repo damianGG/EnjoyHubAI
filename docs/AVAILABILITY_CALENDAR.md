@@ -4,6 +4,16 @@
 
 Kalendarz dostępności pozwala użytkownikom zobaczyć wizualnie, które dni są dostępne, a które są zarezerwowane dla danej oferty. Komponent wykorzystuje bibliotekę shadcn/ui i jest w pełni responsywny.
 
+## Integracja
+
+Kalendarz jest zintegrowany w dwóch miejscach:
+
+### 1. Strona szczegółów oferty (`/offers/[id]`)
+Wyświetla kalendarz dostępności dla konkretnej oferty.
+
+### 2. Strona szczegółów atrakcji (`/attractions/[slug]`)
+Wyświetla kalendarze dostępności dla wszystkich aktywnych ofert powiązanych z daną atrakcją (property). Jeśli atrakcja ma wiele ofert, każda z nich ma swój własny kalendarz dostępności.
+
 ## Komponenty
 
 ### 1. API Endpoint: `/api/offers/[offerId]/availability`
@@ -82,8 +92,11 @@ import AvailabilityCalendar from "@/components/availability-calendar"
 
 Komponent jest zintegrowany z:
 - Stroną szczegółów oferty (`app/offers/[id]/page.tsx`)
+- Stroną szczegółów atrakcji (`app/attractions/[slug]/page.tsx`)
 - Kalendarzem shadcn/ui (`components/ui/calendar.tsx`)
 - API slotów (`app/api/offers/[offerId]/slots/route.ts`)
+
+Na stronie atrakcji kalendarz wyświetla się dla wszystkich aktywnych ofert powiązanych z daną atrakcją.
 
 ## Logika biznesowa
 
@@ -123,10 +136,18 @@ Aby przetestować funkcjonalność:
    ```
    http://localhost:3000/offers/[id]
    ```
+   
+   LUB
+   
+   Przejdź do strony szczegółów atrakcji z ofertami:
+   ```
+   http://localhost:3000/attractions/[slug]
+   ```
 
-3. Przewiń do sekcji "Kalendarz dostępności"
+3. Przewiń do sekcji "Kalendarz dostępności" (na ofercie) lub "Dostępność ofert" (na atrakcji)
 
 4. Przetestuj:
    - Zmianę miesiąca
    - Kliknięcie na różne dni
    - Wyświetlanie informacji o dostępności
+   - (Na stronie atrakcji) Kalendarz dla każdej oferty powiązanej z atrakcją

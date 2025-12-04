@@ -53,6 +53,16 @@ Kompletna dokumentacja techniczna opisująca:
 ### `app/offers/[id]/page.tsx`
 Dodano import i renderowanie komponentu `AvailabilityCalendar` na stronie szczegółów oferty.
 
+### `app/attractions/[slug]/page.tsx`
+Dodano:
+- Import komponentu `AvailabilityCalendar`
+- Import typu `Offer` z types
+- Zapytanie do bazy danych aby pobrać wszystkie aktywne oferty dla danej atrakcji
+- Sekcję "Dostępność ofert" która wyświetla:
+  - Tytuł i cenę każdej oferty
+  - Opis oferty (jeśli dostępny)
+  - Kalendarz dostępności dla każdej oferty
+
 ## Cechy techniczne
 
 ### Bezpieczeństwo
@@ -139,13 +149,22 @@ Dodano import i renderowanie komponentu `AvailabilityCalendar` na stronie szczeg
 ## Użycie
 
 ### Dla użytkownika końcowego:
+
+**Na stronie oferty:**
 1. Wejdź na stronę oferty: `/offers/[id]`
 2. Przewiń do sekcji "Kalendarz dostępności"
 3. Kliknij na dzień aby zobaczyć szczegóły
-4. Dni są oznaczone kolorami:
-   - 🟢 Zielony (z ✓) = Dostępne
-   - 🔴 Czerwony (z ✗) = Zarezerwowane
-   - ⚪ Szary (z ⓘ) = Brak oferty
+
+**Na stronie atrakcji:**
+1. Wejdź na stronę atrakcji: `/attractions/[slug]`
+2. Przewiń do sekcji "Dostępność ofert"
+3. Zobacz kalendarze dla wszystkich ofert powiązanych z atrakcją
+4. Kliknij na dzień w dowolnym kalendarzu aby zobaczyć szczegóły
+
+**Oznaczenia dni:**
+- 🟢 Zielony (z ✓) = Dostępne
+- 🔴 Czerwony (z ✗) = Zarezerwowane
+- ⚪ Szary (z ⓘ) = Brak oferty
 
 ### Dla developera:
 ```tsx
