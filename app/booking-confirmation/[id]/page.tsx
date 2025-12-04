@@ -7,12 +7,17 @@ import { CheckCircle, Calendar, MapPin, Users, CreditCard, ArrowLeft } from "luc
 import Link from "next/link"
 
 interface BookingConfirmationPageProps {
-  params: {
+  params: Promise<{
+    id: string
+  }> | {
     id: string
   }
 }
 
 export default async function BookingConfirmationPage({ params }: BookingConfirmationPageProps) {
+  // Handle async params for Next.js 15
+  const resolvedParams = await Promise.resolve(params)
+  
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -21,7 +26,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
     )
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -44,7 +49,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
         users!properties_host_id_fkey (full_name, email)
       )
     `)
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("guest_id", user.id)
     .single()
 
