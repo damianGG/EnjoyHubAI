@@ -115,7 +115,7 @@ This matches Supabase's authentication system which uses bcrypt for password sto
 The script uses fixed UUIDs for consistency across environments:
 
 - Host user: `a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`
-- Regular user: `b1ffcd99-9d1c-5fg9-cc7e-7cc0ce491b22`
+- Regular user: `b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22`
 
 ### Database Tables
 

@@ -1,6 +1,8 @@
 -- Create test users for development and testing
 -- This script creates two users in the auth.users table with specific credentials
 -- The trigger will automatically create corresponding entries in the public.users table
+-- Note: Passwords are hashed with bcrypt (gen_salt('bf')) - each run generates a new salt,
+-- but the ON CONFLICT clause ensures idempotent execution
 
 -- User 1: Host user
 -- Email: host@host.com
@@ -66,7 +68,7 @@ INSERT INTO auth.users (
   recovery_token
 ) VALUES (
   '00000000-0000-0000-0000-000000000000',
-  'b1ffcd99-9d1c-5fg9-cc7e-7cc0ce491b22',
+  'b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22',
   'authenticated',
   'authenticated',
   'user@user.com',
@@ -88,7 +90,7 @@ INSERT INTO auth.users (
 -- This ensures the users exist in the public schema for the application to use
 INSERT INTO public.users (id, email, full_name, is_host, is_verified, created_at) VALUES
   ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'host@host.com', 'Host User', true, true, NOW()),
-  ('b1ffcd99-9d1c-5fg9-cc7e-7cc0ce491b22', 'user@user.com', 'Regular User', false, true, NOW())
+  ('b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22', 'user@user.com', 'Regular User', false, true, NOW())
 ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email,
   full_name = EXCLUDED.full_name,
