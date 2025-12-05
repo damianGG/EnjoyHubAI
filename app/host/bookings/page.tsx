@@ -14,7 +14,7 @@ export default async function BookingsPage() {
     )
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -96,12 +96,12 @@ export default async function BookingsPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
-                      <span>{booking.properties?.title}</span>
+                      <span>{booking.properties?.title || 'Untitled Property'}</span>
                     </CardTitle>
                     <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
                   </div>
                   <CardDescription>
-                    {booking.properties?.city}, {booking.properties?.country}
+                    {booking.properties?.city || 'Unknown'}, {booking.properties?.country || 'Unknown'}
                   </CardDescription>
                 </CardHeader>
 
