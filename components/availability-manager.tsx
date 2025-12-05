@@ -290,10 +290,6 @@ export default function AvailabilityManager({
               )}
             </CardContent>
           </Card>
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           <Button onClick={handleSaveSettings} disabled={isSaving} size="lg">
             <Save className="h-4 w-4 mr-2" />
