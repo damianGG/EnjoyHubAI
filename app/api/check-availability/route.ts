@@ -55,18 +55,38 @@ export async function POST(request: Request) {
     }
 
     if (isMultiBookingEnabled && dailyCapacity > 1) {
-      // Multi-booking mode: check if any day in the range exceeds capacity
-      // For simplicity, we'll check the maximum overlapping bookings
-      // In a real scenario, you'd check each day individually
-      const overlappingCount = conflictingBookings?.length ?? 0
-      const available = overlappingCount < dailyCapacity
+      // Multi-booking mode: check capacity for each day in the requested range
+      // We need to ensure no single day exceeds capacity
+      
+      // Parse dates
+      const startDate = new Date(checkIn)
+      const endDate = new Date(checkOut)
+      
+      // Check each day in the range
+      const currentDate = new Date(startDate)
+      let maxOccupancy = 0
+      
+      while (currentDate < endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0]
+        
+        // Count bookings that overlap with this specific date
+        const bookingsOnThisDate = conflictingBookings?.filter(booking => {
+          return dateStr >= booking.check_in && dateStr < booking.check_out
+        }).length ?? 0
+        
+        maxOccupancy = Math.max(maxOccupancy, bookingsOnThisDate)
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
+      
+      // Available if all days have capacity
+      const available = maxOccupancy < dailyCapacity
       
       return NextResponse.json({ 
         available, 
         capacityInfo: {
           total: dailyCapacity,
-          booked: overlappingCount,
-          remaining: dailyCapacity - overlappingCount
+          maxBooked: maxOccupancy,
+          remaining: dailyCapacity - maxOccupancy
         }
       })
     } else {

@@ -154,8 +154,16 @@ export default function AvailabilityManager({
       if (response.ok) {
         setSaveMessage({ type: "success", text: "Settings saved successfully!" })
       } else {
-        const errorData = await response.json()
-        setSaveMessage({ type: "error", text: errorData.error || "Failed to save settings" })
+        let errorMessage = "Failed to save settings"
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch {
+          // If JSON parsing fails, use default error message
+        }
+        setSaveMessage({ type: "error", text: errorMessage })
       }
     } catch (error) {
       setSaveMessage({ type: "error", text: "Error saving settings" })
