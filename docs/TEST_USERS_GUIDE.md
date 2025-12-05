@@ -1,5 +1,14 @@
 # Test Users Guide
 
+## ⚠️ Important - Use Latest Version
+
+Make sure you're using the latest version of the script from the repository. If you see a UUID error (`invalid input syntax for type uuid`), verify that line 71 contains the UUID: `b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22` (NOT `b1ffcd99-9d1c-5fg9...`).
+
+```bash
+# Pull the latest version
+git pull origin main
+```
+
 ## Overview
 
 For testing and development purposes, we provide a SQL script that creates two predefined users in the database. This allows developers and testers to quickly set up test accounts without going through the signup process.

@@ -1,6 +1,12 @@
 # Test Users Setup
 
-This document describes how to create and use test users for the EnjoyHubAI application.
+## ⚠️ Important Note
+
+**Make sure you're using the latest version of this script!** If you copied this file earlier, please re-download it from the repository to ensure you have the correct UUID format.
+
+The correct UUID for the regular user is: `b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22`
+
+If you see an error like `invalid input syntax for type uuid: "b1ffcd99-9d1c-5fg9..."`, you have an old version of the file.
 
 ## Test Users Credentials
 

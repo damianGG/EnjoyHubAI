@@ -1,5 +1,14 @@
 # Użytkownicy Testowi - Instrukcja (Polish Guide)
 
+## ⚠️ Ważne - Pobierz Najnowszą Wersję
+
+Upewnij się, że używasz najnowszej wersji skryptu z repozytorium:
+```bash
+git pull origin main
+```
+
+Jeśli widzisz błąd dotyczący UUID (`invalid input syntax for type uuid`), sprawdź czy UUID w linii 71 to: `b1eecd99-9d1c-4ef9-ac7e-7cc0ce491b22` (NIE `b1ffcd99-9d1c-5fg9...`).
+
 ## Szybki Start
 
 Skrypt SQL do stworzenia użytkowników testowych znajduje się w: `/scripts/17-create-test-users.sql`
