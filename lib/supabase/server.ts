@@ -1,6 +1,5 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { cache } from "react"
 
 // Check if Supabase environment variables are available
 export const isSupabaseConfigured =
@@ -9,8 +8,9 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-// Create a cached version of the Supabase client for Server Components
-export const createClient = cache(() => {
+// Create a Supabase client for Server Components
+// Note: In Next.js 15, this must handle async cookies()
+export function createClient() {
   const cookieStore = cookies()
 
   if (!isSupabaseConfigured) {
@@ -20,8 +20,27 @@ export const createClient = cache(() => {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       },
-    }
+    } as any
   }
 
-  return createServerComponentClient({ cookies: () => cookieStore })
-})
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    }
+  )
+}

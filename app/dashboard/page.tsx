@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     )
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -175,10 +175,10 @@ export default async function DashboardPage() {
                         <CardContent className="p-4">
                           <div className="flex space-x-4">
                             <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                              {Array.isArray(booking.properties.images) && booking.properties.images.length > 0 ? (
+                              {Array.isArray(booking.properties?.images) && booking.properties.images.length > 0 ? (
                                 <img
                                   src={booking.properties.images[0] || "/placeholder.svg?height=80&width=80"}
-                                  alt={booking.properties.title || 'Property'}
+                                  alt={booking.properties?.title || 'Property'}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
@@ -191,12 +191,12 @@ export default async function DashboardPage() {
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
-                                  <h3 className="font-semibold">{booking.properties.title}</h3>
+                                  <h3 className="font-semibold">{booking.properties?.title || 'Untitled Property'}</h3>
                                   <p className="text-sm text-muted-foreground">
-                                    {booking.properties.city}, {booking.properties.country}
+                                    {booking.properties?.city || 'Unknown'}, {booking.properties?.country || 'Unknown'}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Host: {booking.properties.users.full_name}
+                                    Host: {booking.properties?.users?.full_name || 'Unknown'}
                                   </p>
                                 </div>
                                 <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>

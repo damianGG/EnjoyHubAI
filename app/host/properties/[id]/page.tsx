@@ -2,7 +2,8 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import EditAttractionForm from "@/components/edit-attraction-form"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   if (!isSupabaseConfigured) {
@@ -48,6 +49,12 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
               Powrót do listy obiektów
             </Link>
           </div>
+          <Link href={`/host/properties/${resolvedParams.id}/availability`}>
+            <Button variant="outline">
+              <Calendar className="h-4 w-4 mr-2" />
+              Manage Availability
+            </Button>
+          </Link>
         </div>
       </header>
 

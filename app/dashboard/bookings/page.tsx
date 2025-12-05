@@ -15,7 +15,7 @@ export default async function BookingsPage() {
     )
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -166,10 +166,10 @@ function BookingCard({ booking }: { booking: any }) {
       <CardContent className="p-6">
         <div className="flex space-x-6">
           <div className="w-32 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-            {Array.isArray(booking.properties.images) && booking.properties.images.length > 0 ? (
+            {Array.isArray(booking.properties?.images) && booking.properties.images.length > 0 ? (
               <img
                 src={booking.properties.images[0] || "/placeholder.svg?height=96&width=128"}
-                alt={booking.properties.title || 'Property'}
+                alt={booking.properties?.title || 'Property'}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -182,11 +182,11 @@ function BookingCard({ booking }: { booking: any }) {
           <div className="flex-1">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold mb-1">{booking.properties.title}</h3>
+                <h3 className="text-xl font-semibold mb-1">{booking.properties?.title || 'Untitled Property'}</h3>
                 <p className="text-muted-foreground mb-2">
-                  {booking.properties.city}, {booking.properties.country}
+                  {booking.properties?.city || 'Unknown'}, {booking.properties?.country || 'Unknown'}
                 </p>
-                <p className="text-sm text-muted-foreground">Host: {booking.properties.users.full_name}</p>
+                <p className="text-sm text-muted-foreground">Host: {booking.properties?.users?.full_name || 'Unknown'}</p>
               </div>
               <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
             </div>
@@ -213,7 +213,7 @@ function BookingCard({ booking }: { booking: any }) {
             </div>
 
             <div className="flex space-x-2">
-              <Link href={`/properties/${booking.properties.id}`}>
+              <Link href={`/properties/${booking.properties?.id || booking.property_id}`}>
                 <Button variant="outline" size="sm">
                   View Property
                 </Button>

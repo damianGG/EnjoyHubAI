@@ -1,11 +1,26 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-function createSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerActionClient({ cookies: () => cookieStore })
+async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
 }
 
 export interface BookingData {
@@ -17,7 +32,7 @@ export interface BookingData {
 }
 
 export async function createBooking(prevState: any, formData: FormData) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   // Get current user
   const {
@@ -26,6 +41,7 @@ export async function createBooking(prevState: any, formData: FormData) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
+    console.error("Auth error in createBooking:", userError)
     return { error: "You must be logged in to make a booking" }
   }
 
@@ -121,7 +137,7 @@ export async function createBooking(prevState: any, formData: FormData) {
 }
 
 export async function checkAvailability(propertyId: string, checkIn: string, checkOut: string) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   try {
     const { data: conflictingBookings, error } = await supabase
