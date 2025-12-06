@@ -21,7 +21,12 @@ interface SearchResult {
   images?: string[]
   region?: string
   review_count?: number
+  minimum_age?: number | null
+  maximum_age?: number | null
 }
+
+// Maximum valid age for filtering
+const MAX_VALID_AGE = 150
 
 // Enable caching for this route - revalidate every 60 seconds
 export const revalidate = 60
@@ -37,8 +42,7 @@ export async function GET(request: Request) {
     const sort = searchParams.get("sort") || "relevance"
     const page = parseInt(searchParams.get("page") || "1", 10)
     const per = parseInt(searchParams.get("per") || "20", 10)
-    const ageMin = searchParams.get("age_min")
-    const ageMax = searchParams.get("age_max")
+    const childAge = searchParams.get("child_age")
     
     const supabase = createClient()
     
@@ -98,6 +102,12 @@ export async function GET(request: Request) {
         ),
         reviews (
           rating
+        ),
+        object_field_values (
+          value,
+          category_fields (
+            field_name
+          )
         )
         `,
         { count: "exact" }
@@ -170,11 +180,16 @@ export async function GET(request: Request) {
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 0
       
-      // Extract minimum_age from object_field_values
+      // Extract minimum_age and maximum_age from object_field_values
       const minimumAgeField = property.object_field_values?.find(
         (fv: any) => fv.category_fields?.field_name === 'minimum_age'
       )
-      const minimumAge = minimumAgeField?.value ? parseInt(minimumAgeField.value) : null
+      const maximumAgeField = property.object_field_values?.find(
+        (fv: any) => fv.category_fields?.field_name === 'maximum_age'
+      )
+      
+      const minimumAge = minimumAgeField?.value ? parseInt(minimumAgeField.value, 10) : null
+      const maximumAge = maximumAgeField?.value ? parseInt(maximumAgeField.value, 10) : null
       
       return {
         id: property.id,
@@ -197,22 +212,24 @@ export async function GET(request: Request) {
         avg_rating: avgRating,
         review_count: ratings.length,
         minimum_age: minimumAge,
+        maximum_age: maximumAge,
       }
     })
     
-    // Filter by age range if provided
-    if (ageMin || ageMax) {
-      const minAge = ageMin ? parseInt(ageMin) : 0
-      const maxAge = ageMax ? parseInt(ageMax) : 999
-      
-      items = items.filter((item: any) => {
-        // If property doesn't have a minimum age requirement, include it
-        if (item.minimum_age === null) return true
-        
-        // Property's minimum age requirement should be within the user's selected range
-        // This means if someone selects 18-30, they can see properties with min age 18, 20, 25, etc.
-        return item.minimum_age >= minAge && item.minimum_age <= maxAge
-      })
+    // Filter by child_age if provided
+    if (childAge) {
+      const childAgeNum = parseInt(childAge, 10)
+      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
+        items = items.filter((item: any) => {
+          // If no minimum_age is set, don't filter based on minimum
+          const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
+          
+          // If no maximum_age is set, treat it as Infinity (no upper limit)
+          const meetsMaximum = item.maximum_age === null || childAgeNum <= item.maximum_age
+          
+          return meetsMinimum && meetsMaximum
+        })
+      }
     }
     
     // Sort by rating if requested (after computing avg_rating)
