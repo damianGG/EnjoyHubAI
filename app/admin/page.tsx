@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Shield, FolderTree, ListTree } from "lucide-react"
+import { Shield, FolderTree, ListTree, Calendar } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function AdminDashboard() {
@@ -72,6 +72,21 @@ export default async function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <CardDescription>Configure dynamic fields for each category</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Property Offers */}
+          <Link href="/admin/properties">
+            <Card className="hover:bg-accent transition-colors cursor-pointer">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-6 w-6 text-primary" />
+                  <CardTitle>Property Offers</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>Create time-based offers for properties</CardDescription>
               </CardContent>
             </Card>
           </Link>
