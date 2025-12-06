@@ -53,6 +53,43 @@ export async function POST(
       )
     }
 
+    // Validate weekday range
+    if (weekday < 0 || weekday > 6) {
+      return NextResponse.json(
+        { error: "Weekday must be between 0 (Monday) and 6 (Sunday)" },
+        { status: 400 }
+      )
+    }
+
+    // Validate positive numbers
+    if (slot_length_minutes <= 0 || max_bookings_per_slot <= 0) {
+      return NextResponse.json(
+        { error: "slot_length_minutes and max_bookings_per_slot must be positive" },
+        { status: 400 }
+      )
+    }
+
+    // Validate time format and logical constraint
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+    if (!timeRegex.test(start_time) || !timeRegex.test(end_time)) {
+      return NextResponse.json(
+        { error: "Invalid time format. Use HH:MM (e.g., 09:00)" },
+        { status: 400 }
+      )
+    }
+
+    const [startHours, startMinutes] = start_time.split(":").map(Number)
+    const [endHours, endMinutes] = end_time.split(":").map(Number)
+    const startTotalMinutes = startHours * 60 + startMinutes
+    const endTotalMinutes = endHours * 60 + endMinutes
+
+    if (startTotalMinutes >= endTotalMinutes) {
+      return NextResponse.json(
+        { error: "start_time must be before end_time" },
+        { status: 400 }
+      )
+    }
+
     // Validate the offer exists
     const { data: offer, error: offerError } = await supabase
       .from("offers")

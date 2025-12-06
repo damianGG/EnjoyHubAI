@@ -75,6 +75,18 @@ export default function OfferAvailabilityManager({
   }
 
   const handleSave = async () => {
+    // Validate time ranges before saving
+    const invalidSlots = slots.filter(slot => {
+      const startMinutes = timeToMinutes(slot.start_time)
+      const endMinutes = timeToMinutes(slot.end_time)
+      return startMinutes >= endMinutes
+    })
+
+    if (invalidSlots.length > 0) {
+      toast.error("Start time must be before end time for all slots")
+      return
+    }
+
     setIsSaving(true)
     try {
       // Delete all existing availability
@@ -119,6 +131,12 @@ export default function OfferAvailabilityManager({
     }
   }
 
+  // Helper function to convert time string to minutes
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(":").map(Number)
+    return hours * 60 + minutes
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -148,7 +166,7 @@ export default function OfferAvailabilityManager({
                         <select
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                           value={slot.weekday}
-                          onChange={(e) => updateSlot(index, "weekday", parseInt(e.target.value))}
+                          onChange={(e) => updateSlot(index, "weekday", parseInt(e.target.value, 10))}
                         >
                           {WEEKDAYS.map(day => (
                             <option key={day.value} value={day.value}>
@@ -163,7 +181,7 @@ export default function OfferAvailabilityManager({
                           type="number"
                           min="1"
                           value={slot.max_bookings_per_slot}
-                          onChange={(e) => updateSlot(index, "max_bookings_per_slot", parseInt(e.target.value))}
+                          onChange={(e) => updateSlot(index, "max_bookings_per_slot", parseInt(e.target.value, 10))}
                         />
                       </div>
                     </div>
@@ -191,7 +209,7 @@ export default function OfferAvailabilityManager({
                           type="number"
                           min="1"
                           value={slot.slot_length_minutes}
-                          onChange={(e) => updateSlot(index, "slot_length_minutes", parseInt(e.target.value))}
+                          onChange={(e) => updateSlot(index, "slot_length_minutes", parseInt(e.target.value, 10))}
                         />
                       </div>
                     </div>
