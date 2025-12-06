@@ -27,8 +27,12 @@ export async function getNextAvailableSlotForProperty(
     .eq("place_id", propertyId)
     .eq("is_active", true)
 
-  if (offersError || !offers || offers.length === 0) {
+  if (offersError) {
     console.error("Offers fetch error:", offersError)
+    return null
+  }
+
+  if (!offers || offers.length === 0) {
     return null
   }
 
