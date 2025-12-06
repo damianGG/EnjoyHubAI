@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Clock, Users, MapPin } from "lucide-react"
 import Link from "next/link"
 import BookingWidget from "@/components/booking-widget"
+import AvailabilityCalendar from "@/components/availability-calendar"
 import type { Offer } from "@/lib/types/dynamic-fields"
 
 // Enable ISR - revalidate every 120 seconds
@@ -166,6 +167,9 @@ export default async function OfferPage({ params }: OfferPageProps) {
                 </CardContent>
               </Card>
             )}
+
+            {/* Availability Calendar */}
+            <AvailabilityCalendar offerId={offerData.id} />
           </div>
 
           {/* Booking Widget */}
