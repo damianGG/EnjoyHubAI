@@ -12,6 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
+// Helper function to format slot date
+function formatSlotDate(date: string, startTime: string): string {
+  // Parse date in format YYYY-MM-DD
+  const [year, month, day] = date.split('-')
+  // Format as DD.MM.YYYY HH:mm
+  return `${day}.${month}.${year} ${startTime}`
+}
+
 export interface AttractionCardProps {
   /** Array of image URLs for the slider */
   images: string[]
@@ -39,6 +47,12 @@ export interface AttractionCardProps {
   href?: string
   /** Optional: ID for the attraction */
   id?: string
+  /** Optional: Next available slot */
+  nextAvailableSlot?: { date: string; startTime: string } | null
+  /** Optional: Price from (minimum price) */
+  priceFrom?: number | null
+  /** Optional: Cover image URL */
+  coverImageUrl?: string | null
 }
 
 export default function AttractionCard({
@@ -55,6 +69,9 @@ export default function AttractionCard({
   isInstantBookable = false,
   href,
   id,
+  nextAvailableSlot,
+  priceFrom,
+  coverImageUrl,
 }: AttractionCardProps) {
   const [api, setApi] = useState<CarouselApi>()
   const [canScrollPrev, setCanScrollPrev] = useState(false)
@@ -255,11 +272,22 @@ export default function AttractionCard({
             ({reviewsCount} {reviewsCount === 1 ? 'opinia' : 'opinii'})
           </p>
 
+          {/* Next Available Slot */}
+          {nextAvailableSlot ? (
+            <p className="text-xs text-muted-foreground pt-1">
+              Najbliższy termin: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground pt-1">
+              Brak terminów w wybranym zakresie
+            </p>
+          )}
+
           {/* Price */}
           <div className="pt-1">
             <p className="text-sm">
-              <span className="font-semibold">Cena od {price} zł</span>
-              <span className="text-muted-foreground"> / {priceUnit}</span>
+              <span className="font-semibold">Cena od {priceFrom !== null && priceFrom !== undefined ? priceFrom : price} zł</span>
+              {!priceFrom && <span className="text-muted-foreground"> / {priceUnit}</span>}
             </p>
           </div>
         </div>

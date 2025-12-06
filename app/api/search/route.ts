@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { getNextAvailableSlotForProperty } from "@/lib/properties/getNextAvailableSlotForProperty"
 
 interface SearchResult {
   id: string
@@ -24,6 +25,8 @@ interface SearchResult {
   minimum_age?: number | null
   maximum_age?: number | null
   cover_image_url: string | null
+  next_available_slot: { date: string; startTime: string } | null
+  price_from: number | null
 }
 
 // Maximum valid age for filtering
@@ -239,8 +242,28 @@ export async function GET(request: Request) {
       items.sort((a: SearchResult, b: SearchResult) => b.avg_rating - a.avg_rating)
     }
     
+    // Fetch next available slot for each property
+    // Use a date range from today to 90 days in the future
+    const today = new Date()
+    const dateStart = today.toISOString().split('T')[0] // YYYY-MM-DD format
+    const futureDate = new Date(today)
+    futureDate.setDate(futureDate.getDate() + 90)
+    const dateEnd = futureDate.toISOString().split('T')[0]
+    
+    // Fetch slots for all properties in parallel
+    const itemsWithSlots = await Promise.all(
+      items.map(async (item: any) => {
+        const slot = await getNextAvailableSlotForProperty(item.id, dateStart, dateEnd)
+        return {
+          ...item,
+          next_available_slot: slot ? { date: slot.date, startTime: slot.startTime } : null,
+          price_from: slot ? slot.price_from : null,
+        }
+      })
+    )
+    
     const response = NextResponse.json({
-      items,
+      items: itemsWithSlots,
       total: count || 0,
       page,
       per,
