@@ -102,8 +102,10 @@ export async function POST() {
       const categoryFields = allFields?.filter((field) => field.category_id === category.id) || []
       const existingFieldNames = new Set(categoryFields.map((f) => f.field_name))
 
-      // Get the next available field_order
-      const maxOrder = categoryFields.reduce((max, field) => Math.max(max, field.field_order), -1)
+      // Get the next available field_order (start from 0 if no fields exist)
+      const maxOrder = categoryFields.length > 0 
+        ? categoryFields.reduce((max, field) => Math.max(max, field.field_order), -1) 
+        : -1
 
       for (const [index, requiredField] of REQUIRED_CATEGORY_FIELDS.entries()) {
         if (!existingFieldNames.has(requiredField.field_name)) {
@@ -112,7 +114,7 @@ export async function POST() {
             field_name: requiredField.field_name,
             field_label: requiredField.field_label,
             field_type: requiredField.field_type,
-            field_order: maxOrder + index + 1,
+            field_order: maxOrder + 1 + index,
             is_required: requiredField.is_required,
             validation_rules: requiredField.validation_rules,
             options: [],

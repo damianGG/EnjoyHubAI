@@ -87,8 +87,12 @@ export async function POST(request: Request) {
     const { error: fieldsError } = await supabase.from("category_fields").insert(fieldsToCreate)
 
     if (fieldsError) {
-      console.error("Failed to create required fields:", fieldsError)
-      // Don't fail the category creation, but log the error
+      // If required fields can't be created, rollback the category creation
+      await supabase.from("categories").delete().eq("id", categoryId)
+      return NextResponse.json(
+        { error: `Failed to create required fields: ${fieldsError.message}` },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json(data, { status: 201 })
