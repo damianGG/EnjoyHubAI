@@ -23,6 +23,7 @@ interface SearchResult {
   review_count?: number
   minimum_age?: number | null
   maximum_age?: number | null
+  cover_image_url: string | null
 }
 
 // Maximum valid age for filtering
@@ -213,6 +214,7 @@ export async function GET(request: Request) {
         review_count: ratings.length,
         minimum_age: minimumAge,
         maximum_age: maximumAge,
+        cover_image_url: property.images && property.images.length > 0 ? property.images[0] : null,
       }
     })
     
