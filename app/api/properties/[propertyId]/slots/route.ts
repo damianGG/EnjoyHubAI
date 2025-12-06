@@ -3,11 +3,11 @@ import { NextResponse, type NextRequest } from "next/server"
 import { getNextAvailableSlotForProperty } from "@/lib/properties/getNextAvailableSlotForProperty"
 
 /**
- * Validates a date string in ISO format (YYYY-MM-DD)
+ * Parses a date string in ISO format (YYYY-MM-DD) to a Date object
  */
-function isValidDateString(dateStr: string): boolean {
+function parseDate(dateStr: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return false
+    return null
   }
 
   const [year, month, day] = dateStr.split("-").map(Number)
@@ -19,10 +19,17 @@ function isValidDateString(dateStr: string): boolean {
     date.getUTCMonth() !== month - 1 ||
     date.getUTCDate() !== day
   ) {
-    return false
+    return null
   }
 
-  return true
+  return date
+}
+
+/**
+ * Validates a date string in ISO format (YYYY-MM-DD)
+ */
+function isValidDateString(dateStr: string): boolean {
+  return parseDate(dateStr) !== null
 }
 
 export async function GET(
@@ -66,8 +73,8 @@ export async function GET(
     }
 
     // Validate date range
-    const startDate = new Date(dateStart)
-    const endDate = new Date(dateEnd)
+    const startDate = parseDate(dateStart)!
+    const endDate = parseDate(dateEnd)!
     if (startDate > endDate) {
       return NextResponse.json(
         { error: "date_start must be before or equal to date_end" },
@@ -80,11 +87,19 @@ export async function GET(
     // Verify property exists and is active (RLS-safe query)
     const { data: property, error: propertyError } = await supabase
       .from("properties")
-      .select("id, is_active")
+      .select("is_active")
       .eq("id", propertyId)
-      .single()
+      .maybeSingle()
 
-    if (propertyError || !property) {
+    if (propertyError) {
+      console.error("Property fetch error:", propertyError.message)
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      )
+    }
+
+    if (!property) {
       return NextResponse.json(
         { error: "Property not found" },
         { status: 404 }
@@ -128,7 +143,7 @@ export async function GET(
       { status: 200 }
     )
   } catch (error) {
-    console.error("API error:", error)
+    console.error("API error:", error instanceof Error ? error.message : "Unknown error")
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
