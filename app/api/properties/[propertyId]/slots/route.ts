@@ -66,7 +66,9 @@ export async function GET(
     }
 
     // Validate date range
-    if (dateStart > dateEnd) {
+    const startDate = new Date(dateStart)
+    const endDate = new Date(dateEnd)
+    if (startDate > endDate) {
       return NextResponse.json(
         { error: "date_start must be before or equal to date_end" },
         { status: 400 }
