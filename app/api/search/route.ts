@@ -251,6 +251,7 @@ export async function GET(request: Request) {
     const dateEnd = futureDate.toISOString().split('T')[0]
     
     // Fetch slots for all properties in parallel
+    // Note: For large result sets, consider implementing batching or limiting concurrent requests
     const itemsWithSlots = await Promise.all(
       items.map(async (item: any) => {
         const slot = await getNextAvailableSlotForProperty(item.id, dateStart, dateEnd)

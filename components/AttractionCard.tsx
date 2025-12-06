@@ -286,7 +286,7 @@ export default function AttractionCard({
           {/* Price */}
           <div className="pt-1">
             <p className="text-sm">
-              <span className="font-semibold">Cena od {priceFrom !== null && priceFrom !== undefined ? priceFrom : price} zł</span>
+              <span className="font-semibold">Cena od {priceFrom ?? price} zł</span>
               {!priceFrom && <span className="text-muted-foreground"> / {priceUnit}</span>}
             </p>
           </div>
