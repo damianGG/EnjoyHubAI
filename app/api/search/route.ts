@@ -216,7 +216,7 @@ export async function GET(request: Request) {
     // Filter by child_age if provided
     if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
-      if (!isNaN(childAgeNum)) {
+      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < 150) {
         items = items.filter((item: any) => {
           // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
