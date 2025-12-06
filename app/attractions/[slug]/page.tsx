@@ -7,6 +7,7 @@ import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "luc
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
 import AvailabilityCalendarCard from "@/components/availability-calendar-card"
+import SlotAvailabilityWidget from "@/components/slot-availability-widget"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
@@ -220,7 +221,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
           {/* Booking Card */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8">
+            <div className="sticky top-8 space-y-6">
               <AvailabilityCalendarCard
                 propertyId={attraction.id}
                 pricePerNight={attraction.price_per_night}
@@ -228,6 +229,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
                 avgRating={roundedRating}
                 reviewCount={ratings.length}
               />
+              <SlotAvailabilityWidget propertyId={attraction.id} />
             </div>
           </div>
         </div>
