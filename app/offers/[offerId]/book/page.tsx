@@ -12,6 +12,8 @@ import Link from "next/link"
 import type { Offer } from "@/lib/types/dynamic-fields"
 import { timeToMinutes, minutesToTime, formatDisplayDate } from "@/lib/utils"
 
+const MAX_PARTICIPANTS_FALLBACK = 99
+
 interface OfferWithPlace extends Offer {
   properties?: {
     title: string
@@ -284,7 +286,7 @@ export default function BookOfferPage({ params }: { params: Promise<{ offerId: s
                       name="persons"
                       type="number"
                       min={1}
-                      max={offer.max_participants || 99}
+                      max={offer.max_participants || MAX_PARTICIPANTS_FALLBACK}
                       value={formData.persons}
                       onChange={handleInputChange}
                       className="mt-2"

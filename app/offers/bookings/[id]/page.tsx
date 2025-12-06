@@ -12,7 +12,6 @@ interface BookingConfirmationPageProps {
     id: string
   }>
 }
-
 export default async function OfferBookingConfirmationPage({ params }: BookingConfirmationPageProps) {
   const resolvedParams = await params
   
