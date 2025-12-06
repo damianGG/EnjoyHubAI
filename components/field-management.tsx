@@ -16,9 +16,10 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
 import type { Category, CategoryField, FieldType } from "@/lib/types/dynamic-fields"
+import { isRequiredCategoryField } from "@/lib/validation/category-fields"
 
 export default function FieldManagementClient() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -259,34 +260,49 @@ export default function FieldManagementClient() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {fields.map((field) => (
-              <Card key={field.id}>
-                <CardContent className="flex items-center justify-between py-4">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium">{field.field_label}</p>
-                      {field.is_required && <span className="text-xs text-red-500">*Required</span>}
+            {fields.map((field) => {
+              const isRequired = isRequiredCategoryField(field.field_name)
+              return (
+                <Card key={field.id}>
+                  <CardContent className="flex items-center justify-between py-4">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium">{field.field_label}</p>
+                        {field.is_required && <span className="text-xs text-red-500">*Required</span>}
+                        {isRequired && (
+                          <span className="flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                            <Lock className="h-3 w-3 mr-1" />
+                            System Required
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <span>Type: {field.field_type}</span>
+                        <span>•</span>
+                        <span>Name: {field.field_name}</span>
+                        <span>•</span>
+                        <span>Order: {field.field_order}</span>
+                      </div>
+                      {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <span>Type: {field.field_type}</span>
-                      <span>•</span>
-                      <span>Name: {field.field_name}</span>
-                      <span>•</span>
-                      <span>Order: {field.field_order}</span>
+                    <div className="flex space-x-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(field)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(field.id)}
+                        disabled={isRequired}
+                        title={isRequired ? "Cannot delete required system field" : "Delete field"}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(field)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(field.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
       </div>

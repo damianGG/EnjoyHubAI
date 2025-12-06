@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import type { CategoryField } from "@/lib/types/dynamic-fields"
+import { isRequiredCategoryField, validateRequiredFieldType } from "@/lib/validation/category-fields"
 
 // Helper to check if user is super admin
 async function isSuperAdmin() {
@@ -78,6 +79,16 @@ export async function POST(request: Request) {
     const validTypes = ["text", "textarea", "number", "select", "checkbox", "file"]
     if (!validTypes.includes(field_type)) {
       return NextResponse.json({ error: "Invalid field type" }, { status: 400 })
+    }
+
+    // Validate that required category fields have the correct type
+    if (!validateRequiredFieldType(field_name, field_type)) {
+      return NextResponse.json(
+        {
+          error: `Field '${field_name}' is a required category field and must be of type 'number'`,
+        },
+        { status: 400 },
+      )
     }
 
     const { data, error } = await supabase
@@ -170,6 +181,18 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "Field ID is required" }, { status: 400 })
+    }
+
+    // Get the field to check if it's a required field
+    const { data: existingField } = await supabase.from("category_fields").select("field_name").eq("id", id).single()
+
+    if (existingField && isRequiredCategoryField(existingField.field_name)) {
+      return NextResponse.json(
+        {
+          error: `Cannot delete required category field '${existingField.field_name}'. This field is mandatory for all categories.`,
+        },
+        { status: 400 },
+      )
     }
 
     const { error } = await supabase.from("category_fields").delete().eq("id", id)

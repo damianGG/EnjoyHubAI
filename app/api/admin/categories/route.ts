@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import type { Category } from "@/lib/types/dynamic-fields"
+import { REQUIRED_CATEGORY_FIELDS } from "@/lib/validation/category-fields"
 
 // Helper to check if user is super admin
 async function isSuperAdmin() {
@@ -66,6 +67,28 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    // Automatically create required fields for the new category
+    const categoryId = data.id
+    const fieldsToCreate = REQUIRED_CATEGORY_FIELDS.map((field, index) => ({
+      category_id: categoryId,
+      field_name: field.field_name,
+      field_label: field.field_label,
+      field_type: field.field_type,
+      field_order: index,
+      is_required: field.is_required,
+      validation_rules: field.validation_rules,
+      options: [],
+      placeholder: field.placeholder,
+      help_text: field.help_text,
+    }))
+
+    const { error: fieldsError } = await supabase.from("category_fields").insert(fieldsToCreate)
+
+    if (fieldsError) {
+      console.error("Failed to create required fields:", fieldsError)
+      // Don't fail the category creation, but log the error
     }
 
     return NextResponse.json(data, { status: 201 })
