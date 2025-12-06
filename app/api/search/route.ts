@@ -25,6 +25,9 @@ interface SearchResult {
   maximum_age?: number | null
 }
 
+// Maximum valid age for filtering
+const MAX_VALID_AGE = 150
+
 // Enable caching for this route - revalidate every 60 seconds
 export const revalidate = 60
 
@@ -216,7 +219,7 @@ export async function GET(request: Request) {
     // Filter by child_age if provided
     if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
-      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < 150) {
+      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
         items = items.filter((item: any) => {
           // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
