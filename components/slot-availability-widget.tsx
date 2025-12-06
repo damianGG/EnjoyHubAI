@@ -8,6 +8,9 @@ import { Calendar } from "@/components/ui/calendar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertCircle, Clock, Calendar as CalendarIcon } from "lucide-react"
 import { format, addDays } from "date-fns"
+import { formatDisplayDate } from "@/lib/utils"
+
+const SLOT_SEARCH_DAYS = 90
 
 interface SlotAvailabilityWidgetProps {
   propertyId: string
@@ -20,11 +23,6 @@ interface SlotResponse {
   } | null
   price_from: number | null
   offerId: string | null
-}
-
-function formatDisplayDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split("-")
-  return `${day}.${month}.${year}`
 }
 
 export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityWidgetProps) {
@@ -63,7 +61,7 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
 
       try {
         const dateStart = format(selectedDate, "yyyy-MM-dd")
-        const dateEnd = format(addDays(selectedDate, 90), "yyyy-MM-dd")
+        const dateEnd = format(addDays(selectedDate, SLOT_SEARCH_DAYS), "yyyy-MM-dd")
         
         const response = await fetch(
           `/api/properties/${propertyId}/slots?date_start=${dateStart}&date_end=${dateEnd}`

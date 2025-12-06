@@ -57,3 +57,11 @@ export function extractIdFromSlug(slug: string): string {
   const parts = slug.split('-')
   return parts[parts.length - 1]
 }
+
+/**
+ * Formats a date string from YYYY-MM-DD to DD.MM.YYYY format
+ */
+export function formatDisplayDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-")
+  return `${day}.${month}.${year}`
+}
