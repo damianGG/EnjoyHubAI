@@ -34,6 +34,9 @@ interface SearchResult {
   images?: string[]
   region?: string
   review_count?: number
+  cover_image_url?: string | null
+  next_available_slot?: { date: string; startTime: string } | null
+  price_from?: number | null
 }
 
 interface SearchResponse {
@@ -471,6 +474,9 @@ function HomePageContent() {
                       price={result.price_per_night}
                       priceUnit="noc"
                       href={`/attractions/${slug}`}
+                      nextAvailableSlot={result.next_available_slot}
+                      priceFrom={result.price_from}
+                      coverImageUrl={result.cover_image_url}
                     />
                   )
                 })}
@@ -549,6 +555,9 @@ function HomePageContent() {
                       title: popupAttraction.title,
                       id: popupAttraction.id
                     })}`}
+                    nextAvailableSlot={popupAttraction.next_available_slot}
+                    priceFrom={popupAttraction.price_from}
+                    coverImageUrl={popupAttraction.cover_image_url}
                   />
                 </div>
               </div>
