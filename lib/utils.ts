@@ -57,3 +57,33 @@ export function extractIdFromSlug(slug: string): string {
   const parts = slug.split('-')
   return parts[parts.length - 1]
 }
+
+/**
+ * Converts time string "HH:mm" to minutes from midnight
+ */
+export function timeToMinutes(time: string): number {
+  const parts = time.split(":")
+  const hours = Number(parts[0])
+  const minutes = Number(parts[1])
+  return hours * 60 + minutes
+}
+
+/**
+ * Converts minutes from midnight to time string "HH:mm"
+ */
+export function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`
+}
+
+/**
+ * Formats date string from YYYY-MM-DD to DD.MM.YYYY
+ */
+export function formatDisplayDate(dateStr: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr
+  }
+  const [year, month, day] = dateStr.split("-")
+  return `${day}.${month}.${year}`
+}
