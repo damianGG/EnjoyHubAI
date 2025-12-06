@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertCircle, Clock, Calendar as CalendarIcon } from "lucide-react"
 import { format, addDays } from "date-fns"
+import { formatDisplayDate } from "@/lib/utils"
 
 const SLOT_SEARCH_RANGE_DAYS = 30
 
@@ -22,14 +23,6 @@ interface SlotData {
   } | null
   price_from: number | null
   offerId: string | null
-}
-
-function formatDisplayDate(dateStr: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
-  }
-  const [year, month, day] = dateStr.split("-")
-  return `${day}.${month}.${year}`
 }
 
 export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityWidgetProps) {

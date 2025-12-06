@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertCircle, Clock, Users, Calendar as CalendarIcon, MapPin, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import type { Offer } from "@/lib/types/dynamic-fields"
+import { timeToMinutes, minutesToTime, formatDisplayDate } from "@/lib/utils"
 
 interface OfferWithPlace extends Offer {
   properties?: {
@@ -36,27 +37,6 @@ interface BookingResponse {
   persons: number
   offerId: string
   placeId: string
-}
-
-function formatDisplayDate(dateStr: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
-  }
-  const [year, month, day] = dateStr.split("-")
-  return `${day}.${month}.${year}`
-}
-
-function timeToMinutes(time: string): number {
-  const parts = time.split(":")
-  const hours = Number(parts[0])
-  const minutes = Number(parts[1])
-  return hours * 60 + minutes
-}
-
-function minutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`
 }
 
 export default function BookOfferPage({ params }: { params: Promise<{ offerId: string }> }) {

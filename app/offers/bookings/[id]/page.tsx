@@ -5,19 +5,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Calendar, MapPin, Users, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { formatDisplayDate } from "@/lib/utils"
 
 interface BookingConfirmationPageProps {
   params: Promise<{
     id: string
   }>
-}
-
-function formatDisplayDate(dateStr: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
-  }
-  const [year, month, day] = dateStr.split("-")
-  return `${day}.${month}.${year}`
 }
 
 export default async function OfferBookingConfirmationPage({ params }: BookingConfirmationPageProps) {
