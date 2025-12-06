@@ -7,11 +7,13 @@ import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "luc
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
 import AvailabilityCalendarCard from "@/components/availability-calendar-card"
+import BookingWidget from "@/components/booking-widget"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
 import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
+import type { Offer } from "@/lib/types/dynamic-fields"
 
 // Enable ISR - revalidate every 120 seconds
 export const revalidate = 120
@@ -63,6 +65,14 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   if (!attraction) {
     notFound()
   }
+
+  // Get offers associated with this property
+  const { data: offers } = await supabase
+    .from("offers")
+    .select("*")
+    .eq("place_id", id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: true })
 
   // Calculate average rating
   const ratings = attraction.reviews?.map((r: any) => r.rating) || []
@@ -221,13 +231,23 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           {/* Booking Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              <AvailabilityCalendarCard
-                propertyId={attraction.id}
-                pricePerNight={attraction.price_per_night}
-                maxGuests={attraction.max_guests}
-                avgRating={roundedRating}
-                reviewCount={ratings.length}
-              />
+              {offers && offers.length > 0 ? (
+                // Use time-slot booking for properties with offers
+                <div className="space-y-4">
+                  {offers.map((offer: Offer) => (
+                    <BookingWidget key={offer.id} offer={offer} />
+                  ))}
+                </div>
+              ) : (
+                // Use traditional multi-day booking for properties without offers
+                <AvailabilityCalendarCard
+                  propertyId={attraction.id}
+                  pricePerNight={attraction.price_per_night}
+                  maxGuests={attraction.max_guests}
+                  avgRating={roundedRating}
+                  reviewCount={ratings.length}
+                />
+              )}
             </div>
           </div>
         </div>
