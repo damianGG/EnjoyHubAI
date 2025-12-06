@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertCircle, Clock, Calendar as CalendarIcon } from "lucide-react"
 import { format, addDays } from "date-fns"
+
+const SLOT_SEARCH_RANGE_DAYS = 30
 
 interface SlotAvailabilityWidgetProps {
   propertyId: string
@@ -23,6 +25,9 @@ interface SlotData {
 }
 
 function formatDisplayDate(dateStr: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr
+  }
   const [year, month, day] = dateStr.split("-")
   return `${day}.${month}.${year}`
 }
@@ -34,6 +39,13 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Memoize today's date for calendar disabled check
+  const today = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
+
   // Fetch slots when date changes
   useEffect(() => {
     const fetchSlots = async () => {
@@ -42,16 +54,22 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
 
       try {
         const dateStart = format(selectedDate, "yyyy-MM-dd")
-        // Query for a range (e.g., 30 days from selected date)
-        const dateEnd = format(addDays(selectedDate, 30), "yyyy-MM-dd")
+        // Query for a configurable range from selected date
+        const dateEnd = format(addDays(selectedDate, SLOT_SEARCH_RANGE_DAYS), "yyyy-MM-dd")
         
         const response = await fetch(
           `/api/properties/${propertyId}/slots?date_start=${dateStart}&date_end=${dateEnd}`
         )
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Nie udało się pobrać dostępnych terminów")
+          let errorMessage = "Nie udało się pobrać dostępnych terminów"
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch {
+            // If JSON parsing fails, use default error message
+          }
+          throw new Error(errorMessage)
         }
 
         const data: SlotData = await response.json()
@@ -72,9 +90,6 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
       router.push(`/offers/${slotData.offerId}`)
     }
   }
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
 
   return (
     <Card className="shadow-lg">
