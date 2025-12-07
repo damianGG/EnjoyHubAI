@@ -12,8 +12,22 @@ export async function getAvailabilityForPropertyOnDate(
 ): Promise<boolean> {
   const supabase = createClient()
 
+  // Validate date format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    console.error("Invalid date format:", date)
+    return false
+  }
+
   // Parse the date to get the weekday
-  const dateObj = new Date(date + "T00:00:00Z")
+  const [year, month, day] = date.split("-").map(Number)
+  const dateObj = new Date(Date.UTC(year, month - 1, day))
+  
+  // Verify the parsed date is valid
+  if (isNaN(dateObj.getTime())) {
+    console.error("Invalid date:", date)
+    return false
+  }
+  
   const utcDay = dateObj.getUTCDay()
   // Convert to Monday=0, ..., Sunday=6 (same as offer_availability.weekday)
   const weekday = utcDay === 0 ? 6 : utcDay - 1
@@ -125,9 +139,17 @@ function generateSlots(
  * Converts time string "HH:MM" to minutes from midnight
  */
 function timeToMinutes(time: string): number {
+  if (!/^\d{1,2}:\d{2}$/.test(time)) {
+    console.error("Invalid time format:", time)
+    return 0
+  }
   const parts = time.split(":")
   const hours = Number(parts[0])
   const minutes = Number(parts[1])
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    console.error("Invalid time values:", time)
+    return 0
+  }
   return hours * 60 + minutes
 }
 

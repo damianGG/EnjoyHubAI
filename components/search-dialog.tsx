@@ -115,9 +115,11 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       setAgeMax(currentAgeMax)
       
       const currentDate = urlState.get("date") || ""
-      if (currentDate) {
+      if (currentDate && /^\d{4}-\d{2}-\d{2}$/.test(currentDate)) {
         const [year, month, day] = currentDate.split("-").map(Number)
-        setSelectedDate(new Date(year, month - 1, day))
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+          setSelectedDate(new Date(year, month - 1, day))
+        }
       } else {
         setSelectedDate(undefined)
       }
