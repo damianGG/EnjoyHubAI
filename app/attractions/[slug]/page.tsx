@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "lucide-react"
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
-import SlotAvailabilityWidget from "@/components/slot-availability-widget"
+import MultiSlotBookingWidget from "@/components/multi-slot-booking-widget"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
@@ -241,7 +241,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               {hasAvailability ? (
-                <SlotAvailabilityWidget propertyId={attraction.id} />
+                <MultiSlotBookingWidget propertyId={attraction.id} />
               ) : (
                 <PropertyContactInfo
                   phone={attraction.users?.phone}
