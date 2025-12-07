@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertCircle, Calendar as CalendarIcon, Users } from "lucide-react"
-import { format } from "date-fns"
+import { format, addDays, startOfMonth, endOfMonth } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface MultiSlotBookingWidgetProps {
@@ -39,12 +39,37 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
   const [numberOfPeople, setNumberOfPeople] = useState<number>(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [daysWithSlots, setDaysWithSlots] = useState<Set<string>>(new Set())
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
 
   const today = useMemo(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
     return d
   }, [])
+
+  // Fetch days with available slots for the current month
+  useEffect(() => {
+    const fetchMonthAvailability = async () => {
+      try {
+        const monthStart = startOfMonth(currentMonth)
+        const monthEnd = endOfMonth(currentMonth)
+        
+        const response = await fetch(
+          `/api/properties/${propertyId}/month-availability?start=${format(monthStart, "yyyy-MM-dd")}&end=${format(monthEnd, "yyyy-MM-dd")}`
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          setDaysWithSlots(new Set(data.daysWithSlots || []))
+        }
+      } catch (error) {
+        console.error("Error fetching month availability:", error)
+      }
+    }
+
+    fetchMonthAvailability()
+  }, [currentMonth, propertyId])
 
   // Fetch available slots for selected date
   useEffect(() => {
@@ -161,9 +186,28 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
               disabled={(date) => date < today}
+              onMonthChange={setCurrentMonth}
+              modifiers={{
+                hasSlots: (date) => {
+                  const dateStr = format(date, "yyyy-MM-dd")
+                  return daysWithSlots.has(dateStr)
+                },
+                noSlots: (date) => {
+                  const dateStr = format(date, "yyyy-MM-dd")
+                  return date >= today && !daysWithSlots.has(dateStr)
+                }
+              }}
+              modifiersClassNames={{
+                hasSlots: "bg-green-100 dark:bg-green-900/30 font-semibold",
+                noSlots: "opacity-40 line-through"
+              }}
               className="rounded-md border"
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            <span className="inline-block w-3 h-3 bg-green-100 dark:bg-green-900/30 rounded mr-1"></span>
+            Dostępne terminy
+          </p>
         </div>
 
         {/* Loading State */}
