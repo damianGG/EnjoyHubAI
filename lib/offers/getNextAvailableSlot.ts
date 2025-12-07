@@ -200,7 +200,7 @@ export async function getNextAvailableSlot(
 
     // Get all bookings for this offer and date with active status
     const { data: bookings, error: bookingsError } = await supabase
-      .from("bookings")
+      .from("offer_bookings")
       .select("start_time")
       .eq("offer_id", offerId)
       .eq("booking_date", currentDate)

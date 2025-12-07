@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -211,6 +211,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl p-0 gap-0 h-full md:h-auto w-full max-h-screen md:max-h-[90vh] flex flex-col" showCloseButton={false}>
+        {/* Hidden title for screen readers */}
+        <DialogTitle className="sr-only">Wyszukiwanie atrakcji</DialogTitle>
+        
         {/* Close button in top right */}
         <button
           onClick={() => setIsOpen(false)}
