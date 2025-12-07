@@ -39,9 +39,17 @@ export async function getAvailabilityForPropertyOnDate(
     .eq("place_id", propertyId)
     .eq("is_active", true)
 
-  if (offersError || !offers || offers.length === 0) {
+  if (offersError) {
+    console.error("Error fetching offers:", offersError)
     return false
   }
+  
+  if (!offers || offers.length === 0) {
+    console.log(`No active offers found for property ${propertyId}`)
+    return false
+  }
+  
+  console.log(`Found ${offers.length} offers for property ${propertyId}, checking weekday ${weekday} for date ${date}`)
 
   // For each offer, check if it has availability on this weekday and date
   for (const offer of offers) {
@@ -52,9 +60,17 @@ export async function getAvailabilityForPropertyOnDate(
       .eq("offer_id", offer.id)
       .eq("weekday", weekday)
 
-    if (availError || !availabilities || availabilities.length === 0) {
+    if (availError) {
+      console.error(`Error fetching availability for offer ${offer.id}:`, availError)
       continue
     }
+    
+    if (!availabilities || availabilities.length === 0) {
+      console.log(`No availability configured for offer ${offer.id} on weekday ${weekday}`)
+      continue
+    }
+    
+    console.log(`Found ${availabilities.length} availability windows for offer ${offer.id}`)
 
     // Generate time slots for this offer on this date
     for (const availability of availabilities) {
@@ -71,7 +87,7 @@ export async function getAvailabilityForPropertyOnDate(
       }
 
       // Get existing bookings for this offer on this date
-      const { data: bookings, error: bookingsError } = await supabase
+      const { data: bookings, error: bookingsError} = await supabase
         .from("offer_bookings")
         .select("start_time")
         .eq("offer_id", offer.id)
