@@ -10,6 +10,9 @@ export async function GET(
     const supabase = createClient()
 
     // Get property with host information
+    // Note: Using explicit foreign key constraint name as properties table
+    // has host_id referencing users. This is the standard Supabase pattern
+    // when multiple foreign keys reference the same table.
     const { data: property, error: propertyError } = await supabase
       .from("properties")
       .select(`

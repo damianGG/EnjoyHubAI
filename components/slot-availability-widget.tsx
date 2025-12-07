@@ -79,10 +79,16 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
 
         // If property has no offers, fetch contact information
         if (data.has_offers === false) {
-          const contactResponse = await fetch(`/api/properties/${propertyId}/contact`)
-          if (contactResponse.ok) {
-            const contactData = await contactResponse.json()
-            setContactInfo(contactData)
+          try {
+            const contactResponse = await fetch(`/api/properties/${propertyId}/contact`)
+            if (contactResponse.ok) {
+              const contactData = await contactResponse.json()
+              setContactInfo(contactData)
+            } else {
+              console.warn("Failed to fetch contact information")
+            }
+          } catch (contactError) {
+            console.error("Error fetching contact information:", contactError)
           }
         }
       } catch (error) {
