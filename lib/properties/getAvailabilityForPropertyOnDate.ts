@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 
+// Enable debug logging in development
+const DEBUG = process.env.NODE_ENV === 'development'
+
 /**
  * Checks if a property has any available slots on a specific date
  * @param propertyId - The ID of the property
@@ -14,7 +17,7 @@ export async function getAvailabilityForPropertyOnDate(
 
   // Validate date format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    console.error("Invalid date format:", date)
+    if (DEBUG) console.error("Invalid date format:", date)
     return false
   }
 
@@ -24,7 +27,7 @@ export async function getAvailabilityForPropertyOnDate(
   
   // Verify the parsed date is valid
   if (isNaN(dateObj.getTime())) {
-    console.error("Invalid date:", date)
+    if (DEBUG) console.error("Invalid date:", date)
     return false
   }
   
@@ -40,16 +43,16 @@ export async function getAvailabilityForPropertyOnDate(
     .eq("is_active", true)
 
   if (offersError) {
-    console.error("Error fetching offers:", offersError)
+    if (DEBUG) console.error("Error fetching offers:", offersError)
     return false
   }
   
   if (!offers || offers.length === 0) {
-    console.log(`No active offers found for property ${propertyId}`)
+    if (DEBUG) console.log(`No active offers found for property ${propertyId}`)
     return false
   }
   
-  console.log(`Found ${offers.length} offers for property ${propertyId}, checking weekday ${weekday} for date ${date}`)
+  if (DEBUG) console.log(`Found ${offers.length} offers for property ${propertyId}, checking weekday ${weekday} for date ${date}`)
 
   // For each offer, check if it has availability on this weekday and date
   for (const offer of offers) {
@@ -61,16 +64,16 @@ export async function getAvailabilityForPropertyOnDate(
       .eq("weekday", weekday)
 
     if (availError) {
-      console.error(`Error fetching availability for offer ${offer.id}:`, availError)
+      if (DEBUG) console.error(`Error fetching availability for offer ${offer.id}:`, availError)
       continue
     }
     
     if (!availabilities || availabilities.length === 0) {
-      console.log(`No availability configured for offer ${offer.id} on weekday ${weekday}`)
+      if (DEBUG) console.log(`No availability configured for offer ${offer.id} on weekday ${weekday}`)
       continue
     }
     
-    console.log(`Found ${availabilities.length} availability windows for offer ${offer.id}`)
+    if (DEBUG) console.log(`Found ${availabilities.length} availability windows for offer ${offer.id}`)
 
     // Generate time slots for this offer on this date
     for (const availability of availabilities) {
@@ -87,7 +90,7 @@ export async function getAvailabilityForPropertyOnDate(
       }
 
       // Get existing bookings for this offer on this date
-      const { data: bookings, error: bookingsError} = await supabase
+      const { data: bookings, error: bookingsError } = await supabase
         .from("offer_bookings")
         .select("start_time")
         .eq("offer_id", offer.id)
@@ -156,14 +159,14 @@ function generateSlots(
  */
 function timeToMinutes(time: string): number {
   if (!/^\d{1,2}:\d{2}$/.test(time)) {
-    console.error("Invalid time format:", time)
+    if (DEBUG) console.error("Invalid time format:", time)
     return 0
   }
   const parts = time.split(":")
   const hours = Number(parts[0])
   const minutes = Number(parts[1])
   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-    console.error("Invalid time values:", time)
+    if (DEBUG) console.error("Invalid time values:", time)
     return 0
   }
   return hours * 60 + minutes
