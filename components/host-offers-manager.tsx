@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import HostCreateOfferDialog from "./host-create-offer-dialog"
 import HostOfferAvailabilityManager from "./host-offer-availability-manager"
-import { Clock, Users, DollarSign } from "lucide-react"
+import { Users, DollarSign } from "lucide-react"
 import { toast } from "sonner"
 import type { Offer, OfferAvailability } from "@/lib/types/dynamic-fields"
 
@@ -129,21 +129,14 @@ export default function HostOffersManager({ propertyId, initialOffers }: HostOff
                       {offer.description && (
                         <p className="text-sm text-muted-foreground">{offer.description}</p>
                       )}
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="text-sm font-medium">Cena bazowa</p>
+                            <p className="text-sm font-medium">Cena za slot (30 min)</p>
                             <p className="text-lg font-bold">
                               {offer.base_price} {offer.currency}
                             </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Czas trwania</p>
-                            <p className="text-lg font-bold">{offer.duration_minutes} min</p>
                           </div>
                         </div>
                         {offer.max_participants && (

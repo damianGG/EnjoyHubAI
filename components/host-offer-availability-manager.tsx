@@ -38,8 +38,8 @@ interface AvailabilitySlot {
   weekday: number
   start_time: string
   end_time: string
-  slot_length_minutes: number
-  max_bookings_per_slot: number
+  slot_length_minutes: number // Always 30, kept for API compatibility
+  max_bookings_per_slot: number // Renamed to capacity in UI
 }
 
 function timeToMinutes(time: string): number {
@@ -72,7 +72,7 @@ export default function HostOfferAvailabilityManager({
         weekday: 0,
         start_time: "09:00",
         end_time: "17:00",
-        slot_length_minutes: durationMinutes,
+        slot_length_minutes: 30, // Fixed 30-minute slots
         max_bookings_per_slot: 1,
       },
     ])
@@ -123,7 +123,7 @@ export default function HostOfferAvailabilityManager({
             weekday: slot.weekday,
             start_time: slot.start_time,
             end_time: slot.end_time,
-            slot_length_minutes: slot.slot_length_minutes,
+            slot_length_minutes: 30, // Always 30 minutes
             max_bookings_per_slot: slot.max_bookings_per_slot,
           }),
         })
@@ -173,37 +173,23 @@ export default function HostOfferAvailabilityManager({
             {slots.map((slot, index) => (
               <Card key={index} className="p-4">
                 <div className="grid gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label>Dzień tygodnia</Label>
-                      <Select
-                        value={slot.weekday.toString()}
-                        onValueChange={(value) => updateSlot(index, "weekday", parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WEEKDAYS.map((day) => (
-                            <SelectItem key={day.value} value={day.value.toString()}>
-                              {day.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Długość slotu (min)</Label>
-                      <Input
-                        type="number"
-                        value={slot.slot_length_minutes}
-                        onChange={(e) =>
-                          updateSlot(index, "slot_length_minutes", parseInt(e.target.value))
-                        }
-                        min="1"
-                      />
-                    </div>
+                  <div className="grid gap-2">
+                    <Label>Dzień tygodnia</Label>
+                    <Select
+                      value={slot.weekday.toString()}
+                      onValueChange={(value) => updateSlot(index, "weekday", parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WEEKDAYS.map((day) => (
+                          <SelectItem key={day.value} value={day.value.toString()}>
+                            {day.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -227,7 +213,7 @@ export default function HostOfferAvailabilityManager({
                   </div>
 
                   <div className="grid gap-2">
-                    <Label>Maksymalna liczba rezerwacji na slot</Label>
+                    <Label>Pojemność (liczba osób na slot 30-minutowy)</Label>
                     <Input
                       type="number"
                       value={slot.max_bookings_per_slot}
@@ -235,7 +221,11 @@ export default function HostOfferAvailabilityManager({
                         updateSlot(index, "max_bookings_per_slot", parseInt(e.target.value))
                       }
                       min="1"
+                      placeholder="np. 10"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Sloty są generowane automatycznie co 30 minut
+                    </p>
                   </div>
 
                   <Button

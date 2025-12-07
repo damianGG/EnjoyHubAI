@@ -31,7 +31,6 @@ export default function HostCreateOfferDialog({ propertyId, onOfferCreated }: Ho
     title: "",
     description: "",
     base_price: "",
-    duration_minutes: "",
     currency: "PLN",
     max_participants: "",
     is_active: true,
@@ -52,7 +51,7 @@ export default function HostCreateOfferDialog({ propertyId, onOfferCreated }: Ho
           title: formData.title,
           description: formData.description || undefined,
           base_price: parseFloat(formData.base_price),
-          duration_minutes: parseInt(formData.duration_minutes, 10),
+          duration_minutes: 30, // Fixed 30-minute slots
           currency: formData.currency,
           max_participants: formData.max_participants ? parseInt(formData.max_participants, 10) : undefined,
           is_active: formData.is_active,
@@ -73,7 +72,6 @@ export default function HostCreateOfferDialog({ propertyId, onOfferCreated }: Ho
         title: "",
         description: "",
         base_price: "",
-        duration_minutes: "",
         currency: "PLN",
         max_participants: "",
         is_active: true,
@@ -154,29 +152,15 @@ export default function HostCreateOfferDialog({ propertyId, onOfferCreated }: Ho
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="duration_minutes">Czas trwania (min) *</Label>
-                <Input
-                  id="duration_minutes"
-                  type="number"
-                  value={formData.duration_minutes}
-                  onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                  placeholder="60"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="max_participants">Maks. uczestników</Label>
-                <Input
-                  id="max_participants"
-                  type="number"
-                  value={formData.max_participants}
-                  onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
-                  placeholder="Opcjonalne"
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="max_participants">Maks. uczestników</Label>
+              <Input
+                id="max_participants"
+                type="number"
+                value={formData.max_participants}
+                onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
+                placeholder="Opcjonalne"
+              />
             </div>
 
             <div className="flex items-center justify-between">
