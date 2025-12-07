@@ -79,9 +79,9 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
   }, [selectedDate, propertyId])
 
   const handleBooking = () => {
-    if (slotData?.offerId) {
-      // Redirect to the offer page where user can select from all available time slots
-      router.push(`/offers/${slotData.offerId}`)
+    if (slotData?.offerId && slotData.next_available_slot) {
+      const { date, startTime } = slotData.next_available_slot
+      router.push(`/offers/${slotData.offerId}/book?date=${date}&time=${startTime}`)
     }
   }
 
