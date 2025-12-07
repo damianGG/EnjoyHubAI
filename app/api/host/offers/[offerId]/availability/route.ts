@@ -19,7 +19,13 @@ async function isOfferOwner(offerId: string) {
     .eq("id", offerId)
     .single()
 
-  return (offer as any)?.properties?.host_id === user.id
+  if (!offer) {
+    return false
+  }
+
+  // Type guard to safely access the nested property
+  const offerWithProperty = offer as { place_id: string; properties: { host_id: string } }
+  return offerWithProperty.properties.host_id === user.id
 }
 
 // POST - Create new availability slot for an offer

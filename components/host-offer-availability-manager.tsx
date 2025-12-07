@@ -112,9 +112,9 @@ export default function HostOfferAvailabilityManager({
         throw new Error("Failed to delete existing availability")
       }
 
-      // Create new availability slots
-      for (const slot of slots) {
-        const response = await fetch(`/api/host/offers/${offerId}/availability`, {
+      // Create new availability slots in parallel
+      const createPromises = slots.map(slot =>
+        fetch(`/api/host/offers/${offerId}/availability`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -127,11 +127,14 @@ export default function HostOfferAvailabilityManager({
             max_bookings_per_slot: slot.max_bookings_per_slot,
           }),
         })
+      )
 
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || "Failed to create availability slot")
-        }
+      const responses = await Promise.all(createPromises)
+      
+      // Check if any failed
+      const failed = responses.filter(r => !r.ok)
+      if (failed.length > 0) {
+        throw new Error(`Failed to create ${failed.length} availability slot(s)`)
       }
 
       toast.success("Dostępność zapisana pomyślnie!")

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import HostCreateOfferDialog from "./host-create-offer-dialog"
 import HostOfferAvailabilityManager from "./host-offer-availability-manager"
 import { Clock, Users, DollarSign } from "lucide-react"
+import { toast } from "sonner"
 import type { Offer, OfferAvailability } from "@/lib/types/dynamic-fields"
 
 interface HostOffersManagerProps {
@@ -33,9 +34,12 @@ export default function HostOffersManager({ propertyId, initialOffers }: HostOff
         if (propertyOffers.length > 0 && !selectedOfferId) {
           setSelectedOfferId(propertyOffers[0].id)
         }
+      } else {
+        toast.error("Nie udało się pobrać ofert")
       }
     } catch (error) {
       console.error("Error fetching offers:", error)
+      toast.error("Błąd podczas pobierania ofert")
     }
   }
 
@@ -48,9 +52,12 @@ export default function HostOffersManager({ propertyId, initialOffers }: HostOff
       if (response.ok) {
         const data = await response.json()
         setAvailabilityData(prev => ({ ...prev, [offerId]: data }))
+      } else {
+        toast.error("Nie udało się pobrać dostępności")
       }
     } catch (error) {
       console.error("Error fetching availability:", error)
+      toast.error("Błąd podczas pobierania dostępności")
     } finally {
       setIsLoadingAvailability(false)
     }
