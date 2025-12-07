@@ -125,12 +125,14 @@ function HomePageContent() {
   const per = parseInt(urlState.get("per") || "20", 10)
   const ageMin = urlState.get("age_min") || ""
   const ageMax = urlState.get("age_max") || ""
+  const date = urlState.get("date") || ""
 
   // Calculate active filters count (excluding bbox and page/per)
   const activeFiltersCount = [
     q ? 1 : 0,
     ageMin ? 1 : 0,
     ageMax ? 1 : 0,
+    date ? 1 : 0,
   ].reduce((a, b) => a + b, 0)
   
   // Detect if we're on desktop/mobile
@@ -195,6 +197,7 @@ function HomePageContent() {
         if (bbox) searchParams.set("bbox", bbox)
         if (categories) searchParams.set("categories", categories)
         if (sort) searchParams.set("sort", sort)
+        if (date) searchParams.set("date", date)
         searchParams.set("page", String(page))
         searchParams.set("per", String(per))
 
@@ -218,7 +221,7 @@ function HomePageContent() {
     }
 
     fetchResults()
-  }, [q, bbox, categories, sort, page, per])
+  }, [q, bbox, categories, sort, page, per, date])
 
   // Initialize Leaflet map - only when needed (desktop or mobile map view)
   useEffect(() => {

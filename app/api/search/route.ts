@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { getNextAvailableSlotForProperty } from "@/lib/properties/getNextAvailableSlotForProperty"
+import { getAvailabilityForPropertyOnDate } from "@/lib/properties/getAvailabilityForPropertyOnDate"
 
 interface SearchResult {
   id: string
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1", 10)
     const per = parseInt(searchParams.get("per") || "20", 10)
     const childAge = searchParams.get("child_age")
+    const dateParam = searchParams.get("date") || "" // New date parameter
     
     const supabase = createClient()
     
@@ -234,6 +236,24 @@ export async function GET(request: Request) {
           
           return meetsMinimum && meetsMaximum
         })
+      }
+    }
+    
+    // Filter by date availability if provided
+    if (dateParam) {
+      // Validate date format (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (dateRegex.test(dateParam)) {
+        // Filter properties that have availability on the specified date
+        const availabilityChecks = await Promise.all(
+          items.map(async (item: any) => {
+            const hasAvailability = await getAvailabilityForPropertyOnDate(item.id, dateParam)
+            return { ...item, hasAvailability }
+          })
+        )
+        
+        // Keep only properties with availability on the specified date
+        items = availabilityChecks.filter((item: any) => item.hasAvailability)
       }
     }
     
