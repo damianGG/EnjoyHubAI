@@ -182,6 +182,7 @@ export default function AttractionCard({
                 )}
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   scrollPrev()
                 }}
                 aria-label="Previous image"
@@ -199,6 +200,7 @@ export default function AttractionCard({
                 )}
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   scrollNext()
                 }}
                 aria-label="Next image"
@@ -216,6 +218,7 @@ export default function AttractionCard({
                   key={index}
                   onClick={(e) => {
                     e.preventDefault()
+                    e.stopPropagation()
                     api?.scrollTo(index)
                   }}
                   className={cn(
