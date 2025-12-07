@@ -35,6 +35,13 @@ export async function getAvailabilityForPropertyOnDate(
   // Convert to Monday=0, ..., Sunday=6 (same as offer_availability.weekday)
   const weekday = utcDay === 0 ? 6 : utcDay - 1
 
+  console.log(`\n=== Date Availability Check ===`)
+  console.log(`Property ID: ${propertyId}`)
+  console.log(`Date: ${date}`)
+  console.log(`Weekday: ${weekday} (0=Mon, 6=Sun)`)
+  console.log(`\nSQL Query 1 (offers):`)
+  console.log(`SELECT id, duration_minutes FROM offers WHERE place_id = '${propertyId}' AND is_active = true;`)
+
   // Fetch all active offers for the property
   const { data: offers, error: offersError } = await supabase
     .from("offers")
@@ -43,19 +50,23 @@ export async function getAvailabilityForPropertyOnDate(
     .eq("is_active", true)
 
   if (offersError) {
-    if (DEBUG) console.error("Error fetching offers:", offersError)
+    console.error("Error fetching offers:", offersError)
     return false
   }
   
   if (!offers || offers.length === 0) {
-    if (DEBUG) console.log(`No active offers found for property ${propertyId}`)
+    console.log(`Result: No active offers found`)
+    console.log(`=== End Check ===\n`)
     return false
   }
   
-  if (DEBUG) console.log(`Found ${offers.length} offers for property ${propertyId}, checking weekday ${weekday} for date ${date}`)
+  console.log(`Result: Found ${offers.length} offers:`, offers.map(o => `ID=${o.id}, duration=${o.duration_minutes}min`).join(', '))
 
   // For each offer, check if it has availability on this weekday and date
   for (const offer of offers) {
+    console.log(`\nSQL Query 2 (offer_availability for offer ${offer.id}):`)
+    console.log(`SELECT * FROM offer_availability WHERE offer_id = '${offer.id}' AND weekday = ${weekday};`)
+    
     // Check if this offer has availability configured for this weekday
     const { data: availabilities, error: availError } = await supabase
       .from("offer_availability")
@@ -64,16 +75,19 @@ export async function getAvailabilityForPropertyOnDate(
       .eq("weekday", weekday)
 
     if (availError) {
-      if (DEBUG) console.error(`Error fetching availability for offer ${offer.id}:`, availError)
+      console.error(`Error fetching availability for offer ${offer.id}:`, availError)
       continue
     }
     
     if (!availabilities || availabilities.length === 0) {
-      if (DEBUG) console.log(`No availability configured for offer ${offer.id} on weekday ${weekday}`)
+      console.log(`Result: No availability configured for this weekday`)
       continue
     }
     
-    if (DEBUG) console.log(`Found ${availabilities.length} availability windows for offer ${offer.id}`)
+    console.log(`Result: Found ${availabilities.length} availability windows:`)
+    availabilities.forEach((av: any) => {
+      console.log(`  - ${av.start_time} to ${av.end_time}, slot_length=${av.slot_length_minutes}min, max_bookings=${av.max_bookings_per_slot}`)
+    })
 
     // Generate time slots for this offer on this date
     for (const availability of availabilities) {
@@ -86,8 +100,14 @@ export async function getAvailabilityForPropertyOnDate(
       )
 
       if (slots.length === 0) {
+        console.log(`  Generated 0 slots (duration ${offer.duration_minutes}min too long for window)`)
         continue
       }
+      
+      console.log(`  Generated ${slots.length} time slots`)
+
+      console.log(`\nSQL Query 3 (offer_bookings):`)
+      console.log(`SELECT start_time FROM offer_bookings WHERE offer_id = '${offer.id}' AND booking_date = '${date}' AND status IN ('pending', 'confirmed');`)
 
       // Get existing bookings for this offer on this date
       const { data: bookings, error: bookingsError } = await supabase
@@ -98,8 +118,11 @@ export async function getAvailabilityForPropertyOnDate(
         .in("status", ["pending", "confirmed"])
 
       if (bookingsError) {
+        console.error(`Error fetching bookings:`, bookingsError)
         continue
       }
+      
+      console.log(`Result: Found ${bookings?.length || 0} bookings:`, bookings?.map(b => b.start_time).join(', ') || 'none')
 
       // Count bookings per slot
       const bookingCounts: Record<string, number> = {}
@@ -111,17 +134,24 @@ export async function getAvailabilityForPropertyOnDate(
       }
 
       // Check if any slot has capacity
+      console.log(`\nChecking slot capacity:`)
       for (const slot of slots) {
         const currentBookings = bookingCounts[slot.startTime] || 0
         const capacityLeft = slot.maxBookingsPerSlot - currentBookings
 
+        console.log(`  Slot ${slot.startTime}: ${currentBookings}/${slot.maxBookingsPerSlot} booked, capacity left: ${capacityLeft}`)
+
         if (capacityLeft > 0) {
+          console.log(`✅ AVAILABLE SLOT FOUND at ${slot.startTime}`)
+          console.log(`=== End Check ===\n`)
           return true
         }
       }
     }
   }
 
+  console.log(`❌ No available slots found`)
+  console.log(`=== End Check ===\n`)
   return false
 }
 
