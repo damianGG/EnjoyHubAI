@@ -140,9 +140,9 @@ export async function GET(
     // Get existing bookings for this date
     const { data: bookings, error: bookingsError } = await supabase
       .from("offer_bookings")
-      .select("start_time, number_of_people")
+      .select("start_time, persons")
       .in("offer_id", offerIds)
-      .eq("date", date)
+      .eq("booking_date", date)
       .in("status", ["pending", "confirmed"])
 
     if (bookingsError) {
