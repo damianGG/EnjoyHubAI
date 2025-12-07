@@ -220,8 +220,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
         </button>
 
         {/* Scrollable content area */}
-        <ScrollArea className="flex-1 h-full">
-          <div className="p-6 space-y-6 pb-24">
+        <ScrollArea className="flex-1 overflow-auto">
+          <div className="p-6 space-y-6 pb-32">
             {/* Categories Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Kategorie</h3>
