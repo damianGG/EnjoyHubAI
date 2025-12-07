@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "lucide-react"
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
-import AvailabilityCalendarCard from "@/components/availability-calendar-card"
-import SlotAvailabilityWidget from "@/components/slot-availability-widget"
+import MultiSlotBookingWidget from "@/components/multi-slot-booking-widget"
+import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
@@ -48,7 +48,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
     .from("properties")
     .select(`
       *,
-      users!properties_host_id_fkey (full_name, avatar_url, created_at),
+      users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
       reviews (
         id,
         rating,
@@ -63,6 +63,24 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
   if (!attraction) {
     notFound()
+  }
+
+  // Check if property has any active offers with availability configured
+  const { data: offers } = await supabase
+    .from("offers")
+    .select("id")
+    .eq("place_id", id)
+    .eq("is_active", true)
+
+  let hasAvailability = false
+  if (offers && offers.length > 0) {
+    // Check if at least one offer has availability configured
+    const { count } = await supabase
+      .from("offer_availability")
+      .select("*", { count: "exact", head: true })
+      .in("offer_id", offers.map(o => o.id))
+    
+    hasAvailability = !!count && count > 0
   }
 
   // Calculate average rating
@@ -221,15 +239,19 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
           {/* Booking Card */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-6">
-              <AvailabilityCalendarCard
-                propertyId={attraction.id}
-                pricePerNight={attraction.price_per_night}
-                maxGuests={attraction.max_guests}
-                avgRating={roundedRating}
-                reviewCount={ratings.length}
-              />
-              <SlotAvailabilityWidget propertyId={attraction.id} />
+            <div className="sticky top-8">
+              {hasAvailability ? (
+                <MultiSlotBookingWidget propertyId={attraction.id} />
+              ) : (
+                <PropertyContactInfo
+                  phone={attraction.users?.phone}
+                  email={attraction.users?.email}
+                  address={attraction.address}
+                  city={attraction.city}
+                  country={attraction.country}
+                  openingHours={attraction.opening_hours}
+                />
+              )}
             </div>
           </div>
         </div>
