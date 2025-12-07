@@ -88,7 +88,7 @@ export default function PropertyContactInfo({
         )}
 
         {/* No contact info message */}
-        {!phone && !email && !address && !city && !openingHours && (
+        {!phone && !email && !address && !city && !country && !openingHours && (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">
               Brak dostępnych informacji kontaktowych

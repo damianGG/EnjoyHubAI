@@ -68,20 +68,19 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   // Check if property has any active offers with availability configured
   const { data: offers } = await supabase
     .from("offers")
-    .select("id, is_active")
+    .select("id")
     .eq("place_id", id)
     .eq("is_active", true)
 
   let hasAvailability = false
   if (offers && offers.length > 0) {
     // Check if at least one offer has availability configured
-    const { data: availability } = await supabase
+    const { count } = await supabase
       .from("offer_availability")
-      .select("id")
+      .select("*", { count: "exact", head: true })
       .in("offer_id", offers.map(o => o.id))
-      .limit(1)
     
-    hasAvailability = !!availability && availability.length > 0
+    hasAvailability = !!count && count > 0
   }
 
   // Calculate average rating
