@@ -3,9 +3,10 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Calendar, MapPin, Users, Clock, ArrowLeft, Phone } from "lucide-react"
+import { CheckCircle, Calendar, MapPin, Users, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { formatDisplayDate } from "@/lib/utils"
+import SendSMSCard from "@/components/send-sms-card"
 
 interface BookingConfirmationPageProps {
   params: Promise<{
@@ -258,26 +259,10 @@ export default async function OfferBookingConfirmationPage({ params }: BookingCo
 
         {/* Send to Phone Section */}
         {booking.customer_phone && (
-          <Card className="mb-6 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <Phone className="h-5 w-5 mr-2" />
-                Wyślij potwierdzenie SMS
-              </CardTitle>
-              <CardDescription>
-                Otrzymaj SMS z potwierdzeniem rezerwacji na numer {booking.customer_phone}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
-                <Phone className="h-4 w-4 mr-2" />
-                Wyślij SMS z potwierdzeniem
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                SMS będzie zawierać datę, godzinę i miejsce rezerwacji
-              </p>
-            </CardContent>
-          </Card>
+          <SendSMSCard 
+            bookingId={booking.id} 
+            customerPhone={booking.customer_phone}
+          />
         )}
 
         {/* Action Buttons */}
