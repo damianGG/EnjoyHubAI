@@ -1,14 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Search, X, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, X, ChevronDown, ChevronUp, Calendar as CalendarIcon } from "lucide-react"
 import { useUrlState } from "@/lib/search/url-state"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { pl } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface Subcategory {
   id: string
@@ -49,6 +54,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [location, setLocation] = useState("")
   const [ageMin, setAgeMin] = useState("")
   const [ageMax, setAgeMax] = useState("")
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   const isControlled = controlledOpen !== undefined
   const isOpen = isControlled ? controlledOpen : open
@@ -107,6 +113,16 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       const currentAgeMax = urlState.get("age_max") || ""
       setAgeMin(currentAgeMin)
       setAgeMax(currentAgeMax)
+      
+      const currentDate = urlState.get("date") || ""
+      if (currentDate && /^\d{4}-\d{2}-\d{2}$/.test(currentDate)) {
+        const [year, month, day] = currentDate.split("-").map(Number)
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+          setSelectedDate(new Date(year, month - 1, day))
+        }
+      } else {
+        setSelectedDate(undefined)
+      }
     }
   }, [isOpen])
 
@@ -161,6 +177,16 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       updates.age_max = ""
     }
 
+    if (selectedDate) {
+      // Format date as YYYY-MM-DD
+      const year = selectedDate.getFullYear()
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0")
+      const day = selectedDate.getDate().toString().padStart(2, "0")
+      updates.date = `${year}-${month}-${day}`
+    } else {
+      updates.date = ""
+    }
+
     urlState.setMany(updates)
     setIsOpen(false)
   }
@@ -170,12 +196,14 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setLocation("")
     setAgeMin("")
     setAgeMax("")
+    setSelectedDate(undefined)
     
     urlState.setMany({
       categories: "",
       q: "",
       age_min: "",
       age_max: "",
+      date: "",
       page: 1,
     })
   }
@@ -183,6 +211,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl p-0 gap-0 h-full md:h-auto w-full max-h-screen md:max-h-[90vh] flex flex-col" showCloseButton={false}>
+        {/* Hidden title for screen readers */}
+        <DialogTitle className="sr-only">Wyszukiwanie atrakcji</DialogTitle>
+        
         {/* Close button in top right */}
         <button
           onClick={() => setIsOpen(false)}
@@ -192,8 +223,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
         </button>
 
         {/* Scrollable content area */}
-        <ScrollArea className="flex-1 h-full">
-          <div className="p-6 space-y-6 pb-24">
+        <ScrollArea className="flex-1 overflow-auto">
+          <div className="p-6 space-y-6 pb-32">
             {/* Categories Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Kategorie</h3>
@@ -298,7 +329,41 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
               </div>
             </div>
 
-            {/* When Section - Adapted for Age */}
+            {/* When Section - Date Picker */}
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold">Kiedy?</h2>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-14 justify-start text-left font-normal border-2 rounded-xl",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-5 w-5" />
+                    {selectedDate ? (
+                      format(selectedDate, "PPP", { locale: pl })
+                    ) : (
+                      <span>Wybierz datę</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) =>
+                      date < new Date(new Date().setHours(0, 0, 0, 0))
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Age Section */}
             <div className="bg-gray-50 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
