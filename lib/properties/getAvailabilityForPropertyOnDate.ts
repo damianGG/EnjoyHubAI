@@ -185,18 +185,20 @@ function generateSlots(
 }
 
 /**
- * Converts time string "HH:MM" to minutes from midnight
+ * Converts time string "HH:MM" or "HH:MM:SS" to minutes from midnight
  */
 function timeToMinutes(time: string): number {
-  if (!/^\d{1,2}:\d{2}$/.test(time)) {
-    if (DEBUG) console.error("Invalid time format:", time)
+  // Accept both HH:MM and HH:MM:SS formats
+  if (!/^\d{1,2}:\d{2}(:\d{2})?$/.test(time)) {
+    console.error("Invalid time format:", time)
     return 0
   }
   const parts = time.split(":")
   const hours = Number(parts[0])
   const minutes = Number(parts[1])
+  // Ignore seconds if present
   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-    if (DEBUG) console.error("Invalid time values:", time)
+    console.error("Invalid time values:", time)
     return 0
   }
   return hours * 60 + minutes
