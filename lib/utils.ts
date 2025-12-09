@@ -82,3 +82,17 @@ export function formatDisplayDate(dateStr: string): string {
   
   return `${day}.${month}.${year}`
 }
+
+/**
+ * Formats a time string to HH:MM format
+ * Safely extracts the first 5 characters from a time string (HH:MM:SS or HH:MM)
+ * 
+ * @param time Time string in format HH:MM:SS or HH:MM
+ * @returns Time string in HH:MM format, or '00:00' if invalid
+ */
+export function formatDisplayTime(time: string): string {
+  if (!time || typeof time !== 'string' || time.length < 5) {
+    return '00:00'
+  }
+  return time.substring(0, 5)
+}

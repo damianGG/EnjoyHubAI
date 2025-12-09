@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Calendar, MapPin, Users, Clock, ArrowLeft, Phone } from "lucide-react"
 import Link from "next/link"
-import { formatDisplayDate } from "@/lib/utils"
+import { formatDisplayDate, formatDisplayTime } from "@/lib/utils"
 import SendSMSCard from "@/components/send-sms-card"
 
 interface BookingConfirmationPageProps {
@@ -80,15 +80,6 @@ export default async function OfferBookingConfirmationPage({ params }: BookingCo
     }
   }
 
-  const formatTime = (time: string) => {
-    // Time is in format HH:MM:SS, we only need HH:MM
-    // Add validation for null/undefined and length
-    if (!time || typeof time !== 'string' || time.length < 5) {
-      return '00:00'
-    }
-    return time.substring(0, 5)
-  }
-
   const totalPrice = booking.persons * offer.base_price
 
   return (
@@ -154,7 +145,7 @@ export default async function OfferBookingConfirmationPage({ params }: BookingCo
                 <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <div className="text-sm font-medium">Godzina</div>
-                  <div className="text-base">{formatTime(booking.start_time)} - {formatTime(booking.end_time)}</div>
+                  <div className="text-base">{formatDisplayTime(booking.start_time)} - {formatDisplayTime(booking.end_time)}</div>
                 </div>
               </div>
 

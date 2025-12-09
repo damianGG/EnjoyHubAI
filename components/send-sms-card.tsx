@@ -1,5 +1,29 @@
 "use client"
 
+/**
+ * SendSMSCard Component
+ * 
+ * Interactive card component for sending booking confirmation SMS to customers.
+ * 
+ * Features:
+ * - Displays customer's phone number
+ * - Interactive send button with loading states
+ * - Shows success/error feedback with alerts
+ * - Disables button after successful send to prevent duplicates
+ * - Handles errors gracefully with user-friendly messages
+ * 
+ * @component
+ * @param {Object} props
+ * @param {string} props.bookingId - UUID of the booking to send confirmation for
+ * @param {string} props.customerPhone - Customer's phone number (displayed in UI)
+ * 
+ * @example
+ * <SendSMSCard 
+ *   bookingId="123e4567-e89b-12d3-a456-426614174000"
+ *   customerPhone="+48 123 456 789"
+ * />
+ */
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

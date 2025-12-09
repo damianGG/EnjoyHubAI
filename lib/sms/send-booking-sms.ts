@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { formatDisplayDate } from "@/lib/utils"
+import { formatDisplayDate, formatDisplayTime } from "@/lib/utils"
 
 interface SendBookingSMSParams {
   bookingId: string
@@ -61,14 +61,8 @@ export async function sendBookingSMS(params: SendBookingSMSParams): Promise<SMSR
 
     // Format the SMS message
     const formattedDate = formatDisplayDate(booking.booking_date)
-    
-    // Safely extract time strings with null checks and length validation
-    const startTime = booking.start_time && typeof booking.start_time === 'string' && booking.start_time.length >= 5
-      ? booking.start_time.substring(0, 5) 
-      : '00:00'
-    const endTime = booking.end_time && typeof booking.end_time === 'string' && booking.end_time.length >= 5
-      ? booking.end_time.substring(0, 5)
-      : '00:00'
+    const startTime = formatDisplayTime(booking.start_time)
+    const endTime = formatDisplayTime(booking.end_time)
     
     // Safely extract booking ID prefix - always use first 8 chars if available
     const bookingIdPrefix = bookingId && typeof bookingId === 'string' && bookingId.length > 0
