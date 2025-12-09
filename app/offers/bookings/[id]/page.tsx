@@ -82,6 +82,10 @@ export default async function OfferBookingConfirmationPage({ params }: BookingCo
 
   const formatTime = (time: string) => {
     // Time is in format HH:MM:SS, we only need HH:MM
+    // Add validation for null/undefined and length
+    if (!time || typeof time !== 'string' || time.length < 5) {
+      return '00:00'
+    }
     return time.substring(0, 5)
   }
 

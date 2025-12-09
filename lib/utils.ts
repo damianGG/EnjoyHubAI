@@ -74,5 +74,11 @@ export function formatDisplayDate(dateStr: string): string {
   }
   
   const [year, month, day] = parts
+  
+  // Validate each part is non-empty
+  if (!year || !month || !day) {
+    return ''
+  }
+  
   return `${day}.${month}.${year}`
 }
