@@ -442,6 +442,55 @@ function HomePageContent() {
                   ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
                   : "All Attractions"}
               </h1>
+              
+              {/* Active filters display */}
+              {(q || date || ageMin || ageMax) && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {q && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">
+                      <span className="font-medium">Lokalizacja:</span>
+                      <span>{q}</span>
+                      <button
+                        onClick={() => urlState.setMany({ q: "" })}
+                        className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  {date && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">
+                      <span className="font-medium">Data:</span>
+                      <span>{new Date(date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      <button
+                        onClick={() => urlState.setMany({ date: "" })}
+                        className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  {(ageMin || ageMax) && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">
+                      <span className="font-medium">Wiek:</span>
+                      <span>{ageMin || '0'} - {ageMax || '99'}</span>
+                      <button
+                        onClick={() => urlState.setMany({ age_min: "", age_max: "" })}
+                        className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => urlState.setMany({ q: "", date: "", age_min: "", age_max: "" })}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+                  >
+                    Wyczyść wszystko
+                  </button>
+                </div>
+              )}
+              
               <p className="text-sm md:text-base text-muted-foreground">
                 {loading ? "Loading..." : `${total} attractions found`}
               </p>
