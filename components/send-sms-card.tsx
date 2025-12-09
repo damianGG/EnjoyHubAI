@@ -61,7 +61,7 @@ export default function SendSMSCard({ bookingId, customerPhone }: SendSMSCardPro
           className="w-full" 
           variant="outline" 
           onClick={handleSendSMS}
-          disabled={isSending || (result?.success === true)}
+          disabled={isSending || result?.success}
         >
           {isSending ? (
             <>

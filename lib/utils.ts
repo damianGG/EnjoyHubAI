@@ -61,16 +61,16 @@ export function extractIdFromSlug(slug: string): string {
 /**
  * Formats a date string from YYYY-MM-DD to DD.MM.YYYY
  * @param dateStr Date string in YYYY-MM-DD format
- * @returns Formatted date string in DD.MM.YYYY format
+ * @returns Formatted date string in DD.MM.YYYY format, or empty string if invalid
  */
 export function formatDisplayDate(dateStr: string): string {
   if (!dateStr || typeof dateStr !== 'string') {
-    return dateStr
+    return ''
   }
   
   const parts = dateStr.split("-")
   if (parts.length !== 3) {
-    return dateStr
+    return ''
   }
   
   const [year, month, day] = parts

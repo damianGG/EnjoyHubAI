@@ -61,8 +61,19 @@ export async function sendBookingSMS(params: SendBookingSMSParams): Promise<SMSR
 
     // Format the SMS message
     const formattedDate = formatDisplayDate(booking.booking_date)
-    const startTime = booking.start_time.substring(0, 5) // HH:MM
-    const endTime = booking.end_time.substring(0, 5) // HH:MM
+    
+    // Safely extract time strings with null checks
+    const startTime = booking.start_time && typeof booking.start_time === 'string' 
+      ? booking.start_time.substring(0, 5) 
+      : '00:00'
+    const endTime = booking.end_time && typeof booking.end_time === 'string'
+      ? booking.end_time.substring(0, 5)
+      : '00:00'
+    
+    // Safely extract booking ID prefix
+    const bookingIdPrefix = bookingId && bookingId.length >= 8
+      ? bookingId.substring(0, 8)
+      : bookingId || 'N/A'
     
     const smsMessage = `
 EnjoyHub - Potwierdzenie rezerwacji
@@ -77,7 +88,7 @@ ${property?.address ? `Adres: ${property.address}, ${property.city}` : ''}
 
 Płatność na miejscu. Prosimy o przybycie 10 min przed godziną.
 
-ID: ${bookingId.substring(0, 8)}
+ID: ${bookingIdPrefix}
     `.trim()
 
     // TODO: Integrate with actual SMS service
