@@ -2,10 +2,8 @@
 
 import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import LoginForm from "@/components/login-form"
-import SignUpForm from "@/components/sign-up-form"
+import UnifiedAuthForm from "@/components/unified-auth-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
-import PhoneLoginForm from "@/components/phone-login-form"
 import { useRouter } from "next/navigation"
 
 interface AuthSheetProps {
@@ -16,8 +14,8 @@ interface AuthSheetProps {
   returnToPath?: string | null
 }
 
-// Internal mode type that extends the public mode with forgot-password and phone
-type InternalMode = "login" | "signup" | "forgot-password" | "phone"
+// Internal mode type that extends the public mode with forgot-password
+type InternalMode = "login" | "signup" | "forgot-password"
 
 export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
@@ -31,13 +29,6 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     router.push(destination)
   }
 
-  const handleSwitchToSignUp = () => {
-    setCurrentMode("signup")
-    if (onModeChange) {
-      onModeChange("signup")
-    }
-  }
-
   const handleSwitchToLogin = () => {
     setCurrentMode("login")
     if (onModeChange) {
@@ -45,56 +36,37 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     }
   }
 
-  const handleSwitchToForgotPassword = () => {
-    setCurrentMode("forgot-password")
-  }
-
-  const handleSwitchToPhoneLogin = () => {
-    setCurrentMode("phone")
-  }
-
   // Sync internal mode with external mode prop (only for login/signup)
-  if ((mode === "login" || mode === "signup") && currentMode !== mode && currentMode !== "forgot-password" && currentMode !== "phone") {
+  if ((mode === "login" || mode === "signup") && currentMode !== mode && currentMode !== "forgot-password") {
     setCurrentMode(mode)
   }
 
   const getTitle = () => {
     switch (currentMode) {
       case "login":
-        return "Zaloguj się"
       case "signup":
-        return "Zarejestruj się"
+        return "Zaloguj się lub zarejestruj"
       case "forgot-password":
         return "Zresetuj hasło"
-      case "phone":
-        return "Logowanie przez SMS"
     }
   }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
-        <SheetHeader className="p-6 pb-0">
-          <SheetTitle>{getTitle()}</SheetTitle>
+        <SheetHeader className="p-6 pb-0 border-b">
+          <SheetTitle className="text-base font-normal">{getTitle()}</SheetTitle>
         </SheetHeader>
         <div className="p-6">
-          {currentMode === "login" && (
-            <LoginForm 
+          {(currentMode === "login" || currentMode === "signup") && (
+            <UnifiedAuthForm 
               inline 
               onSuccess={handleSuccess} 
-              onSwitchToSignUp={handleSwitchToSignUp}
-              onSwitchToForgotPassword={handleSwitchToForgotPassword}
-              onSwitchToPhoneLogin={handleSwitchToPhoneLogin}
+              mode={currentMode}
             />
-          )}
-          {currentMode === "signup" && (
-            <SignUpForm inline onSuccess={handleSuccess} onSwitchToLogin={handleSwitchToLogin} />
           )}
           {currentMode === "forgot-password" && (
             <ForgotPasswordForm inline onSwitchToLogin={handleSwitchToLogin} />
-          )}
-          {currentMode === "phone" && (
-            <PhoneLoginForm inline onSuccess={handleSuccess} onSwitchToEmailLogin={handleSwitchToLogin} />
           )}
         </div>
       </SheetContent>
