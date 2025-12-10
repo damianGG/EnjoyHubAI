@@ -59,12 +59,7 @@
 }
 
 .dark {
-  /* Gradient theme - same gradient for dark mode */
-  --gradient-primary: linear-gradient(135deg, #FF4F9E 0%, #D848FF 50%, #7A3CFF 100%);
-  --gradient-primary-start: #FF4F9E;
-  --gradient-primary-mid: #D848FF;
-  --gradient-primary-end: #7A3CFF;
-
+  /* Gradient theme - inherited from :root */
   /* Dark theme */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
