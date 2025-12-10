@@ -54,7 +54,8 @@ function VerifyOTPButton() {
   )
 }
 
-export default function PhoneLoginForm({ inline = false, onSuccess, onSwitchToEmailLogin }: PhoneLoginFormProps = {}) {
+export default function PhoneLoginForm(props: PhoneLoginFormProps = {}) {
+  const { inline = false, onSuccess, onSwitchToEmailLogin } = props
   const router = useRouter()
   const [step, setStep] = useState<"phone" | "verify">("phone")
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -166,7 +167,6 @@ export default function PhoneLoginForm({ inline = false, onSuccess, onSwitchToEm
                 maxLength={6}
                 value={otp}
                 onChange={setOtp}
-                name="token"
               >
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
@@ -178,6 +178,8 @@ export default function PhoneLoginForm({ inline = false, onSuccess, onSwitchToEm
                 </InputOTPGroup>
               </InputOTP>
             </div>
+            {/* Hidden input to ensure OTP value is included in form data */}
+            <input type="hidden" name="token" value={otp} />
           </div>
 
           <VerifyOTPButton />

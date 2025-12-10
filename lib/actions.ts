@@ -321,7 +321,7 @@ export async function verifyPhoneOTP(prevState: any, formData: FormData): Promis
           {
             id: data.user.id,
             phone: phoneStr,
-            email: data.user.email || `${data.user.id}@phone.local`, // Fallback email for phone-only users
+            email: data.user.email || `noemail+${data.user.id}@enjoyhub.local`, // Fallback email for phone-only users
           },
           { onConflict: "id" },
         )
