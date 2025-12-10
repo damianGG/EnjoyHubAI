@@ -50,16 +50,24 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
     }
   }
 
+  const scrollToImage = (index: number) => {
+    setCurrentImage(index)
+    if (api) {
+      api.scrollTo(index)
+    }
+  }
+
   const openGallery = (index: number) => {
     setCurrentImage(index)
     setIsDialogOpen(true)
-    // Scroll carousel to the selected image when dialog opens
-    setTimeout(() => {
-      if (api) {
-        api.scrollTo(index)
-      }
-    }, 100)
   }
+
+  // Scroll carousel when dialog opens and carousel is ready
+  useEffect(() => {
+    if (isDialogOpen && api) {
+      api.scrollTo(currentImage)
+    }
+  }, [isDialogOpen, api, currentImage])
 
   return (
     <div className="space-y-4">
@@ -194,12 +202,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
                   <div
                     key={index}
                     className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group"
-                    onClick={() => {
-                      setCurrentImage(index)
-                      if (api) {
-                        api.scrollTo(index)
-                      }
-                    }}
+                    onClick={() => scrollToImage(index)}
                   >
                     <Image
                       src={image || "/placeholder.jpg"}
