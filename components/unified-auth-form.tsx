@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Mail } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { sendPhoneOTP, verifyPhoneOTP, signInWithGoogle, signInWithFacebook } from "@/lib/actions"
+import { sendPhoneOTP, verifyPhoneOTP, signInWithGoogle, signInWithFacebook, signIn } from "@/lib/actions"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 
 interface UnifiedAuthFormProps {
@@ -30,6 +30,23 @@ function ContinueButton() {
         </>
       ) : (
         "Dalej"
+      )}
+    </Button>
+  )
+}
+
+function EmailLoginButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" disabled={pending} className="w-full bg-pink-600 hover:bg-pink-700">
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Logowanie...
+        </>
+      ) : (
+        "Zaloguj się"
       )}
     </Button>
   )
@@ -122,6 +139,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
   
   const [sendOTPState, sendOTPAction] = useActionState(sendPhoneOTP, null)
   const [verifyOTPState, verifyOTPAction] = useActionState(verifyPhoneOTP, null)
+  const [emailLoginState, emailLoginAction] = useActionState(signIn, null)
 
   // Handle OTP sent successfully
   useEffect(() => {
@@ -140,6 +158,17 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
       }
     }
   }, [verifyOTPState, router, onSuccess])
+
+  // Handle successful email login
+  useEffect(() => {
+    if (emailLoginState?.ok) {
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push("/")
+      }
+    }
+  }, [emailLoginState, router, onSuccess])
 
   const handleSendOTP = (formData: FormData) => {
     const phone = `${countryCode}${formData.get("phone")}`
@@ -251,16 +280,24 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
 
           {/* Email Login Modal/Expanded Section */}
           {showEmailLogin && (
-            <div className="mt-4 p-4 border rounded-lg space-y-3">
+            <form action={emailLoginAction} className="mt-4 p-4 border rounded-lg space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">Logowanie przez email</h3>
                 <button
+                  type="button"
                   onClick={() => setShowEmailLogin(false)}
                   className="text-sm text-muted-foreground hover:text-foreground"
                 >
                   ✕
                 </button>
               </div>
+
+              {emailLoginState?.error && (
+                <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded text-sm">
+                  {emailLoginState.error}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label htmlFor="email" className="block text-sm font-medium">
                   Email
@@ -273,15 +310,13 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
                 </label>
                 <Input id="password" name="password" type="password" required />
               </div>
-              <Button className="w-full bg-pink-600 hover:bg-pink-700">
-                Zaloguj się
-              </Button>
+              <EmailLoginButton />
               <div className="text-center text-sm">
                 <Link href="/auth/forgot-password" className="text-primary hover:underline">
                   Zapomniałeś hasła?
                 </Link>
               </div>
-            </div>
+            </form>
           )}
         </div>
       ) : (
