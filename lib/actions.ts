@@ -159,6 +159,27 @@ export async function signInWithGoogle() {
   }
 }
 
+// Facebook OAuth sign in action
+export async function signInWithFacebook() {
+  const supabase = await createSupabaseServerClient()
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    console.error("Facebook OAuth error:", error)
+    return { error: "OAuth sign-in failed" }
+  }
+
+  if (data?.url) {
+    redirect(data.url)
+  }
+}
+
 // Request password reset action
 export async function requestPasswordReset(prevState: any, formData: FormData): Promise<ActionResult> {
   if (!formData) return { error: "Brak danych formularza" }
@@ -224,6 +245,93 @@ export async function updatePassword(prevState: any, formData: FormData): Promis
     return { ok: true, message: "Hasło zostało zmienione. Możesz się teraz zalogować." }
   } catch (err) {
     console.error("Password update error:", err)
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
+  }
+}
+
+// Phone authentication - Send OTP via SMSApi
+export async function sendPhoneOTP(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Brak danych formularza" }
+
+  const phone = formData.get("phone")
+
+  if (!phone) return { error: "Numer telefonu jest wymagany" }
+
+  const phoneStr = String(phone).trim()
+
+  // Basic phone validation (accepts international format)
+  if (!/^\+?[1-9]\d{1,14}$/.test(phoneStr.replace(/[\s-]/g, ""))) {
+    return { error: "Nieprawidłowy numer telefonu" }
+  }
+
+  const supabase = await createSupabaseServerClient()
+
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: phoneStr,
+    })
+
+    if (error) {
+      console.error("Phone OTP error:", error)
+      return { error: "Nie udało się wysłać kodu SMS. Spróbuj ponownie." }
+    }
+
+    return { ok: true, message: "Kod weryfikacyjny został wysłany na Twój numer telefonu." }
+  } catch (err) {
+    console.error("Phone OTP error:", err)
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
+  }
+}
+
+// Phone authentication - Verify OTP
+export async function verifyPhoneOTP(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Brak danych formularza" }
+
+  const phone = formData.get("phone")
+  const token = formData.get("token")
+
+  if (!phone || !token) return { error: "Numer telefonu i kod weryfikacyjny są wymagane" }
+
+  const phoneStr = String(phone).trim()
+  const tokenStr = String(token).trim()
+
+  if (tokenStr.length !== 6 || !/^\d{6}$/.test(tokenStr)) {
+    return { error: "Kod weryfikacyjny musi składać się z 6 cyfr" }
+  }
+
+  const supabase = await createSupabaseServerClient()
+
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: phoneStr,
+      token: tokenStr,
+      type: "sms",
+    })
+
+    if (error) {
+      console.error("Phone OTP verification error:", error)
+      return { error: "Nieprawidłowy kod weryfikacyjny lub kod wygasł" }
+    }
+
+    // Update user profile with phone number if this is a new user
+    if (data?.user?.id) {
+      const { error: profileError } = await supabase
+        .from("users")
+        .upsert(
+          {
+            id: data.user.id,
+            phone: phoneStr,
+            email: data.user.email || `${data.user.id}@phone.local`, // Fallback email for phone-only users
+          },
+          { onConflict: "id" },
+        )
+
+      if (profileError) console.error("Profile update error:", profileError)
+    }
+
+    return { ok: true, message: "Pomyślnie zalogowano" }
+  } catch (err) {
+    console.error("Phone OTP verification error:", err)
     return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
   }
 }

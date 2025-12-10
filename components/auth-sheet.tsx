@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import LoginForm from "@/components/login-form"
 import SignUpForm from "@/components/sign-up-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
+import PhoneLoginForm from "@/components/phone-login-form"
 import { useRouter } from "next/navigation"
 
 interface AuthSheetProps {
@@ -15,8 +16,8 @@ interface AuthSheetProps {
   returnToPath?: string | null
 }
 
-// Internal mode type that extends the public mode with forgot-password
-type InternalMode = "login" | "signup" | "forgot-password"
+// Internal mode type that extends the public mode with forgot-password and phone
+type InternalMode = "login" | "signup" | "forgot-password" | "phone"
 
 export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
@@ -48,8 +49,12 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     setCurrentMode("forgot-password")
   }
 
+  const handleSwitchToPhoneLogin = () => {
+    setCurrentMode("phone")
+  }
+
   // Sync internal mode with external mode prop (only for login/signup)
-  if ((mode === "login" || mode === "signup") && currentMode !== mode && currentMode !== "forgot-password") {
+  if ((mode === "login" || mode === "signup") && currentMode !== mode && currentMode !== "forgot-password" && currentMode !== "phone") {
     setCurrentMode(mode)
   }
 
@@ -61,6 +66,8 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
         return "Zarejestruj się"
       case "forgot-password":
         return "Zresetuj hasło"
+      case "phone":
+        return "Logowanie przez SMS"
     }
   }
 
@@ -77,6 +84,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
               onSuccess={handleSuccess} 
               onSwitchToSignUp={handleSwitchToSignUp}
               onSwitchToForgotPassword={handleSwitchToForgotPassword}
+              onSwitchToPhoneLogin={handleSwitchToPhoneLogin}
             />
           )}
           {currentMode === "signup" && (
@@ -84,6 +92,9 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
           )}
           {currentMode === "forgot-password" && (
             <ForgotPasswordForm inline onSwitchToLogin={handleSwitchToLogin} />
+          )}
+          {currentMode === "phone" && (
+            <PhoneLoginForm inline onSuccess={handleSuccess} onSwitchToEmailLogin={handleSwitchToLogin} />
           )}
         </div>
       </SheetContent>

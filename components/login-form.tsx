@@ -8,13 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn, signInWithGoogle } from "@/lib/actions"
+import { signIn, signInWithGoogle, signInWithFacebook } from "@/lib/actions"
 
 interface LoginFormProps {
   inline?: boolean
   onSuccess?: () => void
   onSwitchToSignUp?: () => void
   onSwitchToForgotPassword?: () => void
+  onSwitchToPhoneLogin?: () => void
 }
 
 function SubmitButton() {
@@ -71,7 +72,29 @@ function GoogleSignInButton() {
   )
 }
 
-export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp, onSwitchToForgotPassword }: LoginFormProps = {}) {
+function FacebookSignInButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" variant="outline" disabled={pending} className="w-full bg-transparent">
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Łączenie z Facebook...
+        </>
+      ) : (
+        <>
+          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="#1877F2">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          Kontynuuj z Facebook
+        </>
+      )}
+    </Button>
+  )
+}
+
+export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp, onSwitchToForgotPassword, onSwitchToPhoneLogin }: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
@@ -88,8 +111,12 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
 
   const content = (
     <>
-      <form action={signInWithGoogle} className="mb-4">
+      <form action={signInWithGoogle} className="mb-2">
         <GoogleSignInButton />
+      </form>
+
+      <form action={signInWithFacebook} className="mb-4">
+        <FacebookSignInButton />
       </form>
 
       <div className="relative mb-4">
@@ -155,6 +182,18 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
             </Link>
           )}
         </div>
+
+        {onSwitchToPhoneLogin && (
+          <div className="text-center text-sm text-muted-foreground pt-2">
+            <button
+              type="button"
+              onClick={onSwitchToPhoneLogin}
+              className="text-primary hover:underline"
+            >
+              Zaloguj się przez SMS
+            </button>
+          </div>
+        )}
       </form>
     </>
   )
