@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart } from "lucide-react"
+import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart, Share2 } from "lucide-react"
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
 import MultiSlotBookingWidget from "@/components/multi-slot-booking-widget"
@@ -90,34 +90,69 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      {/* Main Navigation Bar */}
-      <TopNav />
+      {/* Desktop Navigation Bar */}
+      <div className="hidden md:block">
+        <TopNav />
+      </div>
 
-      {/* Secondary Navigation */}
-      <div className="border-b">
-        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* Desktop Secondary Navigation */}
+      <div className="hidden md:block border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm sm:text-base">Powrót do atrakcji</span>
+            <span>Powrót do atrakcji</span>
           </Link>
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm">
-              <Heart className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Zapisz</span>
+              <Heart className="h-4 w-4 mr-2" />
+              Zapisz
             </Button>
             <Button variant="outline" size="sm">
-              <span className="text-sm">Udostępnij</span>
+              <Share2 className="h-4 w-4 mr-2" />
+              Udostępnij
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Mobile Floating Navigation - Airbnb Style */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 px-4 pt-4 flex items-center justify-between pointer-events-none">
+        <Link 
+          href="/attractions" 
+          className="pointer-events-auto flex items-center justify-center h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5 text-gray-900" />
+        </Link>
+
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="pointer-events-auto h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white"
+          >
+            <Share2 className="h-5 w-5 text-gray-900" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="pointer-events-auto h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white"
+          >
+            <Heart className="h-5 w-5 text-gray-900" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Image Gallery - Full Width on Mobile */}
+      <div className="md:hidden">
+        <AttractionGallery images={attraction.images || []} title={attraction.title} />
+      </div>
+
       <div className="container mx-auto px-4 py-4 sm:py-8">
-        {/* Property Title and Rating */}
-        <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">{attraction.title}</h1>
+        {/* Property Title and Rating - Desktop */}
+        <div className="hidden md:block mb-6">
+          <div className="flex items-start justify-between mb-2 gap-2">
+            <h1 className="text-3xl font-bold">{attraction.title}</h1>
             {avgRating > 0 && (
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-1">
@@ -129,7 +164,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-4 text-base text-muted-foreground">
             <div className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
               <span>
@@ -140,9 +175,35 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           </div>
         </div>
 
-        {/* Image Gallery */}
-        <div className="mb-6 sm:mb-8">
+        {/* Image Gallery - Desktop */}
+        <div className="hidden md:block mb-8">
           <AttractionGallery images={attraction.images || []} title={attraction.title} />
+        </div>
+
+        {/* Property Title and Rating - Mobile */}
+        <div className="md:hidden mb-4">
+          <div className="flex flex-col mb-2 gap-2">
+            <h1 className="text-2xl font-bold">{attraction.title}</h1>
+            {avgRating > 0 && (
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{roundedRating}</span>
+                </div>
+                <span className="text-muted-foreground">({ratings.length} reviews)</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span>
+                {attraction.city}, {attraction.country}
+              </span>
+            </div>
+            <Badge variant="secondary">{attraction.property_type}</Badge>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
