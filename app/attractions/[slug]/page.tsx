@@ -121,6 +121,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
         <Link 
           href="/attractions" 
           className="pointer-events-auto flex items-center justify-center h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
+          aria-label="Powrót do listy atrakcji"
         >
           <ArrowLeft className="h-5 w-5 text-gray-900" />
         </Link>
@@ -130,6 +131,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             variant="ghost" 
             size="icon"
             className="pointer-events-auto h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white"
+            aria-label="Udostępnij tę atrakcję"
           >
             <Share2 className="h-5 w-5 text-gray-900" />
           </Button>
@@ -137,6 +139,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             variant="ghost" 
             size="icon"
             className="pointer-events-auto h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white"
+            aria-label="Zapisz w ulubionych"
           >
             <Heart className="h-5 w-5 text-gray-900" />
           </Button>
