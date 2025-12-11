@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { ChevronLeft, ChevronRight, Grid3X3, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Grid3X3, X, Maximize2 } from "lucide-react"
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 
@@ -67,9 +67,12 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
   const scrollToImage = (index: number) => {
     setCurrentImage(index)
     setIsCarouselView(true)
-    if (dialogApi) {
-      dialogApi.scrollTo(index)
-    }
+    // Wait for carousel to be ready, then scroll
+    setTimeout(() => {
+      if (dialogApi) {
+        dialogApi.scrollTo(index)
+      }
+    }, 100)
   }
 
   const openGallery = (index: number) => {
@@ -228,7 +231,7 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
               onClick={toggleView}
               aria-label={isCarouselView ? "Pokaż siatkę" : "Pokaż slider"}
             >
-              <Grid3X3 className="h-4 w-4" />
+              {isCarouselView ? <Grid3X3 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
 
             {isCarouselView ? (
