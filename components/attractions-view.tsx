@@ -274,7 +274,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                     images={attraction.images || []}
                     title={attraction.title}
                     city={attraction.city}
-                    region={attraction.region || attraction.property_type || ''}
+                    region={attraction.region || attraction.city}
                     country={attraction.country}
                     rating={attraction.avgRating || 0}
                     reviewsCount={attraction.reviewCount || 0}
