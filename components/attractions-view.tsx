@@ -9,12 +9,14 @@ import Link from "next/link"
 import AttractionMap from "@/components/attraction-map"
 import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 import { generateAttractionSlug } from "@/lib/utils"
+import AttractionCard from "@/components/AttractionCard"
 
 interface Attraction {
   id: string
   title: string
   city: string
   country: string
+  region?: string
   latitude?: number
   longitude?: number
   price_per_night: number
@@ -256,7 +258,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
             </div>
           ) : (
             /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredAndSortedAttractions.map((attraction) => {
                 const slug = generateAttractionSlug({
                   city: attraction.city,
@@ -266,71 +268,20 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                 })
                 
                 return (
-                  <Link key={attraction.id} href={`/attractions/${slug}`}>
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="aspect-square bg-muted relative">
-                        {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
-                          <img
-                          src={attraction.images[0] || "/placeholder.jpg"}
-                          alt={attraction.title || 'Attraction'}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <MapPin className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
-                          {attraction.property_type}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold line-clamp-1">{attraction.title}</h3>
-                        {attraction.avgRating != null && attraction.avgRating > 0 && (
-                          <div className="flex items-center space-x-1 text-sm">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{attraction.avgRating}</span>
-                            <span className="text-muted-foreground">({attraction.reviewCount || 0})</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span>
-                          {attraction.city}, {attraction.country}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
-                        <div className="flex items-center">
-                          <Users className="h-4 w-4 mr-1" />
-                          <span>{attraction.max_guests}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Bed className="h-4 w-4 mr-1" />
-                          <span>{attraction.bedrooms}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Bath className="h-4 w-4 mr-1" />
-                          <span>{attraction.bathrooms}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-semibold text-lg">${attraction.price_per_night}</span>
-                          <span className="text-muted-foreground text-sm"> / night</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">Host: {attraction.users?.full_name}</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                  <AttractionCard
+                    key={attraction.id}
+                    id={attraction.id}
+                    images={attraction.images || []}
+                    title={attraction.title}
+                    city={attraction.city}
+                    region={attraction.region || attraction.property_type || ''}
+                    country={attraction.country}
+                    rating={attraction.avgRating || 0}
+                    reviewsCount={attraction.reviewCount || 0}
+                    price={attraction.price_per_night}
+                    priceUnit="noc"
+                    href={`/attractions/${slug}`}
+                  />
                 )
               })}
             </div>
