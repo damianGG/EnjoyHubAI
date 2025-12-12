@@ -98,9 +98,9 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       {/* Desktop Secondary Navigation */}
       <div className="hidden md:block border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href="/" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span>Powrót do atrakcji</span>
+            <span>Powrót do strony głównej</span>
           </Link>
 
           <div className="flex items-center space-x-2">
@@ -119,9 +119,9 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       {/* Mobile Floating Navigation - Airbnb Style */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 px-4 pt-4 flex items-center justify-between pointer-events-none">
         <Link 
-          href="/attractions" 
+          href="/" 
           className="pointer-events-auto flex items-center justify-center h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white transition-colors"
-          aria-label="Powrót do listy atrakcji"
+          aria-label="Powrót do strony głównej"
         >
           <ArrowLeft className="h-5 w-5 text-gray-900" />
         </Link>

@@ -91,10 +91,10 @@ export default async function BookingsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No bookings yet</h3>
-              <p className="text-muted-foreground mb-6">Start exploring amazing places and make your first booking</p>
-              <Link href="/attractions">
-                <Button>Browse Properties</Button>
+              <h3 className="text-xl font-semibold mb-2">Brak rezerwacji</h3>
+              <p className="text-muted-foreground mb-6">Zacznij odkrywać niesamowite miejsca i dokonaj swojej pierwszej rezerwacji</p>
+              <Link href="/">
+                <Button>Przeglądaj atrakcje</Button>
               </Link>
             </CardContent>
           </Card>

@@ -69,12 +69,12 @@ export default async function FavoritesPage() {
           <Card>
             <CardContent className="text-center py-12">
               <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No favorites yet</h3>
+              <h3 className="text-xl font-semibold mb-2">Brak ulubionych</h3>
               <p className="text-muted-foreground mb-6">
-                Start exploring properties and save your favorites for easy access
+                Zacznij przeglądać atrakcje i zapisuj swoje ulubione dla łatwego dostępu
               </p>
-              <Link href="/attractions">
-                <Button>Browse Properties</Button>
+              <Link href="/">
+                <Button>Przeglądaj atrakcje</Button>
               </Link>
             </CardContent>
           </Card>

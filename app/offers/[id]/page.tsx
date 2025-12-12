@@ -65,7 +65,7 @@ export default async function OfferPage({ params }: OfferPageProps) {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href="/" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm sm:text-base">Powrót</span>
           </Link>

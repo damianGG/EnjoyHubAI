@@ -83,9 +83,9 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/attractions" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+          <Link href="/" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Attractions
+            Powrót do strony głównej
           </Link>
         </div>
       </header>
@@ -246,8 +246,8 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
               View My Bookings
             </Button>
           </Link>
-          <Link href="/attractions" className="flex-1">
-            <Button className="w-full">Book Another Stay</Button>
+          <Link href="/" className="flex-1">
+            <Button className="w-full">Zarezerwuj kolejny pobyt</Button>
           </Link>
         </div>
       </div>
