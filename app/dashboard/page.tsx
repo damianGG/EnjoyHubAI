@@ -104,8 +104,8 @@ export default async function DashboardPage() {
           <Link href="/">
             <Card className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg">Przeglądaj atrakcje</CardTitle>
-                <CardDescription>Znajdź swoją następną przygodę</CardDescription>
+                <CardTitle className="text-lg">Strona główna</CardTitle>
+                <CardDescription>Przeglądaj dostępne oferty</CardDescription>
               </CardHeader>
             </Card>
           </Link>
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                       Zacznij odkrywać niesamowite miejsca i dokonaj swojej pierwszej rezerwacji
                     </p>
                     <Link href="/">
-                      <Button>Przeglądaj atrakcje</Button>
+                      <Button>Przeglądaj oferty</Button>
                     </Link>
                   </div>
                 ) : (

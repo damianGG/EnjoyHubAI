@@ -71,10 +71,10 @@ export default async function FavoritesPage() {
               <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Brak ulubionych</h3>
               <p className="text-muted-foreground mb-6">
-                Zacznij przeglądać atrakcje i zapisuj swoje ulubione dla łatwego dostępu
+                Zacznij przeglądać oferty i zapisuj swoje ulubione dla łatwego dostępu
               </p>
               <Link href="/">
-                <Button>Przeglądaj atrakcje</Button>
+                <Button>Przeglądaj oferty</Button>
               </Link>
             </CardContent>
           </Card>

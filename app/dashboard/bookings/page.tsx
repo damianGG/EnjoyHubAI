@@ -94,7 +94,7 @@ export default async function BookingsPage() {
               <h3 className="text-xl font-semibold mb-2">Brak rezerwacji</h3>
               <p className="text-muted-foreground mb-6">Zacznij odkrywać niesamowite miejsca i dokonaj swojej pierwszej rezerwacji</p>
               <Link href="/">
-                <Button>Przeglądaj atrakcje</Button>
+                <Button>Przeglądaj oferty</Button>
               </Link>
             </CardContent>
           </Card>
