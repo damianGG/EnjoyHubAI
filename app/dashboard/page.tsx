@@ -101,11 +101,11 @@ export default async function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Link href="/attractions">
+          <Link href="/">
             <Card className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg">Browse Properties</CardTitle>
-                <CardDescription>Find your next perfect getaway</CardDescription>
+                <CardTitle className="text-lg">Strona główna</CardTitle>
+                <CardDescription>Przeglądaj dostępne oferty</CardDescription>
               </CardHeader>
             </Card>
           </Link>
@@ -160,12 +160,12 @@ export default async function DashboardPage() {
                 {!bookings || bookings.length === 0 ? (
                   <div className="text-center py-8">
                     <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No bookings yet</h3>
+                    <h3 className="text-lg font-semibold mb-2">Brak rezerwacji</h3>
                     <p className="text-muted-foreground mb-4">
-                      Start exploring amazing places and make your first booking
+                      Zacznij odkrywać niesamowite miejsca i dokonaj swojej pierwszej rezerwacji
                     </p>
-                    <Link href="/attractions">
-                      <Button>Browse Properties</Button>
+                    <Link href="/">
+                      <Button>Przeglądaj oferty</Button>
                     </Link>
                   </div>
                 ) : (
