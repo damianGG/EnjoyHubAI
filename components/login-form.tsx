@@ -81,6 +81,8 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
       if (onSuccess) {
         onSuccess()
       } else {
+        // Refresh the router to get fresh server data with the new session
+        router.refresh()
         router.push("/")
       }
     }
