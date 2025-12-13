@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import LoginForm from "@/components/login-form"
-import SignUpForm from "@/components/sign-up-form"
+import UnifiedAuthForm from "@/components/unified-auth-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
 import { useRouter } from "next/navigation"
 
@@ -30,22 +29,11 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     router.push(destination)
   }
 
-  const handleSwitchToSignUp = () => {
-    setCurrentMode("signup")
-    if (onModeChange) {
-      onModeChange("signup")
-    }
-  }
-
   const handleSwitchToLogin = () => {
     setCurrentMode("login")
     if (onModeChange) {
       onModeChange("login")
     }
-  }
-
-  const handleSwitchToForgotPassword = () => {
-    setCurrentMode("forgot-password")
   }
 
   // Sync internal mode with external mode prop (only for login/signup)
@@ -56,9 +44,8 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
   const getTitle = () => {
     switch (currentMode) {
       case "login":
-        return "Zaloguj się"
       case "signup":
-        return "Zarejestruj się"
+        return "Zaloguj się lub zarejestruj"
       case "forgot-password":
         return "Zresetuj hasło"
     }
@@ -67,20 +54,16 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
-        <SheetHeader className="p-6 pb-0">
-          <SheetTitle>{getTitle()}</SheetTitle>
+        <SheetHeader className="p-6 pb-0 border-b">
+          <SheetTitle className="text-base font-normal">{getTitle()}</SheetTitle>
         </SheetHeader>
         <div className="p-6">
-          {currentMode === "login" && (
-            <LoginForm 
+          {(currentMode === "login" || currentMode === "signup") && (
+            <UnifiedAuthForm 
               inline 
               onSuccess={handleSuccess} 
-              onSwitchToSignUp={handleSwitchToSignUp}
-              onSwitchToForgotPassword={handleSwitchToForgotPassword}
+              mode={currentMode}
             />
-          )}
-          {currentMode === "signup" && (
-            <SignUpForm inline onSuccess={handleSuccess} onSwitchToLogin={handleSwitchToLogin} />
           )}
           {currentMode === "forgot-password" && (
             <ForgotPasswordForm inline onSwitchToLogin={handleSwitchToLogin} />
