@@ -87,11 +87,11 @@ export function CategoryBar({
 
   if (loading) {
     return (
-      <div className="flex space-x-3 p-2">
+      <div className="flex space-x-2 px-4 py-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex flex-col items-center space-y-1">
-            <div className="w-12 h-12 bg-muted rounded-lg animate-pulse" />
-            <div className="w-16 h-3 bg-muted rounded animate-pulse" />
+            <div className="w-10 h-10 bg-muted rounded-lg animate-pulse" />
+            <div className="w-14 h-3 bg-muted rounded animate-pulse" />
           </div>
         ))}
       </div>

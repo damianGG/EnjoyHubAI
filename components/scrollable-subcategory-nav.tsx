@@ -81,7 +81,7 @@ export function ScrollableSubcategoryNav({
       )
     }
     if (subcategory.icon) {
-      return <span className="text-base">{subcategory.icon}</span>
+      return <span className="text-lg">{subcategory.icon}</span>
     }
     return <span>•</span>
   }
