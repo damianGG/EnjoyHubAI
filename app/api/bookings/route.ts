@@ -210,7 +210,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // e) Insert new booking
+    // e) Insert new booking with "pending" status
     const { data: booking, error: insertError } = await supabase
       .from("offer_bookings")
       .insert({
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
         start_time: startTime,
         end_time: endTime,
         persons: persons,
-        status: "confirmed",
+        status: "pending",
         payment_status: "not_required",
         customer_name: customerName,
         customer_email: customerEmail,

@@ -203,10 +203,10 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
     return (
       <Card className="shadow-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
+            <Clock className="h-6 w-6 text-orange-600" />
           </div>
-          <CardTitle className="text-xl text-green-600">Rezerwacja przyjęta!</CardTitle>
+          <CardTitle className="text-xl text-orange-600">Rezerwacja oczekuje na zatwierdzenie!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-muted p-4 space-y-2">
@@ -226,9 +226,9 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
 
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Informacja o płatności</AlertTitle>
+            <AlertTitle>Status rezerwacji: Oczekuje na zatwierdzenie</AlertTitle>
             <AlertDescription>
-              Płatność na miejscu. Prosimy o przybycie 10 minut przed zarezerwowaną godziną.
+              Twoja rezerwacja została wysłana do właściciela obiektu. Otrzymasz powiadomienie email (oraz SMS, jeśli podano numer telefonu) gdy rezerwacja zostanie zatwierdzona. Po zatwierdzeniu prosimy o przybycie 10 minut przed zarezerwowaną godziną.
             </AlertDescription>
           </Alert>
 
