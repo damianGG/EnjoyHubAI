@@ -57,3 +57,42 @@ export function extractIdFromSlug(slug: string): string {
   const parts = slug.split('-')
   return parts[parts.length - 1]
 }
+
+/**
+ * Formats a date string from YYYY-MM-DD to DD.MM.YYYY
+ * @param dateStr Date string in YYYY-MM-DD format
+ * @returns Formatted date string in DD.MM.YYYY format, or empty string if invalid
+ */
+export function formatDisplayDate(dateStr: string): string {
+  if (!dateStr || typeof dateStr !== 'string') {
+    return ''
+  }
+  
+  const parts = dateStr.split("-")
+  if (parts.length !== 3) {
+    return ''
+  }
+  
+  const [year, month, day] = parts
+  
+  // Validate each part is non-empty
+  if (!year || !month || !day) {
+    return ''
+  }
+  
+  return `${day}.${month}.${year}`
+}
+
+/**
+ * Formats a time string to HH:MM format
+ * Safely extracts the first 5 characters from a time string (HH:MM:SS or HH:MM)
+ * 
+ * @param time Time string in format HH:MM:SS or HH:MM
+ * @returns Time string in HH:MM format, or '00:00' if invalid
+ */
+export function formatDisplayTime(time: string): string {
+  if (!time || typeof time !== 'string' || time.length < 5) {
+    return '00:00'
+  }
+  return time.substring(0, 5)
+}
