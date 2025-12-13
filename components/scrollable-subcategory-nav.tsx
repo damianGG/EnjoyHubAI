@@ -134,10 +134,10 @@ export function ScrollableSubcategoryNav({
               className={cn(
                 compact 
                   ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                  : 'flex min-w-[60px] max-w-[80px] flex-col items-center gap-1 rounded-lg px-2 py-1.5',
+                  : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-1.5',
                 selectedSubcategory === subcategory.slug
-                  ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'bg-card text-card-foreground hover:bg-card/80'
+                  ? 'text-primary font-semibold'
+                  : 'text-foreground hover:text-primary transition-colors'
               )}
             >
               {!compact && (

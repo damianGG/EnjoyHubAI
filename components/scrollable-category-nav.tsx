@@ -149,10 +149,10 @@ export function ScrollableCategoryNav({
             className={cn(
               compact 
                 ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                : 'flex min-w-[60px] max-w-[80px] flex-col items-center gap-1 rounded-lg px-2 py-2',
+                : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
               !selectedCategory
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                ? 'text-primary font-semibold'
+                : 'text-foreground hover:text-primary transition-colors'
             )}
           >
             {!compact && (
@@ -191,12 +191,12 @@ export function ScrollableCategoryNav({
                   className={cn(
                     compact 
                       ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                      : 'flex min-w-[60px] max-w-[80px] flex-col items-center gap-1 rounded-lg px-2 py-2',
+                      : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                     selectedCategory === category.slug
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'text-primary font-semibold'
                       : selectedCategory && selectedCategory !== category.slug
-                        ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        ? 'text-muted-foreground hover:text-primary transition-colors'
+                        : 'text-foreground hover:text-primary transition-colors'
                   )}
                 >
                   {buttonContent}
@@ -209,12 +209,12 @@ export function ScrollableCategoryNav({
                 className={cn(
                   compact 
                     ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                    : 'flex min-w-[60px] max-w-[80px] flex-col items-center gap-1 rounded-lg px-2 py-2',
+                    : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                   selectedCategory === category.slug
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'text-primary font-semibold'
                     : selectedCategory && selectedCategory !== category.slug
-                      ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                      ? 'text-muted-foreground hover:text-primary transition-colors'
+                      : 'text-foreground hover:text-primary transition-colors'
                 )}
               >
                 {buttonContent}
