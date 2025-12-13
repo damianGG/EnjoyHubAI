@@ -70,7 +70,7 @@ export function ScrollableSubcategoryNav({
   const renderSubcategoryIcon = (subcategory: Subcategory) => {
     if (subcategory.image_url) {
       return (
-        <div className="relative w-5 h-5 rounded-full overflow-hidden">
+        <div className="relative w-4 h-4 rounded-full overflow-hidden">
           <Image
             src={subcategory.image_url}
             alt={subcategory.name}
@@ -87,17 +87,17 @@ export function ScrollableSubcategoryNav({
   }
 
   return (
-    <div className="relative w-full border-b border-border bg-card">
+    <div className="relative w-full bg-card">
       <div className="relative flex items-center">
         {!compact && (
-          <div className="flex items-center gap-2 pl-4">
+          <div className="flex items-center gap-1.5 pl-3">
             <span className="text-xs font-medium text-muted-foreground">
               {parentCategoryName}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-5 w-5"
               onClick={onClose}
             >
               <X className="h-3 w-3" />
@@ -133,15 +133,15 @@ export function ScrollableSubcategoryNav({
               onClick={() => onSubcategorySelect(subcategory.slug)}
               className={cn(
                 compact 
-                  ? 'flex items-center gap-1.5 rounded-full px-3 py-1 whitespace-nowrap'
-                  : 'flex min-w-[70px] max-w-[90px] flex-col items-center gap-1 rounded-lg px-2 py-2',
+                  ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
+                  : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-1.5',
                 selectedSubcategory === subcategory.slug
-                  ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'bg-card text-card-foreground hover:bg-card/80'
+                  ? 'text-primary font-semibold'
+                  : 'text-foreground hover:text-primary transition-colors'
               )}
             >
               {!compact && (
-                <div className="flex h-5 w-5 items-center justify-center">
+                <div className="flex h-4 w-4 items-center justify-center">
                   {renderSubcategoryIcon(subcategory)}
                 </div>
               )}

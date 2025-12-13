@@ -100,7 +100,7 @@ export function ScrollableCategoryNav({
   const renderCategoryIcon = (category: Category) => {
     if (category.image_url) {
       return (
-        <div className="relative w-6 h-6 rounded-full overflow-hidden">
+        <div className="relative w-4 h-4 rounded-full overflow-hidden">
           <Image
             src={category.image_url}
             alt={category.name}
@@ -110,11 +110,11 @@ export function ScrollableCategoryNav({
         </div>
       )
     }
-    return <span className="text-2xl">{category.icon}</span>
+    return <span className="text-lg">{category.icon}</span>
   }
 
   return (
-    <div className="relative w-full border-b border-border bg-card">
+    <div className="relative w-full bg-card">
       <div className="relative flex items-center">
         {showLeftButton && (
           <Button
@@ -131,7 +131,7 @@ export function ScrollableCategoryNav({
           ref={scrollContainerRef}
           className={cn(
             "hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4",
-            compact ? "py-2" : "py-3"
+            compact ? "py-1.5" : "py-2"
           )}
           style={{
             scrollbarWidth: 'none',
@@ -148,16 +148,16 @@ export function ScrollableCategoryNav({
             }}
             className={cn(
               compact 
-                ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
-                : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
+                ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
+                : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
               !selectedCategory
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                ? 'text-primary font-semibold'
+                : 'text-foreground hover:text-primary transition-colors'
             )}
           >
             {!compact && (
-              <div className="flex h-6 w-6 items-center justify-center">
-                <div className="w-4 h-4 border-2 border-current rounded" />
+              <div className="flex h-4 w-4 items-center justify-center">
+                <div className="w-3 h-3 border-2 border-current rounded" />
               </div>
             )}
             <span className={cn(
@@ -175,7 +175,7 @@ export function ScrollableCategoryNav({
               </span>
             ) : (
               <>
-                <div className="flex h-6 w-6 items-center justify-center">
+                <div className="flex h-4 w-4 items-center justify-center">
                   {renderCategoryIcon(category)}
                 </div>
                 <span className="block w-full truncate text-center text-xs font-medium">
@@ -190,13 +190,13 @@ export function ScrollableCategoryNav({
                   onClick={() => onCategorySelect(category.slug)}
                   className={cn(
                     compact 
-                      ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
-                      : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
+                      ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
+                      : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                     selectedCategory === category.slug
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'text-primary font-semibold'
                       : selectedCategory && selectedCategory !== category.slug
-                        ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        ? 'text-muted-foreground hover:text-primary transition-colors'
+                        : 'text-foreground hover:text-primary transition-colors'
                   )}
                 >
                   {buttonContent}
@@ -208,13 +208,13 @@ export function ScrollableCategoryNav({
                 onClick={() => handleCategoryClick(category.slug)}
                 className={cn(
                   compact 
-                    ? 'flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap'
-                    : 'flex min-w-[80px] max-w-[100px] flex-col items-center gap-1.5 rounded-lg px-3 py-3',
+                    ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
+                    : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
                   selectedCategory === category.slug
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'text-primary font-semibold'
                     : selectedCategory && selectedCategory !== category.slug
-                      ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                      ? 'text-muted-foreground hover:text-primary transition-colors'
+                      : 'text-foreground hover:text-primary transition-colors'
                 )}
               >
                 {buttonContent}
