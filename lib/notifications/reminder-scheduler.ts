@@ -9,23 +9,24 @@ import { sendBookingReminderSMS } from "./sms"
  * Scheduler for sending booking reminders.
  * This function should be called by a cron job or scheduled task.
  * 
- * Sends reminders to customers 24 hours before their booking time.
+ * Sends reminders to customers for bookings on the next day.
+ * Note: The exact timing depends on when the cron job runs.
+ * For precise 24-hour reminders, the cron should run at the same time bookings typically occur.
  */
 export async function sendBookingReminders() {
   try {
-    const cookieStore = await cookies()
+    // Use service role key for cron jobs instead of cookies
+    // This provides proper authentication for server-side operations
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll()
+            return []
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
+          setAll() {
+            // No-op for service calls
           },
         },
       }

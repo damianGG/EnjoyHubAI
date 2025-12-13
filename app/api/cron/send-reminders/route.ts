@@ -23,11 +23,20 @@ import { sendBookingReminders } from "@/lib/notifications/reminder-scheduler"
  */
 export async function GET(request: Request) {
   try {
-    // Optional: Verify the request is from a trusted source
+    // Verify the request is from a trusted source
     const authHeader = request.headers.get("authorization")
     const expectedToken = process.env.CRON_SECRET
     
-    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+    // Require authentication - fail if CRON_SECRET is not set
+    if (!expectedToken) {
+      console.error("CRON_SECRET is not configured")
+      return NextResponse.json(
+        { error: "Service not configured" },
+        { status: 503 }
+      )
+    }
+    
+    if (authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }

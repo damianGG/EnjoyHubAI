@@ -199,7 +199,7 @@ export function BookingApprovalActions({ bookingId }: BookingApprovalActionsProp
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Anuluj</AlertDialogCancel>
-              <AlertDialogAction onClick={handleReject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogAction onClick={handleReject}>
                 Odrzuć
               </AlertDialogAction>
             </AlertDialogFooter>

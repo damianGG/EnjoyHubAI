@@ -43,6 +43,15 @@ export default async function BookingsPage() {
     .order("created_at", { ascending: false })
 
   // Get all offer bookings for this host's properties
+  // First get the host's property IDs
+  const { data: hostProperties } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("host_id", user.id)
+
+  const propertyIds = hostProperties?.map((p) => p.id) || []
+
+  // Then get offer bookings for those properties
   const { data: offerBookings } = await supabase
     .from("offer_bookings")
     .select(`
@@ -53,11 +62,10 @@ export default async function BookingsPage() {
       ),
       properties!offer_bookings_place_id_fkey (
         id,
-        title,
-        host_id
+        title
       )
     `)
-    .eq("properties.host_id", user.id)
+    .in("place_id", propertyIds.length > 0 ? propertyIds : [""])
     .order("created_at", { ascending: false })
 
   const getStatusColor = (status: string) => {
