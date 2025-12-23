@@ -32,6 +32,8 @@ interface SettingsUpdateRequest {
   min_stay: number
   max_stay?: number | null
   seasonal_prices: SeasonalPrice[]
+  enable_multi_booking?: boolean
+  daily_capacity?: number | null
 }
 
 export async function POST(
@@ -41,7 +43,7 @@ export async function POST(
   try {
     const { id } = await params
     const body: SettingsUpdateRequest = await request.json()
-    const { booking_mode, min_stay, max_stay, seasonal_prices } = body
+    const { booking_mode, min_stay, max_stay, seasonal_prices, enable_multi_booking, daily_capacity } = body
 
     // Validate required fields
     if (!booking_mode || !min_stay) {
@@ -54,6 +56,14 @@ export async function POST(
     if (booking_mode !== "daily" && booking_mode !== "hourly") {
       return NextResponse.json(
         { error: "Invalid booking mode" },
+        { status: 400 }
+      )
+    }
+
+    // Validate multi-booking settings
+    if (enable_multi_booking && (!daily_capacity || daily_capacity < 1)) {
+      return NextResponse.json(
+        { error: "Daily capacity must be at least 1 when multi-booking is enabled" },
         { status: 400 }
       )
     }
@@ -114,6 +124,8 @@ export async function POST(
           min_stay,
           max_stay: max_stay || null,
           seasonal_prices: seasonal_prices || [],
+          enable_multi_booking: enable_multi_booking ?? false,
+          daily_capacity: enable_multi_booking ? daily_capacity : null,
           updated_at: new Date().toISOString(),
         },
         {
