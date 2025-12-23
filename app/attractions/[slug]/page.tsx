@@ -10,9 +10,11 @@ import MultiSlotBookingWidget from "@/components/multi-slot-booking-widget"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
+import AvailabilityCalendar from "@/components/availability-calendar"
 import { extractIdFromSlug } from "@/lib/utils"
 import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
+import type { Offer } from "@/lib/types/dynamic-fields"
 
 // Enable ISR - revalidate every 120 seconds
 export const revalidate = 120
@@ -87,6 +89,14 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   const ratings = attraction.reviews?.map((r: any) => r.rating) || []
   const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0
   const roundedRating = Math.round(avgRating * 10) / 10
+
+  // Get offers for this property
+  const { data: offers } = await supabase
+    .from("offers")
+    .select("*")
+    .eq("place_id", id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -299,6 +309,33 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
             {/* Reviews */}
             <ReviewsList reviews={attraction.reviews || []} avgRating={roundedRating} />
+
+            {/* Availability Calendar for Offers */}
+            {offers && offers.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-xl sm:text-2xl font-bold">Dostępność ofert</h2>
+                {offers.map((offer: Offer) => (
+                  <div key={offer.id} className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg sm:text-xl flex items-center justify-between">
+                          <span>{offer.title}</span>
+                          <Badge variant="secondary">
+                            {offer.base_price} {offer.currency}
+                          </Badge>
+                        </CardTitle>
+                        {offer.description && (
+                          <CardDescription className="text-sm sm:text-base">
+                            {offer.description}
+                          </CardDescription>
+                        )}
+                      </CardHeader>
+                    </Card>
+                    <AvailabilityCalendar offerId={offer.id} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Booking Card */}
