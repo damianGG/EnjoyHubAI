@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Loader2, Upload, X, Trash2 } from "lucide-react"
+import { Loader2, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import LocationPicker from "./location-picker"
 import DynamicFormFields from "./dynamic-form-fields"
+import { ImageUploadSection } from "./forms/ImageUploadSection"
+import { AmenitiesSelector } from "./forms/AmenitiesSelector"
 import type { Category, CategoryField, Subcategory } from "@/lib/types/dynamic-fields"
 import { toast } from "sonner"
 import {
@@ -34,25 +35,6 @@ interface EditAttractionFormProps {
   userId: string
 }
 
-const AMENITIES = [
-  "WiFi",
-  "Parking",
-  "Klimatyzacja",
-  "Ogrzewanie",
-  "Toalety",
-  "Szatnia",
-  "Catering",
-  "Nagłośnienie",
-  "Oświetlenie",
-  "Bezpieczeństwo",
-  "Dostęp dla niepełnosprawnych",
-  "Miejsce na imprezy",
-  "Strefa relaksu",
-  "Bar/Restauracja",
-  "Miejsce na piknik",
-  "Prysznice",
-]
-
 export default function EditAttractionForm({ propertyId, userId }: EditAttractionFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -67,7 +49,6 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
   const [categoryFields, setCategoryFields] = useState<CategoryField[]>([])
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, any>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [propertyData, setPropertyData] = useState<any>(null)
   const [initialLoading, setInitialLoading] = useState(true)
 
@@ -211,78 +192,6 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
 
     loadCategoryFields()
   }, [selectedCategory, propertyId])
-
-  const handleAmenityChange = (amenity: string, checked: boolean) => {
-    if (checked) {
-      setSelectedAmenities([...selectedAmenities, amenity])
-    } else {
-      setSelectedAmenities(selectedAmenities.filter((a) => a !== amenity))
-    }
-  }
-
-  const handleImageAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    setUploadingImage(true)
-
-    try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData()
-        formData.append("image", file)
-        formData.append("userId", userId)
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          toast.error(`Failed to upload ${file.name}: ${error.error}`)
-          continue
-        }
-
-        const data = await response.json()
-        setImages((prev) => [...prev, { url: data.secure_url, publicId: data.public_id }])
-        toast.success(`Uploaded ${file.name}`)
-      }
-    } catch (error) {
-      console.error("Error uploading images:", error)
-      toast.error("An error occurred while uploading images")
-    } finally {
-      setUploadingImage(false)
-      e.target.value = ""
-    }
-  }
-
-  const handleImageRemove = async (index: number) => {
-    const image = images[index]
-    
-    // Only try to delete from Cloudinary if we have a publicId
-    if (image.publicId) {
-      try {
-        const response = await fetch("/api/delete-image", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ publicId: image.publicId }),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          toast.error(`Failed to delete image: ${error.error}`)
-          return
-        }
-      } catch (error) {
-        console.error("Error deleting image:", error)
-        toast.error("An error occurred while deleting the image")
-        return
-      }
-    }
-
-    setImages(images.filter((_, i) => i !== index))
-    toast.success("Image removed successfully")
-  }
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setLocation({ lat, lng })
@@ -606,28 +515,10 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
       </Card>
 
       {/* Amenities */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Udogodnienia</CardTitle>
-          <CardDescription>Co oferuje Twój obiekt?</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {AMENITIES.map((amenity) => (
-              <div key={amenity} className="flex items-center space-x-2">
-                <Checkbox
-                  id={amenity}
-                  checked={selectedAmenities.includes(amenity)}
-                  onCheckedChange={(checked) => handleAmenityChange(amenity, checked as boolean)}
-                />
-                <Label htmlFor={amenity} className="text-sm">
-                  {amenity}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <AmenitiesSelector
+        selectedAmenities={selectedAmenities}
+        onAmenitiesChange={setSelectedAmenities}
+      />
 
       {/* Dynamic Fields */}
       {categoryFields.length > 0 && (
@@ -648,64 +539,11 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
       )}
 
       {/* Images */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Zdjęcia</CardTitle>
-          <CardDescription>Zarządzaj zdjęciami swojego obiektu</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="image-upload" className="cursor-pointer">
-              <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="text-center">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    {uploadingImage ? "Przesyłanie..." : "Kliknij, aby dodać zdjęcia"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP do 10MB</p>
-                </div>
-              </div>
-            </Label>
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageAdd}
-              disabled={uploadingImage}
-              className="hidden"
-            />
-          </div>
-
-          {images.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {images.map((image, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={image.url || "/placeholder.svg"}
-                    alt={`Zdjęcie obiektu ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => handleImageRemove(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                  {index === 0 && (
-                    <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                      Główne
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ImageUploadSection
+        images={images}
+        onImagesChange={setImages}
+        userId={userId}
+      />
 
       {/* Submit and Delete */}
       <div className="flex justify-between items-center">
