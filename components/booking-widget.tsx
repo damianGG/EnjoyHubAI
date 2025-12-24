@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle, Clock, Users, Calendar as CalendarIcon } from "lucide-react"
 import type { Slot, SlotsResponse, Offer } from "@/lib/types/dynamic-fields"
+import { formatDisplayDate } from "@/lib/utils"
 
 interface BookingWidgetProps {
   offer: Offer
@@ -40,12 +42,9 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-function formatDisplayDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split("-")
-  return `${day}.${month}.${year}`
-}
-
 export default function BookingWidget({ offer }: BookingWidgetProps) {
+  const router = useRouter()
+  
   // Date selection - initialize as undefined to avoid hydration mismatch
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   
@@ -80,7 +79,6 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [bookingSuccess, setBookingSuccess] = useState<BookingResponse | null>(null)
 
   // Fetch slots when date changes
   useEffect(() => {
@@ -174,7 +172,9 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
       }
 
       const booking: BookingResponse = await response.json()
-      setBookingSuccess(booking)
+      
+      // Redirect to confirmation page
+      router.push(`/offers/bookings/${booking.id}`)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Wystąpił błąd podczas rezerwacji")
     } finally {
@@ -182,63 +182,8 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
     }
   }
 
-  // Reset form after successful booking
-  const handleResetForm = () => {
-    setBookingSuccess(null)
-    setSelectedSlot(null)
-    setFormData({
-      persons: 1,
-      customerName: "",
-      customerEmail: "",
-      customerPhone: "",
-    })
-    setSelectedDate(new Date())
-  }
-
   // Calculate final price
   const finalPrice = formData.persons * offer.base_price
-
-  // If booking was successful, show confirmation
-  if (bookingSuccess) {
-    return (
-      <Card className="shadow-lg">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
-          <CardTitle className="text-xl text-green-600">Rezerwacja przyjęta!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{formatDisplayDate(bookingSuccess.date)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{bookingSuccess.startTime} - {bookingSuccess.endTime}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{bookingSuccess.persons} {bookingSuccess.persons === 1 ? "osoba" : bookingSuccess.persons < 5 ? "osoby" : "osób"}</span>
-            </div>
-          </div>
-
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Informacja o płatności</AlertTitle>
-            <AlertDescription>
-              Płatność na miejscu. Prosimy o przybycie 10 minut przed zarezerwowaną godziną.
-            </AlertDescription>
-          </Alert>
-
-          <Button onClick={handleResetForm} variant="outline" className="w-full">
-            Dokonaj kolejnej rezerwacji
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Card className="shadow-lg">
