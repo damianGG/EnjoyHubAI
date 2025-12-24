@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Star, ChevronLeft, ChevronRight, Diamond, Zap } from "lucide-react"
@@ -55,7 +55,7 @@ export interface AttractionCardProps {
   coverImageUrl?: string | null
 }
 
-export default function AttractionCard({
+function AttractionCard({
   images,
   title,
   city,
@@ -308,3 +308,6 @@ export default function AttractionCard({
 
   return cardContent
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export default memo(AttractionCard)

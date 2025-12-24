@@ -1,18 +1,24 @@
 "use client"
 
-import { useEffect, useState, useRef, Suspense } from "react"
+import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { useUrlState } from "@/lib/search/url-state"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Loader2, Map, List, X } from "lucide-react"
 import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
-import { SearchDialog } from "@/components/search-dialog"
 import { CategoryBar } from "@/components/category-bar"
 import { AuthSheet } from "@/components/auth-sheet"
 import AttractionCard from "@/components/AttractionCard"
 import AttractionCardSkeleton from "@/components/AttractionCardSkeleton"
 import { generateAttractionSlug } from "@/lib/utils"
+
+// Lazy load SearchDialog - it's only used when user clicks search
+const SearchDialog = dynamic(
+  () => import("@/components/search-dialog").then(mod => ({ default: mod.SearchDialog })),
+  { ssr: false }
+)
 
 interface SearchResult {
   id: string
@@ -127,13 +133,15 @@ function HomePageContent() {
   const ageMax = urlState.get("age_max") || ""
   const date = urlState.get("date") || ""
 
-  // Calculate active filters count (excluding bbox and page/per)
-  const activeFiltersCount = [
-    q ? 1 : 0,
-    ageMin ? 1 : 0,
-    ageMax ? 1 : 0,
-    date ? 1 : 0,
-  ].reduce((a, b) => a + b, 0)
+  // Calculate active filters count (excluding bbox and page/per) - memoized
+  const activeFiltersCount = useMemo(() => {
+    return [
+      q ? 1 : 0,
+      ageMin ? 1 : 0,
+      ageMax ? 1 : 0,
+      date ? 1 : 0,
+    ].reduce((a, b) => a + b, 0)
+  }, [q, ageMin, ageMax, date])
   
   // Detect if we're on desktop/mobile
   useEffect(() => {

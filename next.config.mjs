@@ -28,7 +28,7 @@ const nextConfig = {
   },
   // Optimize runtime chunks for better caching
   experimental: {
-    optimizePackageImports: ['leaflet', 'lucide-react'],
+    optimizePackageImports: ['leaflet', 'lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-select'],
   },
   // Add compression
   compress: true,
