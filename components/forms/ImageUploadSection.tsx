@@ -19,6 +19,14 @@ interface ImageUploadSectionProps {
   maxImages?: number
 }
 
+const validateImageUpload = (currentCount: number, newCount: number, maxImages: number): boolean => {
+  if (currentCount + newCount > maxImages) {
+    toast.error(`Możesz dodać maksymalnie ${maxImages} zdjęć`)
+    return false
+  }
+  return true
+}
+
 export function ImageUploadSection({ 
   images, 
   onImagesChange, 
@@ -31,8 +39,7 @@ export function ImageUploadSection({
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    if (images.length + files.length > maxImages) {
-      toast.error(`Możesz dodać maksymalnie ${maxImages} zdjęć`)
+    if (!validateImageUpload(images.length, files.length, maxImages)) {
       return
     }
 

@@ -29,22 +29,11 @@ const nextConfig = {
   // Optimize runtime chunks for better caching
   experimental: {
     optimizePackageImports: ['leaflet', 'lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-select'],
-    // Enable output file tracing for smaller builds
-    outputFileTracingRoot: undefined,
   },
   // Add compression
   compress: true,
   // Enable React strict mode for better development experience
   reactStrictMode: true,
-  // Optimize production builds
-  swcMinify: true,
-  // Performance budgets
-  onDemandEntries: {
-    // Period (in ms) where the server will keep pages in the buffer
-    maxInactiveAge: 60 * 1000,
-    // Number of pages that should be kept simultaneously without being disposed
-    pagesBufferLength: 5,
-  },
 }
 
 export default nextConfig

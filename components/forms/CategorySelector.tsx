@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import type { Category, Subcategory } from "@/lib/types/dynamic-fields"
+
+const NONE_VALUE = "none"
 
 interface CategorySelectorProps {
   selectedCategory: string
@@ -37,7 +38,7 @@ export function CategorySelector({
 
   const handleSubcategoryChange = (value: string) => {
     // Handle "none" as empty string
-    onSubcategoryChange(value === "none" ? "" : value)
+    onSubcategoryChange(value === NONE_VALUE ? "" : value)
   }
 
   return (
@@ -70,14 +71,14 @@ export function CategorySelector({
           <div className="space-y-2">
             <Label htmlFor="subcategory">Podkategoria</Label>
             <Select 
-              value={selectedSubcategory || "none"} 
+              value={selectedSubcategory || NONE_VALUE} 
               onValueChange={handleSubcategoryChange}
             >
               <SelectTrigger id="subcategory">
                 <SelectValue placeholder="Wybierz podkategorię (opcjonalne)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Brak podkategorii</SelectItem>
+                <SelectItem value={NONE_VALUE}>Brak podkategorii</SelectItem>
                 {subcategories.map((subcategory) => (
                   <SelectItem key={subcategory.id} value={subcategory.id}>
                     {subcategory.icon && <span className="mr-2">{subcategory.icon}</span>}
