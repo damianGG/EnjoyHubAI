@@ -6,6 +6,7 @@ import { useActionState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { CapacityDayButton } from "@/components/ui/capacity-calendar-day"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Star, Users, Loader2, AlertCircle, CheckCircle, Calendar as CalendarIcon } from "lucide-react"
@@ -268,6 +269,25 @@ export default function AvailabilityCalendarCard({
                 disabled={(date) => date < today || !isDateAvailable(date)}
                 className="rounded-md"
                 numberOfMonths={1}
+                components={{
+                  DayButton: (props) => {
+                    const dateStr = format(props.day.date, "yyyy-MM-dd")
+                    const dateInfo = dateAvailabilityMap.get(dateStr)
+                    
+                    // Only show capacity indicator if multi-booking is enabled
+                    const showCapacity = dateInfo?.capacity !== undefined && dateInfo.capacity > 1
+                    
+                    return (
+                      <CapacityDayButton
+                        {...props}
+                        occupancyRate={dateInfo?.occupancyRate ?? 0}
+                        capacity={dateInfo?.capacity}
+                        booked={dateInfo?.booked}
+                        showCapacityIndicator={showCapacity}
+                      />
+                    )
+                  },
+                }}
               />
             </div>
 

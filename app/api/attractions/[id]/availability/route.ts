@@ -75,27 +75,52 @@ function generateAvailabilityDates(
   const dates: DateAvailability[] = []
   const current = parseDate(startDate)
   const end = parseDate(endDate)
+  
+  const isMultiBookingEnabled = availability.enable_multi_booking ?? false
+  const dailyCapacity = availability.daily_capacity ?? 1
 
   while (current <= end) {
     const dateStr = formatDate(current)
     const isBlocked = availability.blocked_dates.includes(dateStr)
     
-    // Check if date is booked
-    const isBooked = existingBookings.some(booking => {
-      return dateStr >= booking.check_in && dateStr < booking.check_out
-    })
-
     // Get seasonal price if applicable
     const seasonalPrice = getSeasonalPrice(dateStr, availability.seasonal_prices)
 
-    dates.push({
-      date: dateStr,
-      available: !isBlocked && !isBooked && availability.is_available,
-      price: seasonalPrice?.price ?? basePrice,
-      isBlocked,
-      isSeasonal: !!seasonalPrice,
-      seasonalName: seasonalPrice?.name,
-    })
+    if (isMultiBookingEnabled && dailyCapacity > 1) {
+      // Multi-booking mode: count bookings for this specific date
+      const bookingsOnDate = existingBookings.filter(booking => {
+        return dateStr >= booking.check_in && dateStr < booking.check_out
+      }).length
+      
+      const isAvailable = !isBlocked && availability.is_available && bookingsOnDate < dailyCapacity
+      const occupancyRate = dailyCapacity > 0 ? Math.round((bookingsOnDate / dailyCapacity) * 100) : 0
+
+      dates.push({
+        date: dateStr,
+        available: isAvailable,
+        price: seasonalPrice?.price ?? basePrice,
+        isBlocked,
+        isSeasonal: !!seasonalPrice,
+        seasonalName: seasonalPrice?.name,
+        capacity: dailyCapacity,
+        booked: bookingsOnDate,
+        occupancyRate,
+      })
+    } else {
+      // Traditional single-booking mode
+      const isBooked = existingBookings.some(booking => {
+        return dateStr >= booking.check_in && dateStr < booking.check_out
+      })
+
+      dates.push({
+        date: dateStr,
+        available: !isBlocked && !isBooked && availability.is_available,
+        price: seasonalPrice?.price ?? basePrice,
+        isBlocked,
+        isSeasonal: !!seasonalPrice,
+        seasonalName: seasonalPrice?.name,
+      })
+    }
 
     current.setDate(current.getDate() + 1)
   }

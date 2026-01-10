@@ -210,6 +210,8 @@ export interface AttractionAvailability {
   min_stay: number; // In days for daily mode, in hours for hourly mode
   max_stay?: number; // Optional maximum stay
   is_available: boolean;
+  enable_multi_booking?: boolean; // Enable multi-booking mode for selling multiple tickets per day
+  daily_capacity?: number; // Maximum bookings/tickets per day when multi-booking is enabled
   created_at: string;
   updated_at: string;
 }
@@ -221,6 +223,9 @@ export interface DateAvailability {
   isBlocked: boolean;
   isSeasonal: boolean;
   seasonalName?: string;
+  capacity?: number; // Total capacity for this day (if multi-booking enabled)
+  booked?: number; // Number of bookings already made (if multi-booking enabled)
+  occupancyRate?: number; // Percentage filled 0-100 (if multi-booking enabled)
 }
 
 export interface AvailabilityCalendar {
