@@ -22,6 +22,14 @@ interface SlotData {
   } | null
   price_from: number | null
   offerId: string | null
+  has_offers?: boolean
+}
+
+interface PropertyContactInfo {
+  phone: string | null
+  email: string | null
+  address: string | null
+  host_name: string | null
 }
 
 function formatDisplayDate(dateStr: string): string {
@@ -36,6 +44,7 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [slotData, setSlotData] = useState<SlotData | null>(null)
+  const [contactInfo, setContactInfo] = useState<PropertyContactInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -74,6 +83,21 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
 
         const data: SlotData = await response.json()
         setSlotData(data)
+
+        // If property has no offers, fetch contact information
+        if (data.has_offers === false) {
+          try {
+            const contactResponse = await fetch(`/api/properties/${propertyId}/contact`)
+            if (contactResponse.ok) {
+              const contactData = await contactResponse.json()
+              setContactInfo(contactData)
+            } else {
+              console.warn("Failed to fetch contact information")
+            }
+          } catch (contactError) {
+            console.error("Error fetching contact information:", contactError)
+          }
+        }
       } catch (error) {
         setError(error instanceof Error ? error.message : "Wystąpił błąd podczas pobierania terminów")
         setSlotData(null)
@@ -100,18 +124,20 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Date Picker */}
-        <div>
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              disabled={(date) => date < today}
-              className="rounded-md border"
-            />
+        {/* Date Picker - only show if property has offers */}
+        {slotData?.has_offers !== false && (
+          <div>
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                disabled={(date) => date < today}
+                className="rounded-md border"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -132,7 +158,45 @@ export default function SlotAvailabilityWidget({ propertyId }: SlotAvailabilityW
         {/* Slot Information */}
         {!isLoading && !error && slotData && (
           <>
-            {slotData.next_available_slot ? (
+            {slotData.has_offers === false ? (
+              /* No offers configured - show contact information */
+              <div className="rounded-lg bg-muted p-4 space-y-3">
+                <div className="text-center mb-2">
+                  <p className="font-medium text-sm">
+                    Rezerwacja niedostępna online
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Skontaktuj się bezpośrednio z obiektem
+                  </p>
+                </div>
+                {contactInfo && (
+                  <div className="space-y-2 border-t pt-3">
+                    {contactInfo.phone && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <span className="text-muted-foreground min-w-[60px]">Telefon:</span>
+                        <a href={`tel:${contactInfo.phone}`} className="font-medium hover:underline">
+                          {contactInfo.phone}
+                        </a>
+                      </div>
+                    )}
+                    {contactInfo.email && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <span className="text-muted-foreground min-w-[60px]">Email:</span>
+                        <a href={`mailto:${contactInfo.email}`} className="font-medium hover:underline">
+                          {contactInfo.email}
+                        </a>
+                      </div>
+                    )}
+                    {contactInfo.address && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <span className="text-muted-foreground min-w-[60px]">Adres:</span>
+                        <span className="font-medium">{contactInfo.address}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : slotData.next_available_slot ? (
               <div className="space-y-4">
                 <div className="rounded-lg bg-muted p-4 space-y-2">
                   <div className="flex items-center gap-2">

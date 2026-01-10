@@ -182,6 +182,7 @@ function AttractionCard({
                 )}
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   scrollPrev()
                 }}
                 aria-label="Previous image"
@@ -199,6 +200,7 @@ function AttractionCard({
                 )}
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   scrollNext()
                 }}
                 aria-label="Next image"
@@ -216,6 +218,7 @@ function AttractionCard({
                   key={index}
                   onClick={(e) => {
                     e.preventDefault()
+                    e.stopPropagation()
                     api?.scrollTo(index)
                   }}
                   className={cn(
@@ -272,17 +275,11 @@ function AttractionCard({
             ({reviewsCount} {reviewsCount === 1 ? 'opinia' : 'opinii'})
           </p>
 
-          {/* Next Available Slot - only show if the prop is provided */}
-          {nextAvailableSlot !== undefined && (
-            nextAvailableSlot ? (
-              <p className="text-xs text-muted-foreground pt-1">
-                Najbliższy termin: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground pt-1">
-                Brak terminów w wybranym zakresie
-              </p>
-            )
+          {/* Next Available Slot - only show if the prop is provided and has a value */}
+          {nextAvailableSlot !== undefined && nextAvailableSlot && (
+            <p className="text-xs text-muted-foreground pt-1">
+              Najbliższy termin: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}
+            </p>
           )}
 
           {/* Price */}
