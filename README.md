@@ -8,6 +8,14 @@ Krótki opis: EnjoyHubAI to projekt ... (polish)
 2. Uruchom w trybie deweloperskim
    npm run dev
 
+## Użytkownicy Testowi
+
+Do testowania aplikacji dostępni są predefiniowani użytkownicy:
+- **Host:** `host@host.com` / `Haslohost123`
+- **User:** `user@user.com` / `Haslouser123`
+
+Szczegóły: [docs/UZYTKOWNICY_TESTOWI.md](docs/UZYTKOWNICY_TESTOWI.md)
+
 ## Testy
 - Uruchom testy: npm test
 
