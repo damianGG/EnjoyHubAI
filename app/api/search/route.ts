@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      // Normalize the query to letters/numbers/spaces to keep PostgREST filters safe.
+      // Normalize to alphanumeric characters/spaces so user input can't break PostgREST filters.
       const safeQuery = q
         .replace(/[^\p{L}\p{N}\s]/gu, " ")
         .replace(/\s+/g, " ")
@@ -254,12 +254,12 @@ export async function GET(request: Request) {
 
     if (minAge !== null || maxAge !== null) {
       // Keep properties that overlap with the requested age range.
-      const lowerBound = minAge ?? 0
-      const upperBound = maxAge ?? MAX_VALID_AGE
+      const requestedMinAge = minAge ?? 0
+      const requestedMaxAge = maxAge ?? MAX_VALID_AGE
       items = items.filter((item) => {
         const itemMin = item.minimum_age ?? 0
         const itemMax = item.maximum_age ?? MAX_VALID_AGE
-        return itemMin <= upperBound && itemMax >= lowerBound
+        return itemMin <= requestedMaxAge && itemMax >= requestedMinAge
       })
     } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
