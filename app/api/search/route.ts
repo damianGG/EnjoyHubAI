@@ -124,7 +124,7 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      const safeQuery = q.trim().replace(/,/g, " ")
+      const safeQuery = q.trim().replace(/[,%_]/g, " ")
       if (safeQuery) {
         const searchPattern = `%${safeQuery}%`
         query = query.or(
