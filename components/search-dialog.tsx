@@ -174,7 +174,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     let normalizedAgeMax = hasValidAgeMax ? parsedAgeMax : null
 
     if (normalizedAgeMin !== null && normalizedAgeMax !== null && normalizedAgeMin > normalizedAgeMax) {
-      ;[normalizedAgeMin, normalizedAgeMax] = [normalizedAgeMax, normalizedAgeMin]
+      [normalizedAgeMin, normalizedAgeMax] = [normalizedAgeMax, normalizedAgeMin]
     }
 
     updates.age_min = normalizedAgeMin !== null ? String(normalizedAgeMin) : ""

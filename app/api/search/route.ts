@@ -249,14 +249,16 @@ export async function GET(request: Request) {
     let maxAge = parseAge(ageMaxParam)
 
     if (minAge !== null && maxAge !== null && minAge > maxAge) {
-      ;[minAge, maxAge] = [maxAge, minAge]
+      [minAge, maxAge] = [maxAge, minAge]
     }
 
     if (minAge !== null || maxAge !== null) {
+      const lowerBound = minAge ?? 0
+      const upperBound = maxAge ?? MAX_VALID_AGE
       items = items.filter((item) => {
-        const meetsMin = minAge === null || item.minimum_age === null || item.minimum_age <= minAge
-        const meetsMax = maxAge === null || item.maximum_age === null || item.maximum_age >= maxAge
-        return meetsMin && meetsMax
+        const itemMin = item.minimum_age ?? 0
+        const itemMax = item.maximum_age ?? MAX_VALID_AGE
+        return itemMin <= upperBound && itemMax >= lowerBound
       })
     } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
