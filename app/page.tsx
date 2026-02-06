@@ -197,6 +197,7 @@ function HomePageContent() {
 
   // Fetch results when search params change
   useEffect(() => {
+    const controller = new AbortController()
     const fetchResults = async () => {
       setLoading(true)
       try {
@@ -205,11 +206,13 @@ function HomePageContent() {
         if (bbox) searchParams.set("bbox", bbox)
         if (categories) searchParams.set("categories", categories)
         if (sort) searchParams.set("sort", sort)
+        if (ageMin) searchParams.set("age_min", ageMin)
+        if (ageMax) searchParams.set("age_max", ageMax)
         if (date) searchParams.set("date", date)
         searchParams.set("page", String(page))
         searchParams.set("per", String(per))
 
-        const response = await fetch(`/api/search?${searchParams.toString()}`)
+        const response = await fetch(`/api/search?${searchParams.toString()}`, { signal: controller.signal })
         if (response.ok) {
           const data: SearchResponse = await response.json()
           setResults(data.items)
@@ -220,16 +223,22 @@ function HomePageContent() {
           setTotal(0)
         }
       } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return
+        }
         console.error("Error fetching results:", error)
         setResults([])
         setTotal(0)
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchResults()
-  }, [q, bbox, categories, sort, page, per, date])
+    return () => controller.abort()
+  }, [q, bbox, categories, sort, page, per, date, ageMin, ageMax])
 
   // Initialize Leaflet map - only when needed (desktop or mobile map view)
   useEffect(() => {

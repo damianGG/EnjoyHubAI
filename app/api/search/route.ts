@@ -30,6 +30,8 @@ interface SearchResult {
   price_from: number | null
 }
 
+type SearchItem = SearchResult & { hasAvailability?: boolean }
+
 // Maximum valid age for filtering
 const MAX_VALID_AGE = 150
 
@@ -48,6 +50,8 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1", 10)
     const per = parseInt(searchParams.get("per") || "20", 10)
     const childAge = searchParams.get("child_age")
+    const ageMinParam = searchParams.get("age_min")
+    const ageMaxParam = searchParams.get("age_max")
     const dateParam = searchParams.get("date") || "" // New date parameter
     
     const supabase = createClient()
@@ -122,7 +126,17 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      query = query.ilike("title", `%${q}%`)
+      // Normalize to alphanumeric characters/spaces to avoid query syntax issues or injection patterns.
+      const safeQuery = q
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+      if (safeQuery) {
+        const searchPattern = `%${safeQuery}%`
+        query = query.or(
+          `title.ilike.${searchPattern},city.ilike.${searchPattern},country.ilike.${searchPattern}`
+        )
+      }
     }
     
     // Filter by categories or subcategories
@@ -180,7 +194,7 @@ export async function GET(request: Request) {
     }
     
     // Transform data to match expected format
-    let items = (data || []).map((property: any) => {
+    let items: SearchItem[] = (data || []).map((property: any) => {
       const ratings = property.reviews?.map((r: any) => r.rating) || []
       const avgRating = ratings.length > 0 
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
@@ -224,10 +238,33 @@ export async function GET(request: Request) {
     })
     
     // Filter by child_age if provided
-    if (childAge) {
+    const parseAge = (value: string | null) => {
+      if (!value) return null
+      const parsed = parseInt(value, 10)
+      if (Number.isNaN(parsed) || parsed < 0 || parsed > MAX_VALID_AGE) return null
+      return parsed
+    }
+
+    let minAge = parseAge(ageMinParam)
+    let maxAge = parseAge(ageMaxParam)
+
+    if (minAge !== null && maxAge !== null && minAge > maxAge) {
+      [minAge, maxAge] = [maxAge, minAge]
+    }
+
+    if (minAge !== null || maxAge !== null) {
+      // Keep properties that overlap with the requested age range.
+      const requestedMinAge = minAge ?? 0
+      const requestedMaxAge = maxAge ?? MAX_VALID_AGE
+      items = items.filter((item) => {
+        const itemMin = item.minimum_age ?? 0
+        const itemMax = item.maximum_age ?? MAX_VALID_AGE
+        return itemMin <= requestedMaxAge && itemMax >= requestedMinAge
+      })
+    } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
-      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
-        items = items.filter((item: any) => {
+      if (!Number.isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
+        items = items.filter((item) => {
           // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
           
@@ -245,15 +282,15 @@ export async function GET(request: Request) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/
       if (dateRegex.test(dateParam)) {
         // Filter properties that have availability on the specified date
-        const availabilityChecks = await Promise.all(
-          items.map(async (item: any) => {
+        const availabilityChecks: SearchItem[] = await Promise.all(
+          items.map(async (item) => {
             const hasAvailability = await getAvailabilityForPropertyOnDate(item.id, dateParam)
             return { ...item, hasAvailability }
           })
         )
         
         // Keep only properties with availability on the specified date
-        items = availabilityChecks.filter((item: any) => item.hasAvailability)
+        items = availabilityChecks.filter((item) => item.hasAvailability)
       }
     }
     
@@ -273,7 +310,7 @@ export async function GET(request: Request) {
     // Fetch slots for all properties in parallel
     // Note: For large result sets, consider implementing batching or limiting concurrent requests
     const itemsWithSlots = await Promise.all(
-      items.map(async (item: any) => {
+      items.map(async (item) => {
         const slot = await getNextAvailableSlotForProperty(item.id, dateStart, dateEnd)
         return {
           ...item,
