@@ -241,7 +241,7 @@ export async function GET(request: Request) {
     const parseAge = (value: string | null) => {
       if (!value) return null
       const parsed = parseInt(value, 10)
-      if (isNaN(parsed) || parsed < 0 || parsed > MAX_VALID_AGE) return null
+      if (Number.isNaN(parsed) || parsed < 0 || parsed > MAX_VALID_AGE) return null
       return parsed
     }
 
@@ -260,7 +260,7 @@ export async function GET(request: Request) {
       })
     } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
-      if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
+      if (!Number.isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
         items = items.filter((item) => {
           // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
