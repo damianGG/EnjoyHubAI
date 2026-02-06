@@ -129,7 +129,7 @@ export async function GET(request: Request) {
       // Normalize the query to letters/numbers/spaces to keep PostgREST filters safe.
       const safeQuery = q
         .trim()
-        .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
         .replace(/\s+/g, " ")
         .trim()
       if (safeQuery) {
