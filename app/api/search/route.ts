@@ -126,10 +126,10 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      // Remove special characters that could break the PostgREST ilike pattern.
+      // Normalize the query to letters/numbers/spaces to keep PostgREST filters safe.
       const safeQuery = q
         .trim()
-        .replace(/[,%_"'\\]/g, " ")
+        .replace(/[^\p{L}\p{N}\s-]/gu, " ")
         .replace(/\s+/g, " ")
         .trim()
       if (safeQuery) {
