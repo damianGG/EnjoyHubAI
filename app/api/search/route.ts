@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      // Normalize to alphanumeric characters/spaces so user input can't break PostgREST filters.
+      // Normalize to alphanumeric characters/spaces to avoid query syntax issues or injection patterns.
       const safeQuery = q
         .replace(/[^\p{L}\p{N}\s]/gu, " ")
         .replace(/\s+/g, " ")
