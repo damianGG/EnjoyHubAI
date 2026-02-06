@@ -128,10 +128,7 @@ export async function GET(request: Request) {
     if (q) {
       const safeQuery = q
         .trim()
-        .replace(/,/g, " ")
-        .replace(/\\/g, "\\\\")
-        .replace(/%/g, "\\%")
-        .replace(/_/g, "\\_")
+        .replace(/[,%_"'\\]/g, " ")
         .replace(/\s+/g, " ")
         .trim()
       if (safeQuery) {
