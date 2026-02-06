@@ -128,7 +128,10 @@ export async function GET(request: Request) {
     if (q) {
       const safeQuery = q
         .trim()
-        .replace(/[,%_"'\\]/g, " ")
+        .replace(/,/g, " ")
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_")
         .replace(/\s+/g, " ")
         .trim()
       if (safeQuery) {
@@ -254,8 +257,8 @@ export async function GET(request: Request) {
 
     if (minAge !== null || maxAge !== null) {
       items = items.filter((item) => {
-        const meetsMin = minAge === null || item.maximum_age === null || minAge <= item.maximum_age
-        const meetsMax = maxAge === null || item.minimum_age === null || maxAge >= item.minimum_age
+        const meetsMin = minAge === null || item.minimum_age === null || item.minimum_age <= minAge
+        const meetsMax = maxAge === null || item.maximum_age === null || item.maximum_age >= maxAge
         return meetsMin && meetsMax
       })
     } else if (childAge) {
