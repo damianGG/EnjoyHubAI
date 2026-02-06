@@ -165,8 +165,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       updates.q = ""
     }
 
-    const parsedAgeMin = ageMin.trim() ? Number.parseInt(ageMin, 10) : null
-    const parsedAgeMax = ageMax.trim() ? Number.parseInt(ageMax, 10) : null
+    const parsedAgeMin = ageMin.trim() ? parseInt(ageMin, 10) : null
+    const parsedAgeMax = ageMax.trim() ? parseInt(ageMax, 10) : null
     const hasValidAgeMin = parsedAgeMin !== null && !Number.isNaN(parsedAgeMin)
     const hasValidAgeMax = parsedAgeMax !== null && !Number.isNaN(parsedAgeMax)
 

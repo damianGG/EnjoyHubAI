@@ -126,6 +126,7 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
+      // Remove special characters that could break the PostgREST ilike pattern.
       const safeQuery = q
         .trim()
         .replace(/[,%_"'\\]/g, " ")
@@ -253,6 +254,7 @@ export async function GET(request: Request) {
     }
 
     if (minAge !== null || maxAge !== null) {
+      // Keep properties that overlap with the requested age range.
       const lowerBound = minAge ?? 0
       const upperBound = maxAge ?? MAX_VALID_AGE
       items = items.filter((item) => {
