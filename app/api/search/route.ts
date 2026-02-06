@@ -30,6 +30,8 @@ interface SearchResult {
   price_from: number | null
 }
 
+type SearchItem = SearchResult & { hasAvailability?: boolean }
+
 // Maximum valid age for filtering
 const MAX_VALID_AGE = 150
 
@@ -124,7 +126,11 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      const safeQuery = q.trim().replace(/[,%_]/g, " ")
+      const safeQuery = q
+        .trim()
+        .replace(/[,%_"'\\]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
       if (safeQuery) {
         const searchPattern = `%${safeQuery}%`
         query = query.or(
@@ -188,7 +194,7 @@ export async function GET(request: Request) {
     }
     
     // Transform data to match expected format
-    let items = (data || []).map((property: any) => {
+    let items: SearchItem[] = (data || []).map((property: any) => {
       const ratings = property.reviews?.map((r: any) => r.rating) || []
       const avgRating = ratings.length > 0 
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
@@ -247,7 +253,7 @@ export async function GET(request: Request) {
     }
 
     if (minAge !== null || maxAge !== null) {
-      items = items.filter((item: any) => {
+      items = items.filter((item) => {
         const meetsMin = minAge === null || item.maximum_age === null || minAge <= item.maximum_age
         const meetsMax = maxAge === null || item.minimum_age === null || maxAge >= item.minimum_age
         return meetsMin && meetsMax
@@ -255,7 +261,7 @@ export async function GET(request: Request) {
     } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
       if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
-        items = items.filter((item: any) => {
+        items = items.filter((item) => {
           // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
           
@@ -273,15 +279,15 @@ export async function GET(request: Request) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/
       if (dateRegex.test(dateParam)) {
         // Filter properties that have availability on the specified date
-        const availabilityChecks = await Promise.all(
-          items.map(async (item: any) => {
+        const availabilityChecks: SearchItem[] = await Promise.all(
+          items.map(async (item) => {
             const hasAvailability = await getAvailabilityForPropertyOnDate(item.id, dateParam)
             return { ...item, hasAvailability }
           })
         )
         
         // Keep only properties with availability on the specified date
-        items = availabilityChecks.filter((item: any) => item.hasAvailability)
+        items = availabilityChecks.filter((item) => item.hasAvailability)
       }
     }
     
@@ -301,7 +307,7 @@ export async function GET(request: Request) {
     // Fetch slots for all properties in parallel
     // Note: For large result sets, consider implementing batching or limiting concurrent requests
     const itemsWithSlots = await Promise.all(
-      items.map(async (item: any) => {
+      items.map(async (item) => {
         const slot = await getNextAvailableSlotForProperty(item.id, dateStart, dateEnd)
         return {
           ...item,
