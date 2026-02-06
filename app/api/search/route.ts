@@ -48,6 +48,8 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1", 10)
     const per = parseInt(searchParams.get("per") || "20", 10)
     const childAge = searchParams.get("child_age")
+    const ageMinParam = searchParams.get("age_min")
+    const ageMaxParam = searchParams.get("age_max")
     const dateParam = searchParams.get("date") || "" // New date parameter
     
     const supabase = createClient()
@@ -122,7 +124,13 @@ export async function GET(request: Request) {
     
     // Filter by search query (ilike on title)
     if (q) {
-      query = query.ilike("title", `%${q}%`)
+      const safeQuery = q.trim().replace(/,/g, " ")
+      if (safeQuery) {
+        const searchPattern = `%${safeQuery}%`
+        query = query.or(
+          `title.ilike.${searchPattern},city.ilike.${searchPattern},country.ilike.${searchPattern}`
+        )
+      }
     }
     
     // Filter by categories or subcategories
@@ -224,7 +232,27 @@ export async function GET(request: Request) {
     })
     
     // Filter by child_age if provided
-    if (childAge) {
+    const parseAge = (value: string | null) => {
+      if (!value) return null
+      const parsed = parseInt(value, 10)
+      if (isNaN(parsed) || parsed < 0 || parsed > MAX_VALID_AGE) return null
+      return parsed
+    }
+
+    let minAge = parseAge(ageMinParam)
+    let maxAge = parseAge(ageMaxParam)
+
+    if (minAge !== null && maxAge !== null && minAge > maxAge) {
+      ;[minAge, maxAge] = [maxAge, minAge]
+    }
+
+    if (minAge !== null || maxAge !== null) {
+      items = items.filter((item: any) => {
+        const meetsMin = minAge === null || item.maximum_age === null || minAge <= item.maximum_age
+        const meetsMax = maxAge === null || item.minimum_age === null || maxAge >= item.minimum_age
+        return meetsMin && meetsMax
+      })
+    } else if (childAge) {
       const childAgeNum = parseInt(childAge, 10)
       if (!isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
         items = items.filter((item: any) => {

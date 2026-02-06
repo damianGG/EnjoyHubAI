@@ -165,17 +165,20 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       updates.q = ""
     }
 
-    if (ageMin) {
-      updates.age_min = ageMin
-    } else {
-      updates.age_min = ""
+    const parsedAgeMin = ageMin.trim() ? Number.parseInt(ageMin, 10) : null
+    const parsedAgeMax = ageMax.trim() ? Number.parseInt(ageMax, 10) : null
+    const hasValidAgeMin = parsedAgeMin !== null && !Number.isNaN(parsedAgeMin)
+    const hasValidAgeMax = parsedAgeMax !== null && !Number.isNaN(parsedAgeMax)
+
+    let normalizedAgeMin = hasValidAgeMin ? parsedAgeMin : null
+    let normalizedAgeMax = hasValidAgeMax ? parsedAgeMax : null
+
+    if (normalizedAgeMin !== null && normalizedAgeMax !== null && normalizedAgeMin > normalizedAgeMax) {
+      ;[normalizedAgeMin, normalizedAgeMax] = [normalizedAgeMax, normalizedAgeMin]
     }
 
-    if (ageMax) {
-      updates.age_max = ageMax
-    } else {
-      updates.age_max = ""
-    }
+    updates.age_min = normalizedAgeMin !== null ? String(normalizedAgeMin) : ""
+    updates.age_max = normalizedAgeMax !== null ? String(normalizedAgeMax) : ""
 
     if (selectedDate) {
       // Format date as YYYY-MM-DD
