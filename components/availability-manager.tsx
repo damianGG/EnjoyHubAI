@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar as CalendarIcon, Plus, X, Save, AlertCircle, CheckCircle } from "lucide-react"
 import type { AttractionAvailability, SeasonalPrice, BookingMode } from "@/lib/types/dynamic-fields"
@@ -30,6 +31,12 @@ export default function AvailabilityManager({
   )
   const [minStay, setMinStay] = useState(initialAvailability?.min_stay || 1)
   const [maxStay, setMaxStay] = useState(initialAvailability?.max_stay || null)
+  const [enableMultiBooking, setEnableMultiBooking] = useState(
+    initialAvailability?.enable_multi_booking || false
+  )
+  const [dailyCapacity, setDailyCapacity] = useState(
+    initialAvailability?.daily_capacity || 10
+  )
   const [blockedDates, setBlockedDates] = useState<Date[]>(
     (initialAvailability?.blocked_dates || []).map(d => parseISO(d))
   )
@@ -139,13 +146,24 @@ export default function AvailabilityManager({
           min_stay: minStay,
           max_stay: maxStay || null,
           seasonal_prices: seasonalPrices,
+          enable_multi_booking: enableMultiBooking,
+          daily_capacity: enableMultiBooking ? dailyCapacity : null,
         }),
       })
 
       if (response.ok) {
         setSaveMessage({ type: "success", text: "Settings saved successfully!" })
       } else {
-        setSaveMessage({ type: "error", text: "Failed to save settings" })
+        let errorMessage = "Failed to save settings"
+        try {
+          const errorData = await response.json()
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch {
+          // If JSON parsing fails, use default error message
+        }
+        setSaveMessage({ type: "error", text: errorMessage })
       }
     } catch (error) {
       setSaveMessage({ type: "error", text: "Error saving settings" })
@@ -232,6 +250,52 @@ export default function AvailabilityManager({
                   className="max-w-xs"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Multi-Booking Capacity</CardTitle>
+              <CardDescription>
+                Enable selling multiple tickets for the same day (e.g., for play centers, museums, events)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="enable-multi-booking" className="text-base">
+                    Enable Multi-Booking
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow multiple guests to book the same day
+                  </p>
+                </div>
+                <Switch
+                  id="enable-multi-booking"
+                  checked={enableMultiBooking}
+                  onCheckedChange={setEnableMultiBooking}
+                />
+              </div>
+
+              {enableMultiBooking && (
+                <div className="pt-4 border-t">
+                  <Label htmlFor="dailyCapacity">
+                    Daily Capacity (Maximum bookings per day)
+                  </Label>
+                  <Input
+                    id="dailyCapacity"
+                    type="number"
+                    min="1"
+                    value={dailyCapacity}
+                    onChange={(e) => setDailyCapacity(parseInt(e.target.value) || 1)}
+                    className="max-w-xs mt-2"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    This sets the maximum number of separate bookings that can be made for each day.
+                    The calendar will show occupancy levels from green (available) to red (full).
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
