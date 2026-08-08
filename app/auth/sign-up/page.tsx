@@ -1,6 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import UnifiedAuthForm from "@/components/unified-auth-form"
+import SignUpForm from "@/components/sign-up-form"
 
 export default async function SignUpPage() {
   // If Supabase is not configured, show setup message directly
@@ -25,7 +25,7 @@ export default async function SignUpPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <UnifiedAuthForm mode="signup" />
+      <SignUpForm />
     </div>
   )
 }
