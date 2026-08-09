@@ -10,20 +10,20 @@ export const REQUIRED_CATEGORY_FIELDS = [
   {
     field_name: "minimum_age",
     field_type: "number" as const,
-    field_label: "Minimum Age",
+    field_label: "Minimalny wiek",
     is_required: false,
     validation_rules: { min: 0, max: 100 },
-    placeholder: "e.g., 3",
-    help_text: "Minimum age required to participate",
+    placeholder: "np. 3",
+    help_text: "Minimalny wiek wymagany do udziału",
   },
   {
     field_name: "maximum_age",
     field_type: "number" as const,
-    field_label: "Maximum Age",
+    field_label: "Maksymalny wiek",
     is_required: false,
     validation_rules: { min: 0, max: 150 },
-    placeholder: "e.g., 99",
-    help_text: "Maximum age allowed to participate (leave empty for no limit)",
+    placeholder: "np. 99",
+    help_text: "Maksymalny wiek uczestnika (pozostaw puste, aby nie ustawiać limitu)",
   },
 ] as const
 

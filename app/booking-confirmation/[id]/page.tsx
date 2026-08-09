@@ -96,9 +96,9 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
+          <h1 className="text-3xl font-bold mb-2">Rezerwacja potwierdzona!</h1>
           <p className="text-muted-foreground">
-            Your reservation has been successfully created. You'll receive a confirmation email shortly.
+            Twoja rezerwacja została utworzona. Wkrótce otrzymasz wiadomość email z potwierdzeniem.
           </p>
         </div>
 
@@ -106,10 +106,10 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Booking Details</CardTitle>
+              <CardTitle>Szczegóły rezerwacji</CardTitle>
               <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
             </div>
-            <CardDescription>Booking ID: {booking.id}</CardDescription>
+            <CardDescription>Identyfikator rezerwacji: {booking.id}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Property Info */}
@@ -141,7 +141,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <div className="text-sm font-medium">Check-in</div>
+                  <div className="text-sm font-medium">Zameldowanie</div>
                   <div className="text-sm text-muted-foreground">{checkInDate.toLocaleDateString()}</div>
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <div className="text-sm font-medium">Check-out</div>
+                  <div className="text-sm font-medium">Wymeldowanie</div>
                   <div className="text-sm text-muted-foreground">{checkOutDate.toLocaleDateString()}</div>
                 </div>
               </div>
@@ -157,9 +157,9 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
               <div className="flex items-center space-x-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <div className="text-sm font-medium">Guests</div>
+                  <div className="text-sm font-medium">Goście</div>
                   <div className="text-sm text-muted-foreground">
-                    {booking.guests_count} guest{booking.guests_count !== 1 ? "s" : ""}
+                    Liczba gości: {booking.guests_count}
                   </div>
                 </div>
               </div>
@@ -182,15 +182,15 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
                 <span>${(booking.total_price * 0.8).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Cleaning fee</span>
+                <span>Opłata za sprzątanie</span>
                 <span>$25.00</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Service fee</span>
+                <span>Opłata serwisowa</span>
                 <span>${(booking.total_price * 0.1).toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-semibold pt-2 border-t">
-                <span>Total</span>
+                <span>Razem</span>
                 <span>${booking.total_price}</span>
               </div>
             </div>
@@ -200,7 +200,7 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
         {/* Next Steps */}
         <Card>
           <CardHeader>
-            <CardTitle>What's Next?</CardTitle>
+            <CardTitle>Co dalej?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start space-x-3">
@@ -208,9 +208,9 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
                 1
               </div>
               <div>
-                <div className="font-medium">Confirmation Email</div>
+                <div className="font-medium">Email z potwierdzeniem</div>
                 <div className="text-sm text-muted-foreground">
-                  You'll receive a confirmation email with all the details
+                  Otrzymasz wiadomość email ze wszystkimi szczegółami
                 </div>
               </div>
             </div>
@@ -220,9 +220,9 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
                 2
               </div>
               <div>
-                <div className="font-medium">Host Contact</div>
+                <div className="font-medium">Kontakt z gospodarzem</div>
                 <div className="text-sm text-muted-foreground">
-                  Your host will contact you with check-in instructions
+                  Gospodarz skontaktuje się z Tobą i przekaże instrukcje dotyczące zameldowania
                 </div>
               </div>
             </div>
@@ -232,8 +232,8 @@ export default async function BookingConfirmationPage({ params }: BookingConfirm
                 3
               </div>
               <div>
-                <div className="font-medium">Enjoy Your Stay</div>
-                <div className="text-sm text-muted-foreground">Have a wonderful time at your destination!</div>
+                <div className="font-medium">Miłego pobytu</div>
+                <div className="text-sm text-muted-foreground">Życzymy wspaniale spędzonego czasu!</div>
               </div>
             </div>
           </CardContent>

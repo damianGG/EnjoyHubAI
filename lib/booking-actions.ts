@@ -42,7 +42,7 @@ export async function createBooking(prevState: any, formData: FormData) {
 
   if (userError || !user) {
     console.error("Auth error in createBooking:", userError)
-    return { error: "You must be logged in to make a booking" }
+    return { error: "Musisz się zalogować, aby dokonać rezerwacji" }
   }
 
   try {
@@ -85,7 +85,7 @@ export async function createBooking(prevState: any, formData: FormData) {
 
     // Check if user is trying to book their own property
     if (property.host_id === user.id) {
-      return { error: "You cannot book your own property" }
+      return { error: "Nie możesz zarezerwować własnego obiektu" }
     }
 
     // Validate guest count
@@ -106,7 +106,7 @@ export async function createBooking(prevState: any, formData: FormData) {
     }
 
     if (conflictingBookings && conflictingBookings.length > 0) {
-      return { error: "Property is not available for the selected dates" }
+      return { error: "Obiekt jest niedostępny w wybranym terminie" }
     }
 
     // Create the booking
@@ -126,13 +126,13 @@ export async function createBooking(prevState: any, formData: FormData) {
 
     if (bookingError) {
       console.error("Booking creation error:", bookingError)
-      return { error: "Failed to create booking. Please try again." }
+      return { error: "Nie udało się utworzyć rezerwacji. Spróbuj ponownie." }
     }
 
     return { success: true, bookingId: booking.id }
   } catch (error) {
     console.error("Booking error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
   }
 }
 

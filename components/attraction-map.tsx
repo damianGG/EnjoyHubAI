@@ -204,7 +204,7 @@ export default function AttractionMap({ attractions, selectedAttraction, onAttra
       <Card className={className}>
         <CardContent className="p-6 text-center">
           <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No attractions to display on map</p>
+          <p className="text-muted-foreground">Brak atrakcji do wyświetlenia na mapie</p>
         </CardContent>
       </Card>
     )

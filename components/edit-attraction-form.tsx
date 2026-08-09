@@ -91,7 +91,7 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
         setImages(imageObjects)
       } catch (error) {
         console.error("[v0] Unexpected error loading property:", error)
-        toast.error("An unexpected error occurred")
+        toast.error("Wystąpił nieoczekiwany błąd")
         router.push("/host/properties")
       } finally {
         setInitialLoading(false)
@@ -231,7 +231,7 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
     e.preventDefault()
 
     if (!validateDynamicFields()) {
-      toast.error("Please fill in all required fields")
+      toast.error("Uzupełnij wszystkie wymagane pola")
       return
     }
 
@@ -292,11 +292,11 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
         }
       }
 
-      toast.success("Property updated successfully!")
+      toast.success("Obiekt został zaktualizowany!")
       router.push("/host/properties")
     } catch (error) {
       console.error("[v0] Unexpected error:", error)
-      toast.error("An unexpected error occurred. Please try again.")
+      toast.error("Wystąpił nieoczekiwany błąd. Spróbuj ponownie.")
     } finally {
       setLoading(false)
     }
@@ -330,11 +330,11 @@ export default function EditAttractionForm({ propertyId, userId }: EditAttractio
         return
       }
 
-      toast.success("Property deleted successfully!")
+      toast.success("Obiekt został usunięty!")
       router.push("/host/properties")
     } catch (error) {
       console.error("[v0] Unexpected error:", error)
-      toast.error("An unexpected error occurred. Please try again.")
+      toast.error("Wystąpił nieoczekiwany błąd. Spróbuj ponownie.")
     } finally {
       setDeleting(false)
     }

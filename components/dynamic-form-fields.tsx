@@ -133,7 +133,7 @@ export default function DynamicFormFields({ fields, values, onChange, errors = {
         return (
           <Select value={value} onValueChange={(val) => onChange(field.id, val)} disabled={isUploading}>
             <SelectTrigger>
-              <SelectValue placeholder={field.placeholder || "Select an option"} />
+              <SelectValue placeholder={field.placeholder || "Wybierz opcję"} />
             </SelectTrigger>
             <SelectContent>
               {field.options.map((option) => (
@@ -183,7 +183,7 @@ export default function DynamicFormFields({ fields, values, onChange, errors = {
                 disabled={isUploading}
               >
                 {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                {isUploading ? "Uploading..." : "Upload File"}
+                {isUploading ? "Przesyłanie..." : "Prześlij plik"}
               </Button>
               {value && (
                 <div className="flex items-center gap-2">

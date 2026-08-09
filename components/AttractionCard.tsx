@@ -184,7 +184,7 @@ function AttractionCard({
                   e.preventDefault()
                   scrollPrev()
                 }}
-                aria-label="Previous image"
+                aria-label="Poprzednie zdjęcie"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -201,7 +201,7 @@ function AttractionCard({
                   e.preventDefault()
                   scrollNext()
                 }}
-                aria-label="Next image"
+                aria-label="Następne zdjęcie"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

@@ -457,7 +457,7 @@ function HomePageContent() {
               <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
                   ? `Exploring: ${categories.split(",").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}` 
-                  : "All Attractions"}
+                  : "Wszystkie atrakcje"}
               </h1>
               
               {/* Active filters display */}
@@ -577,7 +577,7 @@ function HomePageContent() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-sm md:text-base text-muted-foreground">No attractions found. Try adjusting your filters or search area.</p>
+                <p className="text-sm md:text-base text-muted-foreground">Nie znaleziono atrakcji. Spróbuj zmienić filtry lub obszar wyszukiwania.</p>
               </div>
             )}
           </div>
