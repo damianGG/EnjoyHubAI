@@ -294,8 +294,8 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <MapPin className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No attractions found</h3>
-                <p className="text-muted-foreground mb-4">Try adjusting your search criteria or filters</p>
+                <h3 className="text-lg font-semibold mb-2">Nie znaleziono atrakcji</h3>
+                <p className="text-muted-foreground mb-4">Spróbuj zmienić kryteria wyszukiwania lub filtry</p>
                 <Button
                   variant="outline"
                   onClick={() =>

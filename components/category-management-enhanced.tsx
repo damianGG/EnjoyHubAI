@@ -563,7 +563,7 @@ export default function CategoryManagementEnhanced() {
                   <div className="relative w-full h-40 rounded-lg overflow-hidden border">
                     <Image
                       src={categoryFormData.image_url}
-                      alt="Category preview"
+                      alt="Podgląd kategorii"
                       fill
                       className="object-cover"
                     />
@@ -681,7 +681,7 @@ export default function CategoryManagementEnhanced() {
                   <div className="relative w-full h-40 rounded-lg overflow-hidden border">
                     <Image
                       src={subcategoryFormData.image_url}
-                      alt="Subcategory preview"
+                      alt="Podgląd podkategorii"
                       fill
                       className="object-cover"
                     />

@@ -63,7 +63,7 @@ export default async function AdminPropertiesPage() {
               className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Admin
+              Powrót do panelu administratora
             </Link>
           </div>
         </div>

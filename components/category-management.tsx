@@ -151,8 +151,8 @@ export default function CategoryManagementClient() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Categories</h2>
-          <p className="text-muted-foreground">Manage entertainment categories</p>
+          <h2 className="text-2xl font-bold">Kategorie</h2>
+          <p className="text-muted-foreground">Zarządzaj kategoriami rozrywki</p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
@@ -180,7 +180,7 @@ export default function CategoryManagementClient() {
               </div>
             </CardHeader>
             <CardContent>
-              <CardDescription>{category.description || "No description"}</CardDescription>
+              <CardDescription>{category.description || "Brak opisu"}</CardDescription>
               <p className="text-xs text-muted-foreground mt-2">Slug: {category.slug}</p>
             </CardContent>
           </Card>
@@ -191,15 +191,15 @@ export default function CategoryManagementClient() {
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCategory ? "Edit Category" : "Create Category"}</DialogTitle>
+            <DialogTitle>{editingCategory ? "Edytuj kategorię" : "Utwórz kategorię"}</DialogTitle>
             <DialogDescription>
-              {editingCategory ? "Update category details" : "Add a new entertainment category"}
+              {editingCategory ? "Zaktualizuj dane kategorii" : "Dodaj nową kategorię rozrywki"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Nazwa</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -219,7 +219,7 @@ export default function CategoryManagementClient() {
             </div>
 
             <div>
-              <Label htmlFor="icon">Icon (Emoji)</Label>
+              <Label htmlFor="icon">Ikona (emoji)</Label>
               <Input
                 id="icon"
                 value={formData.icon}
@@ -229,12 +229,12 @@ export default function CategoryManagementClient() {
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Opis</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter category description"
+                placeholder="Wpisz opis kategorii"
               />
             </div>
           </div>

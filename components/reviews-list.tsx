@@ -22,10 +22,10 @@ export default function ReviewsList({ reviews, avgRating }: ReviewsListProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Reviews</CardTitle>
+          <CardTitle>Opinie</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No reviews yet. Be the first to leave a review!</p>
+          <p className="text-muted-foreground">Nie ma jeszcze opinii. Dodaj pierwszą!</p>
         </CardContent>
       </Card>
     )

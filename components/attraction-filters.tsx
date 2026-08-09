@@ -61,12 +61,30 @@ const AMENITIES = [
   "Safety equipment",
 ]
 
+const AMENITY_LABELS: Record<string, string> = {
+  Parking: "Parking",
+  WiFi: "Wi-Fi",
+  "Air conditioning": "Klimatyzacja",
+  Accessible: "Dostępność dla osób z niepełnosprawnościami",
+  "Food & Drinks": "Jedzenie i napoje",
+  "Birthday parties": "Przyjęcia urodzinowe",
+  "Group bookings": "Rezerwacje grupowe",
+  "Equipment rental": "Wypożyczalnia sprzętu",
+  Lockers: "Szafki",
+  "Changing rooms": "Szatnie",
+  "Photo booth": "Fotobudka",
+  "Party rooms": "Sale imprezowe",
+  "Outdoor area": "Strefa zewnętrzna",
+  "Indoor area": "Strefa wewnętrzna",
+  "Safety equipment": "Sprzęt ochronny",
+}
+
 const SORT_OPTIONS = [
-  { value: "newest", label: "Newest first" },
-  { value: "price_low", label: "Price: Low to High" },
-  { value: "price_high", label: "Price: High to Low" },
-  { value: "rating", label: "Highest rated" },
-  { value: "reviews", label: "Most reviewed" },
+  { value: "newest", label: "Od najnowszych" },
+  { value: "price_low", label: "Cena: od najniższej" },
+  { value: "price_high", label: "Cena: od najwyższej" },
+  { value: "rating", label: "Najwyżej oceniane" },
+  { value: "reviews", label: "Najczęściej recenzowane" },
 ]
 
 export default function AttractionFilters({ filters, onFiltersChange, onSearch, totalResults }: AttractionFiltersProps) {
@@ -243,7 +261,7 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
                 onCheckedChange={() => toggleAmenity(amenity)}
               />
               <Label htmlFor={`amenity-${amenity}`} className="text-sm">
-                {amenity}
+                {AMENITY_LABELS[amenity] || amenity}
               </Label>
             </div>
           ))}

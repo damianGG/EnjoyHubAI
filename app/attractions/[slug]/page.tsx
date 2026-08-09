@@ -242,7 +242,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             {attraction.amenities && attraction.amenities.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">What this place offers</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">Co oferuje to miejsce</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
@@ -267,7 +267,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             {/* Location */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Where you'll be</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Gdzie się znajdziesz</CardTitle>
                 <CardDescription className="text-sm sm:text-base">
                   {attraction.address}, {attraction.city}, {attraction.country}
                 </CardDescription>

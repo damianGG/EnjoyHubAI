@@ -32,18 +32,18 @@ function validateEmail(e: string) {
 
 // Sign in action
 export async function signIn(prevState: any, formData: FormData): Promise<ActionResult> {
-  if (!formData) return { error: "Form data is missing" }
+  if (!formData) return { error: "Brak danych formularza" }
 
   const email = formData.get("email")
   const password = formData.get("password")
 
-  if (!email || !password) return { error: "Email and password are required" }
+  if (!email || !password) return { error: "Email i hasło są wymagane" }
 
   const emailStr = String(email).trim()
   const passwordStr = String(password)
 
-  if (!validateEmail(emailStr)) return { error: "Invalid email" }
-  if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
+  if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+  if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
 
   try {
     const supabase = await createSupabaseServerClient()
@@ -56,34 +56,34 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
     if (error) {
       console.error("Sign in error:", error)
       // Avoid leaking provider internals; give a friendly message
-      return { error: "Invalid credentials or account not confirmed" }
+      return { error: "Nieprawidłowe dane logowania lub konto nie zostało potwierdzone" }
     }
 
     console.log("Sign in successful for user:", data?.user?.email)
     return { ok: true, message: "Signed in" }
   } catch (err) {
     console.error("Login error:", err)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
   }
 }
 
 // Sign up action
 export async function signUp(prevState: any, formData: FormData): Promise<ActionResult> {
-  if (!formData) return { error: "Form data is missing" }
+  if (!formData) return { error: "Brak danych formularza" }
 
   const email = formData.get("email")
   const password = formData.get("password")
   const fullName = formData.get("fullName")
   const isHost = formData.get("isHost") === "on"
 
-  if (!email || !password || !fullName) return { error: "Email, password and full name are required" }
+  if (!email || !password || !fullName) return { error: "Email, hasło oraz imię i nazwisko są wymagane" }
 
   const emailStr = String(email).trim()
   const passwordStr = String(password)
   const fullNameStr = String(fullName).trim()
 
-  if (!validateEmail(emailStr)) return { error: "Invalid email" }
-  if (passwordStr.length < 8) return { error: "Password must be at least 8 characters" }
+  if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+  if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
 
   const supabase = await createSupabaseServerClient()
 
@@ -103,7 +103,7 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
     if (error) {
       console.error("Sign up error (provider):", error)
-      return { error: "Sign up failed. Please try again." }
+      return { error: "Rejestracja nie powiodła się. Spróbuj ponownie." }
     }
 
     // If a user object was returned (depends on confirmation settings), upsert profile to avoid conflicts with DB trigger
@@ -123,10 +123,10 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
       if (profileError) console.error("Profile creation error:", profileError)
     }
 
-    return { ok: true, message: "Check your email to confirm your account." }
+    return { ok: true, message: "Sprawdź skrzynkę email, aby potwierdzić konto." }
   } catch (err) {
     console.error("Sign up error:", err)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
   }
 }
 

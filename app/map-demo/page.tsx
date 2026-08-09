@@ -138,7 +138,7 @@ export default function MapDemoPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Map View Demo - Attraction Cards</h1>
+        <h1 className="text-3xl font-bold mb-2">Demo widoku mapy – karty atrakcji</h1>
         <p className="text-muted-foreground">
           Click on any marker to see the attraction card with image slider (Airbnb style)
         </p>
@@ -149,14 +149,14 @@ export default function MapDemoPage() {
       </div>
 
       <div className="mt-8 p-6 bg-muted rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">New Features</h2>
+        <h2 className="text-xl font-semibold mb-4">Nowe funkcje</h2>
         <ul className="list-disc list-inside space-y-2 text-sm">
-          <li>Click on any map marker to display an attraction card with image slider</li>
-          <li>The card includes all details: images carousel, rating, price, and reviews</li>
-          <li>Navigation arrows and dots for browsing through images (Airbnb style)</li>
-          <li>Close button (X) to dismiss the card</li>
-          <li>Positioned at the bottom center for optimal visibility</li>
-          <li>Smooth transitions and hover effects</li>
+          <li>Kliknij dowolny znacznik na mapie, aby wyświetlić kartę atrakcji z galerią zdjęć</li>
+          <li>Karta zawiera wszystkie szczegóły: galerię zdjęć, ocenę, cenę i opinie</li>
+          <li>Strzałki i kropki ułatwiają przeglądanie zdjęć (w stylu Airbnb)</li>
+          <li>Przycisk zamknięcia (X) ukrywa kartę</li>
+          <li>Karta jest umieszczona na środku u dołu, aby zapewnić dobrą widoczność</li>
+          <li>Płynne przejścia i efekty po najechaniu</li>
         </ul>
       </div>
     </div>

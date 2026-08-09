@@ -165,7 +165,7 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
 
     // Validate dynamic fields before submission
     if (!validateDynamicFields()) {
-      toast.error("Please fill in all required fields")
+      toast.error("Uzupełnij wszystkie wymagane pola")
       return
     }
 
@@ -265,11 +265,11 @@ export default function AddAttractionForm({ userId }: AddAttractionFormProps) {
         }
       }
 
-      toast.success("Property added successfully!")
+      toast.success("Obiekt został dodany!")
       router.push("/host")
     } catch (error) {
       console.error("[v0] Unexpected error:", error)
-      toast.error("An unexpected error occurred. Please try again.")
+      toast.error("Wystąpił nieoczekiwany błąd. Spróbuj ponownie.")
     } finally {
       setLoading(false)
     }
