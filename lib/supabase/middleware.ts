@@ -38,37 +38,52 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Check if this is an auth callback with a code (PKCE flow)
+  // The dedicated callback route exchanges login and sign-up codes and creates
+  // the application profile. Middleware only handles recovery codes here.
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
 
-  if (code) {
-    try {
-      // Exchange the code for a session
-      await supabase.auth.exchangeCodeForSession(code)
-      
-      // Check if this is a password reset flow - keep user on reset-password page
-      if (request.nextUrl.pathname === "/auth/reset-password") {
-        // Remove the code from URL and continue to reset-password page
-        const cleanUrl = new URL(request.nextUrl.pathname, request.url)
-        return NextResponse.redirect(cleanUrl)
-      }
-      
-      // For other auth flows, redirect to home page
-      return NextResponse.redirect(new URL("/", request.url))
-    } catch (error) {
-      console.error("[v0] Auth callback error:", error)
-      // Redirect to login on error
-      return NextResponse.redirect(new URL("/auth/login", request.url))
+  if (code && request.nextUrl.pathname === "/auth/reset-password") {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error("[v0] Password recovery callback error:", error)
+      return NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url))
     }
+
+    const cleanUrl = request.nextUrl.clone()
+    cleanUrl.searchParams.delete("code")
+    const redirectResponse = NextResponse.redirect(cleanUrl)
+
+    // Session cookies were written to supabaseResponse by the cookie adapter.
+    // Preserve them on the redirect response.
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+
+    return redirectResponse
   }
 
+  if (request.nextUrl.pathname === "/auth/callback") {
+    return supabaseResponse
+  }
+
+  let authenticatedUser = null
+
   try {
-    // Refresh session if expired - required for Server Components
-    await supabase.auth.getSession()
+    // Validate the session with the Auth server and refresh cookies when needed.
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+
+    if (error) {
+      console.error("[v0] Session validation error:", error)
+    } else {
+      authenticatedUser = user
+    }
   } catch (error) {
-    console.error("[v0] Session refresh error:", error)
-    // Continue without throwing error
+    console.error("[v0] Session validation error:", error)
   }
 
   // Protected routes - redirect to login if not authenticated for host routes
@@ -81,22 +96,7 @@ export async function updateSession(request: NextRequest) {
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
 
   if ((isHostRoute || isDashboardRoute) && !isAuthRoute) {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        // Redirect to home page instead of login page
-        // The home page will detect the need for login and show the auth sheet
-        const redirectUrl = new URL("/", request.url)
-        redirectUrl.searchParams.set("login", "required")
-        redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-    } catch (error) {
-      console.error("[v0] Protected route auth check error:", error)
-      // Redirect to home with login prompt on auth error
+    if (!authenticatedUser) {
       const redirectUrl = new URL("/", request.url)
       redirectUrl.searchParams.set("login", "required")
       redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname)

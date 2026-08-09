@@ -105,6 +105,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [state, router, onSuccess])
@@ -139,7 +140,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
           <label htmlFor="email" className="block text-sm font-medium">
             Email
           </label>
-          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+          <Input id="email" name="email" type="email" placeholder="twoj@email.com" autoComplete="email" required />
         </div>
 
         <div className="space-y-2">
@@ -161,7 +162,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
               </Link>
             )}
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
         </div>
 
         <SubmitButton />

@@ -24,10 +24,59 @@ async function createSupabaseServerClient() {
   )
 }
 
-type ActionResult = { ok?: boolean; message?: string; error?: string }
+type ActionResult = {
+  ok?: boolean
+  message?: string
+  error?: string
+  requiresEmailConfirmation?: boolean
+}
 
 function validateEmail(e: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+}
+
+function getSiteUrl() {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+}
+
+function getAuthCallbackUrl() {
+  return process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${getSiteUrl()}/auth/callback`
+}
+
+function getSignInErrorMessage(code?: string) {
+  switch (code) {
+    case "email_not_confirmed":
+      return "Adres email nie został jeszcze potwierdzony. Sprawdź swoją skrzynkę odbiorczą."
+    case "over_request_rate_limit":
+      return "Wykonano zbyt wiele prób logowania. Odczekaj chwilę i spróbuj ponownie."
+    case "user_banned":
+      return "To konto zostało zablokowane. Skontaktuj się z obsługą."
+    case "invalid_credentials":
+    default:
+      return "Nieprawidłowy email lub hasło"
+  }
+}
+
+function getSignUpErrorMessage(code?: string) {
+  switch (code) {
+    case "email_exists":
+    case "user_already_exists":
+      return "Konto z tym adresem email już istnieje. Spróbuj się zalogować."
+    case "email_address_invalid":
+      return "Ten adres email nie może zostać użyty. Wprowadź inny adres."
+    case "email_address_not_authorized":
+      return "Wysyłanie wiadomości na ten adres email nie jest obecnie dozwolone."
+    case "weak_password":
+      return "Hasło nie spełnia wymagań bezpieczeństwa. Użyj silniejszego hasła."
+    case "over_email_send_rate_limit":
+    case "over_request_rate_limit":
+      return "Wykonano zbyt wiele prób rejestracji. Odczekaj chwilę i spróbuj ponownie."
+    case "signup_disabled":
+    case "email_provider_disabled":
+      return "Rejestracja za pomocą adresu email jest obecnie niedostępna."
+    default:
+      return "Rejestracja nie powiodła się. Spróbuj ponownie."
+  }
 }
 
 // Sign in action
@@ -55,12 +104,11 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
 
     if (error) {
       console.error("Sign in error:", error)
-      // Avoid leaking provider internals; give a friendly message
-      return { error: "Nieprawidłowe dane logowania lub konto nie zostało potwierdzone" }
+      return { error: getSignInErrorMessage(error.code) }
     }
 
     console.log("Sign in successful for user:", data?.user?.email)
-    return { ok: true, message: "Signed in" }
+    return { ok: true, message: "Zalogowano pomyślnie" }
   } catch (err) {
     console.error("Login error:", err)
     return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
@@ -73,17 +121,23 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
   const email = formData.get("email")
   const password = formData.get("password")
+  const confirmPassword = formData.get("confirmPassword")
   const fullName = formData.get("fullName")
   const isHost = formData.get("isHost") === "on"
 
-  if (!email || !password || !fullName) return { error: "Email, hasło oraz imię i nazwisko są wymagane" }
+  if (!email || !password || !confirmPassword || !fullName) {
+    return { error: "Email, hasło, potwierdzenie hasła oraz imię i nazwisko są wymagane" }
+  }
 
   const emailStr = String(email).trim()
   const passwordStr = String(password)
+  const confirmPasswordStr = String(confirmPassword)
   const fullNameStr = String(fullName).trim()
 
   if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+  if (fullNameStr.length < 2) return { error: "Imię i nazwisko musi zawierać co najmniej 2 znaki" }
   if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
+  if (passwordStr !== confirmPasswordStr) return { error: "Hasła nie są identyczne" }
 
   const supabase = await createSupabaseServerClient()
 
@@ -92,8 +146,7 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
       email: emailStr,
       password: passwordStr,
       options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
         data: {
           full_name: fullNameStr,
           is_host: isHost,
@@ -103,11 +156,13 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
     if (error) {
       console.error("Sign up error (provider):", error)
-      return { error: "Rejestracja nie powiodła się. Spróbuj ponownie." }
+      return { error: getSignUpErrorMessage(error.code) }
     }
 
-    // If a user object was returned (depends on confirmation settings), upsert profile to avoid conflicts with DB trigger
-    if (data?.user?.id) {
+    // With email confirmation enabled there is no authenticated session yet, so the
+    // callback creates the profile after confirmation. Without confirmation we can
+    // create it immediately.
+    if (data?.session && data.user?.id) {
       const { error: profileError } = await supabase
         .from("users")
         .upsert(
@@ -123,7 +178,15 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
       if (profileError) console.error("Profile creation error:", profileError)
     }
 
-    return { ok: true, message: "Sprawdź skrzynkę email, aby potwierdzić konto." }
+    const requiresEmailConfirmation = !data.session
+
+    return {
+      ok: true,
+      requiresEmailConfirmation,
+      message: requiresEmailConfirmation
+        ? "Sprawdź skrzynkę email, aby potwierdzić konto."
+        : "Konto zostało utworzone i jesteś już zalogowany.",
+    }
   } catch (err) {
     console.error("Sign up error:", err)
     return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
@@ -139,49 +202,35 @@ export async function signOut() {
 }
 
 // Google OAuth sign in action
-export async function signInWithGoogle() {
+async function signInWithOAuth(provider: "google" | "facebook"): Promise<void> {
   const supabase = await createSupabaseServerClient()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
+    provider,
     options: {
-      redirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+      redirectTo: getAuthCallbackUrl(),
     },
   })
 
   if (error) {
-    console.error("Google OAuth error:", error)
-    return { error: "OAuth sign-in failed" }
+    console.error(`${provider} OAuth error:`, error)
+    redirect("/auth/login?error=oauth")
   }
 
   if (data?.url) {
     redirect(data.url)
   }
+
+  redirect("/auth/login?error=oauth")
 }
 
-// Facebook OAuth sign in action
-export async function signInWithFacebook() {
-  const supabase = await createSupabaseServerClient()
+// OAuth sign-in actions must resolve to void when used as form actions.
+export async function signInWithGoogle(): Promise<void> {
+  return signInWithOAuth("google")
+}
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "facebook",
-    options: {
-      redirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
-    },
-  })
-
-  if (error) {
-    console.error("Facebook OAuth error:", error)
-    return { error: "OAuth sign-in failed" }
-  }
-
-  if (data?.url) {
-    redirect(data.url)
-  }
+export async function signInWithFacebook(): Promise<void> {
+  return signInWithOAuth("facebook")
 }
 
 // Request password reset action
@@ -261,7 +310,7 @@ export async function sendPhoneOTP(prevState: any, formData: FormData): Promise<
 
   if (!phone) return { error: "Numer telefonu jest wymagany" }
 
-  const phoneStr = String(phone).trim()
+  const phoneStr = String(phone).replace(/[\s()-]/g, "")
 
   // Basic phone validation (accepts international format)
   if (!/^\+?[1-9]\d{1,14}$/.test(phoneStr.replace(/[\s-]/g, ""))) {
@@ -277,6 +326,9 @@ export async function sendPhoneOTP(prevState: any, formData: FormData): Promise<
 
     if (error) {
       console.error("Phone OTP error:", error)
+      if (error.code === "over_sms_send_rate_limit" || error.code === "over_request_rate_limit") {
+        return { error: "Wysłano zbyt wiele kodów. Odczekaj chwilę i spróbuj ponownie." }
+      }
       return { error: "Nie udało się wysłać kodu SMS. Spróbuj ponownie." }
     }
 
@@ -314,6 +366,9 @@ export async function verifyPhoneOTP(prevState: any, formData: FormData): Promis
 
     if (error) {
       console.error("Phone OTP verification error:", error)
+      if (error.code === "otp_expired") {
+        return { error: "Kod weryfikacyjny wygasł. Wyślij nowy kod i spróbuj ponownie." }
+      }
       return { error: "Nieprawidłowy kod weryfikacyjny lub kod wygasł" }
     }
 
