@@ -131,7 +131,7 @@ function AttractionCard({
   }))
 
   const cardContent = (
-    <Card className="lift-3d overflow-hidden cursor-pointer group border-0 bg-card">
+    <Card className="lift-3d overflow-hidden cursor-pointer group border-0 bg-card gap-0 py-0">
       {/* Image Carousel */}
       <div className="relative aspect-video">
         <Carousel setApi={setApi} className="w-full h-full">

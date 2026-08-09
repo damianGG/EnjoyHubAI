@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AttractionCardSkeleton() {
   return (
-    <Card className="surface-3d overflow-hidden border-0 bg-card">
+    <Card className="surface-3d overflow-hidden border-0 bg-card gap-0 py-0">
       {/* Image skeleton */}
       <Skeleton className="aspect-video w-full rounded-t-xl" />
 
