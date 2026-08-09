@@ -198,7 +198,7 @@ export default function CategoryManagementEnhanced() {
         }
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to upload image")
+        toast.error(error.error || "Nie udało się przesłać obrazu")
         return null
       }
     } catch (error) {
@@ -219,7 +219,7 @@ export default function CategoryManagementEnhanced() {
           image_url: result.image_url,
           image_public_id: result.image_public_id,
         })
-        toast.success("Image uploaded successfully")
+        toast.success("Obraz przesłany pomyślnie")
       }
     }
   }
@@ -234,7 +234,7 @@ export default function CategoryManagementEnhanced() {
           image_url: result.image_url,
           image_public_id: result.image_public_id,
         })
-        toast.success("Image uploaded successfully")
+        toast.success("Obraz przesłany pomyślnie")
       }
     }
   }
@@ -257,7 +257,7 @@ export default function CategoryManagementEnhanced() {
 
   const handleSaveCategory = async () => {
     if (!categoryFormData.name || !categoryFormData.slug || !categoryFormData.icon) {
-      toast.error("Name, slug, and icon are required")
+      toast.error("Nazwa, slug i ikona są wymagane")
       return
     }
 
@@ -275,15 +275,15 @@ export default function CategoryManagementEnhanced() {
       })
 
       if (response.ok) {
-        toast.success(editingCategory ? "Category updated" : "Category created")
+        toast.success(editingCategory ? "Kategoria zaktualizowana" : "Kategoria utworzona")
         handleCloseCategoryDialog()
         loadCategoriesWithSubcategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to save category")
+        toast.error(error.error || "Nie udało się zapisać kategorii")
       }
     } catch (error) {
-      toast.error("Error saving category")
+      toast.error("Błąd podczas zapisywania kategorii")
     } finally {
       setSaving(false)
     }
@@ -291,7 +291,7 @@ export default function CategoryManagementEnhanced() {
 
   const handleSaveSubcategory = async () => {
     if (!subcategoryFormData.parent_category_id || !subcategoryFormData.name || !subcategoryFormData.slug) {
-      toast.error("Parent category, name, and slug are required")
+      toast.error("Kategoria nadrzędna, nazwa i slug są wymagane")
       return
     }
 
@@ -309,22 +309,22 @@ export default function CategoryManagementEnhanced() {
       })
 
       if (response.ok) {
-        toast.success(editingSubcategory ? "Subcategory updated" : "Subcategory created")
+        toast.success(editingSubcategory ? "Podkategoria zaktualizowana" : "Podkategoria utworzona")
         handleCloseSubcategoryDialog()
         loadCategoriesWithSubcategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to save subcategory")
+        toast.error(error.error || "Nie udało się zapisać podkategorii")
       }
     } catch (error) {
-      toast.error("Error saving subcategory")
+      toast.error("Błąd podczas zapisywania podkategorii")
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category? This will also delete all subcategories and associated fields.")) {
+    if (!confirm("Czy na pewno chcesz usunąć tę kategorię? Spowoduje to również usunięcie wszystkich podkategorii i powiązanych pól.")) {
       return
     }
 
@@ -334,19 +334,19 @@ export default function CategoryManagementEnhanced() {
       })
 
       if (response.ok) {
-        toast.success("Category deleted")
+        toast.success("Kategoria usunięta")
         loadCategoriesWithSubcategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to delete category")
+        toast.error(error.error || "Nie udało się usunąć kategorii")
       }
     } catch (error) {
-      toast.error("Error deleting category")
+      toast.error("Błąd podczas usuwania kategorii")
     }
   }
 
   const handleDeleteSubcategory = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this subcategory?")) {
+    if (!confirm("Czy na pewno chcesz usunąć tę podkategorię?")) {
       return
     }
 
@@ -356,14 +356,14 @@ export default function CategoryManagementEnhanced() {
       })
 
       if (response.ok) {
-        toast.success("Subcategory deleted")
+        toast.success("Podkategoria usunięta")
         loadCategoriesWithSubcategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to delete subcategory")
+        toast.error(error.error || "Nie udało się usunąć podkategorii")
       }
     } catch (error) {
-      toast.error("Error deleting subcategory")
+      toast.error("Błąd podczas usuwania podkategorii")
     }
   }
 
@@ -379,12 +379,12 @@ export default function CategoryManagementEnhanced() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Categories & Subcategories</h2>
-          <p className="text-muted-foreground">Manage entertainment categories and their subcategories</p>
+          <h2 className="text-2xl font-bold">Kategorie i podkategorie</h2>
+          <p className="text-muted-foreground">Zarządzaj kategoriami rozrywki i ich podkategoriami</p>
         </div>
         <Button onClick={() => handleOpenCategoryDialog()}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Category
+          Dodaj kategorię
         </Button>
       </div>
 
@@ -431,14 +431,14 @@ export default function CategoryManagementEnhanced() {
                 <CardContent className="pt-0">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-semibold">Subcategories</h3>
+                      <h3 className="text-sm font-semibold">Podkategorie</h3>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => handleOpenSubcategoryDialog(category.id)}
                       >
                         <Plus className="h-3 w-3 mr-1" />
-                        Add Subcategory
+                        Dodaj podkategorię
                       </Button>
                     </div>
                     
@@ -494,7 +494,7 @@ export default function CategoryManagementEnhanced() {
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        No subcategories yet. Click "Add Subcategory" to create one.
+                        Brak podkategorii. Kliknij „Dodaj podkategorię", aby utworzyć.
                       </p>
                     )}
                   </div>
@@ -509,20 +509,20 @@ export default function CategoryManagementEnhanced() {
       <Dialog open={isCategoryDialogOpen} onOpenChange={handleCloseCategoryDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCategory ? "Edit Category" : "Create Category"}</DialogTitle>
+            <DialogTitle>{editingCategory ? "Edytuj kategorię" : "Utwórz kategorię"}</DialogTitle>
             <DialogDescription>
-              {editingCategory ? "Update category details" : "Add a new entertainment category"}
+              {editingCategory ? "Zaktualizuj dane kategorii" : "Dodaj nową kategorię rozrywki"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="category-name">Name</Label>
+              <Label htmlFor="category-name">Nazwa</Label>
               <Input
                 id="category-name"
                 value={categoryFormData.name}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                placeholder="e.g., Go-Karts"
+                placeholder="np. Gokarty"
               />
             </div>
 
@@ -537,7 +537,7 @@ export default function CategoryManagementEnhanced() {
             </div>
 
             <div>
-              <Label htmlFor="category-icon">Icon (Emoji)</Label>
+              <Label htmlFor="category-icon">Ikona (emoji)</Label>
               <Input
                 id="category-icon"
                 value={categoryFormData.icon}
@@ -547,17 +547,17 @@ export default function CategoryManagementEnhanced() {
             </div>
 
             <div>
-              <Label htmlFor="category-description">Description</Label>
+              <Label htmlFor="category-description">Opis</Label>
               <Textarea
                 id="category-description"
                 value={categoryFormData.description}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                placeholder="Enter category description"
+                placeholder="Wpisz opis kategorii"
               />
             </div>
 
             <div>
-              <Label>Category Image</Label>
+              <Label>Obraz kategorii</Label>
               <div className="mt-2">
                 {categoryFormData.image_url ? (
                   <div className="relative w-full h-40 rounded-lg overflow-hidden border">
@@ -588,16 +588,16 @@ export default function CategoryManagementEnhanced() {
                       {uploading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
+                          Przesyłanie...
                         </>
                       ) : (
                         <>
                           <Upload className="h-4 w-4 mr-2" />
-                          Upload Image
+                          Prześlij obraz
                         </>
                       )}
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, GIF, WebP (max 5MB)</p>
+                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, GIF, WebP (maks. 5MB)</p>
                     <input
                       ref={categoryImageInputRef}
                       type="file"
@@ -613,11 +613,11 @@ export default function CategoryManagementEnhanced() {
 
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseCategoryDialog}>
-              Cancel
+              Anuluj
             </Button>
             <Button onClick={handleSaveCategory} disabled={saving || uploading}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editingCategory ? "Update" : "Create"}
+              {editingCategory ? "Zaktualizuj" : "Utwórz"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -627,20 +627,20 @@ export default function CategoryManagementEnhanced() {
       <Dialog open={isSubcategoryDialogOpen} onOpenChange={handleCloseSubcategoryDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingSubcategory ? "Edit Subcategory" : "Create Subcategory"}</DialogTitle>
+            <DialogTitle>{editingSubcategory ? "Edytuj podkategorię" : "Utwórz podkategorię"}</DialogTitle>
             <DialogDescription>
-              {editingSubcategory ? "Update subcategory details" : "Add a new subcategory"}
+              {editingSubcategory ? "Zaktualizuj dane podkategorii" : "Dodaj nową podkategorię"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="subcategory-name">Name</Label>
+              <Label htmlFor="subcategory-name">Nazwa</Label>
               <Input
                 id="subcategory-name"
                 value={subcategoryFormData.name}
                 onChange={(e) => setSubcategoryFormData({ ...subcategoryFormData, name: e.target.value })}
-                placeholder="e.g., Indoor Karting"
+                placeholder="np. Karting kryty"
               />
             </div>
 
@@ -655,7 +655,7 @@ export default function CategoryManagementEnhanced() {
             </div>
 
             <div>
-              <Label htmlFor="subcategory-icon">Icon (Emoji) - Optional</Label>
+              <Label htmlFor="subcategory-icon">Ikona (emoji) - opcjonalnie</Label>
               <Input
                 id="subcategory-icon"
                 value={subcategoryFormData.icon}
@@ -665,17 +665,17 @@ export default function CategoryManagementEnhanced() {
             </div>
 
             <div>
-              <Label htmlFor="subcategory-description">Description</Label>
+              <Label htmlFor="subcategory-description">Opis</Label>
               <Textarea
                 id="subcategory-description"
                 value={subcategoryFormData.description}
                 onChange={(e) => setSubcategoryFormData({ ...subcategoryFormData, description: e.target.value })}
-                placeholder="Enter subcategory description"
+                placeholder="Wpisz opis podkategorii"
               />
             </div>
 
             <div>
-              <Label>Subcategory Image</Label>
+              <Label>Obraz podkategorii</Label>
               <div className="mt-2">
                 {subcategoryFormData.image_url ? (
                   <div className="relative w-full h-40 rounded-lg overflow-hidden border">
@@ -706,16 +706,16 @@ export default function CategoryManagementEnhanced() {
                       {uploading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
+                          Przesyłanie...
                         </>
                       ) : (
                         <>
                           <Upload className="h-4 w-4 mr-2" />
-                          Upload Image
+                          Prześlij obraz
                         </>
                       )}
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, GIF, WebP (max 5MB)</p>
+                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, GIF, WebP (maks. 5MB)</p>
                     <input
                       ref={subcategoryImageInputRef}
                       type="file"
@@ -731,11 +731,11 @@ export default function CategoryManagementEnhanced() {
 
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseSubcategoryDialog}>
-              Cancel
+              Anuluj
             </Button>
             <Button onClick={handleSaveSubcategory} disabled={saving || uploading}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editingSubcategory ? "Update" : "Create"}
+              {editingSubcategory ? "Zaktualizuj" : "Utwórz"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -63,17 +63,17 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create offer")
+        throw new Error(data.error || "Nie udało się utworzyć oferty")
       }
 
-      toast.success("Offer created successfully!")
+      toast.success("Oferta utworzona pomyślnie!")
       setOpen(false)
       
       // Redirect to set availability page
       router.push(`/admin/offers/${data.id}/availability`)
     } catch (error) {
       console.error("Error creating offer:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to create offer")
+      toast.error(error instanceof Error ? error.message : "Nie udało się utworzyć oferty")
     } finally {
       setIsSubmitting(false)
     }
@@ -88,39 +88,39 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Add Offer
+          Dodaj ofertę
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Offer</DialogTitle>
+            <DialogTitle>Utwórz nową ofertę</DialogTitle>
             <DialogDescription>
-              Add a time-based offer for this property. You'll be able to set availability after creation.
+              Dodaj ofertę czasową dla tego obiektu. Dostępność ustawisz po utworzeniu.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="title">
-                Title <span className="text-red-500">*</span>
+                Tytuł <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleChange("title", e.target.value)}
-                placeholder="e.g., Birthday Party Package"
+                placeholder="np. Pakiet urodzinowy"
                 required
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Opis</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="Describe the offer..."
+                placeholder="Opisz ofertę..."
                 rows={3}
               />
             </div>
@@ -128,7 +128,7 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="base_price">
-                  Base Price <span className="text-red-500">*</span>
+                  Cena podstawowa <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="base_price"
@@ -143,7 +143,7 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="currency">Currency</Label>
+                <Label htmlFor="currency">Waluta</Label>
                 <Input
                   id="currency"
                   value={formData.currency}
@@ -156,7 +156,7 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="duration_minutes">
-                  Duration (minutes) <span className="text-red-500">*</span>
+                  Czas trwania (minuty) <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="duration_minutes"
@@ -170,14 +170,14 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="max_participants">Max Participants</Label>
+                <Label htmlFor="max_participants">Maks. uczestników</Label>
                 <Input
                   id="max_participants"
                   type="number"
                   min="1"
                   value={formData.max_participants}
                   onChange={(e) => handleChange("max_participants", e.target.value)}
-                  placeholder="Optional"
+                  placeholder="Opcjonalnie"
                 />
               </div>
             </div>
@@ -188,16 +188,16 @@ export default function CreateOfferDialog({ propertyId }: CreateOfferDialogProps
                 checked={formData.is_active}
                 onCheckedChange={(checked) => handleChange("is_active", checked)}
               />
-              <Label htmlFor="is_active">Active</Label>
+              <Label htmlFor="is_active">Aktywna</Label>
             </div>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
-              Cancel
+              Anuluj
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Offer"}
+              {isSubmitting ? "Tworzenie..." : "Utwórz ofertę"}
             </Button>
           </DialogFooter>
         </form>
