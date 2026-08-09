@@ -452,7 +452,7 @@ function HomePageContent() {
           ref={resultsContainerRef}
           className={`w-full md:w-1/2 h-full overflow-y-auto ${isDesktop === false && mobileView === 'map' ? 'hidden' : ''}`}
         >
-          <div>
+          <div className="px-4 md:px-6 py-4 md:py-6 pb-28 md:pb-6">
             <div className="mb-4">
               <h1 className="text-xl md:text-2xl font-bold mb-2">
                 {categories && categories !== "all" 
@@ -716,7 +716,7 @@ export default function Home() {
             <div className="container mx-auto px-4 h-14"></div>
           </div>
         </div>
-        <div>
+        <div className="px-4 md:px-6 py-4 md:py-6">
           <div className="mb-4">
             <div className="h-8 w-48 bg-muted/20 animate-pulse rounded-md mb-2"></div>
             <div className="h-5 w-32 bg-muted/20 animate-pulse rounded-md"></div>

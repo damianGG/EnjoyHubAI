@@ -9,7 +9,7 @@ export default async function HostDashboard() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -57,11 +57,11 @@ export default async function HostDashboard() {
           </div>
 
           <nav className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Welcome, {profile?.full_name}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Witaj, {profile?.full_name}</span>
             <Link href="/host/properties/new" className="flex-1 sm:flex-initial">
               <Button className="w-full sm:w-auto" size="sm">
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="ml-2 sm:ml-0">Add Property</span>
+                <span className="ml-2 sm:ml-0">Dodaj obiekt</span>
               </Button>
             </Link>
           </nav>
@@ -70,55 +70,55 @@ export default async function HostDashboard() {
 
       <div className="container mx-auto px-4 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Host Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage your properties and bookings</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Panel gospodarza</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Zarządzaj swoimi obiektami i rezerwacjami</p>
         </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+              <CardTitle className="text-sm font-medium">Wszystkie obiekty</CardTitle>
               <Home className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalProperties}</div>
-              <p className="text-xs text-muted-foreground">{activeProperties} active</p>
+              <p className="text-xs text-muted-foreground">{activeProperties} aktywnych</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+              <CardTitle className="text-sm font-medium">Wszystkie rezerwacje</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalBookings}</div>
-              <p className="text-xs text-muted-foreground">All time bookings</p>
+              <p className="text-xs text-muted-foreground">Rezerwacje łącznie</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Całkowity przychód</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">All time earnings</p>
+              <div className="text-2xl font-bold">{totalRevenue.toFixed(2)} zł</div>
+              <p className="text-xs text-muted-foreground">Zarobki łącznie</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Occupancy Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">Wskaźnik obłożenia</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {totalProperties > 0 ? Math.round((totalBookings / totalProperties) * 10) : 0}%
               </div>
-              <p className="text-xs text-muted-foreground">Average occupancy</p>
+              <p className="text-xs text-muted-foreground">Średnie obłożenie</p>
             </CardContent>
           </Card>
         </div>
@@ -130,9 +130,9 @@ export default async function HostDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Plus className="h-5 w-5 mr-2" />
-                  Add New Property
+                  Dodaj nowy obiekt
                 </CardTitle>
-                <CardDescription>List a new property on EnjoyHub</CardDescription>
+                <CardDescription>Dodaj nowy obiekt w EnjoyHub</CardDescription>
               </CardHeader>
             </Link>
           </Card>
@@ -142,9 +142,9 @@ export default async function HostDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Home className="h-5 w-5 mr-2" />
-                  Manage Properties
+                  Zarządzaj obiektami
                 </CardTitle>
-                <CardDescription>View and edit your existing properties</CardDescription>
+                <CardDescription>Przeglądaj i edytuj swoje obiekty</CardDescription>
               </CardHeader>
             </Link>
           </Card>
@@ -154,9 +154,9 @@ export default async function HostDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Calendar className="h-5 w-5 mr-2" />
-                  View Bookings
+                  Zobacz rezerwacje
                 </CardTitle>
-                <CardDescription>Manage reservations and calendar</CardDescription>
+                <CardDescription>Zarządzaj rezerwacjami i kalendarzem</CardDescription>
               </CardHeader>
             </Link>
           </Card>
@@ -165,21 +165,21 @@ export default async function HostDashboard() {
         {/* Recent Properties */}
         <Card>
           <CardHeader>
-            <CardTitle>Your Properties</CardTitle>
+            <CardTitle>Twoje obiekty</CardTitle>
             <CardDescription>
-              {totalProperties === 0 ? "No properties yet" : `${totalProperties} properties listed`}
+              {totalProperties === 0 ? "Brak obiektów" : `Liczba obiektów: ${totalProperties}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {totalProperties === 0 ? (
               <div className="text-center py-8">
                 <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
-                <p className="text-muted-foreground mb-4">Start earning by listing your first property</p>
+                <h3 className="text-lg font-semibold mb-2">Brak obiektów</h3>
+                <p className="text-muted-foreground mb-4">Zacznij zarabiać, dodając swój pierwszy obiekt</p>
                 <Link href="/host/properties/new">
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Property
+                    Dodaj pierwszy obiekt
                   </Button>
                 </Link>
               </div>
@@ -190,12 +190,12 @@ export default async function HostDashboard() {
                     <div>
                       <h4 className="font-semibold">{property.title}</h4>
                       <p className="text-sm text-muted-foreground">
-                        ${property.price_per_night}/night • {property.is_active ? "Active" : "Inactive"}
+                        {property.price_per_night} zł/noc • {property.is_active ? "Aktywny" : "Nieaktywny"}
                       </p>
                     </div>
                     <Link href={`/host/properties/${property.id}`}>
                       <Button variant="outline" size="sm">
-                        Manage
+                        Zarządzaj
                       </Button>
                     </Link>
                   </div>
@@ -203,7 +203,7 @@ export default async function HostDashboard() {
                 {properties && properties.length > 5 && (
                   <div className="text-center pt-4">
                     <Link href="/host/properties">
-                      <Button variant="outline">View All Properties</Button>
+                      <Button variant="outline">Zobacz wszystkie obiekty</Button>
                     </Link>
                   </div>
                 )}

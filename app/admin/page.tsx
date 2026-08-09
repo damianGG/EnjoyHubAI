@@ -29,10 +29,10 @@ export default async function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Shield className="h-6 w-6" />
-              <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
+              <h1 className="text-2xl font-bold">Panel super administratora</h1>
             </div>
             <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-              Back to Dashboard
+              Powrót do panelu
             </Link>
           </div>
         </div>
@@ -41,8 +41,8 @@ export default async function AdminDashboard() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome, Super Admin</h2>
-          <p className="text-muted-foreground">Manage categories, fields, and system configuration</p>
+          <h2 className="text-3xl font-bold mb-2">Witaj, super administratorze</h2>
+          <p className="text-muted-foreground">Zarządzaj kategoriami, polami i konfiguracją systemu</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -52,11 +52,11 @@ export default async function AdminDashboard() {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <FolderTree className="h-6 w-6 text-primary" />
-                  <CardTitle>Category Management</CardTitle>
+                  <CardTitle>Zarządzanie kategoriami</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription>Create, edit, and delete entertainment categories</CardDescription>
+                <CardDescription>Twórz, edytuj i usuwaj kategorie rozrywki</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -67,11 +67,11 @@ export default async function AdminDashboard() {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <ListTree className="h-6 w-6 text-primary" />
-                  <CardTitle>Field Management</CardTitle>
+                  <CardTitle>Zarządzanie polami</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription>Configure dynamic fields for each category</CardDescription>
+                <CardDescription>Konfiguruj dynamiczne pola dla każdej kategorii</CardDescription>
               </CardContent>
             </Card>
           </Link>
@@ -82,11 +82,11 @@ export default async function AdminDashboard() {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-6 w-6 text-primary" />
-                  <CardTitle>Property Offers</CardTitle>
+                  <CardTitle>Oferty obiektów</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription>Create time-based offers for properties</CardDescription>
+                <CardDescription>Twórz oferty czasowe dla obiektów</CardDescription>
               </CardContent>
             </Card>
           </Link>

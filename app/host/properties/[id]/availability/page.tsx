@@ -14,7 +14,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -57,7 +57,7 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
         <div className="container mx-auto px-4 py-4">
           <Link href={`/host/properties/${resolvedParams.id}`} className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Property</span>
+            <span>Powrót do obiektu</span>
           </Link>
         </div>
       </header>
@@ -65,9 +65,9 @@ export default async function PropertyAvailabilityPage({ params }: AvailabilityP
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">Availability & Pricing</h1>
+            <h1 className="text-3xl font-bold mb-2">Dostępność i ceny</h1>
             <p className="text-muted-foreground">
-              Manage booking settings, block dates, and set seasonal pricing for {property.title}
+              Zarządzaj ustawieniami rezerwacji, blokuj terminy i ustawiaj ceny sezonowe dla {property.title}
             </p>
           </div>
 

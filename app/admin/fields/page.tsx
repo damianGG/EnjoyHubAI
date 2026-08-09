@@ -29,7 +29,7 @@ export default async function FieldsPage() {
           <div className="flex items-center space-x-4">
             <Link href="/admin" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
-              Back to Admin
+              Powrót do panelu admina
             </Link>
           </div>
         </div>

@@ -102,18 +102,18 @@ export default function BookingCard({
       if (result.available) {
         setAvailabilityMessage({
           type: "success",
-          message: "Great! This property is available for your selected dates.",
+          message: "Świetnie! Ten obiekt jest dostępny w wybranym terminie.",
         })
       } else {
         setAvailabilityMessage({
           type: "error",
-          message: result.error || "Property is not available for the selected dates.",
+          message: result.error || "Obiekt jest niedostępny w wybranym terminie.",
         })
       }
     } catch (error) {
       setAvailabilityMessage({
         type: "error",
-        message: "Error checking availability. Please try again.",
+        message: "Błąd podczas sprawdzania dostępności. Spróbuj ponownie.",
       })
     } finally {
       setIsCheckingAvailability(false)
@@ -149,8 +149,8 @@ export default function BookingCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div>
-            <span className="text-2xl font-bold">${pricePerNight}</span>
-            <span className="text-muted-foreground"> / night</span>
+            <span className="text-2xl font-bold">{pricePerNight} zł</span>
+            <span className="text-muted-foreground"> / noc</span>
           </div>
           {avgRating > 0 && (
             <div className="flex items-center space-x-1 text-sm">
@@ -167,11 +167,11 @@ export default function BookingCard({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You need to{" "}
+              Musisz się{" "}
               <button onClick={() => router.push("/auth/login")} className="underline font-medium hover:no-underline">
-                log in
-              </button>{" "}
-              to make a booking.
+                zalogować
+              </button>
+              , aby dokonać rezerwacji.
             </AlertDescription>
           </Alert>
         )}
@@ -184,7 +184,7 @@ export default function BookingCard({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor="checkin" className="text-xs font-medium">
-                CHECK-IN
+                ZAMELDOWANIE
               </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -202,7 +202,7 @@ export default function BookingCard({
             </div>
             <div>
               <Label htmlFor="checkout" className="text-xs font-medium">
-                CHECK-OUT
+                WYMELDOWANIE
               </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -223,7 +223,7 @@ export default function BookingCard({
           {/* Guests Selector */}
           <div>
             <Label htmlFor="guests" className="text-xs font-medium">
-              GUESTS
+              GOŚCIE
             </Label>
             <Select name="guests" value={guests} onValueChange={setGuests} disabled={!user}>
               <SelectTrigger>
@@ -234,7 +234,7 @@ export default function BookingCard({
                   <SelectItem key={num} value={num.toString()}>
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-2" />
-                      {num} guest{num !== 1 ? "s" : ""}
+                      {num} {num === 1 ? "gość" : "gości"}
                     </div>
                   </SelectItem>
                 ))}
@@ -246,7 +246,7 @@ export default function BookingCard({
           {isCheckingAvailability && (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Checking availability...</span>
+              <span>Sprawdzanie dostępności...</span>
             </div>
           )}
 
@@ -276,10 +276,10 @@ export default function BookingCard({
             size="lg"
             disabled={!user || !isFormValid || !isAvailable || isCheckingAvailability}
           >
-            {!user ? "Log in to Reserve" : isCheckingAvailability ? "Checking..." : "Reserve"}
+            {!user ? "Zaloguj się, aby zarezerwować" : isCheckingAvailability ? "Sprawdzanie..." : "Zarezerwuj"}
           </Button>
 
-          {user && isFormValid && <p className="text-center text-sm text-muted-foreground">You won't be charged yet</p>}
+          {user && isFormValid && <p className="text-center text-sm text-muted-foreground">Nie zostaniesz jeszcze obciążony</p>}
         </form>
 
         {/* Price Breakdown */}
@@ -287,21 +287,21 @@ export default function BookingCard({
           <div className="space-y-2 pt-4 border-t">
             <div className="flex justify-between text-sm">
               <span>
-                ${pricePerNight} × {nights} nights
+                {pricePerNight} zł × {nights} {nights === 1 ? "noc" : "nocy"}
               </span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{subtotal.toFixed(2)} zł</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Cleaning fee</span>
-              <span>${cleaningFee.toFixed(2)}</span>
+              <span>Opłata za sprzątanie</span>
+              <span>{cleaningFee.toFixed(2)} zł</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Service fee</span>
-              <span>${serviceFee.toFixed(2)}</span>
+              <span>Opłata serwisowa</span>
+              <span>{serviceFee.toFixed(2)} zł</span>
             </div>
             <div className="flex justify-between font-semibold pt-2 border-t">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>Razem</span>
+              <span>{total.toFixed(2)} zł</span>
             </div>
           </div>
         )}

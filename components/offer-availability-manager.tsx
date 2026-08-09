@@ -16,13 +16,13 @@ interface OfferAvailabilityManagerProps {
 }
 
 const WEEKDAYS = [
-  { value: 0, label: "Monday" },
-  { value: 1, label: "Tuesday" },
-  { value: 2, label: "Wednesday" },
-  { value: 3, label: "Thursday" },
-  { value: 4, label: "Friday" },
-  { value: 5, label: "Saturday" },
-  { value: 6, label: "Sunday" },
+  { value: 0, label: "Poniedziałek" },
+  { value: 1, label: "Wtorek" },
+  { value: 2, label: "Środa" },
+  { value: 3, label: "Czwartek" },
+  { value: 4, label: "Piątek" },
+  { value: 5, label: "Sobota" },
+  { value: 6, label: "Niedziela" },
 ]
 
 interface AvailabilitySlot {
@@ -119,13 +119,13 @@ export default function OfferAvailabilityManager({
       const allSuccessful = results.every(r => r.ok)
 
       if (!allSuccessful) {
-        throw new Error("Failed to save some availability slots")
+        throw new Error("Nie udało się zapisać niektórych slotów dostępności")
       }
 
-      toast.success("Availability saved successfully!")
+      toast.success("Dostępność zapisana pomyślnie!")
     } catch (error) {
       console.error("Error saving availability:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to save availability")
+      toast.error(error instanceof Error ? error.message : "Nie udało się zapisać dostępności")
     } finally {
       setIsSaving(false)
     }
@@ -141,18 +141,18 @@ export default function OfferAvailabilityManager({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Weekly Availability Schedule</CardTitle>
+          <CardTitle>Tygodniowy harmonogram dostępności</CardTitle>
           <CardDescription>
-            Define when this offer is available each week. Each slot represents a recurring time window.
+            Określ, kiedy ta oferta jest dostępna w każdym tygodniu. Każdy slot to powtarzające się okno czasowe.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {slots.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">No availability slots defined yet</p>
+              <p className="text-muted-foreground mb-4">Nie zdefiniowano jeszcze żadnych slotów dostępności</p>
               <Button onClick={addSlot}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Slot
+                Dodaj pierwszy slot
               </Button>
             </div>
           ) : (
@@ -162,7 +162,7 @@ export default function OfferAvailabilityManager({
                   <div className="grid gap-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label>Weekday</Label>
+                        <Label>Dzień tygodnia</Label>
                         <select
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                           value={slot.weekday}
@@ -176,7 +176,7 @@ export default function OfferAvailabilityManager({
                         </select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Max Bookings Per Slot</Label>
+                        <Label>Maks. rezerwacji na slot</Label>
                         <Input
                           type="number"
                           min="1"
@@ -188,7 +188,7 @@ export default function OfferAvailabilityManager({
 
                     <div className="grid grid-cols-3 gap-4">
                       <div className="grid gap-2">
-                        <Label>Start Time</Label>
+                        <Label>Godzina rozpoczęcia</Label>
                         <Input
                           type="time"
                           value={slot.start_time}
@@ -196,7 +196,7 @@ export default function OfferAvailabilityManager({
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>End Time</Label>
+                        <Label>Godzina zakończenia</Label>
                         <Input
                           type="time"
                           value={slot.end_time}
@@ -204,7 +204,7 @@ export default function OfferAvailabilityManager({
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Slot Length (min)</Label>
+                        <Label>Długość slotu (min)</Label>
                         <Input
                           type="number"
                           min="1"
@@ -221,7 +221,7 @@ export default function OfferAvailabilityManager({
                         onClick={() => removeSlot(index)}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Remove
+                        Usuń
                       </Button>
                     </div>
                   </div>
@@ -230,7 +230,7 @@ export default function OfferAvailabilityManager({
 
               <Button onClick={addSlot} variant="outline" className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Another Slot
+                Dodaj kolejny slot
               </Button>
             </>
           )}
@@ -238,7 +238,7 @@ export default function OfferAvailabilityManager({
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button onClick={handleSave} disabled={isSaving || slots.length === 0}>
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Availability"}
+              {isSaving ? "Zapisywanie..." : "Zapisz dostępność"}
             </Button>
           </div>
         </CardContent>

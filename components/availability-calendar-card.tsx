@@ -192,8 +192,8 @@ export default function AvailabilityCalendarCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div>
-            <span className="text-2xl font-bold">${pricePerNight}</span>
-            <span className="text-muted-foreground"> / night</span>
+            <span className="text-2xl font-bold">{pricePerNight} zł</span>
+            <span className="text-muted-foreground"> / noc</span>
           </div>
           {avgRating > 0 && (
             <div className="flex items-center space-x-1 text-sm">
@@ -209,7 +209,7 @@ export default function AvailabilityCalendarCard({
         {/* Debug info - can be removed later */}
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs bg-muted p-2 rounded">
-            Auth Status: {isLoadingAuth ? "Loading..." : user ? `Logged in as ${user.email}` : "Not logged in"}
+            Status logowania: {isLoadingAuth ? "Ładowanie..." : user ? `Zalogowano jako ${user.email}` : "Niezalogowany"}
           </div>
         )}
 
@@ -217,7 +217,7 @@ export default function AvailabilityCalendarCard({
         {isLoadingAuth && (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Checking authentication...</span>
+            <span className="ml-2 text-sm text-muted-foreground">Sprawdzanie autoryzacji...</span>
           </div>
         )}
 
@@ -226,11 +226,11 @@ export default function AvailabilityCalendarCard({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You need to{" "}
+              Musisz się{" "}
               <button onClick={() => router.push("/auth/login")} className="underline font-medium hover:no-underline">
-                log in
-              </button>{" "}
-              to make a booking.
+                zalogować
+              </button>
+              , aby dokonać rezerwacji.
             </AlertDescription>
           </Alert>
         )}
@@ -245,14 +245,14 @@ export default function AvailabilityCalendarCard({
           <>
             {/* Availability Info */}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Booking Mode:</span>
+              <span className="text-muted-foreground">Tryb rezerwacji:</span>
               <Badge variant="secondary">{availability.booking_mode}</Badge>
             </div>
 
             {availability.min_stay > 1 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Minimum stay:</span>
-                <Badge variant="outline">{availability.min_stay} nights</Badge>
+                <span className="text-muted-foreground">Minimalny pobyt:</span>
+                <Badge variant="outline">{availability.min_stay} nocy</Badge>
               </div>
             )}
 
@@ -275,15 +275,15 @@ export default function AvailabilityCalendarCard({
             {checkInDate && checkOutDate && (
               <div className="space-y-2 p-3 bg-muted/50 rounded-md">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Check-in:</span>
+                  <span className="text-muted-foreground">Zameldowanie:</span>
                   <span className="font-medium">{format(checkInDate, "PPP")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Check-out:</span>
+                  <span className="text-muted-foreground">Wymeldowanie:</span>
                   <span className="font-medium">{format(checkOutDate, "PPP")}</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold pt-2 border-t">
-                  <span>Nights:</span>
+                  <span>Liczba nocy:</span>
                   <span>{nights}</span>
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function AvailabilityCalendarCard({
             {/* Guest Selector */}
             <div>
               <Label htmlFor="guests" className="text-xs font-medium">
-                GUESTS
+                GOŚCIE
               </Label>
               <Select name="guests" value={guests} onValueChange={setGuests} disabled={isLoadingAuth || !user}>
                 <SelectTrigger>
@@ -303,7 +303,7 @@ export default function AvailabilityCalendarCard({
                     <SelectItem key={num} value={num.toString()}>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-2" />
-                        {num} guest{num !== 1 ? "s" : ""}
+                        {num} {num === 1 ? "gość" : "gości"}
                       </div>
                     </SelectItem>
                   ))}
@@ -317,10 +317,10 @@ export default function AvailabilityCalendarCard({
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   {nights < (availability.min_stay || 1)
-                    ? `Minimum stay is ${availability.min_stay} nights`
+                    ? `Minimalny pobyt to ${availability.min_stay} nocy`
                     : availability.max_stay && nights > availability.max_stay
-                    ? `Maximum stay is ${availability.max_stay} nights`
-                    : "Some dates in your selection are not available"}
+                    ? `Maksymalny pobyt to ${availability.max_stay} nocy`
+                    : "Niektóre wybrane terminy są niedostępne"}
                 </AlertDescription>
               </Alert>
             )}
@@ -347,45 +347,45 @@ export default function AvailabilityCalendarCard({
                 size="lg"
                 disabled={isLoadingAuth || !user || !isFormValid}
               >
-                {isLoadingAuth ? "Loading..." : !user ? "Log in to Reserve" : "Reserve"}
+                {isLoadingAuth ? "Ładowanie..." : !user ? "Zaloguj się, aby zarezerwować" : "Zarezerwuj"}
               </Button>
 
-              {!isLoadingAuth && user && isFormValid && <p className="text-center text-sm text-muted-foreground">You won't be charged yet</p>}
+              {!isLoadingAuth && user && isFormValid && <p className="text-center text-sm text-muted-foreground">Nie zostaniesz jeszcze obciążony</p>}
             </form>
 
             {/* Price Breakdown */}
             {nights > 0 && (
               <div className="space-y-2 pt-4 border-t">
                 <div className="flex justify-between text-sm">
-                  <span>{nights} night{nights !== 1 ? "s" : ""}</span>
-                  <span>${subtotal?.toFixed(2)}</span>
+                  <span>{nights} {nights === 1 ? "noc" : "nocy"}</span>
+                  <span>{subtotal?.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Cleaning fee</span>
-                  <span>${cleaningFee?.toFixed(2)}</span>
+                  <span>Opłata za sprzątanie</span>
+                  <span>{cleaningFee?.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Service fee</span>
-                  <span>${serviceFee?.toFixed(2)}</span>
+                  <span>Opłata serwisowa</span>
+                  <span>{serviceFee?.toFixed(2)} zł</span>
                 </div>
                 <div className="flex justify-between font-semibold pt-2 border-t">
-                  <span>Total</span>
-                  <span>${total?.toFixed(2)}</span>
+                  <span>Razem</span>
+                  <span>{total?.toFixed(2)} zł</span>
                 </div>
               </div>
             )}
 
             {/* Legend */}
             <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground mb-2">Calendar Legend:</p>
+              <p className="text-xs text-muted-foreground mb-2">Legenda kalendarza:</p>
               <div className="flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-primary rounded"></div>
-                  <span className="text-muted-foreground">Available</span>
+                  <span className="text-muted-foreground">Dostępne</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-muted rounded"></div>
-                  <span className="text-muted-foreground">Unavailable</span>
+                  <span className="text-muted-foreground">Niedostępne</span>
                 </div>
               </div>
             </div>

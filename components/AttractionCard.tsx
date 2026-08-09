@@ -131,7 +131,7 @@ function AttractionCard({
   }))
 
   const cardContent = (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border border-border">
+    <Card className="lift-3d overflow-hidden cursor-pointer group border-0 bg-card gap-0 py-0">
       {/* Image Carousel */}
       <div className="relative aspect-video">
         <Carousel setApi={setApi} className="w-full h-full">
@@ -249,7 +249,7 @@ function AttractionCard({
       </div>
 
       {/* Content */}
-      <CardContent className="p-0">
+      <CardContent className="p-3">
         <div className="space-y-0.5">
           {/* Title and Rating */}
           <div className="flex items-start justify-between gap-2">

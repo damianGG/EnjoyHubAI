@@ -67,12 +67,12 @@ export default function AvailabilityManager({
         const result = await response.json()
         setBlockedDates(prev => [...prev, ...selectedDatesToBlock])
         setSelectedDatesToBlock([])
-        setSaveMessage({ type: "success", text: "Dates blocked successfully" })
+        setSaveMessage({ type: "success", text: "Terminy zablokowane pomyślnie" })
       } else {
-        setSaveMessage({ type: "error", text: "Failed to block dates" })
+        setSaveMessage({ type: "error", text: "Nie udało się zablokować terminów" })
       }
     } catch (error) {
-      setSaveMessage({ type: "error", text: "Error blocking dates" })
+      setSaveMessage({ type: "error", text: "Błąd podczas blokowania terminów" })
     }
   }
 
@@ -92,18 +92,18 @@ export default function AvailabilityManager({
 
       if (response.ok) {
         setBlockedDates(prev => prev.filter(d => format(d, "yyyy-MM-dd") !== dateStr))
-        setSaveMessage({ type: "success", text: "Date unblocked successfully" })
+        setSaveMessage({ type: "success", text: "Termin odblokowany pomyślnie" })
       } else {
-        setSaveMessage({ type: "error", text: "Failed to unblock date" })
+        setSaveMessage({ type: "error", text: "Nie udało się odblokować terminu" })
       }
     } catch (error) {
-      setSaveMessage({ type: "error", text: "Error unblocking date" })
+      setSaveMessage({ type: "error", text: "Błąd podczas odblokowywania terminu" })
     }
   }
 
   const handleAddSeasonalPrice = () => {
     if (!newSeasonStart || !newSeasonEnd || !newSeasonPrice || !newSeasonName) {
-      setSaveMessage({ type: "error", text: "Please fill all seasonal price fields" })
+      setSaveMessage({ type: "error", text: "Wypełnij wszystkie pola ceny sezonowej" })
       return
     }
 
@@ -119,7 +119,7 @@ export default function AvailabilityManager({
     setNewSeasonEnd(undefined)
     setNewSeasonPrice("")
     setNewSeasonName("")
-    setSaveMessage({ type: "success", text: "Seasonal price added. Don't forget to save!" })
+    setSaveMessage({ type: "success", text: "Cena sezonowa dodana. Pamiętaj, aby zapisać!" })
   }
 
   const handleRemoveSeasonalPrice = (index: number) => {
@@ -143,12 +143,12 @@ export default function AvailabilityManager({
       })
 
       if (response.ok) {
-        setSaveMessage({ type: "success", text: "Settings saved successfully!" })
+        setSaveMessage({ type: "success", text: "Ustawienia zapisane pomyślnie!" })
       } else {
-        setSaveMessage({ type: "error", text: "Failed to save settings" })
+        setSaveMessage({ type: "error", text: "Nie udało się zapisać ustawień" })
       }
     } catch (error) {
-      setSaveMessage({ type: "error", text: "Error saving settings" })
+      setSaveMessage({ type: "error", text: "Błąd podczas zapisywania ustawień" })
     } finally {
       setIsSaving(false)
     }
@@ -169,30 +169,30 @@ export default function AvailabilityManager({
 
       <Tabs defaultValue="settings" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="blocked-dates">Blocked Dates</TabsTrigger>
-          <TabsTrigger value="seasonal-pricing">Seasonal Pricing</TabsTrigger>
+          <TabsTrigger value="settings">Ustawienia</TabsTrigger>
+          <TabsTrigger value="blocked-dates">Zablokowane terminy</TabsTrigger>
+          <TabsTrigger value="seasonal-pricing">Ceny sezonowe</TabsTrigger>
         </TabsList>
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Booking Mode</CardTitle>
-              <CardDescription>Choose how guests can book this property</CardDescription>
+              <CardTitle>Tryb rezerwacji</CardTitle>
+              <CardDescription>Wybierz, jak goście mogą rezerwować ten obiekt</CardDescription>
             </CardHeader>
             <CardContent>
               <RadioGroup value={bookingMode} onValueChange={(value) => setBookingMode(value as BookingMode)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="daily" id="daily" />
                   <Label htmlFor="daily" className="cursor-pointer">
-                    Daily - Multi-day stays (like Airbnb)
+                    Dobowy - pobyty wielodniowe (jak Airbnb)
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="hourly" id="hourly" />
                   <Label htmlFor="hourly" className="cursor-pointer">
-                    Hourly - Time-slot based bookings
+                    Godzinowy - rezerwacje na przedziały czasowe
                   </Label>
                 </div>
               </RadioGroup>
@@ -201,13 +201,13 @@ export default function AvailabilityManager({
 
           <Card>
             <CardHeader>
-              <CardTitle>Stay Requirements</CardTitle>
-              <CardDescription>Set minimum and maximum stay duration</CardDescription>
+              <CardTitle>Wymagania dotyczące pobytu</CardTitle>
+              <CardDescription>Ustaw minimalny i maksymalny czas pobytu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="minStay">
-                  Minimum Stay ({bookingMode === "daily" ? "nights" : "hours"})
+                  Minimalny pobyt ({bookingMode === "daily" ? "nocy" : "godzin"})
                 </Label>
                 <Input
                   id="minStay"
@@ -220,7 +220,7 @@ export default function AvailabilityManager({
               </div>
               <div>
                 <Label htmlFor="maxStay">
-                  Maximum Stay ({bookingMode === "daily" ? "nights" : "hours"}) - Optional
+                  Maksymalny pobyt ({bookingMode === "daily" ? "nocy" : "godzin"}) - opcjonalnie
                 </Label>
                 <Input
                   id="maxStay"
@@ -228,7 +228,7 @@ export default function AvailabilityManager({
                   min={minStay}
                   value={maxStay || ""}
                   onChange={(e) => setMaxStay(e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="No maximum"
+                  placeholder="Bez limitu"
                   className="max-w-xs"
                 />
               </div>
@@ -237,7 +237,7 @@ export default function AvailabilityManager({
 
           <Button onClick={handleSaveSettings} disabled={isSaving} size="lg">
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Saving..." : "Save Settings"}
+            {isSaving ? "Zapisywanie..." : "Zapisz ustawienia"}
           </Button>
         </TabsContent>
 
@@ -245,8 +245,8 @@ export default function AvailabilityManager({
         <TabsContent value="blocked-dates" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Block Dates</CardTitle>
-              <CardDescription>Select dates to make unavailable for booking</CardDescription>
+              <CardTitle>Blokuj terminy</CardTitle>
+              <CardDescription>Wybierz terminy, które mają być niedostępne do rezerwacji</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="border rounded-md p-4">
@@ -265,7 +265,7 @@ export default function AvailabilityManager({
 
               {selectedDatesToBlock.length > 0 && (
                 <Button onClick={handleBlockDates}>
-                  Block {selectedDatesToBlock.length} Date{selectedDatesToBlock.length !== 1 ? "s" : ""}
+                  Zablokuj {selectedDatesToBlock.length} {selectedDatesToBlock.length === 1 ? "termin" : "terminów"}
                 </Button>
               )}
             </CardContent>
@@ -274,7 +274,7 @@ export default function AvailabilityManager({
           {blockedDates.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Currently Blocked Dates</CardTitle>
+                <CardTitle>Aktualnie zablokowane terminy</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -300,27 +300,27 @@ export default function AvailabilityManager({
         <TabsContent value="seasonal-pricing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Add Seasonal Pricing</CardTitle>
+              <CardTitle>Dodaj cenę sezonową</CardTitle>
               <CardDescription>
-                Set different prices for specific date ranges (e.g., summer, holidays)
+                Ustaw różne ceny dla wybranych zakresów dat (np. lato, święta)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Season Name</Label>
+                  <Label>Nazwa sezonu</Label>
                   <Input
-                    placeholder="e.g., Summer Season"
+                    placeholder="np. Sezon letni"
                     value={newSeasonName}
                     onChange={(e) => setNewSeasonName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Price per Night</Label>
+                  <Label>Cena za noc</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder={`Base: $${basePrice}`}
+                    placeholder={`Podstawowa: ${basePrice} zł`}
                     value={newSeasonPrice}
                     onChange={(e) => setNewSeasonPrice(e.target.value)}
                   />
@@ -329,7 +329,7 @@ export default function AvailabilityManager({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Start Date</Label>
+                  <Label>Data początkowa</Label>
                   <Calendar
                     mode="single"
                     selected={newSeasonStart}
@@ -338,7 +338,7 @@ export default function AvailabilityManager({
                   />
                 </div>
                 <div>
-                  <Label>End Date</Label>
+                  <Label>Data końcowa</Label>
                   <Calendar
                     mode="single"
                     selected={newSeasonEnd}
@@ -351,7 +351,7 @@ export default function AvailabilityManager({
 
               <Button onClick={handleAddSeasonalPrice}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Seasonal Price
+                Dodaj cenę sezonową
               </Button>
             </CardContent>
           </Card>
@@ -359,7 +359,7 @@ export default function AvailabilityManager({
           {seasonalPrices.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Active Seasonal Prices</CardTitle>
+                <CardTitle>Aktywne ceny sezonowe</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -368,10 +368,10 @@ export default function AvailabilityManager({
                       <div>
                         <p className="font-medium">{season.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {season.start_date} to {season.end_date}
+                          {season.start_date} do {season.end_date}
                         </p>
                         <p className="text-sm font-semibold text-primary">
-                          ${season.price} per night
+                          {season.price} zł za noc
                         </p>
                       </div>
                       <Button
@@ -390,7 +390,7 @@ export default function AvailabilityManager({
 
           <Button onClick={handleSaveSettings} disabled={isSaving} size="lg">
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Saving..." : "Save Seasonal Pricing"}
+            {isSaving ? "Zapisywanie..." : "Zapisz ceny sezonowe"}
           </Button>
         </TabsContent>
       </Tabs>

@@ -61,7 +61,7 @@ export default function HostCreateOfferDialog({ propertyId, onOfferCreated }: Ho
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create offer")
+        throw new Error(data.error || "Nie udało się utworzyć oferty")
       }
 
       toast.success("Oferta utworzona pomyślnie!")

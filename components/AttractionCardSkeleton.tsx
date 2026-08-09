@@ -3,12 +3,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AttractionCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="surface-3d overflow-hidden border-0 bg-card gap-0 py-0">
       {/* Image skeleton */}
       <Skeleton className="aspect-video w-full rounded-t-xl" />
 
       {/* Content skeleton */}
-      <CardContent className="p-0">
+      <CardContent className="p-3">
         <div className="space-y-0.5">
           {/* Title and rating row */}
           <div className="flex items-start justify-between gap-2">
