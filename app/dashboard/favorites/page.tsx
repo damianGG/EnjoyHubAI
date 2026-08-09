@@ -47,7 +47,7 @@ export default async function FavoritesPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Powrót do panelu
           </Link>
         </div>
       </header>
@@ -56,12 +56,12 @@ export default async function FavoritesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center space-x-2">
             <Heart className="h-8 w-8" />
-            <span>My Favorites</span>
+            <span>Moje ulubione</span>
           </h1>
           <p className="text-muted-foreground">
             {favorites?.length === 0
-              ? "No favorites yet"
-              : `${favorites?.length} saved propert${favorites?.length !== 1 ? "ies" : "y"}`}
+              ? "Brak ulubionych"
+              : `Zapisane obiekty: ${favorites?.length}`}
           </p>
         </div>
 
@@ -106,17 +106,17 @@ export default async function FavoritesPage() {
                       </div>
                       <div className="flex items-center space-x-1 mb-2">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{favorite.properties.rating || "New"}</span>
+                        <span className="text-sm font-medium">{favorite.properties.rating || "Nowość"}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold">${favorite.properties.price_per_night}</span>
-                      <span className="text-muted-foreground"> / night</span>
+                      <span className="text-lg font-bold">{favorite.properties.price_per_night} zł</span>
+                      <span className="text-muted-foreground"> / noc</span>
                     </div>
                     <Link href={`/properties/${favorite.properties.id}`}>
-                      <Button size="sm">View Details</Button>
+                      <Button size="sm">Zobacz szczegóły</Button>
                     </Link>
                   </div>
                 </CardContent>

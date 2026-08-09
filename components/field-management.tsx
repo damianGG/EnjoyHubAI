@@ -67,10 +67,10 @@ export default function FieldManagementClient() {
           setSelectedCategoryId(data[0].id)
         }
       } else {
-        toast.error("Failed to load categories")
+        toast.error("Nie udało się załadować kategorii")
       }
     } catch (error) {
-      toast.error("Error loading categories")
+      toast.error("Błąd podczas ładowania kategorii")
     } finally {
       setLoading(false)
     }
@@ -83,10 +83,10 @@ export default function FieldManagementClient() {
         const data = await response.json()
         setFields(data)
       } else {
-        toast.error("Failed to load fields")
+        toast.error("Nie udało się załadować pól")
       }
     } catch (error) {
-      toast.error("Error loading fields")
+      toast.error("Błąd podczas ładowania pól")
     }
   }
 
@@ -131,12 +131,12 @@ export default function FieldManagementClient() {
 
   const handleSave = async () => {
     if (!formData.field_name || !formData.field_label) {
-      toast.error("Field name and label are required")
+      toast.error("Nazwa pola i etykieta są wymagane")
       return
     }
 
     if (!selectedCategoryId) {
-      toast.error("Please select a category")
+      toast.error("Wybierz kategorię")
       return
     }
 
@@ -160,22 +160,22 @@ export default function FieldManagementClient() {
       })
 
       if (response.ok) {
-        toast.success(editingField ? "Field updated" : "Field created")
+        toast.success(editingField ? "Pole zaktualizowane" : "Pole utworzone")
         handleCloseDialog()
         loadFields()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to save field")
+        toast.error(error.error || "Nie udało się zapisać pola")
       }
     } catch (error) {
-      toast.error("Error saving field")
+      toast.error("Błąd podczas zapisywania pola")
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this field?")) {
+    if (!confirm("Czy na pewno chcesz usunąć to pole?")) {
       return
     }
 
@@ -185,14 +185,14 @@ export default function FieldManagementClient() {
       })
 
       if (response.ok) {
-        toast.success("Field deleted")
+        toast.success("Pole usunięte")
         loadFields()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to delete field")
+        toast.error(error.error || "Nie udało się usunąć pola")
       }
     } catch (error) {
-      toast.error("Error deleting field")
+      toast.error("Błąd podczas usuwania pola")
     }
   }
 
@@ -207,7 +207,7 @@ export default function FieldManagementClient() {
   if (categories.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No categories found. Please create a category first.</p>
+        <p className="text-muted-foreground">Nie znaleziono kategorii. Najpierw utwórz kategorię.</p>
       </div>
     )
   }
@@ -218,14 +218,14 @@ export default function FieldManagementClient() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Field Management</h2>
-          <p className="text-muted-foreground">Configure dynamic fields for categories</p>
+          <h2 className="text-2xl font-bold">Zarządzanie polami</h2>
+          <p className="text-muted-foreground">Konfiguruj dynamiczne pola dla kategorii</p>
         </div>
       </div>
 
       {/* Category Selector */}
       <div className="mb-6">
-        <Label>Select Category</Label>
+        <Label>Wybierz kategorię</Label>
         <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
           <SelectTrigger className="w-full max-w-md">
             <SelectValue />
@@ -244,18 +244,18 @@ export default function FieldManagementClient() {
       <div className="mb-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">
-            Fields for {selectedCategory?.icon} {selectedCategory?.name}
+            Pola dla {selectedCategory?.icon} {selectedCategory?.name}
           </h3>
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Field
+            Dodaj pole
           </Button>
         </div>
 
         {fields.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">No fields configured for this category yet.</p>
+              <p className="text-muted-foreground">Nie skonfigurowano jeszcze pól dla tej kategorii.</p>
             </CardContent>
           </Card>
         ) : (
@@ -268,20 +268,20 @@ export default function FieldManagementClient() {
                     <div>
                       <div className="flex items-center space-x-2">
                         <p className="font-medium">{field.field_label}</p>
-                        {field.is_required && <span className="text-xs text-red-500">*Required</span>}
+                        {field.is_required && <span className="text-xs text-red-500">*Wymagane</span>}
                         {isRequired && (
                           <span className="flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                             <Lock className="h-3 w-3 mr-1" />
-                            System Required
+                            Wymagane przez system
                           </span>
                         )}
                       </div>
                       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <span>Type: {field.field_type}</span>
+                        <span>Typ: {field.field_type}</span>
                         <span>•</span>
-                        <span>Name: {field.field_name}</span>
+                        <span>Nazwa: {field.field_name}</span>
                         <span>•</span>
-                        <span>Order: {field.field_order}</span>
+                        <span>Kolejność: {field.field_order}</span>
                       </div>
                       {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
@@ -294,7 +294,7 @@ export default function FieldManagementClient() {
                         size="icon"
                         onClick={() => handleDelete(field.id)}
                         disabled={isRequired}
-                        title={isRequired ? "Cannot delete required system field" : "Delete field"}
+                        title={isRequired ? "Nie można usunąć wymaganego pola systemowego" : "Usuń pole"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -311,38 +311,38 @@ export default function FieldManagementClient() {
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingField ? "Edit Field" : "Create Field"}</DialogTitle>
+            <DialogTitle>{editingField ? "Edytuj pole" : "Utwórz pole"}</DialogTitle>
             <DialogDescription>
-              {editingField ? "Update field configuration" : "Add a new dynamic field"}
+              {editingField ? "Zaktualizuj konfigurację pola" : "Dodaj nowe pole dynamiczne"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="field_name">Field Name (Internal)</Label>
+                <Label htmlFor="field_name">Nazwa pola (wewnętrzna)</Label>
                 <Input
                   id="field_name"
                   value={formData.field_name}
                   onChange={(e) => setFormData({ ...formData, field_name: e.target.value })}
-                  placeholder="e.g., minimum_age"
+                  placeholder="np. minimum_age"
                 />
               </div>
 
               <div>
-                <Label htmlFor="field_label">Field Label (Display)</Label>
+                <Label htmlFor="field_label">Etykieta pola (wyświetlana)</Label>
                 <Input
                   id="field_label"
                   value={formData.field_label}
                   onChange={(e) => setFormData({ ...formData, field_label: e.target.value })}
-                  placeholder="e.g., Minimum Age"
+                  placeholder="np. Minimalny wiek"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="field_type">Field Type</Label>
+                <Label htmlFor="field_type">Typ pola</Label>
                 <Select
                   value={formData.field_type}
                   onValueChange={(value: FieldType) => setFormData({ ...formData, field_type: value })}
@@ -351,18 +351,18 @@ export default function FieldManagementClient() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="textarea">Textarea</SelectItem>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="select">Select</SelectItem>
-                    <SelectItem value="checkbox">Checkbox</SelectItem>
-                    <SelectItem value="file">File</SelectItem>
+                    <SelectItem value="text">Tekst</SelectItem>
+                    <SelectItem value="textarea">Pole tekstowe</SelectItem>
+                    <SelectItem value="number">Liczba</SelectItem>
+                    <SelectItem value="select">Lista wyboru</SelectItem>
+                    <SelectItem value="checkbox">Pole wyboru</SelectItem>
+                    <SelectItem value="file">Plik</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="field_order">Display Order</Label>
+                <Label htmlFor="field_order">Kolejność wyświetlania</Label>
                 <Input
                   id="field_order"
                   type="number"
@@ -378,37 +378,37 @@ export default function FieldManagementClient() {
                 checked={formData.is_required}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked as boolean })}
               />
-              <Label htmlFor="is_required">Required field</Label>
+              <Label htmlFor="is_required">Pole wymagane</Label>
             </div>
 
             <div>
-              <Label htmlFor="placeholder">Placeholder</Label>
+              <Label htmlFor="placeholder">Tekst zastępczy</Label>
               <Input
                 id="placeholder"
                 value={formData.placeholder}
                 onChange={(e) => setFormData({ ...formData, placeholder: e.target.value })}
-                placeholder="Enter placeholder text"
+                placeholder="Wpisz tekst zastępczy"
               />
             </div>
 
             <div>
-              <Label htmlFor="help_text">Help Text</Label>
+              <Label htmlFor="help_text">Tekst pomocy</Label>
               <Textarea
                 id="help_text"
                 value={formData.help_text}
                 onChange={(e) => setFormData({ ...formData, help_text: e.target.value })}
-                placeholder="Additional information for the user"
+                placeholder="Dodatkowe informacje dla użytkownika"
               />
             </div>
 
             {formData.field_type === "select" && (
               <div>
-                <Label htmlFor="options">Options (one per line)</Label>
+                <Label htmlFor="options">Opcje (jedna na linię)</Label>
                 <Textarea
                   id="options"
                   value={optionsInput}
                   onChange={(e) => setOptionsInput(e.target.value)}
-                  placeholder="Option 1&#10;Option 2&#10;Option 3"
+                  placeholder="Opcja 1&#10;Opcja 2&#10;Opcja 3"
                   rows={5}
                 />
               </div>
@@ -416,12 +416,12 @@ export default function FieldManagementClient() {
 
             {(formData.field_type === "number" || formData.field_type === "text") && (
               <div className="border rounded-lg p-4 space-y-4">
-                <h4 className="font-medium">Validation Rules</h4>
+                <h4 className="font-medium">Reguły walidacji</h4>
 
                 {formData.field_type === "number" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="min">Minimum Value</Label>
+                      <Label htmlFor="min">Wartość minimalna</Label>
                       <Input
                         id="min"
                         type="number"
@@ -438,7 +438,7 @@ export default function FieldManagementClient() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="max">Maximum Value</Label>
+                      <Label htmlFor="max">Wartość maksymalna</Label>
                       <Input
                         id="max"
                         type="number"
@@ -460,7 +460,7 @@ export default function FieldManagementClient() {
                 {formData.field_type === "text" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="minLength">Minimum Length</Label>
+                      <Label htmlFor="minLength">Minimalna długość</Label>
                       <Input
                         id="minLength"
                         type="number"
@@ -477,7 +477,7 @@ export default function FieldManagementClient() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="maxLength">Maximum Length</Label>
+                      <Label htmlFor="maxLength">Maksymalna długość</Label>
                       <Input
                         id="maxLength"
                         type="number"
@@ -501,11 +501,11 @@ export default function FieldManagementClient() {
 
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
-              Cancel
+              Anuluj
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editingField ? "Update" : "Create"}
+              {editingField ? "Zaktualizuj" : "Utwórz"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -71,14 +71,14 @@ export default async function AdminPropertiesPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Property Offers</h1>
-          <p className="text-muted-foreground">Create and manage time-based offers for properties</p>
+          <h1 className="text-3xl font-bold mb-2">Oferty obiektów</h1>
+          <p className="text-muted-foreground">Twórz i zarządzaj ofertami czasowymi dla obiektów</p>
         </div>
 
         {!properties || properties.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-muted-foreground">No properties found</p>
+              <p className="text-muted-foreground">Nie znaleziono obiektów</p>
             </CardContent>
           </Card>
         ) : (
@@ -93,7 +93,7 @@ export default async function AdminPropertiesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={property.is_active ? "default" : "secondary"}>
-                        {property.is_active ? "Active" : "Inactive"}
+                        {property.is_active ? "Aktywny" : "Nieaktywny"}
                       </Badge>
                       <CreateOfferDialog propertyId={property.id} />
                     </div>
@@ -102,7 +102,7 @@ export default async function AdminPropertiesPage() {
                 <CardContent>
                   {offersByProperty[property.id] && offersByProperty[property.id].length > 0 ? (
                     <div className="space-y-2">
-                      <h4 className="font-semibold mb-2">Offers:</h4>
+                      <h4 className="font-semibold mb-2">Oferty:</h4>
                       <div className="grid gap-2">
                         {offersByProperty[property.id].map((offer) => (
                           <div
@@ -111,14 +111,14 @@ export default async function AdminPropertiesPage() {
                           >
                             <span>{offer.title}</span>
                             <Badge variant={offer.is_active ? "default" : "secondary"}>
-                              {offer.is_active ? "Active" : "Inactive"}
+                              {offer.is_active ? "Aktywna" : "Nieaktywna"}
                             </Badge>
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No offers yet for this property</p>
+                    <p className="text-sm text-muted-foreground">Brak ofert dla tego obiektu</p>
                   )}
                 </CardContent>
               </Card>

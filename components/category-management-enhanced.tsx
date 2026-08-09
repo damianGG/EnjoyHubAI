@@ -87,10 +87,10 @@ export default function CategoryManagementEnhanced() {
 
         setCategories(categoriesWithSubs)
       } else {
-        toast.error("Failed to load categories")
+        toast.error("Nie udało się załadować kategorii")
       }
     } catch (error) {
-      toast.error("Error loading categories")
+      toast.error("Błąd podczas ładowania kategorii")
     } finally {
       setLoading(false)
     }
@@ -202,7 +202,7 @@ export default function CategoryManagementEnhanced() {
         return null
       }
     } catch (error) {
-      toast.error("Error uploading image")
+      toast.error("Błąd podczas przesyłania obrazu")
       return null
     } finally {
       setUploading(false)
