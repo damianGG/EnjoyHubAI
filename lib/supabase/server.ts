@@ -11,8 +11,6 @@ export const isSupabaseConfigured =
 // Create a Supabase client for Server Components
 // Note: In Next.js 15, this must handle async cookies()
 export function createClient() {
-  const cookieStore = cookies()
-
   if (!isSupabaseConfigured) {
     console.warn("Supabase environment variables are not set. Using dummy client.")
     return {
@@ -28,11 +26,13 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
+        async getAll() {
+          const cookieStore = await cookies()
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        async setAll(cookiesToSet) {
           try {
+            const cookieStore = await cookies()
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
