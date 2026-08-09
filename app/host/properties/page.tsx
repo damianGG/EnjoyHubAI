@@ -10,7 +10,7 @@ export default async function PropertiesPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -39,14 +39,14 @@ export default async function PropertiesPage() {
           <div className="flex items-center space-x-4">
             <Link href="/host" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              Powrót do panelu
             </Link>
           </div>
 
           <Link href="/host/properties/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Add Property
+              Dodaj obiekt
             </Button>
           </Link>
         </div>
@@ -54,8 +54,8 @@ export default async function PropertiesPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Your Properties</h1>
-          <p className="text-muted-foreground">Manage all your listed properties</p>
+          <h1 className="text-3xl font-bold mb-2">Twoje obiekty</h1>
+          <p className="text-muted-foreground">Zarządzaj wszystkimi swoimi obiektami</p>
         </div>
 
         {!properties || properties.length === 0 ? (
@@ -64,12 +64,12 @@ export default async function PropertiesPage() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">No properties yet</h3>
-              <p className="text-muted-foreground mb-4">Start earning by listing your first property on EnjoyHub</p>
+              <h3 className="text-lg font-semibold mb-2">Brak obiektów</h3>
+              <p className="text-muted-foreground mb-4">Zacznij zarabiać, dodając swój pierwszy obiekt w EnjoyHub</p>
               <Link href="/host/properties/new">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Property
+                  Dodaj pierwszy obiekt
                 </Button>
               </Link>
             </CardContent>
@@ -87,12 +87,12 @@ export default async function PropertiesPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-muted-foreground">No image</span>
+                      <span className="text-muted-foreground">Brak zdjęcia</span>
                     </div>
                   )}
                   <div className="absolute top-2 right-2">
                     <Badge variant={property.is_active ? "default" : "secondary"}>
-                      {property.is_active ? "Active" : "Inactive"}
+                      {property.is_active ? "Aktywny" : "Nieaktywny"}
                     </Badge>
                   </div>
                 </div>
@@ -107,16 +107,16 @@ export default async function PropertiesPage() {
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm text-muted-foreground">
-                      {property.property_type} • {property.max_guests} guests
+                      {property.property_type} • {property.max_guests} gości
                     </div>
-                    <div className="font-semibold">${property.price_per_night}/night</div>
+                    <div className="font-semibold">{property.price_per_night} zł/noc</div>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <Link href={`/host/properties/${property.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full bg-transparent">
                         <Edit className="h-4 w-4 mr-2" />
-                        Manage
+                        Zarządzaj
                       </Button>
                     </Link>
                     <Link href={`/properties/${property.id}`}>

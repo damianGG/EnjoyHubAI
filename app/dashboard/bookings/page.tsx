@@ -10,7 +10,7 @@ export default async function BookingsPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export default async function BookingsPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Powrót do panelu
           </Link>
         </div>
       </header>
@@ -78,12 +78,12 @@ export default async function BookingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center space-x-2">
             <Calendar className="h-8 w-8" />
-            <span>My Bookings</span>
+            <span>Moje rezerwacje</span>
           </h1>
           <p className="text-muted-foreground">
             {bookings?.length === 0
-              ? "No bookings yet"
-              : `${bookings?.length} total booking${bookings?.length !== 1 ? "s" : ""}`}
+              ? "Brak rezerwacji"
+              : `Rezerwacje łącznie: ${bookings?.length}`}
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export default async function BookingsPage() {
             {/* Pending Bookings */}
             {pendingBookings.length > 0 && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Pending Confirmation</h2>
+                <h2 className="text-xl font-semibold mb-4">Oczekujące na potwierdzenie</h2>
                 <div className="space-y-4">
                   {pendingBookings.map((booking: any) => (
                     <BookingCard key={booking.id} booking={booking} />
@@ -115,7 +115,7 @@ export default async function BookingsPage() {
             {/* Upcoming Bookings */}
             {upcomingBookings.length > 0 && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Upcoming Trips</h2>
+                <h2 className="text-xl font-semibold mb-4">Nadchodzące wyjazdy</h2>
                 <div className="space-y-4">
                   {upcomingBookings.map((booking: any) => (
                     <BookingCard key={booking.id} booking={booking} />
@@ -127,7 +127,7 @@ export default async function BookingsPage() {
             {/* Past Bookings */}
             {pastBookings.length > 0 && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Past Trips</h2>
+                <h2 className="text-xl font-semibold mb-4">Minione wyjazdy</h2>
                 <div className="space-y-4">
                   {pastBookings.map((booking: any) => (
                     <BookingCard key={booking.id} booking={booking} />
@@ -158,6 +158,21 @@ function BookingCard({ booking }: { booking: any }) {
     }
   }
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Potwierdzona"
+      case "pending":
+        return "Oczekująca"
+      case "cancelled":
+        return "Anulowana"
+      case "completed":
+        return "Zakończona"
+      default:
+        return status
+    }
+  }
+
   const isUpcoming = new Date(booking.check_in) > new Date()
   const isPast = new Date(booking.check_out) < new Date()
 
@@ -182,51 +197,51 @@ function BookingCard({ booking }: { booking: any }) {
           <div className="flex-1">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold mb-1">{booking.properties?.title || 'Untitled Property'}</h3>
+                <h3 className="text-xl font-semibold mb-1">{booking.properties?.title || 'Obiekt bez nazwy'}</h3>
                 <p className="text-muted-foreground mb-2">
-                  {booking.properties?.city || 'Unknown'}, {booking.properties?.country || 'Unknown'}
+                  {booking.properties?.city || 'Nieznane'}, {booking.properties?.country || 'Nieznane'}
                 </p>
-                <p className="text-sm text-muted-foreground">Host: {booking.properties?.users?.full_name || 'Unknown'}</p>
+                <p className="text-sm text-muted-foreground">Gospodarz: {booking.properties?.users?.full_name || 'Nieznany'}</p>
               </div>
-              <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+              <Badge variant={getStatusColor(booking.status)}>{getStatusLabel(booking.status)}</Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <div className="text-sm text-muted-foreground">Check-in</div>
-                <div className="font-medium">{new Date(booking.check_in).toLocaleDateString()}</div>
+                <div className="text-sm text-muted-foreground">Zameldowanie</div>
+                <div className="font-medium">{new Date(booking.check_in).toLocaleDateString("pl-PL")}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Check-out</div>
-                <div className="font-medium">{new Date(booking.check_out).toLocaleDateString()}</div>
+                <div className="text-sm text-muted-foreground">Wymeldowanie</div>
+                <div className="font-medium">{new Date(booking.check_out).toLocaleDateString("pl-PL")}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Guests</div>
+                <div className="text-sm text-muted-foreground">Goście</div>
                 <div className="font-medium">
-                  {booking.guests_count} guest{booking.guests_count !== 1 ? "s" : ""}
+                  {booking.guests_count} {booking.guests_count === 1 ? "gość" : "gości"}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Total</div>
-                <div className="font-medium text-lg">${booking.total_price}</div>
+                <div className="text-sm text-muted-foreground">Razem</div>
+                <div className="font-medium text-lg">{booking.total_price} zł</div>
               </div>
             </div>
 
             <div className="flex space-x-2">
               <Link href={`/properties/${booking.properties?.id || booking.property_id}`}>
                 <Button variant="outline" size="sm">
-                  View Property
+                  Zobacz obiekt
                 </Button>
               </Link>
               {isPast && booking.status === "completed" && (
                 <Button variant="outline" size="sm">
                   <Star className="h-4 w-4 mr-1" />
-                  Write Review
+                  Napisz opinię
                 </Button>
               )}
               {booking.status === "pending" && (
                 <Button variant="destructive" size="sm">
-                  Cancel Request
+                  Anuluj prośbę
                 </Button>
               )}
             </div>

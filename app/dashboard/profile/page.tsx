@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -34,7 +34,7 @@ export default async function ProfilePage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Powrót do panelu
           </Link>
         </div>
       </header>
@@ -43,88 +43,88 @@ export default async function ProfilePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center space-x-2">
             <User className="h-8 w-8" />
-            <span>My Profile</span>
+            <span>Mój profil</span>
           </h1>
-          <p className="text-muted-foreground">Manage your account information and preferences</p>
+          <p className="text-muted-foreground">Zarządzaj danymi konta i preferencjami</p>
         </div>
 
         <div className="space-y-6">
           {/* Profile Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle>Dane profilu</CardTitle>
+              <CardDescription>Zaktualizuj swoje dane osobowe</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
+                  <Label htmlFor="full_name">Imię i nazwisko</Label>
                   <Input
                     id="full_name"
                     defaultValue={userProfile?.full_name || ""}
-                    placeholder="Enter your full name"
+                    placeholder="Wpisz imię i nazwisko"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">E-mail</Label>
                   <Input id="email" type="email" defaultValue={user.email || ""} disabled className="bg-muted" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" defaultValue={userProfile?.phone || ""} placeholder="Enter your phone number" />
+                  <Label htmlFor="phone">Numer telefonu</Label>
+                  <Input id="phone" defaultValue={userProfile?.phone || ""} placeholder="Wpisz numer telefonu" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input id="location" defaultValue={userProfile?.location || ""} placeholder="City, Country" />
+                  <Label htmlFor="location">Lokalizacja</Label>
+                  <Input id="location" defaultValue={userProfile?.location || ""} placeholder="Miasto, kraj" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">O mnie</Label>
                 <Textarea
                   id="bio"
                   defaultValue={userProfile?.bio || ""}
-                  placeholder="Tell us about yourself..."
+                  placeholder="Napisz coś o sobie..."
                   rows={3}
                 />
               </div>
-              <Button>Save Changes</Button>
+              <Button>Zapisz zmiany</Button>
             </CardContent>
           </Card>
 
           {/* Account Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-              <CardDescription>Manage your account preferences</CardDescription>
+              <CardTitle>Ustawienia konta</CardTitle>
+              <CardDescription>Zarządzaj preferencjami konta</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Email Notifications</h4>
-                  <p className="text-sm text-muted-foreground">Receive booking confirmations and updates</p>
+                  <h4 className="font-medium">Powiadomienia e-mail</h4>
+                  <p className="text-sm text-muted-foreground">Otrzymuj potwierdzenia rezerwacji i aktualizacje</p>
                 </div>
                 <Button variant="outline" size="sm">
-                  Configure
+                  Konfiguruj
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Privacy Settings</h4>
-                  <p className="text-sm text-muted-foreground">Control who can see your profile</p>
+                  <h4 className="font-medium">Ustawienia prywatności</h4>
+                  <p className="text-sm text-muted-foreground">Decyduj, kto może zobaczyć Twój profil</p>
                 </div>
                 <Button variant="outline" size="sm">
-                  Manage
+                  Zarządzaj
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Account Verification</h4>
-                  <p className="text-sm text-muted-foreground">Verify your identity for better trust</p>
+                  <h4 className="font-medium">Weryfikacja konta</h4>
+                  <p className="text-sm text-muted-foreground">Zweryfikuj tożsamość, aby zwiększyć zaufanie</p>
                 </div>
                 <Button variant="outline" size="sm">
-                  Verify
+                  Zweryfikuj
                 </Button>
               </div>
             </CardContent>
@@ -133,22 +133,22 @@ export default async function ProfilePage() {
           {/* Account Statistics */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Statistics</CardTitle>
-              <CardDescription>Your activity summary</CardDescription>
+              <CardTitle>Statystyki konta</CardTitle>
+              <CardDescription>Podsumowanie Twojej aktywności</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">0</div>
-                  <div className="text-sm text-muted-foreground">Total Bookings</div>
+                  <div className="text-sm text-muted-foreground">Wszystkie rezerwacje</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">0</div>
-                  <div className="text-sm text-muted-foreground">Reviews Given</div>
+                  <div className="text-sm text-muted-foreground">Wystawione opinie</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">0</div>
-                  <div className="text-sm text-muted-foreground">Favorites</div>
+                  <div className="text-sm text-muted-foreground">Ulubione</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold">
@@ -156,7 +156,7 @@ export default async function ProfilePage() {
                       ? new Date().getFullYear() - new Date(userProfile.created_at).getFullYear()
                       : 0}
                   </div>
-                  <div className="text-sm text-muted-foreground">Years Member</div>
+                  <div className="text-sm text-muted-foreground">Lat z nami</div>
                 </div>
               </div>
             </CardContent>

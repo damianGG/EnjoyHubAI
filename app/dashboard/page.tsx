@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
       </div>
     )
   }
@@ -75,6 +75,21 @@ export default async function DashboardPage() {
     }
   }
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Potwierdzona"
+      case "pending":
+        return "Oczekująca"
+      case "cancelled":
+        return "Anulowana"
+      case "completed":
+        return "Zakończona"
+      default:
+        return status
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -82,7 +97,7 @@ export default async function DashboardPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to Home
+            Powrót do strony głównej
           </Link>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -95,8 +110,8 @@ export default async function DashboardPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
-          <p className="text-muted-foreground">Manage your bookings and account</p>
+          <h1 className="text-3xl font-bold mb-2">Mój panel</h1>
+          <p className="text-muted-foreground">Zarządzaj rezerwacjami i kontem</p>
         </div>
 
         {/* Quick Actions */}
@@ -113,8 +128,8 @@ export default async function DashboardPage() {
           <Link href="/host">
             <Card className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg">Become a Host</CardTitle>
-                <CardDescription>Start earning by hosting guests</CardDescription>
+                <CardTitle className="text-lg">Zostań gospodarzem</CardTitle>
+                <CardDescription>Zacznij zarabiać, goszcząc innych</CardDescription>
               </CardHeader>
             </Card>
           </Link>
@@ -124,9 +139,9 @@ export default async function DashboardPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
                   <Heart className="h-4 w-4" />
-                  <span>Favorites</span>
+                  <span>Ulubione</span>
                 </CardTitle>
-                <CardDescription>{favorites?.length || 0} saved properties</CardDescription>
+                <CardDescription>Zapisane obiekty: {favorites?.length || 0}</CardDescription>
               </CardHeader>
             </Card>
           </Link>
@@ -136,9 +151,9 @@ export default async function DashboardPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
                   <Settings className="h-4 w-4" />
-                  <span>Profile</span>
+                  <span>Profil</span>
                 </CardTitle>
-                <CardDescription>Manage your account</CardDescription>
+                <CardDescription>Zarządzaj swoim kontem</CardDescription>
               </CardHeader>
             </Card>
           </Link>
@@ -149,11 +164,11 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>My Bookings</CardTitle>
+                <CardTitle>Moje rezerwacje</CardTitle>
                 <CardDescription>
                   {bookings?.length === 0
-                    ? "No bookings yet"
-                    : `${bookings?.length} booking${bookings?.length !== 1 ? "s" : ""}`}
+                    ? "Brak rezerwacji"
+                    : `Liczba rezerwacji: ${bookings?.length}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -191,25 +206,25 @@ export default async function DashboardPage() {
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
-                                  <h3 className="font-semibold">{booking.properties?.title || 'Untitled Property'}</h3>
+                                  <h3 className="font-semibold">{booking.properties?.title || 'Obiekt bez nazwy'}</h3>
                                   <p className="text-sm text-muted-foreground">
-                                    {booking.properties?.city || 'Unknown'}, {booking.properties?.country || 'Unknown'}
+                                    {booking.properties?.city || 'Nieznane'}, {booking.properties?.country || 'Nieznane'}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Host: {booking.properties?.users?.full_name || 'Unknown'}
+                                    Gospodarz: {booking.properties?.users?.full_name || 'Nieznany'}
                                   </p>
                                 </div>
-                                <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                                <Badge variant={getStatusColor(booking.status)}>{getStatusLabel(booking.status)}</Badge>
                               </div>
 
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                  <div className="text-muted-foreground">Check-in</div>
-                                  <div className="font-medium">{new Date(booking.check_in).toLocaleDateString()}</div>
+                                  <div className="text-muted-foreground">Zameldowanie</div>
+                                  <div className="font-medium">{new Date(booking.check_in).toLocaleDateString("pl-PL")}</div>
                                 </div>
                                 <div>
-                                  <div className="text-muted-foreground">Total</div>
-                                  <div className="font-medium">${booking.total_price}</div>
+                                  <div className="text-muted-foreground">Razem</div>
+                                  <div className="font-medium">{booking.total_price} zł</div>
                                 </div>
                               </div>
                             </div>
@@ -220,7 +235,7 @@ export default async function DashboardPage() {
                     {bookings.length > 3 && (
                       <div className="text-center pt-4">
                         <Link href="/dashboard/bookings">
-                          <Button variant="outline">View All Bookings</Button>
+                          <Button variant="outline">Zobacz wszystkie rezerwacje</Button>
                         </Link>
                       </div>
                     )}
@@ -237,15 +252,15 @@ export default async function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Heart className="h-4 w-4" />
-                  <span>Favorites</span>
+                  <span>Ulubione</span>
                 </CardTitle>
-                <CardDescription>{favorites?.length || 0} saved properties</CardDescription>
+                <CardDescription>Zapisane obiekty: {favorites?.length || 0}</CardDescription>
               </CardHeader>
               <CardContent>
                 {!favorites || favorites.length === 0 ? (
                   <div className="text-center py-4">
                     <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No favorites yet</p>
+                    <p className="text-sm text-muted-foreground">Brak ulubionych</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -265,7 +280,7 @@ export default async function DashboardPage() {
                           </p>
                           <div className="flex items-center space-x-1 mt-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs">{favorite.properties.rating || "New"}</span>
+                            <span className="text-xs">{favorite.properties.rating || "Nowość"}</span>
                           </div>
                         </div>
                       </div>
@@ -273,7 +288,7 @@ export default async function DashboardPage() {
                     {favorites.length > 2 && (
                       <Link href="/dashboard/favorites">
                         <Button variant="outline" size="sm" className="w-full bg-transparent">
-                          View All
+                          Zobacz wszystkie
                         </Button>
                       </Link>
                     )}
@@ -285,19 +300,19 @@ export default async function DashboardPage() {
             {/* Account Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Account Summary</CardTitle>
+                <CardTitle>Podsumowanie konta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Bookings</span>
+                  <span className="text-sm text-muted-foreground">Wszystkie rezerwacje</span>
                   <span className="font-medium">{bookings?.length || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Saved Properties</span>
+                  <span className="text-sm text-muted-foreground">Zapisane obiekty</span>
                   <span className="font-medium">{favorites?.length || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Member Since</span>
+                  <span className="text-sm text-muted-foreground">Członek od</span>
                   <span className="font-medium">
                     {userProfile?.created_at
                       ? new Date(userProfile.created_at).getFullYear()
