@@ -36,11 +36,7 @@ function validateEmail(e: string) {
 }
 
 function getSiteUrl() {
-  const candidates = [
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.NEXT_PUBLIC_VERCEL_URL,
-    process.env.VERCEL_URL,
-  ]
+  const candidates = [process.env.NEXT_PUBLIC_SITE_URL, process.env.VERCEL_URL]
 
   for (const candidate of candidates) {
     const value = candidate?.trim()
