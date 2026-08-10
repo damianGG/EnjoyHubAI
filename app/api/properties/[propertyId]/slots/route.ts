@@ -113,6 +113,23 @@ export async function GET(
       )
     }
 
+    // Check if property has any offers at all
+    const { data: offers, error: offersError } = await supabase
+      .from("offers")
+      .select("id")
+      .eq("place_id", propertyId)
+      .eq("is_active", true)
+
+    if (offersError) {
+      console.error("Offers fetch error:", offersError.message)
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      )
+    }
+
+    const hasOffers = offers && offers.length > 0
+
     // Get next available slot for the property
     const result = await getNextAvailableSlotForProperty(
       propertyId,
@@ -126,6 +143,7 @@ export async function GET(
           next_available_slot: null,
           price_from: null,
           offerId: null,
+          has_offers: hasOffers,
         },
         { status: 200 }
       )
@@ -139,6 +157,7 @@ export async function GET(
         },
         price_from: result.price_from,
         offerId: result.offerId,
+        has_offers: hasOffers,
       },
       { status: 200 }
     )

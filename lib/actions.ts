@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 
 async function createSupabaseServerClient() {
   const cookieStore = await cookies()
@@ -60,6 +61,10 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
     }
 
     console.log("Sign in successful for user:", data?.user?.email)
+    
+    // Revalidate paths to ensure fresh data after login
+    revalidatePath("/", "layout")
+    
     return { ok: true, message: "Signed in" }
   } catch (err) {
     console.error("Login error:", err)
