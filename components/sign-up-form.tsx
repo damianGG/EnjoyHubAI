@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2 } from "lucide-react"
+import { Loader2, MailCheck } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signUp, signInWithGoogle, signInWithFacebook } from "@/lib/actions"
@@ -79,14 +79,14 @@ function FacebookSignInButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Łączenie z Facebook...
+          Łączenie z Facebookiem...
         </>
       ) : (
         <>
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="#1877F2">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
           </svg>
-          Kontynuuj z Facebook
+          Kontynuuj z Facebookiem
         </>
       )}
     </Button>
@@ -99,16 +99,36 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
 
   // Handle successful sign-up
   useEffect(() => {
-    if (state?.ok) {
+    if (state?.ok && !state.requiresEmailConfirmation) {
       if (onSuccess) {
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [state, router, onSuccess])
 
-  const content = (
+  const content = state?.ok && state.requiresEmailConfirmation ? (
+    <div className="space-y-5 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
+        <MailCheck className="h-6 w-6 text-green-700" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold">Potwierdź swój adres email</h2>
+        <p className="text-sm text-muted-foreground">{state.message}</p>
+      </div>
+      {onSwitchToLogin ? (
+        <Button type="button" variant="outline" onClick={onSwitchToLogin} className="w-full">
+          Przejdź do logowania
+        </Button>
+      ) : (
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/auth/login">Przejdź do logowania</Link>
+        </Button>
+      )}
+    </div>
+  ) : (
     <>
       <form action={signInWithGoogle} className="mb-2">
         <GoogleSignInButton />
@@ -144,21 +164,36 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
           <label htmlFor="fullName" className="block text-sm font-medium">
             Imię i nazwisko
           </label>
-          <Input id="fullName" name="fullName" type="text" placeholder="Jan Kowalski" required />
+          <Input id="fullName" name="fullName" type="text" placeholder="Jan Kowalski" autoComplete="name" minLength={2} required />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm font-medium">
             Email
           </label>
-          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+          <Input id="email" name="email" type="email" placeholder="twoj@email.com" autoComplete="email" required />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm font-medium">
             Hasło
           </label>
-          <Input id="password" name="password" type="password" required />
+          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+          <p className="text-xs text-muted-foreground">Hasło musi mieć co najmniej 8 znaków</p>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium">
+            Potwierdź hasło
+          </label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
         </div>
 
         <div className="flex items-center space-x-2">

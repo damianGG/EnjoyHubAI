@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import UnifiedAuthForm from "@/components/unified-auth-form"
+import LoginForm from "@/components/login-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
+import SignUpForm from "@/components/sign-up-form"
 import { useRouter } from "next/navigation"
 
 interface AuthSheetProps {
@@ -27,6 +28,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     // Navigate to the return path if provided, otherwise to dashboard
     const destination = returnToPath || "/dashboard"
     router.push(destination)
+    router.refresh()
   }
 
   const handleSwitchToLogin = () => {
@@ -36,10 +38,19 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     }
   }
 
-  // Sync internal mode with external mode prop (only for login/signup)
-  if ((mode === "login" || mode === "signup") && currentMode !== mode && currentMode !== "forgot-password") {
-    setCurrentMode(mode)
+  const handleSwitchToSignUp = () => {
+    setCurrentMode("signup")
+    onModeChange?.("signup")
   }
+
+  const handleSwitchToForgotPassword = () => {
+    setCurrentMode("forgot-password")
+  }
+
+  // Keep the sheet in sync when it is opened from a different navigation action.
+  useEffect(() => {
+    setCurrentMode(mode)
+  }, [mode, open])
 
   const getTitle = () => {
     switch (currentMode) {
@@ -58,11 +69,19 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
           <SheetTitle className="text-base font-normal">{getTitle()}</SheetTitle>
         </SheetHeader>
         <div className="p-6">
-          {(currentMode === "login" || currentMode === "signup") && (
-            <UnifiedAuthForm 
-              inline 
-              onSuccess={handleSuccess} 
-              mode={currentMode}
+          {currentMode === "login" && (
+            <LoginForm
+              inline
+              onSuccess={handleSuccess}
+              onSwitchToSignUp={handleSwitchToSignUp}
+              onSwitchToForgotPassword={handleSwitchToForgotPassword}
+            />
+          )}
+          {currentMode === "signup" && (
+            <SignUpForm
+              inline
+              onSuccess={handleSuccess}
+              onSwitchToLogin={handleSwitchToLogin}
             />
           )}
           {currentMode === "forgot-password" && (

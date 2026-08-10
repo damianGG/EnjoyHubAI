@@ -16,6 +16,7 @@ interface LoginFormProps {
   onSwitchToSignUp?: () => void
   onSwitchToForgotPassword?: () => void
   onSwitchToPhoneLogin?: () => void
+  initialError?: string
 }
 
 function SubmitButton() {
@@ -94,7 +95,14 @@ function FacebookSignInButton() {
   )
 }
 
-export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp, onSwitchToForgotPassword, onSwitchToPhoneLogin }: LoginFormProps = {}) {
+export default function LoginForm({
+  inline = false,
+  onSuccess,
+  onSwitchToSignUp,
+  onSwitchToForgotPassword,
+  onSwitchToPhoneLogin,
+  initialError,
+}: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
@@ -105,6 +113,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [state, router, onSuccess])
@@ -129,6 +138,12 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
       </div>
 
       <form action={formAction} className="space-y-4">
+        {initialError && (
+          <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+            {initialError}
+          </div>
+        )}
+
         {state?.error && (
           <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
             {state.error}
@@ -139,7 +154,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
           <label htmlFor="email" className="block text-sm font-medium">
             Email
           </label>
-          <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+          <Input id="email" name="email" type="email" placeholder="twoj@email.com" autoComplete="email" required />
         </div>
 
         <div className="space-y-2">
@@ -161,7 +176,7 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
               </Link>
             )}
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
         </div>
 
         <SubmitButton />

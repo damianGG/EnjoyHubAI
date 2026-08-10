@@ -16,6 +16,9 @@ interface UnifiedAuthFormProps {
   inline?: boolean
   onSuccess?: () => void
   mode?: "login" | "signup"
+  initialError?: string
+  onSwitchToSignUp?: () => void
+  onSwitchToForgotPassword?: () => void
 }
 
 function ContinueButton() {
@@ -111,11 +114,11 @@ function FacebookSignInButton() {
   )
 }
 
-function VerifyOTPButton() {
+function VerifyOTPButton({ disabled = false }: { disabled?: boolean }) {
   const { pending } = useFormStatus()
 
   return (
-    <Button type="submit" disabled={pending} className="w-full bg-pink-600 hover:bg-pink-700">
+    <Button type="submit" disabled={pending || disabled} className="w-full bg-pink-600 hover:bg-pink-700">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -129,7 +132,13 @@ function VerifyOTPButton() {
 }
 
 export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
-  const { inline = false, onSuccess, mode = "login" } = props
+  const {
+    inline = false,
+    onSuccess,
+    onSwitchToSignUp,
+    onSwitchToForgotPassword,
+    initialError,
+  } = props
   const router = useRouter()
   const [step, setStep] = useState<"initial" | "verify">("initial")
   const [countryCode, setCountryCode] = useState("+48")
@@ -155,6 +164,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [verifyOTPState, router, onSuccess])
@@ -166,12 +176,18 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [emailLoginState, router, onSuccess])
 
   const handleSendOTP = (formData: FormData) => {
-    const phone = `${countryCode}${formData.get("phone")}`
+    const countryDigits = countryCode.replace(/\D/g, "")
+    const enteredDigits = String(formData.get("phone") || "").replace(/\D/g, "")
+    const localNumber = enteredDigits.startsWith(countryDigits)
+      ? enteredDigits.slice(countryDigits.length)
+      : enteredDigits
+    const phone = `${countryCode}${localNumber}`
     setPhoneNumber(phone)
     formData.set("phone", phone)
     sendOTPAction(formData)
@@ -186,6 +202,12 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
     <>
       {step === "initial" ? (
         <div className="space-y-4">
+          {initialError && (
+            <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+              {initialError}
+            </div>
+          )}
+
           {/* Phone Number Section */}
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold">Witaj w EnjoyHub</h2>
@@ -312,12 +334,35 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
               </div>
               <EmailLoginButton />
               <div className="text-center text-sm">
-                <Link href="/auth/forgot-password" className="text-primary hover:underline">
-                  Zapomniałeś hasła?
-                </Link>
+                {onSwitchToForgotPassword ? (
+                  <button
+                    type="button"
+                    onClick={onSwitchToForgotPassword}
+                    className="text-primary hover:underline"
+                  >
+                    Zapomniałeś hasła?
+                  </button>
+                ) : (
+                  <Link href="/auth/forgot-password" className="text-primary hover:underline">
+                    Zapomniałeś hasła?
+                  </Link>
+                )}
               </div>
             </form>
           )}
+
+          <div className="text-center text-sm text-muted-foreground">
+            Nie masz konta?{" "}
+            {onSwitchToSignUp ? (
+              <button type="button" onClick={onSwitchToSignUp} className="text-primary hover:underline">
+                Zarejestruj się
+              </button>
+            ) : (
+              <Link href="/auth/sign-up" className="text-primary hover:underline">
+                Zarejestruj się
+              </Link>
+            )}
+          </div>
         </div>
       ) : (
         /* OTP Verification Step */
@@ -366,7 +411,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
               <input type="hidden" name="token" value={otp} />
             </div>
 
-            <VerifyOTPButton />
+            <VerifyOTPButton disabled={otp.length !== 6} />
 
             <div className="text-center text-sm">
               <button

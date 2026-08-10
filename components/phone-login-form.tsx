@@ -37,11 +37,11 @@ function SendOTPButton() {
   )
 }
 
-function VerifyOTPButton() {
+function VerifyOTPButton({ disabled = false }: { disabled?: boolean }) {
   const { pending } = useFormStatus()
 
   return (
-    <Button type="submit" disabled={pending} className="w-full">
+    <Button type="submit" disabled={pending || disabled} className="w-full">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -78,6 +78,7 @@ export default function PhoneLoginForm(props: PhoneLoginFormProps = {}) {
         onSuccess()
       } else {
         router.push("/")
+        router.refresh()
       }
     }
   }, [verifyOTPState, router, onSuccess])
@@ -182,7 +183,7 @@ export default function PhoneLoginForm(props: PhoneLoginFormProps = {}) {
             <input type="hidden" name="token" value={otp} />
           </div>
 
-          <VerifyOTPButton />
+          <VerifyOTPButton disabled={otp.length !== 6} />
 
           <div className="text-center text-sm text-muted-foreground">
             Nie otrzymałeś kodu?{" "}
