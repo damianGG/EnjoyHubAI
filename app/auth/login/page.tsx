@@ -1,6 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import UnifiedAuthForm from "@/components/unified-auth-form"
+import LoginForm from "@/components/login-form"
 
 interface LoginPageProps {
   searchParams: Promise<{ error?: string }>
@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <UnifiedAuthForm mode="login" initialError={error ? AUTH_ERRORS[error] || AUTH_ERRORS.callback : undefined} />
+      <LoginForm initialError={error ? AUTH_ERRORS[error] || AUTH_ERRORS.callback : undefined} />
     </div>
   )
 }

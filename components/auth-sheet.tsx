@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import UnifiedAuthForm from "@/components/unified-auth-form"
+import LoginForm from "@/components/login-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
 import SignUpForm from "@/components/sign-up-form"
 import { useRouter } from "next/navigation"
@@ -70,10 +70,9 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
         </SheetHeader>
         <div className="p-6">
           {currentMode === "login" && (
-            <UnifiedAuthForm 
-              inline 
-              onSuccess={handleSuccess} 
-              mode="login"
+            <LoginForm
+              inline
+              onSuccess={handleSuccess}
               onSwitchToSignUp={handleSwitchToSignUp}
               onSwitchToForgotPassword={handleSwitchToForgotPassword}
             />

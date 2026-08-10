@@ -16,6 +16,7 @@ interface LoginFormProps {
   onSwitchToSignUp?: () => void
   onSwitchToForgotPassword?: () => void
   onSwitchToPhoneLogin?: () => void
+  initialError?: string
 }
 
 function SubmitButton() {
@@ -94,7 +95,14 @@ function FacebookSignInButton() {
   )
 }
 
-export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp, onSwitchToForgotPassword, onSwitchToPhoneLogin }: LoginFormProps = {}) {
+export default function LoginForm({
+  inline = false,
+  onSuccess,
+  onSwitchToSignUp,
+  onSwitchToForgotPassword,
+  onSwitchToPhoneLogin,
+  initialError,
+}: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
 
@@ -130,6 +138,12 @@ export default function LoginForm({ inline = false, onSuccess, onSwitchToSignUp,
       </div>
 
       <form action={formAction} className="space-y-4">
+        {initialError && (
+          <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+            {initialError}
+          </div>
+        )}
+
         {state?.error && (
           <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
             {state.error}
