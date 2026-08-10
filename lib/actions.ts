@@ -36,7 +36,21 @@ function validateEmail(e: string) {
 }
 
 function getSiteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_VERCEL_URL,
+    process.env.VERCEL_URL,
+  ]
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim()
+    if (!value) continue
+
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
+    return withProtocol.replace(/\/$/, "")
+  }
+
+  return "http://localhost:3000"
 }
 
 function getAuthCallbackUrl() {
@@ -249,7 +263,7 @@ export async function requestPasswordReset(prevState: any, formData: FormData): 
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(emailStr, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/reset-password`,
+      redirectTo: `${getSiteUrl()}/auth/reset-password`,
     })
 
     if (error) {
