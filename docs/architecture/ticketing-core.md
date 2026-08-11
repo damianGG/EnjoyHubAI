@@ -65,6 +65,8 @@ przeznaczoną dla EnjoyHub, a nie całkowitą pojemność obiektu.
   bezpośredni odczyt z Supabase pozostaje zablokowany.
 - Druga migracja usuwa błędną, globalną politykę INSERT z legacy tabeli `users`.
   `service_role` nie potrzebuje takiej polityki, ponieważ omija RLS.
+- Trzecia migracja usuwa szerokie, domyślne granty Supabase z nowych tabel i
+  nadaje rolom `anon` oraz `authenticated` wyłącznie wymagane uprawnienia.
 
 ## Co wchodzi do etapu 1B
 
@@ -78,7 +80,8 @@ przeznaczoną dla EnjoyHub, a nie całkowitą pojemność obiektu.
 ## Wdrożenie etapu 1A
 
 1. Wykonać kopię zapasową bazy.
-2. Uruchomić migracje najpierw na osobnym projekcie Supabase/staging.
+2. Uruchomić wszystkie migracje z `supabase/migrations` w kolejności nazw plików,
+   najpierw na osobnym projekcie Supabase/staging.
 3. Uruchomić test `supabase/tests/database/001_ticketing_core_smoke.sql`, a następnie
    sprawdzić automatyczne dodanie właściciela po utworzeniu organizacji.
 4. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
