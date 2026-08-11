@@ -11,6 +11,13 @@ Krótki opis: EnjoyHubAI to projekt ... (polish)
 ## Testy
 - Uruchom testy: npm test
 
+## Baza danych
+
+Wersjonowane migracje Supabase znajdują się w `supabase/migrations`.
+Nowy, addytywny model sprzedaży biletów jest opisany w
+`docs/architecture/ticketing-core.md`. Pliki z katalogu `scripts` opisują starszy
+model i nie powinny być uruchamiane jako migracje nowego środowiska.
+
 ## Kontrybucja
 - Zobacz CONTRIBUTING.md (do dodania)
 
