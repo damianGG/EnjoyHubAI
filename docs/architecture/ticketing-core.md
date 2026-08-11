@@ -68,22 +68,42 @@ przeznaczoną dla EnjoyHub, a nie całkowitą pojemność obiektu.
 - Trzecia migracja usuwa szerokie, domyślne granty Supabase z nowych tabel i
   nadaje rolom `anon` oraz `authenticated` wyłącznie wymagane uprawnienia.
 
-## Co wchodzi do etapu 1B
+## Etap 1B — atomowy checkout
 
-- atomowa funkcja utworzenia zamówienia i blokady miejsc,
-- blokada rekordu terminu podczas liczenia dostępności,
-- sumowanie osób/jednostek pojemności, a nie liczby rezerwacji,
-- wygaszanie blokad checkoutu,
-- generowanie terminów z harmonogramów i wyjątków,
-- test równoległych rezerwacji potwierdzający brak oversellingu.
+- `ticketing_create_order_hold` w jednej transakcji blokuje termin, sprawdza
+  dostępność i tworzy zamówienie, pozycje oraz czasową blokadę miejsc.
+- Dostępność jest liczona w jednostkach pojemności, dzięki czemu np. bilet
+  rodzinny może zajmować cztery miejsca.
+- `checkout_key` zapewnia idempotencję — ponowienie tego samego żądania nie
+  tworzy drugiego zamówienia.
+- `ticketing_confirm_order` bezpiecznie zamienia aktywną blokadę w sprzedane
+  miejsca, a `ticketing_release_order_hold` zwalnia nieopłacony checkout.
+- `ticketing_expire_inventory_holds` wygasza stare blokady w ograniczonych
+  partiach i jest przygotowana do wywoływania przez zadanie cykliczne.
+- `ticketing_generate_sessions` tworzy brakujące terminy z harmonogramów oraz
+  wyjątków, uwzględniając strefę czasową obiektu.
+- Funkcje zapisujące są dostępne wyłącznie dla backendu z `service_role`.
+  Przeglądarka ma dostęp tylko do bezpiecznego odczytu dostępności.
 
-## Wdrożenie etapu 1A
+## Co wchodzi do etapu 1C
+
+- endpoint backendowy wywołujący atomowy checkout,
+- limitowanie żądań i ochrona przed masowym blokowaniem miejsc,
+- podłączenie operatora płatności i obsługa webhooka potwierdzającego,
+- zadanie cykliczne wygaszające blokady,
+- formularz wyboru biletów i podsumowanie zamówienia w aplikacji.
+
+## Wdrożenie etapów 1A–1B
 
 1. Wykonać kopię zapasową bazy.
 2. Uruchomić wszystkie migracje z `supabase/migrations` w kolejności nazw plików,
    najpierw na osobnym projekcie Supabase/staging.
-3. Uruchomić test `supabase/tests/database/001_ticketing_core_smoke.sql`, a następnie
-   sprawdzić automatyczne dodanie właściciela po utworzeniu organizacji.
+3. Uruchomić kolejno testy `supabase/tests/database/001_ticketing_core_smoke.sql`
+   oraz `supabase/tests/database/002_atomic_ticketing_checkout_smoke.sql`, a
+   następnie sprawdzić automatyczne dodanie właściciela po utworzeniu organizacji.
+   Na izolowanym stagingu uruchomić również `npm run test:ticketing-concurrency`
+   z `ALLOW_TICKETING_CONCURRENCY_TEST=true`; test tworzy tymczasowe dane, wysyła
+   dwa checkouty równocześnie i usuwa dane po zakończeniu.
 4. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
    działają — aplikacja nie używa jeszcze nowych tabel.
 5. Dopiero potem zastosować migracje na produkcji.
