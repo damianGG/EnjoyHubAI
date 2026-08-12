@@ -281,6 +281,14 @@ begin
     raise exception 'anon must not execute the checkout write function';
   end if;
 
+  if has_function_privilege(
+    'authenticated',
+    'public.ticketing_create_order_hold(uuid,uuid,text,text,jsonb,uuid,text,public.ticketing_order_source,integer,boolean,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'authenticated must not execute the checkout write function';
+  end if;
+
   if not has_function_privilege(
     'service_role',
     'public.ticketing_create_order_hold(uuid,uuid,text,text,jsonb,uuid,text,public.ticketing_order_source,integer,boolean,jsonb)',
