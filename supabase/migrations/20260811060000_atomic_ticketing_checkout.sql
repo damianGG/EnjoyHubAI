@@ -841,15 +841,15 @@ begin
 end;
 $$;
 
-revoke all on function public.ticketing_get_session_availability(uuid) from public;
-revoke all on function public.ticketing_expire_inventory_holds(integer) from public;
+revoke all on function public.ticketing_get_session_availability(uuid) from public, anon, authenticated;
+revoke all on function public.ticketing_expire_inventory_holds(integer) from public, anon, authenticated;
 revoke all on function public.ticketing_create_order_hold(
   uuid, uuid, text, text, jsonb, uuid, text,
   public.ticketing_order_source, integer, boolean, jsonb
-) from public;
-revoke all on function public.ticketing_confirm_order(uuid, uuid, jsonb) from public;
-revoke all on function public.ticketing_release_order_hold(uuid, uuid) from public;
-revoke all on function public.ticketing_generate_sessions(uuid, date, date) from public;
+) from public, anon, authenticated;
+revoke all on function public.ticketing_confirm_order(uuid, uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.ticketing_release_order_hold(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.ticketing_generate_sessions(uuid, date, date) from public, anon, authenticated;
 
 grant execute on function public.ticketing_get_session_availability(uuid)
   to anon, authenticated, service_role;
