@@ -17,9 +17,11 @@ import './globals.css'
 // })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: {
+    default: 'EnjoyHub – atrakcje i bilety',
+    template: '%s | EnjoyHub',
+  },
+  description: 'Znajdź atrakcje, sprawdź dostępne terminy i zarezerwuj miejsce online.',
 }
 
 export default function RootLayout({

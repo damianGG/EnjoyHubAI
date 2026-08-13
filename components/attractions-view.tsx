@@ -154,11 +154,11 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
                 onClick={() => setViewMode("grid")}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
-                Grid View
+                Widok kafelków
               </Button>
               <Button variant={viewMode === "map" ? "default" : "outline"} size="sm" onClick={() => setViewMode("map")}>
                 <Map className="h-4 w-4 mr-2" />
-                Map View
+                Widok mapy
               </Button>
             </div>
           </div>

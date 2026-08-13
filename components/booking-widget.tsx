@@ -12,6 +12,9 @@ import type { Slot, SlotsResponse, Offer } from "@/lib/types/dynamic-fields"
 
 interface BookingWidgetProps {
   offer: Offer
+  initialDate?: string
+  initialSlot?: string
+  initialPeople?: number
 }
 
 interface BookingFormData {
@@ -45,21 +48,35 @@ function formatDisplayDate(dateStr: string): string {
   return `${day}.${month}.${year}`
 }
 
-export default function BookingWidget({ offer }: BookingWidgetProps) {
-  // Date selection - initialize as undefined to avoid hydration mismatch
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  
-  // Set default date after mount to avoid hydration issues
-  useEffect(() => {
-    setSelectedDate(new Date())
-  }, [])
-  
-  // Memoize today's date for calendar disabled check
+function parseDate(value?: string): Date | undefined {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined
+
+  const [year, month, day] = value.split("-").map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setHours(0, 0, 0, 0)
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return undefined
+  }
+
+  return date
+}
+
+export default function BookingWidget({ offer, initialDate, initialSlot, initialPeople }: BookingWidgetProps) {
   const today = useMemo(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
     return d
   }, [])
+
+  // Date selection - initialize as undefined to avoid hydration mismatch
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+
+  // Set the requested date after mount to avoid hydration mismatches.
+  useEffect(() => {
+    const requestedDate = parseDate(initialDate)
+    setSelectedDate(requestedDate && requestedDate >= today ? requestedDate : new Date())
+  }, [initialDate, today])
   
   // Slots state
   const [slots, setSlots] = useState<Slot[]>([])
@@ -71,7 +88,7 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
   
   // Booking form
   const [formData, setFormData] = useState<BookingFormData>({
-    persons: 1,
+    persons: Math.min(offer.max_participants || 99, Math.max(1, initialPeople || 1)),
     customerName: "",
     customerEmail: "",
     customerPhone: "",
@@ -106,6 +123,8 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
 
         const data: SlotsResponse = await response.json()
         setSlots(data.slots)
+        const requestedSlot = data.slots.find((slot) => slot.startTime === initialSlot && slot.available)
+        setSelectedSlot(requestedSlot || null)
       } catch (error) {
         setSlotsError(error instanceof Error ? error.message : "Wystąpił błąd podczas pobierania terminów")
         setSlots([])
@@ -115,7 +134,7 @@ export default function BookingWidget({ offer }: BookingWidgetProps) {
     }
 
     fetchSlots()
-  }, [selectedDate, offer.id])
+  }, [selectedDate, offer.id, initialSlot])
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -119,7 +119,7 @@ export default async function PropertiesPage() {
                         Zarządzaj
                       </Button>
                     </Link>
-                    <Link href={`/properties/${property.id}`}>
+                    <Link href={`/attractions/${property.id}`}>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>

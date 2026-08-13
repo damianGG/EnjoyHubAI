@@ -228,7 +228,7 @@ function BookingCard({ booking }: { booking: any }) {
             </div>
 
             <div className="flex space-x-2">
-              <Link href={`/properties/${booking.properties?.id || booking.property_id}`}>
+              <Link href={`/attractions/${booking.properties?.id || booking.property_id}`}>
                 <Button variant="outline" size="sm">
                   Zobacz obiekt
                 </Button>

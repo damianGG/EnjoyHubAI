@@ -115,7 +115,7 @@ export default async function FavoritesPage() {
                       <span className="text-lg font-bold">{favorite.properties.price_per_night} zł</span>
                       <span className="text-muted-foreground"> / noc</span>
                     </div>
-                    <Link href={`/properties/${favorite.properties.id}`}>
+                    <Link href={`/attractions/${favorite.properties.id}`}>
                       <Button size="sm">Zobacz szczegóły</Button>
                     </Link>
                   </div>
