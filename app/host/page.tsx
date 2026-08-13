@@ -2,7 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Home, Calendar, BarChart3, Users } from "lucide-react"
+import { Plus, Home, Calendar, BarChart3, Users, ReceiptText, ScanLine } from "lucide-react"
 import Link from "next/link"
 
 export default async function HostDashboard() {
@@ -124,7 +124,7 @@ export default async function HostDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <Link href="/host/properties/new">
               <CardHeader>
@@ -157,6 +157,30 @@ export default async function HostDashboard() {
                   Zobacz rezerwacje
                 </CardTitle>
                 <CardDescription>Zarządzaj rezerwacjami i kalendarzem</CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <Link href="/host/sprzedaz">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ReceiptText className="h-5 w-5 mr-2" />
+                  Sprzedaż biletów
+                </CardTitle>
+                <CardDescription>Zamówienia, obrót i wystawione bilety</CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <Link href="/host/skaner">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ScanLine className="h-5 w-5 mr-2" />
+                  Kontrola wejścia
+                </CardTitle>
+                <CardDescription>Skanuj i wykorzystuj bilety QR</CardDescription>
               </CardHeader>
             </Link>
           </Card>

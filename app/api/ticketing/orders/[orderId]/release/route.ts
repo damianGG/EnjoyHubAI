@@ -3,7 +3,11 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
-import { checkoutCookieName, isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
+import {
+  checkoutCookieName,
+  isTicketingCheckoutEnabled,
+  isTicketingPaymentsEnabled,
+} from "@/lib/ticketing/config"
 import {
   checkoutCookieMatches,
   isSameOriginRequest,
@@ -36,6 +40,29 @@ export async function POST(
   }
 
   const supabase = createAdminClient()
+
+  if (isTicketingPaymentsEnabled) {
+    const { data: orderState, error: orderStateError } = await supabase
+      .from("orders")
+      .select("payment_status")
+      .eq("id", orderId)
+      .single()
+
+    if (orderStateError) {
+      return NextResponse.json(
+        { error: "Nie udało się sprawdzić stanu płatności." },
+        { status: 500 },
+      )
+    }
+
+    if (orderState.payment_status === "pending") {
+      return NextResponse.json(
+        { error: "Aktywna sesja płatności zwolni miejsca automatycznie po wygaśnięciu." },
+        { status: 409 },
+      )
+    }
+  }
+
   const { error } = await supabase.rpc("ticketing_release_order_hold", {
     p_order_id: orderId,
     p_hold_token: checkoutCookie!.holdToken,

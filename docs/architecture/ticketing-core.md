@@ -1,4 +1,4 @@
-# Rdzeń sprzedaży biletów — etapy 1A–1C
+# Rdzeń sprzedaży biletów — etapy 1A–1D
 
 ## Cel
 
@@ -96,9 +96,39 @@ Etap 1C udostępnia pierwszy testowalny przepływ pod `/checkout`:
 - ekran podsumowania z odliczaniem 15-minutowej blokady,
 - chroniony `CRON_SECRET` endpoint sprzątający stare blokady i liczniki.
 
-Płatność i webhook operatora pozostają kolejnym, osobnym etapem. Do testu
-stagingowego służy fixture `supabase/tests/fixtures/001_ticketing_live_demo.sql`.
-Po jego wykonaniu testowa oferta pojawi się pod `/checkout`.
+Do testu stagingowego służy fixture
+`supabase/tests/fixtures/001_ticketing_live_demo.sql`. Po jego wykonaniu testowa
+oferta pojawi się pod `/checkout`; płatność i wystawienie biletów dodaje etap 1D.
+
+## Etap 1D — płatność i wystawienie biletów
+
+Etap 1D zamyka pierwszy pełny przebieg sprzedaży:
+
+- serwer tworzy Stripe Checkout wyłącznie dla zamówienia dostępnego przez
+  chronione cookie i z kwotą ponownie odczytaną z bazy;
+- identyfikator próby płatności jest kluczem idempotencji Stripe, dlatego
+  ponowienie żądania nie tworzy drugiej sesji ani drugiego obciążenia;
+- webhook weryfikuje podpis na surowym body i dopiero status `paid` może
+  atomowo potwierdzić zamówienie oraz zamienić blokadę w sprzedane miejsca;
+- identyfikatory zdarzeń i skróty payloadów zapobiegają podwójnemu fulfillmentowi;
+- jeden rekord `tickets` powstaje dla każdej sztuki pozycji zamówienia, a
+  unikalne ograniczenie chroni przed ponownym wystawieniem przy retry webhooka;
+- klient otrzymuje ekran potwierdzenia i oddzielny kod QR dla każdego biletu;
+- właściciel widzi obrót, zamówienia i liczbę ważnych biletów pod
+  `/host/sprzedaz`;
+- właściciel, manager lub kasjer może zeskanować bilet zwykłym aparatem telefonu
+  i atomowo oznaczyć wejście; ponowne skanowanie pokazuje czas pierwszego użycia;
+- panel `/host/skaner` zawiera instrukcję dla kasjera i awaryjne ręczne wpisanie
+  kodu biletu bez instalowania osobnej aplikacji.
+
+Stripe Checkout ma minimalny czas ważności 30 minut. Przy rozpoczęciu płatności
+blokada miejsc jest wydłużana do 35 minut, a sesja Stripe wygasa wcześniej.
+Pięciominutowy bufor pozwala odebrać podpisany webhook bez ryzyka, że te same
+miejsca zostaną w międzyczasie sprzedane ponownie.
+
+Pierwszy pilot płatniczy obsługuje zamówienia w PLN. Metody płatności są
+dynamiczne: BLIK i Przelewy24 należy włączyć na koncie Stripe, bez wpisywania ich
+na stałe w kodzie.
 
 ## Wdrożenie etapów 1A–1C
 
@@ -114,14 +144,27 @@ Po jego wykonaniu testowa oferta pojawi się pod `/checkout`.
 4. Dla etapu 1C uruchomić migrację
    `20260812234000_ticketing_checkout_rate_limits.sql` i test
    `003_ticketing_checkout_rate_limits_smoke.sql`.
-5. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
+5. Dla etapu 1D uruchomić migrację
+   `20260813070000_ticketing_payments_and_tickets.sql`, a następnie test
+   `004_ticketing_payments_and_tickets_smoke.sql`. Lokalnie oba kroki, razem ze
+   wszystkimi wcześniejszymi migracjami i smoke testami, wykonuje
+   `npm run test:ticketing-db` w izolowanej bazie PGlite.
+6. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
    `TICKETING_FINGERPRINT_SECRET` i `CRON_SECRET`. Na podglądzie ustawić
    `TICKETING_CHECKOUT_ENABLED=true`, pozostawiając produkcję wyłączoną.
-6. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
+7. Dla płatności dodać `STRIPE_SECRET_KEY` i `STRIPE_WEBHOOK_SECRET`, a w Stripe
+   utworzyć endpoint `/api/webhooks/stripe` dla zdarzeń:
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed` i `checkout.session.expired`.
+   Dopiero wtedy ustawić `TICKETING_PAYMENTS_ENABLED=true` na Preview.
+8. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
    zamówienia, licznik, anulowanie oraz powrót miejsc do puli.
-7. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
+9. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
+   wystawienie biletów QR, pojawienie się zamówienia w `/host/sprzedaz` oraz
+   jednokrotne wykorzystanie biletu przez zalogowanego kasjera.
+10. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
    działają — aplikacja nie używa jeszcze nowych tabel.
-8. Dopiero potem zastosować migracje na produkcji.
+11. Dopiero potem zastosować migracje na produkcji.
 
 Nie należy ręcznie uruchamiać starych plików z katalogu `scripts` jako migracji
 nowego modelu.

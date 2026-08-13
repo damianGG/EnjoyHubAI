@@ -12,9 +12,16 @@ interface HoldCountdownProps {
   expiresAt: string
   initialStatus: string
   initialNow: number
+  canRelease?: boolean
 }
 
-export function HoldCountdown({ orderId, expiresAt, initialStatus, initialNow }: HoldCountdownProps) {
+export function HoldCountdown({
+  orderId,
+  expiresAt,
+  initialStatus,
+  initialNow,
+  canRelease = true,
+}: HoldCountdownProps) {
   const router = useRouter()
   const [now, setNow] = useState(initialNow)
   const [isReleasing, setIsReleasing] = useState(false)
@@ -82,10 +89,16 @@ export function HoldCountdown({ orderId, expiresAt, initialStatus, initialNow }:
       {releaseError && (
         <Alert variant="destructive"><AlertDescription>{releaseError}</AlertDescription></Alert>
       )}
-      <Button type="button" variant="outline" className="w-full" onClick={releaseHold} disabled={isReleasing}>
-        {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
-        Anuluj i zwolnij miejsca
-      </Button>
+      {canRelease ? (
+        <Button type="button" variant="outline" className="w-full" onClick={releaseHold} disabled={isReleasing}>
+          {isReleasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+          Anuluj i zwolnij miejsca
+        </Button>
+      ) : (
+        <p className="text-center text-xs text-muted-foreground">
+          Aktywnej sesji płatności nie można anulować ręcznie. Jeśli jej nie dokończysz, miejsca zwolnią się automatycznie.
+        </p>
+      )}
     </div>
   )
 }

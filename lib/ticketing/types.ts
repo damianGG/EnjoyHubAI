@@ -79,4 +79,27 @@ export interface CheckoutOrderSummary {
     totalPriceAmount: number
     startsAt: string
   }>
+  tickets: Array<{
+    id: string
+    ticketCode: string
+    sequenceNumber: number
+    status: string
+    productName: string
+    ticketTypeName: string
+    startsAt: string
+  }>
+}
+
+export interface PublicTicketSummary {
+  ticketCode: string
+  status: string
+  issuedAt: string
+  usedAt: string | null
+  sequenceNumber: number
+  productName: string
+  ticketTypeName: string
+  startsAt: string
+  venueName: string
+  venueCity: string | null
+  venueTimezone: string
 }

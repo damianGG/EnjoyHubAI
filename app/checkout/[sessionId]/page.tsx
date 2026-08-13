@@ -5,7 +5,10 @@ import { notFound } from "next/navigation"
 import { CheckoutForm } from "@/components/ticketing/checkout-form"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
+import {
+  isTicketingCheckoutEnabled,
+  isTicketingPaymentsEnabled,
+} from "@/lib/ticketing/config"
 import { formatSessionDate } from "@/lib/ticketing/format"
 import { getCheckoutSession } from "@/lib/ticketing/queries"
 
@@ -56,7 +59,9 @@ export default async function CheckoutPage({
                   )}
                 </div>
                 <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                  Na tym etapie nie pobieramy jeszcze płatności. Sprawdzamy realne blokowanie miejsc i tworzenie zamówienia.
+                  {isTicketingPaymentsEnabled
+                    ? "Po utworzeniu zamówienia przejdziesz do bezpiecznej płatności Stripe. Bilety powstaną automatycznie po potwierdzeniu webhooka."
+                    : "Płatności pozostają wyłączone flagą. Możesz sprawdzić blokowanie miejsc i tworzenie zamówienia."}
                 </div>
               </CardContent>
             </Card>
