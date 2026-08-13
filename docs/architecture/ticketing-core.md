@@ -1,4 +1,4 @@
-# Rdzeń sprzedaży biletów — etap 1A
+# Rdzeń sprzedaży biletów — etapy 1A–1C
 
 ## Cel
 
@@ -85,15 +85,22 @@ przeznaczoną dla EnjoyHub, a nie całkowitą pojemność obiektu.
 - Funkcje zapisujące są dostępne wyłącznie dla backendu z `service_role`.
   Przeglądarka ma dostęp tylko do bezpiecznego odczytu dostępności.
 
-## Co wchodzi do etapu 1C
+## Etap 1C — pierwszy checkout live
 
-- endpoint backendowy wywołujący atomowy checkout,
-- limitowanie żądań i ochrona przed masowym blokowaniem miejsc,
-- podłączenie operatora płatności i obsługa webhooka potwierdzającego,
-- zadanie cykliczne wygaszające blokady,
-- formularz wyboru biletów i podsumowanie zamówienia w aplikacji.
+Etap 1C udostępnia pierwszy testowalny przepływ pod `/checkout`:
 
-## Wdrożenie etapów 1A–1B
+- publiczną listę aktywnych terminów oraz formularz wyboru rodzajów biletów,
+- backend wywołujący atomowy checkout wyłącznie z `service_role`,
+- trwałe ograniczenie prób na zanonimizowany skrót IP i e-maila,
+- cookie `HttpOnly` wymagane do odczytu i anulowania bieżącego zamówienia,
+- ekran podsumowania z odliczaniem 15-minutowej blokady,
+- chroniony `CRON_SECRET` endpoint sprzątający stare blokady i liczniki.
+
+Płatność i webhook operatora pozostają kolejnym, osobnym etapem. Do testu
+stagingowego służy fixture `supabase/tests/fixtures/001_ticketing_live_demo.sql`.
+Po jego wykonaniu testowa oferta pojawi się pod `/checkout`.
+
+## Wdrożenie etapów 1A–1C
 
 1. Wykonać kopię zapasową bazy.
 2. Uruchomić wszystkie migracje z `supabase/migrations` w kolejności nazw plików,
@@ -104,9 +111,17 @@ przeznaczoną dla EnjoyHub, a nie całkowitą pojemność obiektu.
    Na izolowanym stagingu uruchomić również `npm run test:ticketing-concurrency`
    z `ALLOW_TICKETING_CONCURRENCY_TEST=true`; test tworzy tymczasowe dane, wysyła
    dwa checkouty równocześnie i usuwa dane po zakończeniu.
-4. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
+4. Dla etapu 1C uruchomić migrację
+   `20260812234000_ticketing_checkout_rate_limits.sql` i test
+   `003_ticketing_checkout_rate_limits_smoke.sql`.
+5. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
+   `TICKETING_FINGERPRINT_SECRET` i `CRON_SECRET`. Na podglądzie ustawić
+   `TICKETING_CHECKOUT_ENABLED=true`, pozostawiając produkcję wyłączoną.
+6. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
+   zamówienia, licznik, anulowanie oraz powrót miejsc do puli.
+7. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
    działają — aplikacja nie używa jeszcze nowych tabel.
-5. Dopiero potem zastosować migracje na produkcji.
+8. Dopiero potem zastosować migracje na produkcji.
 
 Nie należy ręcznie uruchamiać starych plików z katalogu `scripts` jako migracji
 nowego modelu.
