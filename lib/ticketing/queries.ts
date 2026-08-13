@@ -2,9 +2,11 @@ import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/adm
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import type {
   CheckoutOrderSummary,
+  PublicTicketSummary,
   TicketingCheckoutSession,
   TicketingSessionListItem,
 } from "@/lib/ticketing/types"
+import { isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
 
 interface RawAvailability {
   available_capacity_units: number
@@ -221,7 +223,25 @@ export async function getCheckoutOrderSummary(
 
   if (holdError || !hold) return null
 
-  const [orderResult, itemsResult] = await Promise.all([
+  const ticketsPromise = isTicketingPaymentsEnabled
+    ? supabase
+        .from("tickets")
+        .select(`
+          id,
+          ticket_code,
+          sequence_number,
+          status,
+          order_items!inner (
+            product_name,
+            ticket_type_name,
+            sessions!inner (starts_at)
+          )
+        `)
+        .eq("order_id", orderId)
+        .order("issued_at", { ascending: true })
+    : Promise.resolve({ data: [], error: null })
+
+  const [orderResult, itemsResult, ticketsResult] = await Promise.all([
     supabase
       .from("orders")
       .select(`
@@ -252,9 +272,15 @@ export async function getCheckoutOrderSummary(
       `)
       .eq("order_id", orderId)
       .order("created_at", { ascending: true }),
+    ticketsPromise,
   ])
 
-  if (orderResult.error || !orderResult.data || itemsResult.error) return null
+  if (
+    orderResult.error ||
+    !orderResult.data ||
+    itemsResult.error ||
+    ticketsResult.error
+  ) return null
 
   const order = orderResult.data as unknown as {
     id: string
@@ -277,6 +303,17 @@ export async function getCheckoutOrderSummary(
     unit_price_amount: number | string
     total_price_amount: number | string
     sessions: { starts_at: string }
+  }>
+  const tickets = (ticketsResult.data ?? []) as unknown as Array<{
+    id: string
+    ticket_code: string
+    sequence_number: number
+    status: string
+    order_items: {
+      product_name: string
+      ticket_type_name: string
+      sessions: { starts_at: string }
+    }
   }>
 
   return {
@@ -303,5 +340,104 @@ export async function getCheckoutOrderSummary(
       totalPriceAmount: Number(item.total_price_amount),
       startsAt: item.sessions.starts_at,
     })),
+    tickets: tickets.map((ticket) => ({
+      id: ticket.id,
+      ticketCode: ticket.ticket_code,
+      sequenceNumber: ticket.sequence_number,
+      status: ticket.status,
+      productName: ticket.order_items.product_name,
+      ticketTypeName: ticket.order_items.ticket_type_name,
+      startsAt: ticket.order_items.sessions.starts_at,
+    })),
   } satisfies CheckoutOrderSummary
+}
+
+export async function getPublicTicket(ticketCode: string) {
+  if (!isSupabaseAdminConfigured || !isTicketingPaymentsEnabled) return null
+
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("tickets")
+    .select(`
+      ticket_code,
+      status,
+      issued_at,
+      used_at,
+      sequence_number,
+      order_items!inner (
+        product_name,
+        ticket_type_name,
+        sessions!inner (
+          starts_at,
+          products!inner (
+            venues!inner (name, city, timezone)
+          )
+        )
+      )
+    `)
+    .eq("ticket_code", ticketCode)
+    .single()
+
+  if (error || !data) return null
+
+  const ticket = data as unknown as {
+    ticket_code: string
+    status: string
+    issued_at: string
+    used_at: string | null
+    sequence_number: number
+    order_items: {
+      product_name: string
+      ticket_type_name: string
+      sessions: {
+        starts_at: string
+        products: {
+          venues: { name: string; city: string | null; timezone: string }
+        }
+      }
+    }
+  }
+
+  return {
+    ticketCode: ticket.ticket_code,
+    status: ticket.status,
+    issuedAt: ticket.issued_at,
+    usedAt: ticket.used_at,
+    sequenceNumber: ticket.sequence_number,
+    productName: ticket.order_items.product_name,
+    ticketTypeName: ticket.order_items.ticket_type_name,
+    startsAt: ticket.order_items.sessions.starts_at,
+    venueName: ticket.order_items.sessions.products.venues.name,
+    venueCity: ticket.order_items.sessions.products.venues.city,
+    venueTimezone: ticket.order_items.sessions.products.venues.timezone,
+  } satisfies PublicTicketSummary
+}
+
+export async function canRedeemTicket(ticketCode: string) {
+  if (!isSupabaseConfigured || !isTicketingPaymentsEnabled) return false
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: ticket, error: ticketError } = await supabase
+    .from("tickets")
+    .select("orders!inner (organization_id)")
+    .eq("ticket_code", ticketCode)
+    .single()
+
+  if (ticketError || !ticket) return false
+
+  const typedTicket = ticket as unknown as {
+    orders: { organization_id: string }
+  }
+  const { data: membership, error: membershipError } = await supabase
+    .from("organization_memberships")
+    .select("role")
+    .eq("organization_id", typedTicket.orders.organization_id)
+    .eq("user_id", user.id)
+    .in("role", ["owner", "admin", "manager", "cashier"])
+    .maybeSingle()
+
+  return !membershipError && Boolean(membership)
 }

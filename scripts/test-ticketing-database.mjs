@@ -1,0 +1,63 @@
+import { readdir, readFile } from "node:fs/promises"
+
+import { PGlite } from "@electric-sql/pglite"
+
+const repositoryRoot = new URL("../", import.meta.url)
+const database = new PGlite()
+
+async function sqlFiles(relativeDirectory) {
+  const directoryUrl = new URL(relativeDirectory, repositoryRoot)
+  const names = await readdir(directoryUrl)
+  return names
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .map((name) => ({ name, url: new URL(name, directoryUrl) }))
+}
+
+async function runSqlFiles(label, files) {
+  for (const file of files) {
+    try {
+      await database.exec(await readFile(file.url, "utf8"))
+      process.stdout.write(`${label} OK: ${file.name}\n`)
+    } catch (error) {
+      console.error(`${label} FAILED: ${file.name}`)
+      throw error
+    }
+  }
+}
+
+try {
+  // Minimal Supabase-compatible roles and auth objects needed by the canonical
+  // ticketing migrations. No application or production data is touched.
+  await database.exec(`
+    create role anon nologin;
+    create role authenticated nologin;
+    create role service_role nologin bypassrls;
+    create schema auth;
+    create table auth.users (
+      id uuid primary key default gen_random_uuid(),
+      email text,
+      created_at timestamptz not null default now()
+    );
+    create function auth.uid()
+    returns uuid
+    language sql
+    stable
+    as $$
+      select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+    $$;
+    insert into auth.users (id, email)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'pglite@example.com');
+  `)
+
+  await runSqlFiles(
+    "migration",
+    await sqlFiles("supabase/migrations/"),
+  )
+  await runSqlFiles(
+    "smoke",
+    await sqlFiles("supabase/tests/database/"),
+  )
+} finally {
+  await database.close()
+}

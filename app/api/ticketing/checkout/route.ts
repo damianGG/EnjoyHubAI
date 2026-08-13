@@ -4,6 +4,7 @@ import { z } from "zod"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
+  checkoutCookieMaxAgeSeconds,
   checkoutCookieName,
   checkoutHoldMinutes,
   isTicketingCheckoutEnabled,
@@ -204,7 +205,7 @@ export async function POST(request: Request) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: checkoutHoldMinutes * 60 + 5 * 60,
+      maxAge: checkoutCookieMaxAgeSeconds,
     })
 
     return response
