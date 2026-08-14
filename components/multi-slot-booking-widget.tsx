@@ -105,16 +105,7 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
   const handleSlotClick = (slotTime: string, isAvailable: boolean) => {
     if (!isAvailable) return
 
-    setSelectedSlots((prev) => {
-      if (prev.includes(slotTime)) {
-        // Deselect
-        return prev.filter((t) => t !== slotTime)
-      } else {
-        // Select - add in sorted order
-        const newSlots = [...prev, slotTime].sort()
-        return newSlots
-      }
-    })
+    setSelectedSlots((prev) => (prev[0] === slotTime ? [] : [slotTime]))
   }
 
   const isSlotSelected = (slotTime: string) => selectedSlots.includes(slotTime)
@@ -130,45 +121,14 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
     const firstSlot = availableSlots.slots.find((s) => s.time === selectedSlots[0])
     if (!firstSlot) return
 
-    // Navigate to booking page with selected slots and people count
+    // Continue on the existing offer page and prefill the selected term.
     const queryParams = new URLSearchParams({
       date: format(selectedDate, "yyyy-MM-dd"),
-      slots: selectedSlots.join(","),
+      slot: selectedSlots[0],
       people: numberOfPeople.toString(),
     })
 
-    router.push(`/offers/${firstSlot.offerId}/book?${queryParams.toString()}`)
-  }
-
-  // Check if selected slots are consecutive
-  const areSlotConsecutive = () => {
-    if (selectedSlots.length <= 1) return true
-
-    const sortedSlots = [...selectedSlots].sort()
-    for (let i = 1; i < sortedSlots.length; i++) {
-      const prevMinutes = timeToMinutes(sortedSlots[i - 1])
-      const currMinutes = timeToMinutes(sortedSlots[i])
-      if (currMinutes - prevMinutes !== 30) {
-        return false
-      }
-    }
-    return true
-  }
-
-  const timeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(":").map(Number)
-    return hours * 60 + minutes
-  }
-
-  const formatTimeRange = () => {
-    if (selectedSlots.length === 0) return ""
-    const sortedSlots = [...selectedSlots].sort()
-    const startTime = sortedSlots[0]
-    const lastSlotMinutes = timeToMinutes(sortedSlots[sortedSlots.length - 1])
-    const endTime = `${Math.floor((lastSlotMinutes + 30) / 60)
-      .toString()
-      .padStart(2, "0")}:${((lastSlotMinutes + 30) % 60).toString().padStart(2, "0")}`
-    return `${startTime} - ${endTime}`
+    router.push(`/offers/${firstSlot.offerId}?${queryParams.toString()}`)
   }
 
   return (
@@ -233,7 +193,7 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">
-                    Wybierz sloty (kliknij jeden lub więcej)
+                    Wybierz godzinę
                   </Label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {availableSlots.slots.map((slot) => {
@@ -258,29 +218,16 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
                     })}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Każdy slot trwa 30 minut. Możesz wybrać kilka kolejnych slotów.
+                    Wybierz jeden dostępny termin. Szczegóły potwierdzisz w następnym kroku.
                   </p>
                 </div>
 
                 {selectedSlots.length > 0 && (
                   <>
-                    {!areSlotConsecutive() && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Wybrane sloty muszą być kolejne (następujące po sobie)
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
                     <div className="rounded-lg bg-muted p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Wybrane sloty:</span>
-                        <span className="font-semibold">{selectedSlots.length}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Czas:</span>
-                        <span className="font-semibold">{formatTimeRange()}</span>
+                        <span className="text-sm text-muted-foreground">Wybrana godzina:</span>
+                        <span className="font-semibold">{selectedSlots[0]}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Cena:</span>
@@ -309,9 +256,8 @@ export default function MultiSlotBookingWidget({ propertyId }: MultiSlotBookingW
                       onClick={handleBooking}
                       className="w-full"
                       size="lg"
-                      disabled={!areSlotConsecutive()}
                     >
-                      Zarezerwuj {selectedSlots.length} slot(y) na {numberOfPeople} os.
+                      Przejdź do rezerwacji dla {numberOfPeople} os.
                     </Button>
                   </>
                 )}

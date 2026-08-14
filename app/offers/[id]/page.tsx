@@ -14,6 +14,12 @@ interface OfferPageProps {
   params: Promise<{
     id: string
   }>
+  searchParams: Promise<{
+    date?: string | string[]
+    slot?: string | string[]
+    slots?: string | string[]
+    people?: string | string[]
+  }>
 }
 
 interface OfferWithPlace extends Offer {
@@ -25,8 +31,16 @@ interface OfferWithPlace extends Offer {
   } | null
 }
 
-export default async function OfferPage({ params }: OfferPageProps) {
-  const { id } = await params
+function firstValue(value?: string | string[]): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export default async function OfferPage({ params, searchParams }: OfferPageProps) {
+  const [{ id }, query] = await Promise.all([params, searchParams])
+  const initialDate = firstValue(query.date)
+  const initialSlot = firstValue(query.slot) || firstValue(query.slots)?.split(",")[0]
+  const requestedPeople = Number.parseInt(firstValue(query.people) || "1", 10)
+  const initialPeople = Number.isFinite(requestedPeople) ? requestedPeople : 1
 
   if (!isSupabaseConfigured) {
     return (
@@ -171,7 +185,12 @@ export default async function OfferPage({ params }: OfferPageProps) {
           {/* Booking Widget */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              <BookingWidget offer={offerData} />
+              <BookingWidget
+                offer={offerData}
+                initialDate={initialDate}
+                initialSlot={initialSlot}
+                initialPeople={initialPeople}
+              />
             </div>
           </div>
         </div>

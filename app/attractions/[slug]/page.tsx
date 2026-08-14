@@ -18,9 +18,9 @@ import { BottomNav } from "@/components/bottom-nav"
 export const revalidate = 120
 
 interface AttractionPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 const amenityIcons: Record<string, any> = {
@@ -39,9 +39,10 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   }
 
   const supabase = createClient()
+  const { slug } = await params
   
   // Extract ID from slug
-  const id = extractIdFromSlug(params.slug)
+  const id = extractIdFromSlug(slug)
 
   // Get attraction details with host info and reviews
   const { data: attraction } = await supabase
@@ -78,7 +79,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
     const { count } = await supabase
       .from("offer_availability")
       .select("*", { count: "exact", head: true })
-      .in("offer_id", offers.map(o => o.id))
+      .in("offer_id", offers.map((offer: { id: string }) => offer.id))
     
     hasAvailability = !!count && count > 0
   }
@@ -216,19 +217,19 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <span className="text-lg sm:text-xl">Hosted by {attraction.users?.full_name}</span>
+                  <span className="text-lg sm:text-xl">Organizator: {attraction.users?.full_name}</span>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{attraction.max_guests} guests</span>
+                      <span>Do {attraction.max_guests} osób</span>
                     </div>
                     <div className="flex items-center">
                       <Bed className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{attraction.bedrooms} bedrooms</span>
+                      <span>{attraction.bedrooms} pokoi</span>
                     </div>
                     <div className="flex items-center">
                       <Bath className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span>{attraction.bathrooms} bathrooms</span>
+                      <span>{attraction.bathrooms} łazienek</span>
                     </div>
                   </div>
                 </CardTitle>

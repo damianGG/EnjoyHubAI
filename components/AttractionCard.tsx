@@ -224,7 +224,7 @@ function AttractionCard({
                       ? "bg-white w-4" 
                       : "bg-white/60 hover:bg-white/80"
                   )}
-                  aria-label={`Go to image ${index + 1}`}
+                  aria-label={`Przejdź do zdjęcia ${index + 1}`}
                 />
               ))}
             </div>

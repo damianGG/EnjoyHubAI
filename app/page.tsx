@@ -509,7 +509,7 @@ function HomePageContent() {
               )}
               
               <p className="text-sm md:text-base text-muted-foreground">
-                {loading ? "Loading..." : `${total} attractions found`}
+                {loading ? "Ładowanie..." : `Znaleziono atrakcji: ${total}`}
               </p>
             </div>
 
