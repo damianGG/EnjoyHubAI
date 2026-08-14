@@ -31,7 +31,7 @@ export default async function CheckoutSessionsPage() {
               <Ticket className="mb-4 h-10 w-10 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Brak aktywnych terminów</h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Dodaj testową ofertę i termin w Supabase, aby sprawdzić checkout na żywo.
+                Aktywne terminy pojawią się tutaj po uruchomieniu oferty przez właściciela obiektu.
               </p>
             </CardContent>
           </Card>

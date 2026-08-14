@@ -22,8 +22,12 @@ const requiredRoutes = [
   "app/attractions/[slug]/page.tsx",
   "app/offers/[id]/page.tsx",
   "app/checkout/page.tsx",
+  "app/bilety/[productId]/page.tsx",
   "app/host/skaner/page.tsx",
   "app/host/sprzedaz/page.tsx",
+  "app/host/sprzedaz/konfiguracja/page.tsx",
+  "app/host/sprzedaz/konfiguracja/actions.ts",
+  "components/ticketing/sales-setup-form.tsx",
 ]
 
 const removedRoutes = [
@@ -62,5 +66,14 @@ assert.match(authForm, /href="\/privacy"/)
 
 const metadata = await source("app/layout.tsx")
 assert.doesNotMatch(metadata, /v0 App|Created with v0|v0\.app/)
+
+const hostSales = await source("app/host/sprzedaz/page.tsx")
+assert.match(hostSales, /\/host\/sprzedaz\/konfiguracja/)
+
+const publicTicketingOffer = await source("app/bilety/[productId]/page.tsx")
+assert.match(publicTicketingOffer, /\/checkout\/\$\{session\.id\}/)
+
+const ticketingCron = await source("app/api/cron/ticketing-cleanup/route.ts")
+assert.match(ticketingCron, /ticketing_extend_active_sessions/)
 
 process.stdout.write("Route contracts OK\n")
