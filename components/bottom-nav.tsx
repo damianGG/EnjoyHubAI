@@ -217,7 +217,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
         onOpenChange={setAuthSheetOpen}
         mode={authMode}
         onModeChange={setAuthMode}
-        returnToPath="/dashboard"
+        returnToPath="/host"
       />
 
       {/* Logout Confirmation Dialog */}

@@ -206,7 +206,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
         onOpenChange={setAuthSheetOpen}
         mode={authMode}
         onModeChange={setAuthMode}
-        returnToPath="/dashboard"
+        returnToPath="/host"
       />
 
       {/* Logout Confirmation Dialog */}
