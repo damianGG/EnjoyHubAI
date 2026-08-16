@@ -1,8 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import SignUpForm from "@/components/sign-up-form"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
-export default async function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -14,18 +19,20 @@ export default async function SignUpPage() {
 
   // Check if user is already logged in
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [{ data: { user } }, query] = await Promise.all([
+    supabase.auth.getUser(),
+    searchParams,
+  ])
+  const returnTo = getSafeAuthReturnTo(query.next)
 
-  // If user is logged in, redirect to home page
+  // Authenticated users should still continue to the requested safe route.
   if (user) {
-    redirect("/")
+    redirect(returnTo)
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <SignUpForm />
+      <SignUpForm returnToPath={returnTo} />
     </div>
   )
 }

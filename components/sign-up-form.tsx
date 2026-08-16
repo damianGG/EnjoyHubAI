@@ -10,11 +10,13 @@ import { Loader2, MailCheck } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signUp, signInWithGoogle, signInWithFacebook } from "@/lib/actions"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface SignUpFormProps {
   inline?: boolean
   onSuccess?: () => void
   onSwitchToLogin?: () => void
+  returnToPath?: string | null
 }
 
 function SubmitButton() {
@@ -93,9 +95,16 @@ function FacebookSignInButton() {
   )
 }
 
-export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin }: SignUpFormProps = {}) {
+export default function SignUpForm({
+  inline = false,
+  onSuccess,
+  onSwitchToLogin,
+  returnToPath,
+}: SignUpFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signUp, null)
+  const destination = getSafeAuthReturnTo(returnToPath)
+  const loginHref = `/auth/login?next=${encodeURIComponent(destination)}`
 
   // Handle successful sign-up
   useEffect(() => {
@@ -103,11 +112,11 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
       if (onSuccess) {
         onSuccess()
       } else {
-        router.push("/")
+        router.push(destination)
         router.refresh()
       }
     }
-  }, [state, router, onSuccess])
+  }, [state, router, onSuccess, destination])
 
   const content = state?.ok && state.requiresEmailConfirmation ? (
     <div className="space-y-5 text-center">
@@ -124,17 +133,19 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
         </Button>
       ) : (
         <Button asChild variant="outline" className="w-full">
-          <Link href="/auth/login">Przejdź do logowania</Link>
+          <Link href={loginHref}>Przejdź do logowania</Link>
         </Button>
       )}
     </div>
   ) : (
     <>
       <form action={signInWithGoogle} className="mb-2">
+        <input type="hidden" name="next" value={destination} />
         <GoogleSignInButton />
       </form>
 
       <form action={signInWithFacebook} className="mb-4">
+        <input type="hidden" name="next" value={destination} />
         <FacebookSignInButton />
       </form>
 
@@ -148,6 +159,7 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
       </div>
 
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="next" value={destination} />
         {state?.error && (
           <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
             {state.error}
@@ -216,7 +228,7 @@ export default function SignUpForm({ inline = false, onSuccess, onSwitchToLogin 
               Zaloguj się
             </button>
           ) : (
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href={loginHref} className="text-primary hover:underline">
               Zaloguj się
             </Link>
           )}

@@ -29,6 +29,7 @@ const requiredRoutes = [
   "app/host/sprzedaz/konfiguracja/page.tsx",
   "app/host/sprzedaz/konfiguracja/actions.ts",
   "components/ticketing/sales-setup-form.tsx",
+  "lib/auth/return-to.ts",
 ]
 
 const removedRoutes = [
@@ -82,6 +83,23 @@ for (const file of [
 
 const authForm = await source("components/unified-auth-form.tsx")
 assert.match(authForm, /href="\/privacy"/)
+
+const authReturnTo = await source("lib/auth/return-to.ts")
+assert.match(authReturnTo, /candidate\.startsWith\("\/"\)/)
+assert.match(authReturnTo, /candidate\.startsWith\("\/\/"\)/)
+assert.match(authReturnTo, /parsed\.origin !== returnToOrigin/)
+
+const authActions = await source("lib/actions.ts")
+assert.match(authActions, /getAuthCallbackUrl\(formData\.get\("next"\)\)/)
+
+const loginForm = await source("components/login-form.tsx")
+assert.match(loginForm, /name="next" value=\{destination\}/)
+
+const authCallback = await source("app/auth/callback/route.ts")
+assert.match(authCallback, /getSafeAuthReturnTo\(requestUrl\.searchParams\.get\("next"\)\)/)
+
+const loginPage = await source("app/auth/login/page.tsx")
+assert.match(loginPage, /returnToPath=\{returnTo\}/)
 
 const metadata = await source("app/layout.tsx")
 assert.doesNotMatch(metadata, /v0 App|Created with v0|v0\.app/)

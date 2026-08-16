@@ -99,7 +99,10 @@ export async function updateSession(request: NextRequest) {
     if (!authenticatedUser) {
       const redirectUrl = new URL("/", request.url)
       redirectUrl.searchParams.set("login", "required")
-      redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname)
+      redirectUrl.searchParams.set(
+        "returnTo",
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      )
       return NextResponse.redirect(redirectUrl)
     }
   }

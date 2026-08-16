@@ -2,16 +2,15 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const requestedNext = requestUrl.searchParams.get("next")
-  const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
-    ? requestedNext
-    : "/dashboard"
+  const next = getSafeAuthReturnTo(requestUrl.searchParams.get("next"))
 
   if (!code) {
-    return NextResponse.redirect(new URL("/auth/login?error=callback", requestUrl.origin))
+    return NextResponse.redirect(getLoginErrorUrl(requestUrl.origin, next))
   }
 
   const cookieStore = await cookies()
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   if (error || !data.user) {
     console.error("Auth callback exchange error:", error)
-    return NextResponse.redirect(new URL("/auth/login?error=callback", requestUrl.origin))
+    return NextResponse.redirect(getLoginErrorUrl(requestUrl.origin, next))
   }
 
   const { data: existingUser, error: profileLookupError } = await supabase
@@ -61,4 +60,11 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin))
+}
+
+function getLoginErrorUrl(origin: string, next: string) {
+  const loginUrl = new URL("/auth/login", origin)
+  loginUrl.searchParams.set("error", "callback")
+  loginUrl.searchParams.set("next", next)
+  return loginUrl
 }
