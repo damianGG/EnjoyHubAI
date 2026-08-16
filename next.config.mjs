@@ -7,6 +7,21 @@ const nextConfig = {
         destination: '/attractions/:id',
         permanent: true,
       },
+      {
+        source: '/host/properties',
+        destination: '/host/sprzedaz/konfiguracja',
+        permanent: true,
+      },
+      {
+        source: '/host/properties/:path*',
+        destination: '/host/sprzedaz/konfiguracja',
+        permanent: true,
+      },
+      {
+        source: '/host/bookings',
+        destination: '/host/sprzedaz',
+        permanent: true,
+      },
     ]
   },
   typescript: {

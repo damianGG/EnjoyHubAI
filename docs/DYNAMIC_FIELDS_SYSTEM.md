@@ -1,5 +1,11 @@
 # Dynamic Entertainment Objects Management System
 
+> **Legacy reference:** this document describes the former `properties` host
+> workflow. Its owner-facing pages were retired when the panel was consolidated
+> on the ticketing model. New offers must be created at
+> `/host/sprzedaz/konfiguracja`; the legacy tables remain only to keep the
+> current public marketplace working until its separate migration.
+
 This feature allows super admins to dynamically manage entertainment object categories and their associated fields, enabling hosts to create customized entertainment offerings.
 
 ## Features
@@ -116,14 +122,16 @@ WHERE email = 'admin@example.com';
    - Options (for select fields)
    - Placeholder and help text
 
-### Creating an Entertainment Object (Host)
+### Creating a Ticketing Offer (Host)
 
-1. Navigate to `/host/properties/new`
-2. Select a category
-3. Fill in basic information (title, description, location)
-4. Fill in category-specific dynamic fields
-5. Add amenities and images
-6. Submit
+1. Navigate to `/host/sprzedaz/konfiguracja`.
+2. Create or select an organization and venue.
+3. Add the offer, ticket types, capacity and weekly schedule.
+4. Submit once to create the complete sales setup atomically.
+
+Dynamic fields from the legacy `properties` model are not exposed in the new
+host panel. They remain documented here only for maintenance of the public
+marketplace during its transition.
 
 ## Environment Variables
 

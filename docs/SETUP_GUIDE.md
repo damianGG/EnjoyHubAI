@@ -1,5 +1,10 @@
 # Setup Guide: Dynamic Fields System
 
+> **Archived setup reference:** do not use this guide to configure new host
+> sales. The former `/host/properties` panel was retired. New ticketed offers are
+> configured at `/host/sprzedaz/konfiguracja`; do not run the old `scripts/*.sql`
+> files as ticketing migrations.
+
 This guide walks through setting up and testing the dynamic fields system.
 
 ## Prerequisites
@@ -175,38 +180,16 @@ npm run dev
      - Field Type: File
      - Required: No
 
-### Test Host Features
+### Test the Current Host Panel
 
-1. **Switch to Host Role**
-   ```sql
-   UPDATE users 
-   SET role = 'host', is_host = true 
-   WHERE email = 'host@example.com';
-   ```
+1. Sign in with an account that can become an organization owner.
+2. Navigate to `/host/sprzedaz/konfiguracja`.
+3. Create an organization, venue, offer, ticket types and weekly schedule.
+4. Verify the offer in the same configuration view and open its public
+   `/bilety/:productId` link on Preview.
+5. Verify orders in `/host/sprzedaz` and ticket validation in `/host/skaner`.
 
-2. **Create Property with Dynamic Fields**
-   - Navigate to `/host/properties/new`
-   - Select the category you created
-   - Fill in basic information:
-     - Title: "Speed Racing Go-Karts"
-     - Description: "Fastest tracks in town"
-     - Location: Choose on map
-     - Price: 50
-     - Max guests: 20
-   
-3. **Fill Dynamic Fields**
-   - The form should now show your custom fields
-   - Fill in the minimum age (e.g., 8)
-   - Select track type (e.g., "Outdoor")
-   - Check the safety gear checkbox
-   - Upload a test image (or use placeholder)
-   
-4. **Submit and Verify**
-   - Click "Add Property"
-   - Navigate to `/host/properties`
-   - Verify the property appears in your list
-
-### Test Field Values Persistence
+### Legacy Field Values Persistence
 
 1. **API Test with curl:**
 

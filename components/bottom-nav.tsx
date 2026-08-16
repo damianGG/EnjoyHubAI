@@ -127,17 +127,17 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
               </button>
             </Link>
 
-            {/* Add Object Button */}
-            <Link href="/host/properties/new">
+            {/* Ticketing setup */}
+            <Link href="/host/sprzedaz/konfiguracja">
               <button
                 className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive('/host/properties/new') 
+                  isActive('/host/sprzedaz/konfiguracja')
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                 }`}
               >
                 <Plus className="h-4 w-4" />
-                <span className="text-xs font-medium">Dodaj</span>
+                <span className="text-xs font-medium">Sprzedaj</span>
               </button>
             </Link>
 

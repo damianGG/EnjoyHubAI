@@ -1,241 +1,191 @@
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Plus, Home, Calendar, BarChart3, Users, ReceiptText, ScanLine } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import {
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  Building2,
+  ScanLine,
+  Settings2,
+  Ticket,
+  type LucideIcon,
+} from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+
+export const dynamic = "force-dynamic"
+
+type TicketingRole = "owner" | "admin" | "manager" | "cashier" | "viewer"
+
+interface HostMembership {
+  organization_id: string
+  role: TicketingRole
+}
+
+const managementRoles: TicketingRole[] = ["owner", "admin", "manager"]
+const salesRoles: TicketingRole[] = [...managementRoles, "viewer"]
+const scannerRoles: TicketingRole[] = [...managementRoles, "cashier"]
+
+const roleLabels: Record<TicketingRole, string> = {
+  owner: "Właściciel",
+  admin: "Administrator",
+  manager: "Manager",
+  cashier: "Kasjer",
+  viewer: "Podgląd",
+}
 
 export default async function HostDashboard() {
   if (!isSupabaseConfigured) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
-      </div>
-    )
+    return <CenteredMessage>Połącz Supabase, aby otworzyć panel sprzedaży.</CenteredMessage>
   }
 
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login?next=/host")
 
-  if (!user) {
-    redirect("/auth/login")
+  const { data, error } = await supabase
+    .from("organization_memberships")
+    .select("organization_id, role")
+    .eq("user_id", user.id)
+
+  if (error) {
+    return <CenteredMessage>Nie udało się pobrać uprawnień do panelu sprzedaży.</CenteredMessage>
   }
 
-  // Get user profile to check if they're a host
-  const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single()
-
-  // Get host statistics
-  const { data: properties } = await supabase
-    .from("properties")
-    .select("id, title, is_active, price_per_night")
-    .eq("host_id", user.id)
-
-  const { data: bookings } = await supabase
-    .from("bookings")
-    .select("id, status, total_price, property_id")
-    .in("property_id", properties?.map((p) => p.id) || [])
-
-  const totalProperties = properties?.length || 0
-  const activeProperties = properties?.filter((p) => p.is_active)?.length || 0
-  const totalBookings = bookings?.length || 0
-  const totalRevenue = bookings?.reduce((sum, booking) => sum + (booking.total_price || 0), 0) || 0
+  const memberships = (data ?? []) as HostMembership[]
+  const roles = new Set(memberships.map((membership) => membership.role))
+  const canManage = managementRoles.some((role) => roles.has(role))
+  const canViewSales = salesRoles.some((role) => roles.has(role))
+  const canScan = scannerRoles.some((role) => roles.has(role))
+  const organizationCount = new Set(memberships.map((membership) => membership.organization_id)).size
+  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Użytkowniku"
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center space-x-2">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">E</span>
-              </div>
-              <span className="text-xl font-bold">EnjoyHub</span>
-            </Link>
-          </div>
-
-          <nav className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Witaj, {profile?.full_name}</span>
-            <Link href="/host/properties/new" className="flex-1 sm:flex-initial">
-              <Button className="w-full sm:w-auto" size="sm">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="ml-2 sm:ml-0">Dodaj obiekt</span>
-              </Button>
-            </Link>
-          </nav>
+    <main className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
+      <header className="border-b bg-background/90">
+        <div className="container mx-auto max-w-6xl px-4 py-4">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Strona główna
+          </Link>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Panel gospodarza</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Zarządzaj swoimi obiektami i rezerwacjami</p>
+      <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-12">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Badge variant="secondary" className="mb-3">Panel sprzedaży</Badge>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Panel EnjoyHub</h1>
+            <p className="mt-2 text-muted-foreground">
+              Witaj, {displayName}. Zarządzaj ofertami, zamówieniami i kontrolą biletów.
+            </p>
+          </div>
+          {memberships.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {[...roles].map((role) => <Badge key={role} variant="outline">{roleLabels[role]}</Badge>)}
+              <Badge variant="outline">
+                {organizationCount} {organizationCount === 1 ? "organizacja" : "organizacji"}
+              </Badge>
+            </div>
+          )}
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Wszystkie obiekty</CardTitle>
-              <Home className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalProperties}</div>
-              <p className="text-xs text-muted-foreground">{activeProperties} aktywnych</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Wszystkie rezerwacje</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalBookings}</div>
-              <p className="text-xs text-muted-foreground">Rezerwacje łącznie</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Całkowity przychód</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalRevenue.toFixed(2)} zł</div>
-              <p className="text-xs text-muted-foreground">Zarobki łącznie</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Wskaźnik obłożenia</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {totalProperties > 0 ? Math.round((totalBookings / totalProperties) * 10) : 0}%
+        {memberships.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center px-6 py-14 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Ticket className="h-7 w-7 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground">Średnie obłożenie</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <Link href="/host/properties/new">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Dodaj nowy obiekt
-                </CardTitle>
-                <CardDescription>Dodaj nowy obiekt w EnjoyHub</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <Link href="/host/properties">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Home className="h-5 w-5 mr-2" />
-                  Zarządzaj obiektami
-                </CardTitle>
-                <CardDescription>Przeglądaj i edytuj swoje obiekty</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <Link href="/host/bookings">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Zobacz rezerwacje
-                </CardTitle>
-                <CardDescription>Zarządzaj rezerwacjami i kalendarzem</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <Link href="/host/sprzedaz">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ReceiptText className="h-5 w-5 mr-2" />
-                  Sprzedaż biletów
-                </CardTitle>
-                <CardDescription>Zamówienia, obrót i wystawione bilety</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <Link href="/host/skaner">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ScanLine className="h-5 w-5 mr-2" />
-                  Kontrola wejścia
-                </CardTitle>
-                <CardDescription>Skanuj i wykorzystuj bilety QR</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-        </div>
-
-        {/* Recent Properties */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Twoje obiekty</CardTitle>
-            <CardDescription>
-              {totalProperties === 0 ? "Brak obiektów" : `Liczba obiektów: ${totalProperties}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {totalProperties === 0 ? (
-              <div className="text-center py-8">
-                <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Brak obiektów</h3>
-                <p className="text-muted-foreground mb-4">Zacznij zarabiać, dodając swój pierwszy obiekt</p>
-                <Link href="/host/properties/new">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Dodaj pierwszy obiekt
-                  </Button>
+              <h2 className="text-xl font-semibold">Uruchom pierwszą sprzedaż biletów</h2>
+              <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+                Kreator utworzy organizację, obiekt, ofertę, cennik i terminy bez ręcznego dodawania danych w Supabase.
+              </p>
+              <Button asChild className="mt-6">
+                <Link href="/host/sprzedaz/konfiguracja">
+                  Uruchom sprzedaż <ArrowRight className="h-4 w-4" />
                 </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {properties?.slice(0, 5).map((property) => (
-                  <div key={property.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-semibold">{property.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {property.price_per_night} zł/noc • {property.is_active ? "Aktywny" : "Nieaktywny"}
-                      </p>
-                    </div>
-                    <Link href={`/host/properties/${property.id}`}>
-                      <Button variant="outline" size="sm">
-                        Zarządzaj
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-                {properties && properties.length > 5 && (
-                  <div className="text-center pt-4">
-                    <Link href="/host/properties">
-                      <Button variant="outline">Zobacz wszystkie obiekty</Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {canViewSales && (
+              <ActionCard
+                href="/host/sprzedaz"
+                icon={BarChart3}
+                title="Sprzedaż i zamówienia"
+                description="Sprawdzaj obrót, płatności, zamówienia i wystawione bilety."
+              />
             )}
-          </CardContent>
-        </Card>
+            {canManage && (
+              <ActionCard
+                href="/host/sprzedaz/konfiguracja"
+                icon={Settings2}
+                title="Oferty i terminy"
+                description="Twórz oferty, ustawiaj cennik, pulę miejsc i harmonogram sprzedaży."
+              />
+            )}
+            {canScan && (
+              <ActionCard
+                href="/host/skaner"
+                icon={ScanLine}
+                title="Kontrola wejścia"
+                description="Skanuj kody QR i oznaczaj wykorzystanie biletów przy wejściu."
+              />
+            )}
+          </div>
+        )}
+
+        {memberships.length > 0 && !canManage && !canViewSales && canScan && (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Konto kasjera ma dostęp wyłącznie do kontroli wejścia. Dane klientów i wyniki sprzedaży pozostają ukryte.
+          </p>
+        )}
       </div>
-    </div>
+    </main>
+  )
+}
+
+function ActionCard({
+  href,
+  icon: Icon,
+  title,
+  description,
+}: {
+  href: string
+  icon: LucideIcon
+  title: string
+  description: string
+}) {
+  return (
+    <Link href={href} className="group block h-full">
+      <Card className="h-full transition-colors group-hover:border-primary/50">
+        <CardHeader>
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <CardTitle className="flex items-center justify-between gap-3">
+            {title}
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+          </CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
+function CenteredMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <Card className="max-w-xl">
+        <CardContent className="flex items-start gap-3 p-8 text-muted-foreground">
+          <Building2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>{children}</p>
+        </CardContent>
+      </Card>
+    </main>
   )
 }
