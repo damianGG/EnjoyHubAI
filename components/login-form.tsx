@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signIn, signInWithGoogle, signInWithFacebook } from "@/lib/actions"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface LoginFormProps {
   inline?: boolean
@@ -17,6 +18,7 @@ interface LoginFormProps {
   onSwitchToForgotPassword?: () => void
   onSwitchToPhoneLogin?: () => void
   initialError?: string
+  returnToPath?: string | null
 }
 
 function SubmitButton() {
@@ -102,9 +104,12 @@ export default function LoginForm({
   onSwitchToForgotPassword,
   onSwitchToPhoneLogin,
   initialError,
+  returnToPath,
 }: LoginFormProps = {}) {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
+  const destination = getSafeAuthReturnTo(returnToPath)
+  const signUpHref = `/auth/sign-up?next=${encodeURIComponent(destination)}`
 
   // Handle successful login by redirecting or calling onSuccess
   useEffect(() => {
@@ -112,19 +117,21 @@ export default function LoginForm({
       if (onSuccess) {
         onSuccess()
       } else {
-        router.push("/")
+        router.push(destination)
         router.refresh()
       }
     }
-  }, [state, router, onSuccess])
+  }, [state, router, onSuccess, destination])
 
   const content = (
     <>
       <form action={signInWithGoogle} className="mb-2">
+        <input type="hidden" name="next" value={destination} />
         <GoogleSignInButton />
       </form>
 
       <form action={signInWithFacebook} className="mb-4">
+        <input type="hidden" name="next" value={destination} />
         <FacebookSignInButton />
       </form>
 
@@ -138,6 +145,7 @@ export default function LoginForm({
       </div>
 
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="next" value={destination} />
         {initialError && (
           <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
             {initialError}
@@ -192,7 +200,7 @@ export default function LoginForm({
               Zarejestruj się
             </button>
           ) : (
-            <Link href="/auth/sign-up" className="text-primary hover:underline">
+            <Link href={signUpHref} className="text-primary hover:underline">
               Zarejestruj się
             </Link>
           )}

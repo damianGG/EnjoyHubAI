@@ -128,8 +128,8 @@ export default async function DashboardPage() {
           <Link href="/host">
             <Card className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg">Zostań gospodarzem</CardTitle>
-                <CardDescription>Zacznij zarabiać, goszcząc innych</CardDescription>
+                <CardTitle className="text-lg">Panel sprzedaży</CardTitle>
+                <CardDescription>Zarządzaj ofertami, zamówieniami i biletami</CardDescription>
               </CardHeader>
             </Card>
           </Link>

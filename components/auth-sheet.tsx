@@ -6,6 +6,7 @@ import LoginForm from "@/components/login-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
 import SignUpForm from "@/components/sign-up-form"
 import { useRouter } from "next/navigation"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface AuthSheetProps {
   open: boolean
@@ -20,13 +21,12 @@ type InternalMode = "login" | "signup" | "forgot-password"
 
 export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
+  const destination = getSafeAuthReturnTo(returnToPath)
   // Internal mode can be forgot-password, but external API only supports login/signup
   const [currentMode, setCurrentMode] = useState<InternalMode>(mode)
 
   const handleSuccess = () => {
     onOpenChange(false)
-    // Navigate to the return path if provided, otherwise to dashboard
-    const destination = returnToPath || "/dashboard"
     router.push(destination)
     router.refresh()
   }
@@ -72,6 +72,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
           {currentMode === "login" && (
             <LoginForm
               inline
+              returnToPath={destination}
               onSuccess={handleSuccess}
               onSwitchToSignUp={handleSwitchToSignUp}
               onSwitchToForgotPassword={handleSwitchToForgotPassword}
@@ -80,6 +81,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
           {currentMode === "signup" && (
             <SignUpForm
               inline
+              returnToPath={destination}
               onSuccess={handleSuccess}
               onSwitchToLogin={handleSwitchToLogin}
             />

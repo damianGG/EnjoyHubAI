@@ -240,7 +240,7 @@ export default async function TicketingConfigurationPage({
 
       <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <div className="mb-8 max-w-3xl">
-          <Badge variant="secondary" className="mb-3">Ticketing 2A</Badge>
+          <Badge variant="secondary" className="mb-3">Konfiguracja sprzedaży</Badge>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Uruchom sprzedaż bez konfiguracji w Supabase</h1>
           <p className="mt-3 text-muted-foreground">
             Jeden kreator tworzy obiekt, ofertę, cennik, harmonogram i pierwsze 90 dni terminów. Potem automat codziennie utrzymuje kalendarz sprzedaży.

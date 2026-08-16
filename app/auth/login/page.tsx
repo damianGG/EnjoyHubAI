@@ -1,9 +1,10 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import LoginForm from "@/components/login-form"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }
 
 const AUTH_ERRORS: Record<string, string> = {
@@ -23,20 +24,23 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   // Check if user is already logged in
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [{ data: { user } }, query] = await Promise.all([
+    supabase.auth.getUser(),
+    searchParams,
+  ])
+  const returnTo = getSafeAuthReturnTo(query.next)
 
-  // If user is logged in, redirect to home page
+  // Authenticated users should still continue to the requested safe route.
   if (user) {
-    redirect("/")
+    redirect(returnTo)
   }
-
-  const { error } = await searchParams
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <LoginForm initialError={error ? AUTH_ERRORS[error] || AUTH_ERRORS.callback : undefined} />
+      <LoginForm
+        returnToPath={returnTo}
+        initialError={query.error ? AUTH_ERRORS[query.error] || AUTH_ERRORS.callback : undefined}
+      />
     </div>
   )
 }

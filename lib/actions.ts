@@ -4,6 +4,8 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
+
 async function createSupabaseServerClient() {
   const cookieStore = await cookies()
   return createServerClient(
@@ -49,8 +51,12 @@ function getSiteUrl() {
   return "http://localhost:3000"
 }
 
-function getAuthCallbackUrl() {
-  return process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${getSiteUrl()}/auth/callback`
+function getAuthCallbackUrl(returnTo?: unknown) {
+  const callbackUrl = new URL(
+    process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${getSiteUrl()}/auth/callback`,
+  )
+  callbackUrl.searchParams.set("next", getSafeAuthReturnTo(returnTo))
+  return callbackUrl.toString()
 }
 
 function getSignInErrorMessage(code?: string) {
@@ -156,7 +162,7 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
       email: emailStr,
       password: passwordStr,
       options: {
-        emailRedirectTo: getAuthCallbackUrl(),
+        emailRedirectTo: getAuthCallbackUrl(formData.get("next")),
         data: {
           full_name: fullNameStr,
           is_host: isHost,
@@ -212,35 +218,36 @@ export async function signOut() {
 }
 
 // Google OAuth sign in action
-async function signInWithOAuth(provider: "google" | "facebook"): Promise<void> {
+async function signInWithOAuth(provider: "google" | "facebook", formData: FormData): Promise<void> {
   const supabase = await createSupabaseServerClient()
+  const returnTo = getSafeAuthReturnTo(formData.get("next"))
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: getAuthCallbackUrl(),
+      redirectTo: getAuthCallbackUrl(returnTo),
     },
   })
 
   if (error) {
     console.error(`${provider} OAuth error:`, error)
-    redirect("/auth/login?error=oauth")
+    redirect(`/auth/login?error=oauth&next=${encodeURIComponent(returnTo)}`)
   }
 
   if (data?.url) {
     redirect(data.url)
   }
 
-  redirect("/auth/login?error=oauth")
+  redirect(`/auth/login?error=oauth&next=${encodeURIComponent(returnTo)}`)
 }
 
 // OAuth sign-in actions must resolve to void when used as form actions.
-export async function signInWithGoogle(): Promise<void> {
-  return signInWithOAuth("google")
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  return signInWithOAuth("google", formData)
 }
 
-export async function signInWithFacebook(): Promise<void> {
-  return signInWithOAuth("facebook")
+export async function signInWithFacebook(formData: FormData): Promise<void> {
+  return signInWithOAuth("facebook", formData)
 }
 
 // Request password reset action

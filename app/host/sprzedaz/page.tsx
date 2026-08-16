@@ -33,6 +33,17 @@ interface HostOrder {
   }>
 }
 
+type HostRole = "owner" | "admin" | "manager" | "cashier" | "viewer"
+
+interface HostMembership {
+  organization_id: string
+  role: HostRole
+}
+
+const managementRoles: HostRole[] = ["owner", "admin", "manager"]
+const salesRoles: HostRole[] = [...managementRoles, "viewer"]
+const scannerRoles: HostRole[] = [...managementRoles, "cashier"]
+
 export default async function HostTicketingSalesPage() {
   if (!isSupabaseConfigured) {
     return <CenteredMessage>Połącz Supabase, aby zobaczyć sprzedaż.</CenteredMessage>
@@ -42,31 +53,17 @@ export default async function HostTicketingSalesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  if (!isTicketingPaymentsEnabled) {
-    return (
-      <CenteredMessage>
-        <div className="space-y-4">
-          <p>Panel zamówień czeka na konfigurację Stripe, ale ofertę, cennik i terminy możesz przygotować już teraz.</p>
-          <Button asChild>
-            <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Uruchom konfigurator sprzedaży</Link>
-          </Button>
-        </div>
-      </CenteredMessage>
-    )
-  }
-
   const { data: memberships, error: membershipError } = await supabase
     .from("organization_memberships")
-    .select("organization_id")
+    .select("organization_id, role")
     .eq("user_id", user.id)
 
   if (membershipError) {
     return <CenteredMessage>Nie udało się pobrać organizacji użytkownika.</CenteredMessage>
   }
 
-  const typedMemberships = (memberships ?? []) as Array<{ organization_id: string }>
-  const organizationIds = typedMemberships.map((membership) => membership.organization_id)
-  if (organizationIds.length === 0) {
+  const typedMemberships = (memberships ?? []) as HostMembership[]
+  if (typedMemberships.length === 0) {
     return (
       <CenteredMessage>
         <div className="space-y-4">
@@ -74,6 +71,39 @@ export default async function HostTicketingSalesPage() {
           <Button asChild>
             <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Uruchom pierwszą sprzedaż</Link>
           </Button>
+        </div>
+      </CenteredMessage>
+    )
+  }
+
+  const salesMemberships = typedMemberships.filter((membership) => salesRoles.includes(membership.role))
+  if (salesMemberships.length === 0) {
+    return (
+      <CenteredMessage>
+        <div className="space-y-4">
+          <p>Konto kasjera nie ma dostępu do danych klientów ani wyników sprzedaży.</p>
+          <Button asChild>
+            <Link href="/host/skaner"><ScanLine className="h-4 w-4" /> Otwórz kontrolę wejścia</Link>
+          </Button>
+        </div>
+      </CenteredMessage>
+    )
+  }
+
+  const canManageSales = salesMemberships.some((membership) => managementRoles.includes(membership.role))
+  const canScanTickets = typedMemberships.some((membership) => scannerRoles.includes(membership.role))
+  const organizationIds = salesMemberships.map((membership) => membership.organization_id)
+
+  if (!isTicketingPaymentsEnabled) {
+    return (
+      <CenteredMessage>
+        <div className="space-y-4">
+          <p>Panel zamówień czeka na konfigurację Stripe. Oferty i terminy mogą być przygotowane wcześniej.</p>
+          {canManageSales && (
+            <Button asChild>
+              <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Uruchom konfigurator sprzedaży</Link>
+            </Button>
+          )}
         </div>
       </CenteredMessage>
     )
@@ -141,17 +171,21 @@ export default async function HostTicketingSalesPage() {
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge variant="secondary" className="mb-3">Ticketing 1D</Badge>
+            <Badge variant="secondary" className="mb-3">Panel sprzedaży</Badge>
             <h1 className="text-3xl font-bold">Sprzedaż biletów</h1>
             <p className="mt-2 text-muted-foreground">Zamówienia z EnjoyHub i widgetu obiektu w jednym widoku.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Oferty i terminy</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/host/skaner"><ScanLine className="h-4 w-4" /> Kontrola wejścia</Link>
-            </Button>
+            {canManageSales && (
+              <Button asChild variant="outline">
+                <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Oferty i terminy</Link>
+              </Button>
+            )}
+            {canScanTickets && (
+              <Button asChild>
+                <Link href="/host/skaner"><ScanLine className="h-4 w-4" /> Kontrola wejścia</Link>
+              </Button>
+            )}
           </div>
         </div>
 

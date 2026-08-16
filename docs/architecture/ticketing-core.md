@@ -1,13 +1,15 @@
-# Rdzeń sprzedaży biletów — etapy 1A–2A
+# Rdzeń sprzedaży biletów — etapy 1A–2A i jeden panel właściciela
 
 ## Cel
 
-Ten etap wprowadza jeden docelowy model danych dla sprzedaży biletów, bez
-przełączania działającej aplikacji i bez usuwania obecnych danych.
+Projekt posiada jeden docelowy model danych dla sprzedaży biletów oraz jeden
+panel właściciela oparty na tym modelu, bez usuwania obecnych danych.
 
 Stare tabele (`properties`, `offers`, `bookings`, `offer_bookings`,
-`offer_availability`, `attraction_availability`) pozostają bez zmian. Nowy model
-będzie podłączany do aplikacji dopiero w kolejnych, osobno testowanych krokach.
+`offer_availability`, `attraction_availability`) pozostają bez zmian do czasu
+osobnego przełączenia publicznego marketplace'u. Panel właściciela nie zapisuje
+już do tych tabel i korzysta z `organizations`, `venues`, `products`, `sessions`,
+`orders` oraz `tickets`.
 
 ## Kanoniczny przepływ
 
@@ -151,6 +153,22 @@ Etap 2A usuwa konieczność ręcznego tworzenia danych ticketingu w Supabase:
 Tryby `external_api` i `redirect` pozostają poza samoobsługowym kreatorem. Ich
 uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
 
+## Konsolidacja panelu właściciela
+
+- `/host` jest wejściem do jednego panelu ticketingu i pokazuje funkcje zgodne z
+  rolą użytkownika.
+- Właściciel, administrator i manager przechodzą do ofert, terminów, zamówień i
+  skanera. Użytkownik z rolą podglądu widzi sprzedaż bez funkcji zarządzania.
+- Kasjer widzi wyłącznie kontrolę wejścia. Panel zamówień nie ujawnia mu danych
+  klientów ani wyników finansowych.
+- Dawne strony `/host/properties/*` i `/host/bookings` zostały wycofane. Stare
+  zakładki i linki są bezpiecznie przekierowywane odpowiednio do konfiguracji
+  ofert albo zamówień w nowym panelu.
+- Usunięto nieużywany kod formularzy, dostępności i endpointów należących tylko
+  do dawnego panelu hosta. Publiczny marketplace i jego legacy API pozostają
+  bez zmian do kolejnego, osobno testowanego etapu.
+- Konsolidacja nie wymaga migracji SQL i nie usuwa żadnych rekordów z bazy.
+
 ## Wdrożenie etapów 1A–2A
 
 1. Wykonać kopię zapasową bazy.
@@ -187,8 +205,9 @@ uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
 10. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
    wystawienie biletów QR, pojawienie się zamówienia w `/host/sprzedaz` oraz
    jednokrotne wykorzystanie biletu przez zalogowanego kasjera.
-11. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
-   działają równolegle z nowym ticketingiem.
+11. Potwierdzić, że `/host` pokazuje wyłącznie nowy panel, stare adresy hosta
+   przekierowują poprawnie, a dotychczasowe logowanie, wyszukiwanie i publiczne
+   rezerwacje nadal działają równolegle z nowym ticketingiem.
 12. Dopiero potem zastosować migracje na produkcji.
 
 Nie należy ręcznie uruchamiać starych plików z katalogu `scripts` jako migracji
