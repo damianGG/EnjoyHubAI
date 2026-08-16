@@ -1,15 +1,17 @@
-# Rdzeń sprzedaży biletów — etapy 1A–2A i jeden panel właściciela
+# Rdzeń sprzedaży biletów — etapy 1A–2B i jeden system sprzedaży
 
 ## Cel
 
-Projekt posiada jeden docelowy model danych dla sprzedaży biletów oraz jeden
-panel właściciela oparty na tym modelu, bez usuwania obecnych danych.
+Projekt posiada jeden docelowy model danych dla sprzedaży biletów, jeden panel
+właściciela i jeden publiczny przepływ zakupu. Dane opisowe atrakcji pozostają w
+`properties`, natomiast terminy, dostępność, zamówienia i bilety pochodzą
+wyłącznie z `venues`, `products`, `sessions`, `inventory_holds`, `orders` oraz
+`tickets`.
 
-Stare tabele (`properties`, `offers`, `bookings`, `offer_bookings`,
-`offer_availability`, `attraction_availability`) pozostają bez zmian do czasu
-osobnego przełączenia publicznego marketplace'u. Panel właściciela nie zapisuje
-już do tych tabel i korzysta z `organizations`, `venues`, `products`, `sessions`,
-`orders` oraz `tickets`.
+Stare rekordy (`offers`, `bookings`, `offer_bookings`, `offer_availability`,
+`attraction_availability`) nie są usuwane przez etap 2B, ale aplikacja nie używa
+ich już do aktywnej sprzedaży. Stary adres `/offers/:id` służy wyłącznie jako
+przekierowanie na stronę atrakcji.
 
 ## Kanoniczny przepływ
 
@@ -153,6 +155,31 @@ Etap 2A usuwa konieczność ręcznego tworzenia danych ticketingu w Supabase:
 Tryby `external_api` i `redirect` pozostają poza samoobsługowym kreatorem. Ich
 uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
 
+## Etap 2B — marketplace na nowym ticketingu
+
+Etap 2B przełącza publiczną stronę atrakcji i konto klienta na model kanoniczny:
+
+- `venues.property_id` tworzy kontrolowane powiązanie jeden-do-jednego między
+  obiektem ticketingu a publiczną atrakcją z `properties`;
+- właściciel wybiera atrakcję już w kreatorze lub łączy istniejący obiekt z
+  poziomu `/host/sprzedaz/konfiguracja`; powiązanie może zapisać tylko właściciel
+  aktywnej atrakcji mający rolę owner, admin albo manager obiektu;
+- kalendarz na `/attractions/:id` odczytuje wyłącznie aktywne `sessions`, ceny z
+  `ticket_types` oraz wolne miejsca po uwzględnieniu aktywnych i opłaconych
+  blokad `inventory_holds`;
+- wybranie terminu prowadzi bezpośrednio do atomowego `/checkout/:sessionId`, a
+  po płatności do biletów QR;
+- wyszukiwarka pokazuje najbliższy termin i cenę od na podstawie tego samego
+  źródła dostępności;
+- `/dashboard` i `/dashboard/bookings` pokazują kanoniczne zamówienia i bilety,
+  nie dawne rekordy rezerwacji;
+- stare API dostępności i tworzenia rezerwacji zostało usunięte. Dzięki temu nie
+  istnieją dwa równoległe liczniki miejsc.
+
+Publiczny odczyt odbywa się przez ograniczoną funkcję
+`ticketing_list_property_sessions`: zakres jednego wywołania nie może przekroczyć
+93 dni i obejmuje wyłącznie aktywną, aktualnie sprzedawalną ofertę.
+
 ## Konsolidacja panelu właściciela
 
 - `/host` jest wejściem do jednego panelu ticketingu i pokazuje funkcje zgodne z
@@ -164,12 +191,12 @@ uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
 - Dawne strony `/host/properties/*` i `/host/bookings` zostały wycofane. Stare
   zakładki i linki są bezpiecznie przekierowywane odpowiednio do konfiguracji
   ofert albo zamówień w nowym panelu.
-- Usunięto nieużywany kod formularzy, dostępności i endpointów należących tylko
-  do dawnego panelu hosta. Publiczny marketplace i jego legacy API pozostają
-  bez zmian do kolejnego, osobno testowanego etapu.
-- Konsolidacja nie wymaga migracji SQL i nie usuwa żadnych rekordów z bazy.
+- Usunięto nieużywany kod formularzy, dostępności i endpointów należących do
+  dawnego panelu hosta oraz dawnego publicznego checkoutu.
+- Konsolidacja nie usuwa historycznych rekordów z bazy. Etap 2B dodaje jedynie
+  bezpieczne powiązanie atrakcji z obiektem ticketingu i funkcje odczytu.
 
-## Wdrożenie etapów 1A–2A
+## Wdrożenie etapów 1A–2B
 
 1. Wykonać kopię zapasową bazy.
 2. Uruchomić wszystkie migracje z `supabase/migrations` w kolejności nazw plików,
@@ -192,23 +219,31 @@ uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
    `20260814210000_ticketing_self_service_setup.sql` i test
    `005_ticketing_self_service_setup_smoke.sql`. Następnie zalogowany właściciel
    może utworzyć pierwszą ofertę z poziomu kreatora, bez fixture SQL.
-7. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
+7. Dla etapu 2B uruchomić migrację
+   `20260816160000_ticketing_marketplace_bridge.sql`, a potem test
+   `006_ticketing_marketplace_bridge_smoke.sql`. Test działa w transakcji i na
+   końcu wykonuje `rollback`, więc nie pozostawia testowej atrakcji, zamówienia
+   ani blokady miejsc.
+8. W panelu `/host/sprzedaz/konfiguracja` połączyć każdy aktywny obiekt z jego
+   publiczną atrakcją. Bez tego powiązania strona atrakcji nie pokaże sprzedaży
+   online.
+9. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
    `TICKETING_FINGERPRINT_SECRET` i `CRON_SECRET`. Na podglądzie ustawić
    `TICKETING_CHECKOUT_ENABLED=true`, pozostawiając produkcję wyłączoną.
-8. Dla płatności dodać `STRIPE_SECRET_KEY` i `STRIPE_WEBHOOK_SECRET`, a w Stripe
+10. Dla płatności dodać `STRIPE_SECRET_KEY` i `STRIPE_WEBHOOK_SECRET`, a w Stripe
    utworzyć endpoint `/api/webhooks/stripe` dla zdarzeń:
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
    `checkout.session.async_payment_failed` i `checkout.session.expired`.
    Dopiero wtedy ustawić `TICKETING_PAYMENTS_ENABLED=true` na Preview.
-9. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
+11. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
    zamówienia, licznik, anulowanie oraz powrót miejsc do puli.
-10. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
+12. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
    wystawienie biletów QR, pojawienie się zamówienia w `/host/sprzedaz` oraz
    jednokrotne wykorzystanie biletu przez zalogowanego kasjera.
-11. Potwierdzić, że `/host` pokazuje wyłącznie nowy panel, stare adresy hosta
-   przekierowują poprawnie, a dotychczasowe logowanie, wyszukiwanie i publiczne
-   rezerwacje nadal działają równolegle z nowym ticketingiem.
-12. Dopiero potem zastosować migracje na produkcji.
+13. Potwierdzić pełną ścieżkę: wyszukiwarka → atrakcja → kalendarz → checkout →
+   płatność → bilet QR → skaner oraz widoczność zamówienia w panelu klienta i
+   właściciela. Stare adresy mają tylko przekierowywać, bez tworzenia rezerwacji.
+14. Dopiero potem zastosować migracje na produkcji.
 
 Nie należy ręcznie uruchamiać starych plików z katalogu `scripts` jako migracji
 nowego modelu.

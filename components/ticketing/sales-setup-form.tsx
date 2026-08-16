@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type {
+  TicketingMarketplaceProperty,
   TicketingSetupOrganization,
   TicketingSetupVenue,
 } from "@/lib/ticketing/types"
@@ -40,6 +41,7 @@ import type {
 interface SalesSetupFormProps {
   organizations: TicketingSetupOrganization[]
   venues: TicketingSetupVenue[]
+  marketplaceProperties: TicketingMarketplaceProperty[]
 }
 
 interface TicketRow {
@@ -76,10 +78,15 @@ function SubmitButton() {
   )
 }
 
-export function SalesSetupForm({ organizations, venues }: SalesSetupFormProps) {
+export function SalesSetupForm({
+  organizations,
+  venues,
+  marketplaceProperties,
+}: SalesSetupFormProps) {
   const [state, formAction] = useActionState(createSalesSetup, initialState)
   const [venueChoice, setVenueChoice] = useState(venues[0]?.id ?? "new")
   const [organizationChoice, setOrganizationChoice] = useState(organizations[0]?.id ?? "new")
+  const [propertyChoice, setPropertyChoice] = useState(venues[0]?.propertyId ?? "none")
   const [ticketRows, setTicketRows] = useState<TicketRow[]>([
     { id: "normal", name: "Bilet normalny", price: "50", capacityUnits: "1", maxQuantity: "10" },
     { id: "reduced", name: "Bilet ulgowy", price: "35", capacityUnits: "1", maxQuantity: "10" },
@@ -87,6 +94,15 @@ export function SalesSetupForm({ organizations, venues }: SalesSetupFormProps) {
 
   const selectedVenue = venues.find((venue) => venue.id === venueChoice) ?? null
   const createsVenue = venueChoice === "new"
+  const selectableProperties = marketplaceProperties.filter(
+    (property) => property.canAssign || property.id === selectedVenue?.propertyId,
+  )
+
+  function handleVenueChoice(nextVenueId: string) {
+    setVenueChoice(nextVenueId)
+    const nextVenue = venues.find((venue) => venue.id === nextVenueId)
+    setPropertyChoice(nextVenue?.propertyId ?? "none")
+  }
 
   function addTicketRow() {
     if (ticketRows.length >= 10) return
@@ -129,7 +145,7 @@ export function SalesSetupForm({ organizations, venues }: SalesSetupFormProps) {
         <CardContent className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="existingVenueId">Obiekt</Label>
-            <Select name="existingVenueId" value={venueChoice} onValueChange={setVenueChoice}>
+            <Select name="existingVenueId" value={venueChoice} onValueChange={handleVenueChoice}>
               <SelectTrigger id="existingVenueId" className="w-full">
                 <SelectValue placeholder="Wybierz obiekt" />
               </SelectTrigger>
@@ -220,6 +236,28 @@ export function SalesSetupForm({ organizations, venues }: SalesSetupFormProps) {
           ) : (
             <input type="hidden" name="salesMode" value={selectedVenue?.salesMode ?? "allocated_quota"} />
           )}
+
+          <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <Label htmlFor="propertyId">Publiczna atrakcja w marketplace</Label>
+            <Select name="propertyId" value={propertyChoice} onValueChange={setPropertyChoice}>
+              <SelectTrigger id="propertyId" className="w-full bg-background">
+                <SelectValue placeholder="Wybierz atrakcję" />
+              </SelectTrigger>
+              <SelectContent>
+                {!selectedVenue?.propertyId && (
+                  <SelectItem value="none">Bez publikacji na stronie atrakcji</SelectItem>
+                )}
+                {selectableProperties.map((property) => (
+                  <SelectItem key={property.id} value={property.id}>
+                    {property.title} · {property.city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Powiązanie sprawi, że kalendarz na stronie tej atrakcji pokaże wyłącznie nowe terminy ticketingu i poprowadzi klienta do płatności oraz biletu QR.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

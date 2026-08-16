@@ -28,8 +28,12 @@ const requiredRoutes = [
   "app/host/sprzedaz/page.tsx",
   "app/host/sprzedaz/konfiguracja/page.tsx",
   "app/host/sprzedaz/konfiguracja/actions.ts",
+  "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
+  "components/ticketing/marketplace-calendar.tsx",
   "components/ticketing/sales-setup-form.tsx",
   "lib/auth/return-to.ts",
+  "lib/ticketing/marketplace.ts",
+  "supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql",
 ]
 
 const removedRoutes = [
@@ -51,6 +55,29 @@ const removedRoutes = [
   "components/host-create-offer-dialog.tsx",
   "components/host-offer-availability-manager.tsx",
   "components/host-offers-manager.tsx",
+  "app/admin/offers/[offerId]/availability/page.tsx",
+  "app/api/admin/offers/[offerId]/availability/route.ts",
+  "app/api/admin/offers/route.ts",
+  "app/api/attractions/[id]/availability/route.ts",
+  "app/api/attractions/[id]/block-dates/route.ts",
+  "app/api/attractions/[id]/settings/route.ts",
+  "app/api/bookings/route.ts",
+  "app/api/check-availability/route.ts",
+  "app/api/offers/[offerId]/slots/route.ts",
+  "app/api/properties/[propertyId]/day-slots/route.ts",
+  "app/api/properties/[propertyId]/month-availability/route.ts",
+  "app/booking-confirmation/[id]/page.tsx",
+  "components/availability-calendar-card.tsx",
+  "components/booking-card.tsx",
+  "components/booking-widget-demo.tsx",
+  "components/booking-widget.tsx",
+  "components/create-offer-dialog.tsx",
+  "components/multi-slot-booking-widget.tsx",
+  "components/offer-availability-manager.tsx",
+  "components/slot-availability-widget.tsx",
+  "lib/booking-actions.ts",
+  "lib/offers/getNextAvailableSlot.ts",
+  "lib/properties/getAvailabilityForPropertyOnDate.ts",
 ]
 
 for (const route of requiredRoutes) {
@@ -61,9 +88,24 @@ for (const route of removedRoutes) {
   assert.equal(await fileExists(route), false, `Wycofana trasa lub moduł nadal istnieje: ${route}`)
 }
 
-const bookingFlow = await source("components/multi-slot-booking-widget.tsx")
-assert.doesNotMatch(bookingFlow, /\/offers\/\$\{firstSlot\.offerId\}\/book/)
-assert.match(bookingFlow, /\/offers\/\$\{firstSlot\.offerId\}\?\$\{queryParams\.toString\(\)\}/)
+const attractionPage = await source("app/attractions/[slug]/page.tsx")
+assert.match(attractionPage, /MarketplaceCalendar/)
+assert.match(attractionPage, /getMarketplaceTicketingVenue/)
+assert.doesNotMatch(attractionPage, /\.from\("(?:offers|offer_availability|offer_bookings|bookings)"\)/)
+
+const marketplaceCalendar = await source("components/ticketing/marketplace-calendar.tsx")
+assert.match(marketplaceCalendar, /\/api\/ticketing\/properties\/\$\{propertyId\}\/sessions/)
+assert.match(marketplaceCalendar, /\/checkout\/\$\{session\.id\}/)
+assert.doesNotMatch(marketplaceCalendar, /\/offers\//)
+
+const legacyOffer = await source("app/offers/[id]/page.tsx")
+assert.match(legacyOffer, /permanentRedirect\(`\/attractions\/\$\{offer\.place_id\}`\)/)
+assert.doesNotMatch(legacyOffer, /BookingWidget|\/api\/bookings/)
+
+const marketplaceSearch = await source("app/api/search/route.ts")
+assert.match(marketplaceSearch, /listMarketplacePropertySessions/)
+assert.match(marketplaceSearch, /Math\.min\(parsedPer, 50\)/)
+assert.doesNotMatch(marketplaceSearch, /getNextAvailableSlot|getAvailabilityForPropertyOnDate/)
 
 const nextConfig = await source("next.config.mjs")
 assert.match(nextConfig, /source: '\/properties\/:id'/)
@@ -116,6 +158,23 @@ assert.doesNotMatch(hostPanel, /\.from\("(?:properties|bookings|offers)"\)/)
 for (const file of ["components/top-nav.tsx", "components/bottom-nav.tsx", "app/dashboard/page.tsx"]) {
   assert.doesNotMatch(await source(file), /\/host\/properties|\/host\/bookings/)
 }
+
+for (const file of ["app/dashboard/page.tsx", "app/dashboard/bookings/page.tsx"]) {
+  const dashboard = await source(file)
+  assert.match(dashboard, /listCustomerTicketingOrders/)
+  assert.doesNotMatch(dashboard, /\.from\("bookings"\)/)
+}
+
+const marketplaceSetup = await source("app/host/sprzedaz/konfiguracja/actions.ts")
+assert.match(marketplaceSetup, /ticketing_create_marketplace_sales_setup/)
+assert.match(marketplaceSetup, /ticketing_link_venue_property/)
+
+const marketplaceMigration = await source("supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql")
+assert.match(marketplaceMigration, /ticketing_list_property_sessions/)
+assert.match(marketplaceMigration, /venues_property_id_unique_idx/)
+assert.match(marketplaceMigration, /product\.inventory_mode in \('native_enjoyhub', 'allocated_quota'\)/)
+assert.match(marketplaceMigration, /session\.capacity > inventory\.reserved_capacity/)
+assert.match(marketplaceMigration, /sessions_select_order_customers/)
 
 const publicTicketingOffer = await source("app/bilety/[productId]/page.tsx")
 assert.match(publicTicketingOffer, /\/checkout\/\$\{session\.id\}/)

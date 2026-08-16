@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
-import { getNextAvailableSlotForProperty } from "@/lib/properties/getNextAvailableSlotForProperty"
-import { getAvailabilityForPropertyOnDate } from "@/lib/properties/getAvailabilityForPropertyOnDate"
+import { listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
 
 interface SearchResult {
   id: string
@@ -35,6 +34,20 @@ type SearchItem = SearchResult & { hasAvailability?: boolean }
 // Maximum valid age for filtering
 const MAX_VALID_AGE = 150
 
+function isValidIsoDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const parsed = new Date(Date.UTC(year, month - 1, day))
+
+  return parsed.getUTCFullYear() === year
+    && parsed.getUTCMonth() === month - 1
+    && parsed.getUTCDate() === day
+}
+
 // Enable caching for this route - revalidate every 60 seconds
 export const revalidate = 60
 
@@ -47,8 +60,14 @@ export async function GET(request: Request) {
     const bbox = searchParams.get("bbox") || ""
     const categoriesParam = searchParams.get("categories") || ""
     const sort = searchParams.get("sort") || "relevance"
-    const page = parseInt(searchParams.get("page") || "1", 10)
-    const per = parseInt(searchParams.get("per") || "20", 10)
+    const parsedPage = parseInt(searchParams.get("page") || "1", 10)
+    const parsedPer = parseInt(searchParams.get("per") || "20", 10)
+    const page = Number.isFinite(parsedPage) && parsedPage > 0
+      ? Math.min(parsedPage, 10_000)
+      : 1
+    const per = Number.isFinite(parsedPer) && parsedPer > 0
+      ? Math.min(parsedPer, 50)
+      : 20
     const childAge = searchParams.get("child_age")
     const ageMinParam = searchParams.get("age_min")
     const ageMaxParam = searchParams.get("age_max")
@@ -276,49 +295,51 @@ export async function GET(request: Request) {
       }
     }
     
-    // Filter by date availability if provided
-    if (dateParam) {
-      // Validate date format (YYYY-MM-DD)
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      if (dateRegex.test(dateParam)) {
-        // Filter properties that have availability on the specified date
-        const availabilityChecks: SearchItem[] = await Promise.all(
-          items.map(async (item) => {
-            const hasAvailability = await getAvailabilityForPropertyOnDate(item.id, dateParam)
-            return { ...item, hasAvailability }
-          })
-        )
-        
-        // Keep only properties with availability on the specified date
-        items = availabilityChecks.filter((item) => item.hasAvailability)
-      }
-    }
-    
     // Sort by rating if requested (after computing avg_rating)
     if (sort === "rating") {
       items.sort((a: SearchResult, b: SearchResult) => b.avg_rating - a.avg_rating)
     }
     
-    // Fetch next available slot for each property
-    // Use a date range from today to 90 days in the future
+    // Read marketplace availability exclusively from canonical ticketing
+    // sessions. One bounded RPC per result includes live atomic holds.
     const today = new Date()
-    const dateStart = today.toISOString().split('T')[0] // YYYY-MM-DD format
+    const dateStart = today.toISOString().split('T')[0]
     const futureDate = new Date(today)
     futureDate.setDate(futureDate.getDate() + 90)
     const dateEnd = futureDate.toISOString().split('T')[0]
-    
-    // Fetch slots for all properties in parallel
-    // Note: For large result sets, consider implementing batching or limiting concurrent requests
-    const itemsWithSlots = await Promise.all(
+    const requestedDate = isValidIsoDate(dateParam) ? dateParam : null
+    const requestedDateOutsideMainRange = requestedDate !== null
+      && (requestedDate < dateStart || requestedDate > dateEnd)
+
+    const ticketingResults = await Promise.all(
       items.map(async (item) => {
-        const slot = await getNextAvailableSlotForProperty(item.id, dateStart, dateEnd)
+        const [sessions, requestedDateSessions] = await Promise.all([
+          listMarketplacePropertySessions(item.id, dateStart, dateEnd),
+          requestedDateOutsideMainRange && requestedDate
+            ? listMarketplacePropertySessions(item.id, requestedDate, requestedDate)
+            : Promise.resolve([]),
+        ])
+        const hasRequestedDate = requestedDate === null
+          || sessions.some((session) => session.localDate === requestedDate)
+          || requestedDateSessions.length > 0
+        const nextSession = sessions[0] ?? null
+        const priceFrom = sessions.length > 0
+          ? Math.min(...sessions.map((session) => session.priceFrom))
+          : null
+
         return {
           ...item,
-          next_available_slot: slot ? { date: slot.date, startTime: slot.startTime } : null,
-          price_from: slot ? slot.price_from : null,
+          hasAvailability: hasRequestedDate,
+          next_available_slot: nextSession
+            ? { date: nextSession.localDate, startTime: nextSession.localStartTime }
+            : null,
+          price_from: priceFrom,
         }
       })
     )
+    const itemsWithSlots = requestedDate
+      ? ticketingResults.filter((item) => item.hasAvailability)
+      : ticketingResults
     
     const response = NextResponse.json({
       items: itemsWithSlots,

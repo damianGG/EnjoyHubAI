@@ -18,6 +18,7 @@ const salesSetupSchema = z.object({
   existingVenueId: z.union([z.literal("new"), z.string().uuid()]),
   organizationId: z.union([z.literal("new"), z.string().uuid()]),
   organizationName: optionalText(160),
+  propertyId: z.union([z.literal("none"), z.string().uuid()]),
   venueName: optionalText(160),
   venueDescription: optionalText(2000),
   addressLine1: optionalText(240),
@@ -99,11 +100,14 @@ function slugify(value: string) {
 function setupErrorMessage(error: { code?: string; message?: string } | null) {
   const message = error?.message ?? ""
 
-  if (error?.code === "PGRST202" || message.includes("ticketing_create_sales_setup")) {
-    return "Kreator wymaga migracji etapu 2A w Supabase. Po jej uruchomieniu formularz zadziała bez dodatkowej konfiguracji."
+  if (
+    error?.code === "PGRST202"
+    || message.includes("ticketing_create_marketplace_sales_setup")
+  ) {
+    return "Kreator wymaga migracji etapu 2B w Supabase. Po jej uruchomieniu formularz połączy marketplace z nowym ticketingiem."
   }
   if (error?.code === "23505") {
-    return "Taka oferta lub obiekt już istnieje. Zmień nazwę i spróbuj ponownie."
+    return "Taka oferta, obiekt lub powiązanie atrakcji już istnieje. Sprawdź wybraną atrakcję i spróbuj ponownie."
   }
   if (error?.code === "42501" || message.toLowerCase().includes("cannot configure")) {
     return "Nie masz uprawnień właściciela, administratora ani managera dla wybranego obiektu."
@@ -140,6 +144,7 @@ export async function createSalesSetup(
     existingVenueId: formText(formData, "existingVenueId") || "new",
     organizationId: formText(formData, "organizationId") || "new",
     organizationName: formText(formData, "organizationName"),
+    propertyId: formText(formData, "propertyId") || "none",
     venueName: formText(formData, "venueName"),
     venueDescription: formText(formData, "venueDescription"),
     addressLine1: formText(formData, "addressLine1"),
@@ -177,7 +182,7 @@ export async function createSalesSetup(
   const generationEnd = new Date()
   generationEnd.setUTCDate(generationEnd.getUTCDate() + 90)
 
-  const { data, error } = await supabase.rpc("ticketing_create_sales_setup", {
+  const { data, error } = await supabase.rpc("ticketing_create_marketplace_sales_setup", {
     p_organization_id: input.existingVenueId === "new" && input.organizationId !== "new"
       ? input.organizationId
       : null,
@@ -207,6 +212,7 @@ export async function createSalesSetup(
     p_capacity: input.capacity,
     p_sales_cutoff_minutes: input.salesCutoffMinutes,
     p_generate_until: generationEnd.toISOString().slice(0, 10),
+    p_property_id: input.propertyId === "none" ? null : input.propertyId,
   })
 
   if (error || !data?.[0]) {
@@ -223,6 +229,42 @@ export async function createSalesSetup(
   revalidatePath("/host/sprzedaz")
   revalidatePath("/host/sprzedaz/konfiguracja")
   redirect(`/host/sprzedaz/konfiguracja?utworzono=${result.created_product_id}`)
+}
+
+export async function linkTicketingVenueToProperty(formData: FormData) {
+  const parsed = z.object({
+    venueId: z.string().uuid(),
+    propertyId: z.string().uuid(),
+  }).safeParse({
+    venueId: formText(formData, "venueId"),
+    propertyId: formText(formData, "propertyId"),
+  })
+
+  if (!parsed.success || !isSupabaseConfigured) {
+    redirect("/host/sprzedaz/konfiguracja?blad=powiazanie")
+  }
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  const { error } = await supabase.rpc("ticketing_link_venue_property", {
+    p_venue_id: parsed.data.venueId,
+    p_property_id: parsed.data.propertyId,
+  })
+
+  if (error) {
+    console.error("Ticketing marketplace link failed", {
+      code: error.code,
+      message: error.message,
+    })
+    redirect("/host/sprzedaz/konfiguracja?blad=powiazanie")
+  }
+
+  revalidatePath("/")
+  revalidatePath(`/attractions/${parsed.data.propertyId}`)
+  revalidatePath("/host/sprzedaz/konfiguracja")
+  redirect("/host/sprzedaz/konfiguracja?powiazano=1")
 }
 
 export async function changeTicketingProductStatus(formData: FormData) {

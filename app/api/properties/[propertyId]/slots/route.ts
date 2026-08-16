@@ -125,7 +125,8 @@ export async function GET(
         {
           next_available_slot: null,
           price_from: null,
-          offerId: null,
+          sessionId: null,
+          productId: null,
         },
         { status: 200 }
       )
@@ -138,7 +139,8 @@ export async function GET(
           startTime: result.startTime,
         },
         price_from: result.price_from,
-        offerId: result.offerId,
+        sessionId: result.sessionId,
+        productId: result.productId,
       },
       { status: 200 }
     )

@@ -48,6 +48,32 @@ try {
     $$;
     insert into auth.users (id, email)
     values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'pglite@example.com');
+    create table public.users (
+      id uuid primary key,
+      email text unique not null,
+      full_name text,
+      role text not null default 'user',
+      created_at timestamptz not null default now()
+    );
+    create table public.properties (
+      id uuid primary key default gen_random_uuid(),
+      host_id uuid references public.users(id) on delete cascade,
+      title text not null,
+      description text,
+      property_type text not null,
+      address text not null,
+      city text not null,
+      country text not null,
+      price_per_night numeric(10, 2) not null,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+    insert into public.users (id, email, full_name)
+    values (
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'pglite@example.com',
+      'PGlite Test User'
+    );
   `)
 
   await runSqlFiles(
