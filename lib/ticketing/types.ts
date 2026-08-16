@@ -103,3 +103,55 @@ export interface PublicTicketSummary {
   venueCity: string | null
   venueTimezone: string
 }
+
+export interface TicketingSetupOrganization {
+  id: string
+  name: string
+}
+
+export interface TicketingSetupVenue {
+  id: string
+  organizationId: string
+  organizationName: string
+  name: string
+  city: string | null
+  salesMode: "native_enjoyhub" | "allocated_quota"
+}
+
+export interface TicketingManagedProduct {
+  id: string
+  name: string
+  description: string | null
+  status: "draft" | "active" | "archived"
+  durationMinutes: number
+  venueId: string
+  venueName: string
+  venueCity: string | null
+  venueTimezone: string
+  priceFrom: number | null
+  currency: string
+  activeTicketTypeCount: number
+  upcomingSessionCount: number
+  nextSessionStartsAt: string | null
+}
+
+export interface TicketingProductSalesPage {
+  id: string
+  name: string
+  description: string | null
+  durationMinutes: number
+  venue: {
+    id: string
+    name: string
+    city: string | null
+    addressLine1: string | null
+    timezone: string
+  }
+  ticketTypes: TicketingTicketType[]
+  sessions: Array<{
+    id: string
+    startsAt: string
+    endsAt: string
+    availableCapacity: number
+  }>
+}

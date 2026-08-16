@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, Banknote, Clock3, ReceiptText, ScanLine, TicketCheck } from "lucide-react"
+import { ArrowLeft, Banknote, Clock3, ReceiptText, ScanLine, Settings2, TicketCheck } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,12 @@ export default async function HostTicketingSalesPage() {
   if (!isTicketingPaymentsEnabled) {
     return (
       <CenteredMessage>
-        Panel sprzedaży jest gotowy, ale pozostaje wyłączony flagą <code>TICKETING_PAYMENTS_ENABLED</code> do czasu konfiguracji Stripe i migracji 1D.
+        <div className="space-y-4">
+          <p>Panel zamówień czeka na konfigurację Stripe, ale ofertę, cennik i terminy możesz przygotować już teraz.</p>
+          <Button asChild>
+            <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Uruchom konfigurator sprzedaży</Link>
+          </Button>
+        </div>
       </CenteredMessage>
     )
   }
@@ -62,7 +67,16 @@ export default async function HostTicketingSalesPage() {
   const typedMemberships = (memberships ?? []) as Array<{ organization_id: string }>
   const organizationIds = typedMemberships.map((membership) => membership.organization_id)
   if (organizationIds.length === 0) {
-    return <CenteredMessage>Nie należysz jeszcze do organizacji sprzedającej bilety.</CenteredMessage>
+    return (
+      <CenteredMessage>
+        <div className="space-y-4">
+          <p>Nie masz jeszcze organizacji sprzedażowej. Kreator utworzy ją automatycznie i przypisze Ci rolę właściciela.</p>
+          <Button asChild>
+            <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Uruchom pierwszą sprzedaż</Link>
+          </Button>
+        </div>
+      </CenteredMessage>
+    )
   }
 
   const { data, error } = await supabase
@@ -131,9 +145,14 @@ export default async function HostTicketingSalesPage() {
             <h1 className="text-3xl font-bold">Sprzedaż biletów</h1>
             <p className="mt-2 text-muted-foreground">Zamówienia z EnjoyHub i widgetu obiektu w jednym widoku.</p>
           </div>
-          <Button asChild>
-            <Link href="/host/skaner"><ScanLine className="mr-2 h-4 w-4" /> Kontrola wejścia</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Oferty i terminy</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/host/skaner"><ScanLine className="h-4 w-4" /> Kontrola wejścia</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

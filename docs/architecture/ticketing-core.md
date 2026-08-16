@@ -1,4 +1,4 @@
-# Rdzeń sprzedaży biletów — etapy 1A–1D
+# Rdzeń sprzedaży biletów — etapy 1A–2A
 
 ## Cel
 
@@ -130,7 +130,28 @@ Pierwszy pilot płatniczy obsługuje zamówienia w PLN. Metody płatności są
 dynamiczne: BLIK i Przelewy24 należy włączyć na koncie Stripe, bez wpisywania ich
 na stałe w kodzie.
 
-## Wdrożenie etapów 1A–1C
+## Etap 2A — samoobsługowe uruchomienie sprzedaży
+
+Etap 2A usuwa konieczność ręcznego tworzenia danych ticketingu w Supabase:
+
+- właściciel, administrator lub manager przechodzi do
+  `/host/sprzedaz/konfiguracja` i w jednym formularzu wybiera istniejący obiekt
+  albo tworzy organizację i obiekt od zera;
+- kreator zapisuje ofertę, rodzaje biletów, tygodniowy harmonogram i pierwsze 90
+  dni konkretnych terminów w jednej transakcji — nieudany zapis nie pozostawia
+  częściowej konfiguracji;
+- obiekt z własną kasą wybiera `allocated_quota`, więc pojemność wpisana w
+  kreatorze oznacza wyłącznie pulę przekazaną do EnjoyHub;
+- nowa oferta otrzymuje stały publiczny adres `/bilety/:productId`, z którego
+  kupujący wybiera termin i przechodzi do atomowego checkoutu;
+- właściciel może jednym kliknięciem wstrzymać i wznowić publiczną sprzedaż;
+- chroniony codzienny cron wywołuje `ticketing_extend_active_sessions` i
+  idempotentnie utrzymuje 90-dniowy horyzont terminów bez pracy ręcznej.
+
+Tryby `external_api` i `redirect` pozostają poza samoobsługowym kreatorem. Ich
+uruchomienie wymaga osobnego adaptera dla systemu kasowego konkretnego obiektu.
+
+## Wdrożenie etapów 1A–2A
 
 1. Wykonać kopię zapasową bazy.
 2. Uruchomić wszystkie migracje z `supabase/migrations` w kolejności nazw plików,
@@ -149,22 +170,26 @@ na stałe w kodzie.
    `004_ticketing_payments_and_tickets_smoke.sql`. Lokalnie oba kroki, razem ze
    wszystkimi wcześniejszymi migracjami i smoke testami, wykonuje
    `npm run test:ticketing-db` w izolowanej bazie PGlite.
-6. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
+6. Dla etapu 2A uruchomić migrację
+   `20260814210000_ticketing_self_service_setup.sql` i test
+   `005_ticketing_self_service_setup_smoke.sql`. Następnie zalogowany właściciel
+   może utworzyć pierwszą ofertę z poziomu kreatora, bez fixture SQL.
+7. Na Vercelu dodać serwerowe zmienne `SUPABASE_SERVICE_ROLE_KEY`,
    `TICKETING_FINGERPRINT_SECRET` i `CRON_SECRET`. Na podglądzie ustawić
    `TICKETING_CHECKOUT_ENABLED=true`, pozostawiając produkcję wyłączoną.
-7. Dla płatności dodać `STRIPE_SECRET_KEY` i `STRIPE_WEBHOOK_SECRET`, a w Stripe
+8. Dla płatności dodać `STRIPE_SECRET_KEY` i `STRIPE_WEBHOOK_SECRET`, a w Stripe
    utworzyć endpoint `/api/webhooks/stripe` dla zdarzeń:
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
    `checkout.session.async_payment_failed` i `checkout.session.expired`.
    Dopiero wtedy ustawić `TICKETING_PAYMENTS_ENABLED=true` na Preview.
-8. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
+9. Opcjonalnie uruchomić stagingowy fixture live i sprawdzić: utworzenie
    zamówienia, licznik, anulowanie oraz powrót miejsc do puli.
-9. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
+10. W trybie testowym Stripe sprawdzić udaną płatność, ponowienie webhooka,
    wystawienie biletów QR, pojawienie się zamówienia w `/host/sprzedaz` oraz
    jednokrotne wykorzystanie biletu przez zalogowanego kasjera.
-10. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
-   działają — aplikacja nie używa jeszcze nowych tabel.
-11. Dopiero potem zastosować migracje na produkcji.
+11. Potwierdzić, że dotychczasowe logowanie, wyszukiwanie i rezerwacje nadal
+   działają równolegle z nowym ticketingiem.
+12. Dopiero potem zastosować migracje na produkcji.
 
 Nie należy ręcznie uruchamiać starych plików z katalogu `scripts` jako migracji
 nowego modelu.

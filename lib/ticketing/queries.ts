@@ -1,9 +1,12 @@
+import { cache } from "react"
+
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import type {
   CheckoutOrderSummary,
   PublicTicketSummary,
   TicketingCheckoutSession,
+  TicketingProductSalesPage,
   TicketingSessionListItem,
 } from "@/lib/ticketing/types"
 import { isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
@@ -206,6 +209,114 @@ export async function listCheckoutSessions() {
     } satisfies TicketingSessionListItem]
   })
 }
+
+export const getTicketingProductSalesPage = cache(async (
+  productId: string,
+) => {
+  if (!isSupabaseConfigured) return null
+
+  const supabase = createClient()
+  const [productResult, sessionsResult] = await Promise.all([
+    supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        description,
+        duration_minutes,
+        min_participants,
+        max_participants,
+        venues!inner (
+          id,
+          name,
+          city,
+          address_line_1,
+          timezone
+        ),
+        ticket_types (
+          id,
+          name,
+          description,
+          price_amount,
+          currency,
+          capacity_units,
+          min_quantity_per_order,
+          max_quantity_per_order,
+          is_active
+        )
+      `)
+      .eq("id", productId)
+      .eq("status", "active")
+      .single(),
+    supabase
+      .from("sessions")
+      .select("id, starts_at, ends_at, capacity")
+      .eq("product_id", productId)
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(48),
+  ])
+
+  if (
+    productResult.error ||
+    !productResult.data ||
+    sessionsResult.error ||
+    !sessionsResult.data
+  ) return null
+
+  const product = productResult.data as unknown as RawProduct
+  const sessions = sessionsResult.data as Array<{
+    id: string
+    starts_at: string
+    ends_at: string
+    capacity: number
+  }>
+  const availabilities = await Promise.all(
+    sessions.map((session) => getAvailability(supabase, session.id)),
+  )
+
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    durationMinutes: product.duration_minutes,
+    venue: {
+      id: product.venues.id,
+      name: product.venues.name,
+      city: product.venues.city,
+      addressLine1: product.venues.address_line_1,
+      timezone: product.venues.timezone,
+    },
+    ticketTypes: product.ticket_types
+      .filter((ticket) => ticket.is_active)
+      .map((ticket) => ({
+        id: ticket.id,
+        name: ticket.name,
+        description: ticket.description,
+        priceAmount: Number(ticket.price_amount),
+        currency: ticket.currency,
+        capacityUnits: ticket.capacity_units,
+        minQuantity: ticket.min_quantity_per_order,
+        maxQuantity: ticket.max_quantity_per_order,
+      })),
+    sessions: sessions.flatMap((session, index) => {
+      const availability = availabilities[index]
+      if (
+        !availability ||
+        !availability.is_sellable ||
+        availability.available_capacity_units < 1
+      ) return []
+
+      return [{
+        id: session.id,
+        startsAt: session.starts_at,
+        endsAt: session.ends_at,
+        availableCapacity: availability.available_capacity_units,
+      }]
+    }),
+  } satisfies TicketingProductSalesPage
+})
 
 export async function getCheckoutOrderSummary(
   orderId: string,
