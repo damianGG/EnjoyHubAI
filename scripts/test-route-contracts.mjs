@@ -23,17 +23,26 @@ const requiredRoutes = [
   "app/offers/[id]/page.tsx",
   "app/checkout/page.tsx",
   "app/bilety/[productId]/page.tsx",
+  "app/dla-organizatorow/page.tsx",
   "app/host/page.tsx",
+  "app/host/start/page.tsx",
+  "app/host/onboarding/page.tsx",
+  "app/host/onboarding/actions.ts",
+  "app/host/onboarding/gotowe/page.tsx",
   "app/host/skaner/page.tsx",
   "app/host/sprzedaz/page.tsx",
   "app/host/sprzedaz/konfiguracja/page.tsx",
   "app/host/sprzedaz/konfiguracja/actions.ts",
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
+  "components/ticketing/clear-organizer-onboarding-draft.tsx",
+  "components/ticketing/organizer-onboarding-wizard.tsx",
   "components/ticketing/sales-setup-form.tsx",
   "lib/auth/return-to.ts",
   "lib/ticketing/marketplace.ts",
   "supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql",
+  "supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql",
+  "supabase/tests/database/007_ticketing_organizer_onboarding_smoke.sql",
 ]
 
 const removedRoutes = [
@@ -153,6 +162,7 @@ assert.match(hostSales, /Konto kasjera nie ma dostępu/)
 
 const hostPanel = await source("app/host/page.tsx")
 assert.match(hostPanel, /\.from\("organization_memberships"\)/)
+assert.match(hostPanel, /href="\/host\/start"/)
 assert.doesNotMatch(hostPanel, /\.from\("(?:properties|bookings|offers)"\)/)
 
 for (const file of ["components/top-nav.tsx", "components/bottom-nav.tsx", "app/dashboard/page.tsx"]) {
@@ -175,6 +185,18 @@ assert.match(marketplaceMigration, /venues_property_id_unique_idx/)
 assert.match(marketplaceMigration, /product\.inventory_mode in \('native_enjoyhub', 'allocated_quota'\)/)
 assert.match(marketplaceMigration, /session\.capacity > inventory\.reserved_capacity/)
 assert.match(marketplaceMigration, /sessions_select_order_customers/)
+
+const organizerLanding = await source("app/dla-organizatorow/page.tsx")
+assert.match(organizerLanding, /href="\/host\/start"/)
+assert.match(organizerLanding, /Mam własny system/)
+
+const organizerOnboarding = await source("app/host/onboarding/actions.ts")
+assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
+
+const organizerOnboardingMigration = await source("supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql")
+assert.match(organizerOnboardingMigration, /ticketing_create_sales_setup/)
+assert.match(organizerOnboardingMigration, /ticketing_link_venue_property/)
+assert.match(organizerOnboardingMigration, /insert into public\.properties/)
 
 const publicTicketingOffer = await source("app/bilety/[productId]/page.tsx")
 assert.match(publicTicketingOffer, /\/checkout\/\$\{session\.id\}/)

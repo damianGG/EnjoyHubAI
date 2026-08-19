@@ -53,6 +53,16 @@ try {
       email text unique not null,
       full_name text,
       role text not null default 'user',
+      is_host boolean not null default false,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+    create table public.categories (
+      id uuid primary key default gen_random_uuid(),
+      name text unique not null,
+      slug text unique not null,
+      icon text not null,
+      description text,
       created_at timestamptz not null default now()
     );
     create table public.properties (
@@ -61,10 +71,16 @@ try {
       title text not null,
       description text,
       property_type text not null,
+      category_id uuid references public.categories(id),
       address text not null,
       city text not null,
       country text not null,
+      latitude numeric(10, 8),
+      longitude numeric(11, 8),
       price_per_night numeric(10, 2) not null,
+      max_guests integer not null default 1,
+      amenities text[],
+      images text[],
       is_active boolean not null default true,
       created_at timestamptz not null default now()
     );
