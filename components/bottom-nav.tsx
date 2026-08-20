@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthSheet } from "@/components/auth-sheet"
 import { Search, User as UserIcon, Heart, Plus } from "lucide-react"
@@ -128,16 +127,16 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             </Link>
 
             {/* Ticketing setup */}
-            <Link href="/host/sprzedaz/konfiguracja">
+            <Link href="/dla-organizatorow">
               <button
                 className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive('/host/sprzedaz/konfiguracja')
+                  isActive('/dla-organizatorow')
                     ? 'text-primary bg-primary/10' 
                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                 }`}
               >
                 <Plus className="h-4 w-4" />
-                <span className="text-xs font-medium">Sprzedaj</span>
+                <span className="text-xs font-medium">Dla obiektów</span>
               </button>
             </Link>
 
