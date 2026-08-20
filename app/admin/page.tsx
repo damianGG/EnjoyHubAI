@@ -76,17 +76,17 @@ export default async function AdminDashboard() {
             </Card>
           </Link>
 
-          {/* Property Offers */}
-          <Link href="/admin/properties">
+          {/* Canonical ticketing */}
+          <Link href="/host/sprzedaz/konfiguracja">
             <Card className="hover:bg-accent transition-colors cursor-pointer">
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-6 w-6 text-primary" />
-                  <CardTitle>Oferty obiektów</CardTitle>
+                  <CardTitle>Sprzedaż biletów</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription>Twórz oferty czasowe dla obiektów</CardDescription>
+                <CardDescription>Konfiguruj oferty, cenniki i terminy w nowym ticketingu</CardDescription>
               </CardContent>
             </Card>
           </Link>

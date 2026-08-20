@@ -116,6 +116,14 @@ export interface TicketingSetupVenue {
   name: string
   city: string | null
   salesMode: "native_enjoyhub" | "allocated_quota"
+  propertyId: string | null
+}
+
+export interface TicketingMarketplaceProperty {
+  id: string
+  title: string
+  city: string
+  canAssign: boolean
 }
 
 export interface TicketingManagedProduct {
@@ -128,6 +136,7 @@ export interface TicketingManagedProduct {
   venueName: string
   venueCity: string | null
   venueTimezone: string
+  venuePropertyId: string | null
   priceFrom: number | null
   currency: string
   activeTicketTypeCount: number
@@ -153,5 +162,31 @@ export interface TicketingProductSalesPage {
     startsAt: string
     endsAt: string
     availableCapacity: number
+  }>
+}
+
+export interface CustomerTicketingOrder {
+  id: string
+  orderNumber: number
+  status: string
+  paymentStatus: string
+  totalAmount: number
+  currency: string
+  createdAt: string
+  venueName: string
+  venueCity: string | null
+  venueTimezone: string
+  items: Array<{
+    id: string
+    productName: string
+    ticketTypeName: string
+    quantity: number
+    startsAt: string
+  }>
+  tickets: Array<{
+    id: string
+    ticketCode: string
+    status: string
+    sequenceNumber: number
   }>
 }

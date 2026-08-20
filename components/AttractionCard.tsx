@@ -287,10 +287,18 @@ function AttractionCard({
 
           {/* Price */}
           <div className="pt-1">
-            <p className="text-sm">
-              <span className="font-semibold">Cena od {priceFrom ?? price} zł</span>
-              {!priceFrom && <span className="text-muted-foreground"> / {priceUnit}</span>}
-            </p>
+            {priceFrom !== undefined ? (
+              priceFrom !== null ? (
+                <p className="text-sm font-semibold">Bilety od {priceFrom} zł</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sprzedaż online niedostępna</p>
+              )
+            ) : (
+              <p className="text-sm">
+                <span className="font-semibold">Cena od {price} zł</span>
+                <span className="text-muted-foreground"> / {priceUnit}</span>
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

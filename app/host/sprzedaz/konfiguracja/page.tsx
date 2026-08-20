@@ -12,7 +12,10 @@ import {
   Ticket,
 } from "lucide-react"
 
-import { changeTicketingProductStatus } from "@/app/host/sprzedaz/konfiguracja/actions"
+import {
+  changeTicketingProductStatus,
+  linkTicketingVenueToProperty,
+} from "@/app/host/sprzedaz/konfiguracja/actions"
 import { SalesSetupForm } from "@/components/ticketing/sales-setup-form"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +26,7 @@ import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
 import { formatMoney, formatSessionDate } from "@/lib/ticketing/format"
 import type {
   TicketingManagedProduct,
+  TicketingMarketplaceProperty,
   TicketingSetupOrganization,
   TicketingSetupVenue,
 } from "@/lib/ticketing/types"
@@ -46,6 +50,13 @@ interface RawVenue {
   city: string | null
   timezone: string
   sales_mode: "native_enjoyhub" | "allocated_quota"
+  property_id: string | null
+}
+
+interface RawMarketplaceProperty {
+  id: string
+  title: string
+  city: string
 }
 
 interface RawProduct {
@@ -74,14 +85,32 @@ async function loadConfiguration() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  const { data: memberships, error: membershipError } = await supabase
-    .from("organization_memberships")
-    .select("organization_id, role")
-    .eq("user_id", user.id)
+  const [membershipResult, propertyResult] = await Promise.all([
+    supabase
+      .from("organization_memberships")
+      .select("organization_id, role")
+      .eq("user_id", user.id),
+    supabase
+      .from("properties")
+      .select("id, title, city")
+      .eq("host_id", user.id)
+      .eq("is_active", true)
+      .order("title"),
+  ])
+  const { data: memberships, error: membershipError } = membershipResult
 
-  if (membershipError) {
+  if (membershipError || propertyResult.error) {
     return { error: "Nie udało się odczytać organizacji. Sprawdź, czy migracje ticketingu są uruchomione." } as const
   }
+
+  let marketplaceProperties: TicketingMarketplaceProperty[] = ((
+    propertyResult.data ?? []
+  ) as RawMarketplaceProperty[]).map((property) => ({
+    id: property.id,
+    title: property.title,
+    city: property.city,
+    canAssign: true,
+  }))
 
   const managerMemberships = ((memberships ?? []) as RawMembership[]).filter((membership) =>
     ["owner", "admin", "manager"].includes(membership.role),
@@ -94,6 +123,7 @@ async function loadConfiguration() {
       organizations: [] as TicketingSetupOrganization[],
       venues: [] as TicketingSetupVenue[],
       products: [] as TicketingManagedProduct[],
+      marketplaceProperties,
     }
   }
 
@@ -106,7 +136,7 @@ async function loadConfiguration() {
       .order("name"),
     supabase
       .from("venues")
-      .select("id, organization_id, name, city, timezone, sales_mode")
+      .select("id, organization_id, name, city, timezone, sales_mode, property_id")
       .in("organization_id", organizationIds)
       .in("status", ["draft", "active"])
       .in("sales_mode", ["native_enjoyhub", "allocated_quota"])
@@ -122,6 +152,34 @@ async function loadConfiguration() {
   const rawVenues = ((venuesResult.data ?? []) as RawVenue[]).filter((venue) =>
     activeOrganizationIds.has(venue.organization_id),
   )
+  const knownPropertyIds = new Set(marketplaceProperties.map((property) => property.id))
+  const missingLinkedPropertyIds = rawVenues
+    .map((venue) => venue.property_id)
+    .filter((propertyId): propertyId is string => (
+      propertyId !== null && !knownPropertyIds.has(propertyId)
+    ))
+
+  if (missingLinkedPropertyIds.length > 0) {
+    const { data: linkedPropertyData, error: linkedPropertyError } = await supabase
+      .from("properties")
+      .select("id, title, city")
+      .in("id", missingLinkedPropertyIds)
+      .eq("is_active", true)
+
+    if (linkedPropertyError) {
+      return { error: "Nie udało się odczytać atrakcji połączonych z obiektami." } as const
+    }
+
+    marketplaceProperties = [
+      ...marketplaceProperties,
+      ...((linkedPropertyData ?? []) as RawMarketplaceProperty[]).map((property) => ({
+        id: property.id,
+        title: property.title,
+        city: property.city,
+        canAssign: false,
+      })),
+    ]
+  }
   const venueIds = rawVenues.map((venue) => venue.id)
   const organizationNames = new Map(rawOrganizations.map((organization) => [organization.id, organization.name]))
 
@@ -136,10 +194,17 @@ async function loadConfiguration() {
     name: venue.name,
     city: venue.city,
     salesMode: venue.sales_mode,
+    propertyId: venue.property_id,
   })) satisfies TicketingSetupVenue[]
 
   if (venueIds.length === 0) {
-    return { error: null, organizations, venues, products: [] as TicketingManagedProduct[] }
+    return {
+      error: null,
+      organizations,
+      venues,
+      products: [] as TicketingManagedProduct[],
+      marketplaceProperties,
+    }
   }
 
   const { data: productData, error: productError } = await supabase
@@ -156,7 +221,13 @@ async function loadConfiguration() {
   const rawProducts = (productData ?? []) as RawProduct[]
   const productIds = rawProducts.map((product) => product.id)
   if (productIds.length === 0) {
-    return { error: null, organizations, venues, products: [] as TicketingManagedProduct[] }
+    return {
+      error: null,
+      organizations,
+      venues,
+      products: [] as TicketingManagedProduct[],
+      marketplaceProperties,
+    }
   }
 
   const [ticketTypesResult, sessionsResult] = await Promise.all([
@@ -199,6 +270,7 @@ async function loadConfiguration() {
       venueName: venue.name,
       venueCity: venue.city,
       venueTimezone: venue.timezone,
+      venuePropertyId: venue.property_id,
       priceFrom: tickets.length
         ? Math.min(...tickets.map((ticket) => Number(ticket.price_amount)))
         : null,
@@ -209,13 +281,18 @@ async function loadConfiguration() {
     } satisfies TicketingManagedProduct]
   })
 
-  return { error: null, organizations, venues, products }
+  return { error: null, organizations, venues, products, marketplaceProperties }
 }
 
 export default async function TicketingConfigurationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ utworzono?: string; zmiana?: string; blad?: string }>
+  searchParams: Promise<{
+    utworzono?: string
+    zmiana?: string
+    powiazano?: string
+    blad?: string
+  }>
 }) {
   if (!isSupabaseConfigured) {
     return <CenteredMessage>Połącz Supabase, aby skonfigurować sprzedaż.</CenteredMessage>
@@ -227,6 +304,7 @@ export default async function TicketingConfigurationPage({
   const createdProduct = query.utworzono
     ? configuration.products.find((product) => product.id === query.utworzono)
     : null
+  const assignableProperties = configuration.marketplaceProperties.filter((property) => property.canAssign)
 
   return (
     <main className="min-h-screen bg-background">
@@ -271,10 +349,28 @@ export default async function TicketingConfigurationPage({
           </Alert>
         )}
 
+        {query.powiazano && (
+          <Alert className="mb-6 border-emerald-200 bg-emerald-50 text-emerald-950">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Atrakcja została połączona z ticketingiem</AlertTitle>
+            <AlertDescription>
+              Publiczny kalendarz korzysta teraz z nowych sesji, atomowej dostępności i checkoutu biletowego.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {query.blad && (
           <Alert variant="destructive" className="mb-6">
-            <AlertTitle>Nie udało się zmienić statusu</AlertTitle>
-            <AlertDescription>Sprawdź swoje uprawnienia i spróbuj ponownie.</AlertDescription>
+            <AlertTitle>
+              {query.blad === "powiazanie"
+                ? "Nie udało się połączyć atrakcji"
+                : "Nie udało się zmienić statusu"}
+            </AlertTitle>
+            <AlertDescription>
+              {query.blad === "powiazanie"
+                ? "Sprawdź migrację etapu 2B, własność atrakcji oraz uprawnienia do obiektu."
+                : "Sprawdź swoje uprawnienia i spróbuj ponownie."}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -316,6 +412,9 @@ export default async function TicketingConfigurationPage({
                         <Badge variant={product.status === "active" ? "default" : "secondary"}>
                           {product.status === "active" ? "W sprzedaży" : "Wstrzymana"}
                         </Badge>
+                        <Badge variant={product.venuePropertyId ? "outline" : "destructive"}>
+                          {product.venuePropertyId ? "Widoczna w marketplace" : "Niepołączona z atrakcją"}
+                        </Badge>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" />{product.venueName}{product.venueCity ? `, ${product.venueCity}` : ""}</span>
@@ -327,9 +426,37 @@ export default async function TicketingConfigurationPage({
                           Najbliższy: {formatSessionDate(product.nextSessionStartsAt, product.venueTimezone)}
                         </p>
                       )}
+                      {!product.venuePropertyId && assignableProperties.length > 0 && (
+                        <form action={linkTicketingVenueToProperty} className="mt-4 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-center">
+                          <input type="hidden" name="venueId" value={product.venueId} />
+                          <label htmlFor={`property-${product.id}`} className="text-sm font-medium text-amber-950">
+                            Pokaż na stronie atrakcji:
+                          </label>
+                          <select
+                            id={`property-${product.id}`}
+                            name="propertyId"
+                            required
+                            className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Wybierz atrakcję</option>
+                            {assignableProperties.map((property) => (
+                              <option key={property.id} value={property.id}>
+                                {property.title} · {property.city}
+                              </option>
+                            ))}
+                          </select>
+                          <Button type="submit" size="sm">Połącz</Button>
+                        </form>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-2 lg:justify-end">
+                      {product.venuePropertyId && (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/attractions/${product.venuePropertyId}`}><MapPin className="h-4 w-4" /> Strona atrakcji</Link>
+                        </Button>
+                      )}
                       {isTicketingCheckoutEnabled && product.status === "active" ? (
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/bilety/${product.id}`}><ExternalLink className="h-4 w-4" /> Link sprzedażowy</Link>
@@ -363,7 +490,11 @@ export default async function TicketingConfigurationPage({
             <h2 id="new-product-heading" className="text-2xl font-semibold">Dodaj ofertę</h2>
             <p className="mt-1 text-sm text-muted-foreground">Domyślne wartości pozwalają wystartować szybko, a każdy parametr można zmienić przed zapisem.</p>
           </div>
-          <SalesSetupForm organizations={configuration.organizations} venues={configuration.venues} />
+          <SalesSetupForm
+            organizations={configuration.organizations}
+            venues={configuration.venues}
+            marketplaceProperties={configuration.marketplaceProperties}
+          />
         </section>
       </div>
     </main>

@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Star, MapPin, Users, Bed, Bath, Wifi, Car, ArrowLeft, Heart, Share2 } from "lucide-react"
 import Link from "next/link"
 import AttractionGallery from "@/components/attraction-gallery"
-import MultiSlotBookingWidget from "@/components/multi-slot-booking-widget"
+import { MarketplaceCalendar } from "@/components/ticketing/marketplace-calendar"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
 import AttractionMap from "@/components/attraction-map"
 import { extractIdFromSlug } from "@/lib/utils"
 import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
+import { getMarketplaceTicketingVenue } from "@/lib/ticketing/marketplace"
 
 // Enable ISR - revalidate every 120 seconds
 export const revalidate = 120
@@ -44,44 +45,29 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   // Extract ID from slug
   const id = extractIdFromSlug(slug)
 
-  // Get attraction details with host info and reviews
-  const { data: attraction } = await supabase
-    .from("properties")
-    .select(`
-      *,
-      users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
-      reviews (
-        id,
-        rating,
-        comment,
-        created_at,
-        users!reviews_guest_id_fkey (full_name)
-      )
-    `)
-    .eq("id", id)
-    .eq("is_active", true)
-    .single()
+  const [attractionResult, ticketingVenue] = await Promise.all([
+    supabase
+      .from("properties")
+      .select(`
+        *,
+        users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
+        reviews (
+          id,
+          rating,
+          comment,
+          created_at,
+          users!reviews_guest_id_fkey (full_name)
+        )
+      `)
+      .eq("id", id)
+      .eq("is_active", true)
+      .single(),
+    getMarketplaceTicketingVenue(id),
+  ])
+  const attraction = attractionResult.data
 
   if (!attraction) {
     notFound()
-  }
-
-  // Check if property has any active offers with availability configured
-  const { data: offers } = await supabase
-    .from("offers")
-    .select("id")
-    .eq("place_id", id)
-    .eq("is_active", true)
-
-  let hasAvailability = false
-  if (offers && offers.length > 0) {
-    // Check if at least one offer has availability configured
-    const { count } = await supabase
-      .from("offer_availability")
-      .select("*", { count: "exact", head: true })
-      .in("offer_id", offers.map((offer: { id: string }) => offer.id))
-    
-    hasAvailability = !!count && count > 0
   }
 
   // Calculate average rating
@@ -305,8 +291,8 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           {/* Booking Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {hasAvailability ? (
-                <MultiSlotBookingWidget propertyId={attraction.id} />
+              {ticketingVenue ? (
+                <MarketplaceCalendar propertyId={attraction.id} />
               ) : (
                 <PropertyContactInfo
                   phone={attraction.users?.phone}

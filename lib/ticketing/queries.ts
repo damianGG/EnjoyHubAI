@@ -4,6 +4,7 @@ import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/adm
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import type {
   CheckoutOrderSummary,
+  CustomerTicketingOrder,
   PublicTicketSummary,
   TicketingCheckoutSession,
   TicketingProductSalesPage,
@@ -208,6 +209,99 @@ export async function listCheckoutSessions() {
       currency: firstTicket?.currency ?? "PLN",
     } satisfies TicketingSessionListItem]
   })
+}
+
+export async function listCustomerTicketingOrders(userId?: string) {
+  if (!isSupabaseConfigured) return []
+
+  const supabase = createClient()
+  let customerUserId = userId
+  if (!customerUserId) {
+    const { data: { user } } = await supabase.auth.getUser()
+    customerUserId = user?.id
+  }
+  if (!customerUserId) return []
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      order_number,
+      status,
+      payment_status,
+      total_amount,
+      currency,
+      created_at,
+      venues!inner (name, city, timezone),
+      order_items (
+        id,
+        product_name,
+        ticket_type_name,
+        quantity,
+        sessions!inner (starts_at)
+      ),
+      tickets (id, ticket_code, status, sequence_number)
+    `)
+    .eq("customer_user_id", customerUserId)
+    .order("created_at", { ascending: false })
+
+  if (error || !data) {
+    if (error) {
+      console.error("Customer ticketing order lookup failed", {
+        code: error.code,
+        message: error.message,
+      })
+    }
+    return []
+  }
+
+  return (data as unknown as Array<{
+    id: string
+    order_number: number
+    status: string
+    payment_status: string
+    total_amount: number | string
+    currency: string
+    created_at: string
+    venues: { name: string; city: string | null; timezone: string }
+    order_items: Array<{
+      id: string
+      product_name: string
+      ticket_type_name: string
+      quantity: number
+      sessions: { starts_at: string }
+    }>
+    tickets: Array<{
+      id: string
+      ticket_code: string
+      status: string
+      sequence_number: number
+    }>
+  }>).map((order) => ({
+    id: order.id,
+    orderNumber: order.order_number,
+    status: order.status,
+    paymentStatus: order.payment_status,
+    totalAmount: Number(order.total_amount),
+    currency: order.currency,
+    createdAt: order.created_at,
+    venueName: order.venues.name,
+    venueCity: order.venues.city,
+    venueTimezone: order.venues.timezone,
+    items: order.order_items.map((item) => ({
+      id: item.id,
+      productName: item.product_name,
+      ticketTypeName: item.ticket_type_name,
+      quantity: item.quantity,
+      startsAt: item.sessions.starts_at,
+    })),
+    tickets: order.tickets.map((ticket) => ({
+      id: ticket.id,
+      ticketCode: ticket.ticket_code,
+      status: ticket.status,
+      sequenceNumber: ticket.sequence_number,
+    })),
+  })) satisfies CustomerTicketingOrder[]
 }
 
 export const getTicketingProductSalesPage = cache(async (
