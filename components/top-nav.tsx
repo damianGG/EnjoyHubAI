@@ -125,12 +125,12 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
             {/* Action Buttons - Right side */}
             <div className="hidden md:flex items-center gap-2">
               {/* Ticketing setup */}
-              <Link href="/host/sprzedaz/konfiguracja">
-                <Button variant="ghost" className="flex items-center gap-2">
+              <Button asChild variant="outline" className="flex items-center gap-2">
+                <Link href="/dla-organizatorow">
                   <Plus className="h-4 w-4" />
-                  <span>Uruchom sprzedaż</span>
-                </Button>
-              </Link>
+                  <span>Zostań gospodarzem</span>
+                </Link>
+              </Button>
 
               {/* User Authentication */}
               {loading ? (

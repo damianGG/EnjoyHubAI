@@ -103,8 +103,8 @@ export default async function HostDashboard() {
                 Kreator utworzy organizację, obiekt, ofertę, cennik i terminy bez ręcznego dodawania danych w Supabase.
               </p>
               <Button asChild className="mt-6">
-                <Link href="/host/sprzedaz/konfiguracja">
-                  Uruchom sprzedaż <ArrowRight className="h-4 w-4" />
+                <Link href="/host/start">
+                  Zostań organizatorem <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
             </CardContent>

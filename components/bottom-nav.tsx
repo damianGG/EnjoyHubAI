@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthSheet } from "@/components/auth-sheet"
 import { Search, User as UserIcon, Heart, Plus } from "lucide-react"
@@ -105,7 +104,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
               onClick={onSearchClick}
               className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                 isActive('/') 
-                  ? 'text-primary bg-primary/10' 
+                  ? 'text-primary bg-primary/10'
                   : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
               }`}
             >
@@ -128,17 +127,20 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
             </Link>
 
             {/* Ticketing setup */}
-            <Link href="/host/sprzedaz/konfiguracja">
-              <button
-                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive('/host/sprzedaz/konfiguracja')
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                }`}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="text-xs font-medium">Sprzedaj</span>
-              </button>
+            <Link
+              href="/dla-organizatorow"
+              className={`flex min-w-0 flex-col items-center justify-center space-y-0.5 rounded-lg px-2 py-1.5 transition-colors ${
+                isActive('/dla-organizatorow')
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+              }`}
+              aria-label="Zostań gospodarzem"
+              aria-current={isActive('/dla-organizatorow') ? "page" : undefined}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="max-w-[76px] text-center text-[10px] font-medium leading-3">
+                Zostań gospodarzem
+              </span>
             </Link>
 
             {/* User/Login Button */}
