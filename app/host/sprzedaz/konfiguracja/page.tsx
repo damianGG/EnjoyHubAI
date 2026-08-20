@@ -300,6 +300,9 @@ export default async function TicketingConfigurationPage({
 
   const [configuration, query] = await Promise.all([loadConfiguration(), searchParams])
   if (configuration.error) return <CenteredMessage>{configuration.error}</CenteredMessage>
+  if (configuration.organizations.length === 0 && configuration.venues.length === 0) {
+    redirect("/host/start")
+  }
 
   const createdProduct = query.utworzono
     ? configuration.products.find((product) => product.id === query.utworzono)

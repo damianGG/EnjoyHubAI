@@ -118,7 +118,7 @@ export function ImageUploadSection({
             <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
               <Image
                 src={image.url}
-                alt={`Property image ${index + 1}`}
+                alt={`Zdjęcie atrakcji ${index + 1}`}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -127,8 +127,9 @@ export function ImageUploadSection({
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                 onClick={() => handleImageRemove(index)}
+                aria-label={`Usuń zdjęcie ${index + 1}`}
               >
                 <X className="h-4 w-4" />
               </Button>
