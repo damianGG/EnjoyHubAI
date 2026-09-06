@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Map, MapPin, Star, List, Users } from "lucide-react"
+import { List, Map, MapPin, Sparkles, Star, Users } from "lucide-react"
 
 import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 import AttractionMap from "@/components/attraction-map"
@@ -64,8 +64,10 @@ function AttractionListItem({
     <article
       onMouseEnter={onSelect}
       onClick={onSelect}
-      className={`group overflow-hidden rounded-2xl border bg-background transition-all hover:shadow-lg ${
-        selected ? "border-[#ff5a1f] shadow-md ring-1 ring-[#ff5a1f]/20" : "border-border"
+      className={`group overflow-hidden rounded-[22px] border bg-white transition-all duration-200 ${
+        selected
+          ? "border-primary shadow-[0_12px_30px_rgba(244,117,33,0.14)] ring-1 ring-primary/15"
+          : "border-black/[0.065] shadow-[0_6px_22px_rgba(55,37,19,0.055)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(55,37,19,0.10)]"
       }`}
     >
       <Link href={attractionHref(attraction)} className="grid grid-cols-[40%_1fr] gap-0 sm:grid-cols-[42%_1fr]">
@@ -82,44 +84,57 @@ function AttractionListItem({
         <div className="flex min-w-0 flex-col justify-between p-4">
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="line-clamp-2 text-base font-semibold leading-tight">{attraction.title}</h3>
+              <h3 className="line-clamp-2 text-[15px] font-bold leading-tight tracking-[-0.02em]">{attraction.title}</h3>
               {Boolean(attraction.avgRating) && (
-                <div className="flex shrink-0 items-center gap-1 text-sm font-medium">
-                  <Star className="h-3.5 w-3.5 fill-[#ff9f0a] text-[#ff9f0a]" />
+                <div className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs font-bold">
+                  <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                   {attraction.avgRating?.toFixed(1)}
                 </div>
               )}
             </div>
 
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="truncate">{attraction.city}{attraction.region ? `, ${attraction.region}` : ""}</span>
             </p>
 
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize">
                 {attraction.property_type.replaceAll("_", " ")}
               </Badge>
               {attraction.max_guests > 0 && (
-                <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+                <Badge variant="outline" className="rounded-full border-black/[0.07] px-2 py-0.5 text-[10px] font-medium">
                   <Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób
                 </Badge>
               )}
             </div>
           </div>
 
-          <div className="mt-3 flex items-end justify-between gap-2">
+          <div className="mt-3 flex items-end justify-between gap-2 border-t border-black/[0.05] pt-3">
             <div>
-              <span className="text-xs text-muted-foreground">od </span>
-              <span className="text-lg font-bold">{Math.round(attraction.price_per_night)} zł</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span>
+              <span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.price_per_night)} zł</span>
+              <span className="text-[11px] text-muted-foreground"> / os.</span>
             </div>
-            {attraction.reviewCount ? (
-              <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span>
-            ) : null}
+            {attraction.reviewCount ? <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span> : null}
           </div>
         </div>
       </Link>
     </article>
+  )
+}
+
+function EmptyList() {
+  return (
+    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[26px] border border-dashed border-primary/20 bg-gradient-to-br from-secondary/70 to-white px-7 text-center">
+      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]">
+        <Sparkles className="h-6 w-6" />
+      </span>
+      <h2 className="text-lg font-bold tracking-[-0.025em]">Mapa jest gotowa do odkrywania</h2>
+      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+        W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy.
+      </p>
+    </div>
   )
 }
 
@@ -164,21 +179,16 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
 
     return result.sort((a, b) => {
       switch (filters.sortBy) {
-        case "price_low":
-          return a.price_per_night - b.price_per_night
-        case "price_high":
-          return b.price_per_night - a.price_per_night
-        case "rating":
-          return (b.avgRating ?? 0) - (a.avgRating ?? 0)
-        case "reviews":
-          return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
-        default:
-          return 0
+        case "price_low": return a.price_per_night - b.price_per_night
+        case "price_high": return b.price_per_night - a.price_per_night
+        case "rating": return (b.avgRating ?? 0) - (a.avgRating ?? 0)
+        case "reviews": return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
+        default: return 0
       }
     })
   }, [attractions, filters])
 
-  const list = (
+  const list = filteredAttractions.length > 0 ? (
     <div className="space-y-3">
       {filteredAttractions.map((attraction) => (
         <AttractionListItem
@@ -189,25 +199,7 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
         />
       ))}
     </div>
-  )
-
-  if (filteredAttractions.length === 0) {
-    return (
-      <div className="space-y-6">
-        <AttractionFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          onSearch={() => undefined}
-          totalResults={0}
-        />
-        <div className="rounded-3xl border border-dashed bg-muted/30 px-6 py-20 text-center">
-          <MapPin className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Nie znaleźliśmy atrakcji w tym zakresie</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Zmień lokalizację, liczbę osób albo filtry cenowe.</p>
-        </div>
-      </div>
-    )
-  }
+  ) : <EmptyList />
 
   return (
     <div className="space-y-4">
@@ -218,12 +210,11 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
         totalResults={filteredAttractions.length}
       />
 
-      {/* Desktop: list + persistent map, inspired by map-first marketplaces. */}
-      <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(380px,43%)_1fr]">
+      <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">
           {list}
         </div>
-        <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-3xl border bg-muted">
+        <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-black/[0.06] bg-muted shadow-[0_14px_38px_rgba(55,37,19,0.08)]">
           <AttractionMap
             attractions={filteredAttractions}
             selectedAttraction={selectedAttraction}
@@ -233,10 +224,9 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
         </div>
       </div>
 
-      {/* Mobile/tablet: one immersive surface at a time. */}
       <div className="lg:hidden">
         {mobileMode === "map" ? (
-          <div className="relative h-[calc(100dvh-15rem)] min-h-[520px] overflow-hidden rounded-3xl border bg-muted">
+          <div className="relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]">
             <AttractionMap
               attractions={filteredAttractions}
               selectedAttraction={selectedAttraction}
@@ -248,10 +238,10 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
           <div className="pb-24">{list}</div>
         )}
 
-        <div className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2">
+        <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2">
           <Button
             onClick={() => setMobileMode((mode) => (mode === "map" ? "list" : "map"))}
-            className="press-3d h-12 rounded-full bg-[#0b1220] px-5 text-white shadow-xl hover:bg-[#182238]"
+            className="h-12 rounded-full bg-[#28231f] px-5 font-bold text-white shadow-[0_12px_28px_rgba(37,29,22,0.24)] hover:bg-[#171411]"
           >
             {mobileMode === "map" ? <List className="mr-2 h-4 w-4" /> : <Map className="mr-2 h-4 w-4" />}
             {mobileMode === "map" ? `Pokaż listę (${filteredAttractions.length})` : "Pokaż mapę"}
