@@ -1,57 +1,36 @@
 "use client"
 
-import { useState, useEffect, memo } from "react"
+import { memo, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Star, ChevronLeft, ChevronRight, Diamond, Zap } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel"
+import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Sparkles, Star, Zap } from "lucide-react"
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from "@/components/ui/carousel"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-optimizer"
 
-// Helper function to format slot date
 function formatSlotDate(date: string, startTime: string): string {
-  // Parse date in format YYYY-MM-DD
-  const [year, month, day] = date.split('-')
-  // Format as DD.MM.YYYY HH:mm
-  return `${day}.${month}.${year} ${startTime}`
+  const [, month, day] = date.split('-')
+  return `${day}.${month} · ${startTime}`
 }
 
 export interface AttractionCardProps {
-  /** Array of image URLs for the slider */
   images: string[]
-  /** Title of the attraction */
   title: string
-  /** City name */
   city: string
-  /** Region name */
   region: string
-  /** Country name */
   country: string
-  /** Average rating (e.g. 4.9) */
   rating: number
-  /** Number of reviews */
   reviewsCount: number
-  /** Starting price */
   price: number
-  /** Price unit depending on category */
   priceUnit: 'noc' | 'osobę' | 'dzień'
-  /** Optional: Guest favorite badge */
   isGuestFavorite?: boolean
-  /** Optional: Instant booking badge */
   isInstantBookable?: boolean
-  /** Optional: Link URL for the card */
   href?: string
-  /** Optional: ID for the attraction */
   id?: string
-  /** Optional: Next available slot */
   nextAvailableSlot?: { date: string; startTime: string } | null
-  /** Optional: Price from (minimum price) */
   priceFrom?: number | null
-  /** Optional: Cover image URL */
   coverImageUrl?: string | null
 }
 
@@ -68,7 +47,6 @@ function AttractionCard({
   isGuestFavorite = false,
   isInstantBookable = false,
   href,
-  id,
   nextAvailableSlot,
   priceFrom,
   coverImageUrl,
@@ -79,243 +57,169 @@ function AttractionCard({
   const [currentSlide, setCurrentSlide] = useState(0)
   const [imageLoadingStates, setImageLoadingStates] = useState<Record<number, boolean>>({})
 
-  // Update scroll state when carousel changes
   useEffect(() => {
     if (!api) return
-
-    const updateScrollState = () => {
+    const update = () => {
       setCanScrollPrev(api.canScrollPrev())
       setCanScrollNext(api.canScrollNext())
       setCurrentSlide(api.selectedScrollSnap())
     }
-
-    updateScrollState()
-    api.on("select", updateScrollState)
-
-    return () => {
-      api.off("select", updateScrollState)
-    }
+    update()
+    api.on("select", update)
+    return () => api.off("select", update)
   }, [api])
 
-  const scrollPrev = () => api?.scrollPrev()
-  const scrollNext = () => api?.scrollNext()
-
-  // Ensure images is an array - handle both array and stringified array
   let imageArray: string[] = []
   if (Array.isArray(images)) {
     imageArray = images
   } else if (typeof images === 'string') {
     try {
       const parsed = JSON.parse(images)
-      if (Array.isArray(parsed)) {
-        imageArray = parsed
-      }
+      if (Array.isArray(parsed)) imageArray = parsed
     } catch {
-      // If parsing fails, treat as empty array
       imageArray = []
     }
   }
-  
-  // Filter out any invalid entries
-  const validImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '')
-  
-  // Use valid images or fallback to placeholder
-  const imageList = validImages.length > 0 ? validImages : ["/placeholder.jpg"]
 
-  // Optimize Cloudinary URLs for faster loading
-  const optimizedImages = imageList.map(img => optimizeCloudinaryUrl(img, {
-    width: 800,
+  const validImages = imageArray.filter((img) => img && typeof img === 'string' && img.trim() !== '')
+  const fallback = coverImageUrl ? [coverImageUrl] : ["/placeholder.jpg"]
+  const imageList = validImages.length > 0 ? validImages : fallback
+  const optimizedImages = imageList.map((img) => optimizeCloudinaryUrl(img, {
+    width: 900,
     quality: 'auto',
     format: 'auto',
-    crop: 'fill'
+    crop: 'fill',
   }))
 
-  const cardContent = (
-    <Card className="lift-3d overflow-hidden cursor-pointer group border-0 bg-card gap-0 py-0">
-      {/* Image Carousel */}
-      <div className="relative aspect-video">
-        <Carousel setApi={setApi} className="w-full h-full">
+  const body = (
+    <article className="group overflow-hidden rounded-[22px] border border-black/[0.06] bg-white shadow-[0_8px_28px_rgba(55,37,19,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(55,37,19,0.12)]">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        <Carousel setApi={setApi} className="h-full w-full">
           <CarouselContent className="h-full">
             {optimizedImages.map((image, index) => {
-              // Preload current slide and 2 slides ahead for smoother navigation
-              const shouldPreload = index >= currentSlide && index <= currentSlide + 2
-              const isFirstImage = index === 0
               const isLoading = imageLoadingStates[index] !== false
-              
               return (
                 <CarouselItem key={index} className="h-full">
-                  <div className="relative w-full h-full">
-                    {isLoading && (
-                      <Skeleton className="absolute inset-0 rounded-t-xl" />
-                    )}
+                  <div className="relative h-full w-full overflow-hidden">
+                    {isLoading && <Skeleton className="absolute inset-0 rounded-none" />}
                     <Image
                       src={image}
-                      alt={`${title} photo ${index + 1}`}
+                      alt={`${title} — zdjęcie ${index + 1}`}
                       fill
-                      priority={isFirstImage}
-                      loading={isFirstImage ? undefined : (shouldPreload ? "eager" : "lazy")}
+                      priority={index === 0}
+                      loading={index === 0 ? undefined : "lazy"}
                       className={cn(
-                        "object-cover rounded-t-xl transition-opacity duration-300",
+                        "object-cover transition duration-500 group-hover:scale-[1.025]",
                         isLoading ? "opacity-0" : "opacity-100"
                       )}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      onLoad={() => {
-                        setImageLoadingStates(prev => ({ ...prev, [index]: false }))
-                      }}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      onLoad={() => setImageLoadingStates((prev) => ({ ...prev, [index]: false }))}
                     />
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/25 to-transparent" />
                   </div>
                 </CarouselItem>
               )
             })}
           </CarouselContent>
 
-          {/* Navigation Arrows - Visible on mobile, hover on desktop */}
           {optimizedImages.length > 1 && (
             <>
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "absolute left-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
-                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
-                  !canScrollPrev && "hidden"
-                )}
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollPrev()
-                }}
-                aria-label="Poprzednie zdjęcie"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full bg-white/90 hover:bg-white border-none shadow-md transition-opacity z-10",
-                  "md:opacity-0 md:group-hover:opacity-100", // Only hide on desktop hover
-                  !canScrollNext && "hidden"
-                )}
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollNext()
-                }}
-                aria-label="Następne zdjęcie"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              {canScrollPrev && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-2 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full border-0 bg-white/92 opacity-100 shadow-md md:opacity-0 md:group-hover:opacity-100"
+                  onClick={(event) => { event.preventDefault(); api?.scrollPrev() }}
+                  aria-label="Poprzednie zdjęcie"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {canScrollNext && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-2 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full border-0 bg-white/92 opacity-100 shadow-md md:opacity-0 md:group-hover:opacity-100"
+                  onClick={(event) => { event.preventDefault(); api?.scrollNext() }}
+                  aria-label="Następne zdjęcie"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
             </>
-          )}
-
-          {/* Pagination Dots */}
-          {optimizedImages.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-              {optimizedImages.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    api?.scrollTo(index)
-                  }}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
-                    currentSlide === index 
-                      ? "bg-white w-4" 
-                      : "bg-white/60 hover:bg-white/80"
-                  )}
-                  aria-label={`Przejdź do zdjęcia ${index + 1}`}
-                />
-              ))}
-            </div>
           )}
         </Carousel>
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+        <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
           {isGuestFavorite && (
-            <Badge className="bg-white/90 text-black text-xs font-medium shadow-sm">
-              <Diamond className="w-3 h-3 mr-1" />
-              Ulubieniec Gości
-            </Badge>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/94 px-2.5 py-1 text-[10px] font-bold text-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-3 w-3 text-primary" /> Polecane
+            </span>
           )}
           {isInstantBookable && (
-            <Badge className="bg-white/90 text-black text-xs font-medium shadow-sm">
-              <Zap className="w-3 h-3 mr-1" />
-              Rezerwacja natychmiastowa
-            </Badge>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/94 px-2.5 py-1 text-[10px] font-bold text-foreground shadow-sm backdrop-blur">
+              <Zap className="h-3 w-3 text-primary" /> Od razu
+            </span>
           )}
         </div>
+
+        {optimizedImages.length > 1 && (
+          <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+            {optimizedImages.slice(0, 6).map((_, index) => (
+              <span key={index} className={cn("h-1.5 rounded-full bg-white/70 transition-all", currentSlide === index ? "w-4 bg-white" : "w-1.5")} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <CardContent className="p-3">
-        <div className="space-y-0.5">
-          {/* Title and Rating */}
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-sm line-clamp-2 flex-1">
-              {title}
-            </h3>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Star className="w-3 h-3 fill-current" />
-              <span className="text-sm font-medium">{rating.toFixed(1)}</span>
-            </div>
+      <div className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.015em] text-foreground">{title}</h3>
+            <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+              {[city, region || country].filter(Boolean).join(" · ")}
+            </p>
           </div>
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs font-bold text-foreground">
+            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            {rating > 0 ? rating.toFixed(1) : "Nowe"}
+          </span>
+        </div>
 
-          {/* Location */}
-          <p className="text-sm text-muted-foreground line-clamp-1">
-            {city}, {region}, {country}
-          </p>
-
-          {/* Reviews Count */}
-          <p className="text-xs text-muted-foreground">
-            ({reviewsCount} {reviewsCount === 1 ? 'opinia' : 'opinii'})
-          </p>
-
-          {/* Next Available Slot - only show if the prop is provided */}
-          {nextAvailableSlot !== undefined && (
-            nextAvailableSlot ? (
-              <p className="text-xs text-muted-foreground pt-1">
-                Najbliższy termin: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}
-              </p>
+        {nextAvailableSlot !== undefined && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <CalendarDays className="h-3.5 w-3.5 text-primary" />
+            {nextAvailableSlot ? (
+              <span className="font-medium text-foreground">Najbliżej: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}</span>
             ) : (
-              <p className="text-xs text-muted-foreground pt-1">
-                Brak terminów w wybranym zakresie
-              </p>
-            )
-          )}
-
-          {/* Price */}
-          <div className="pt-1">
-            {priceFrom !== undefined ? (
-              priceFrom !== null ? (
-                <p className="text-sm font-semibold">Bilety od {priceFrom} zł</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Sprzedaż online niedostępna</p>
-              )
-            ) : (
-              <p className="text-sm">
-                <span className="font-semibold">Cena od {price} zł</span>
-                <span className="text-muted-foreground"> / {priceUnit}</span>
-              </p>
+              <span className="text-muted-foreground">Sprawdź kolejne terminy</span>
             )}
           </div>
+        )}
+
+        <div className="flex items-end justify-between gap-3 border-t border-black/[0.055] pt-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</p>
+            {priceFrom !== undefined ? (
+              priceFrom !== null ? (
+                <p className="text-lg font-extrabold tracking-[-0.03em] text-foreground">{priceFrom} zł <span className="text-xs font-medium text-muted-foreground">/ os.</span></p>
+              ) : (
+                <p className="text-xs font-medium text-muted-foreground">Zapytaj o dostępność</p>
+              )
+            ) : (
+              <p className="text-lg font-extrabold tracking-[-0.03em] text-foreground">{price} zł <span className="text-xs font-medium text-muted-foreground">/ {priceUnit}</span></p>
+            )}
+          </div>
+          {reviewsCount > 0 && <span className="text-[11px] text-muted-foreground">{reviewsCount} opinii</span>}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   )
 
-  // Wrap in Link if href is provided
-  if (href) {
-    return (
-      <Link href={href} className="block">
-        {cardContent}
-      </Link>
-    )
-  }
-
-  return cardContent
+  return href ? <Link href={href} className="block">{body}</Link> : body
 }
 
-// Export memoized component to prevent unnecessary re-renders
 export default memo(AttractionCard)
