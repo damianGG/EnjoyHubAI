@@ -14,53 +14,59 @@ interface CategoryBarProps {
   compact?: boolean
 }
 
-export function CategoryBar({ 
-  selectedCategory, 
-  onCategorySelect, 
-  onFiltersClick, 
-  activeFiltersCount, 
+const FALLBACK_CATEGORIES: Category[] = [
+  { id: "paintball", name: "Paintball", slug: "paintball", icon: "🎯", description: "Paintball i gry zespołowe" },
+  { id: "gokarty", name: "Gokarty", slug: "gokarty", icon: "🏎️", description: "Tory kartingowe" },
+  { id: "trampoliny", name: "Park trampolin", slug: "park-trampolin", icon: "🤸", description: "Parki trampolin" },
+  { id: "place-zabaw", name: "Place zabaw", slug: "plac-zabaw", icon: "🛝", description: "Sale i place zabaw" },
+  { id: "park-linowy", name: "Park linowy", slug: "park-linowy", icon: "🧗", description: "Parki linowe i przygoda" },
+  { id: "escape-room", name: "Escape room", slug: "escape-room", icon: "🗝️", description: "Pokoje zagadek" },
+]
+
+export function CategoryBar({
+  selectedCategory,
+  onCategorySelect,
   useNavigation = false,
-  compact = false
+  compact = false,
 }: CategoryBarProps) {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
   const [loading, setLoading] = useState(true)
-  const [localSelectedCategory, setLocalSelectedCategory] = useState<string | null>(null)
+  const [localSelectedCategory, setLocalSelectedCategory] = useState<string | null>(selectedCategory ?? null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLocalSelectedCategory(selectedCategory ?? null)
+  }, [selectedCategory])
 
   useEffect(() => {
     const loadCategoriesWithSubcategories = async () => {
       const s = createClient()
-      
-      // Load categories
+
       const { data: categoriesData, error: categoriesError } = await s
         .from("categories")
         .select("id,name,slug,icon,description,image_url,image_public_id")
         .order("name")
-      
-      if (categoriesError || !categoriesData) {
+
+      if (categoriesError || !categoriesData?.length) {
+        setCategories(FALLBACK_CATEGORIES)
         setLoading(false)
         return
       }
-      
-      // Load all subcategories
+
       const { data: subcategoriesData, error: subcategoriesError } = await s
         .from("subcategories")
         .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
         .order("name")
-      
+
       if (!subcategoriesError && subcategoriesData) {
-        // Group subcategories by parent category
-        const categoriesWithSubs = categoriesData.map((cat) => ({
+        setCategories(categoriesData.map((cat) => ({
           ...cat,
-          subcategories: subcategoriesData.filter(
-            (sub) => sub.parent_category_id === cat.id
-          ),
-        }))
-        setCategories(categoriesWithSubs)
+          subcategories: subcategoriesData.filter((sub) => sub.parent_category_id === cat.id),
+        })))
       } else {
         setCategories(categoriesData)
       }
-      
+
       setLoading(false)
     }
 
@@ -75,7 +81,6 @@ export function CategoryBar({
 
   const handleSubcategorySelect = (subcategorySlug: string | null) => {
     setSelectedSubcategory(subcategorySlug)
-    // Pass subcategory to parent but keep the category bar open
     onCategorySelect?.(subcategorySlug)
   }
 
@@ -83,19 +88,6 @@ export function CategoryBar({
     setLocalSelectedCategory(null)
     setSelectedSubcategory(null)
     onCategorySelect?.(null)
-  }
-
-  if (loading) {
-    return (
-      <div className="flex space-x-2 px-4 py-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex flex-col items-center space-y-1">
-            <div className="w-10 h-10 bg-muted rounded-lg animate-pulse" />
-            <div className="w-14 h-3 bg-muted rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    )
   }
 
   const selectedCategoryData = categories.find((cat) => cat.slug === localSelectedCategory)
@@ -120,6 +112,8 @@ export function CategoryBar({
           compact={compact}
         />
       )}
+
+      {loading && <span className="sr-only">Ładowanie kategorii</span>}
     </>
   )
 }
