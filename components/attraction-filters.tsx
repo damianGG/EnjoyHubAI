@@ -1,15 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
-import { Badge } from "@/components/ui/badge"
-import { Search, Users, Filter, X, SlidersHorizontal } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { MapPin, Search, SlidersHorizontal, Users, X } from "lucide-react"
 
 export interface FilterState {
   location?: string
@@ -43,6 +43,19 @@ const ATTRACTION_TYPES = [
   "adventure_park",
 ]
 
+const TYPE_LABELS: Record<string, string> = {
+  gaming_center: "Centrum rozrywki",
+  escape_room: "Escape room",
+  bowling: "Kręgle",
+  cinema: "Kino",
+  restaurant: "Gastronomia",
+  playground: "Plac zabaw",
+  sports_center: "Sport",
+  art_studio: "Warsztaty",
+  music_venue: "Muzyka",
+  adventure_park: "Park przygody",
+}
+
 const AMENITIES = [
   "Parking",
   "WiFi",
@@ -54,8 +67,6 @@ const AMENITIES = [
   "Equipment rental",
   "Lockers",
   "Changing rooms",
-  "Photo booth",
-  "Party rooms",
   "Outdoor area",
   "Indoor area",
   "Safety equipment",
@@ -65,47 +76,49 @@ const AMENITY_LABELS: Record<string, string> = {
   Parking: "Parking",
   WiFi: "Wi-Fi",
   "Air conditioning": "Klimatyzacja",
-  Accessible: "Dostępność dla osób z niepełnosprawnościami",
+  Accessible: "Dostępność",
   "Food & Drinks": "Jedzenie i napoje",
-  "Birthday parties": "Przyjęcia urodzinowe",
+  "Birthday parties": "Urodziny",
   "Group bookings": "Rezerwacje grupowe",
   "Equipment rental": "Wypożyczalnia sprzętu",
   Lockers: "Szafki",
   "Changing rooms": "Szatnie",
-  "Photo booth": "Fotobudka",
-  "Party rooms": "Sale imprezowe",
-  "Outdoor area": "Strefa zewnętrzna",
-  "Indoor area": "Strefa wewnętrzna",
+  "Outdoor area": "Na zewnątrz",
+  "Indoor area": "W pomieszczeniu",
   "Safety equipment": "Sprzęt ochronny",
 }
 
 const SORT_OPTIONS = [
-  { value: "newest", label: "Od najnowszych" },
-  { value: "price_low", label: "Cena: od najniższej" },
-  { value: "price_high", label: "Cena: od najwyższej" },
+  { value: "newest", label: "Polecane" },
+  { value: "price_low", label: "Najniższa cena" },
+  { value: "price_high", label: "Najwyższa cena" },
   { value: "rating", label: "Najwyżej oceniane" },
-  { value: "reviews", label: "Najczęściej recenzowane" },
+  { value: "reviews", label: "Najwięcej opinii" },
 ]
 
 export default function AttractionFilters({ filters, onFiltersChange, onSearch, totalResults }: AttractionFiltersProps) {
-  const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
-  const updateFilter = (key: keyof FilterState, value: any) => {
+  const updateFilter = (key: keyof FilterState, value: unknown) => {
     onFiltersChange({ ...filters, [key]: value })
   }
 
   const toggleAttractionType = (type: string) => {
-    const newTypes = filters.attractionTypes.includes(type)
-      ? filters.attractionTypes.filter((t) => t !== type)
-      : [...filters.attractionTypes, type]
-    updateFilter("attractionTypes", newTypes)
+    updateFilter(
+      "attractionTypes",
+      filters.attractionTypes.includes(type)
+        ? filters.attractionTypes.filter((item) => item !== type)
+        : [...filters.attractionTypes, type],
+    )
   }
 
   const toggleAmenity = (amenity: string) => {
-    const newAmenities = filters.amenities.includes(amenity)
-      ? filters.amenities.filter((a) => a !== amenity)
-      : [...filters.amenities, amenity]
-    updateFilter("amenities", newAmenities)
+    updateFilter(
+      "amenities",
+      filters.amenities.includes(amenity)
+        ? filters.amenities.filter((item) => item !== amenity)
+        : [...filters.amenities, amenity],
+    )
   }
 
   const clearFilters = () => {
@@ -122,239 +135,151 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
     })
   }
 
-  const getActiveFiltersCount = () => {
-    let count = 0
-    if (filters.guests !== "1") count++
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 500) count++
-    if (filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)) count++
-    if (filters.attractionTypes.length > 0) count++
-    if (filters.amenities.length > 0) count++
-    return count
-  }
-
-  const SearchBar = () => (
-    <Card className="shadow-lg">
-      <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Guests */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">ILE OSÓB</Label>
-            <Select value={filters.guests} onValueChange={(value) => updateFilter("guests", value)}>
-              <SelectTrigger>
-                <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
-                  <SelectItem key={num} value={num.toString()}>
-                    {num} osób{num === 1 ? "a" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Price Range Quick Select */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">BUDŻET</Label>
-            <Select
-              value={`${filters.priceRange[0]}-${filters.priceRange[1]}`}
-              onValueChange={(value) => {
-                const [min, max] = value.split("-").map(Number)
-                updateFilter("priceRange", [min, max])
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Wybierz budżet" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0-50">Do 50 zł</SelectItem>
-                <SelectItem value="50-100">50-100 zł</SelectItem>
-                <SelectItem value="100-200">100-200 zł</SelectItem>
-                <SelectItem value="200-500">200-500 zł</SelectItem>
-                <SelectItem value="0-500">Dowolny</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Search Button */}
-          <div className="flex items-end">
-            <Button onClick={onSearch} className="w-full">
-              <Search className="h-4 w-4 mr-2" />
-              Szukaj
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  const FilterPanel = ({ isMobile = false }) => (
-    <div className="space-y-6">
-      {/* Price Range */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Zakres cenowy (za osobę)</Label>
-        <div className="px-2">
-          <Slider
-            value={filters.priceRange}
-            onValueChange={(value) => updateFilter("priceRange", value as [number, number])}
-            max={500}
-            min={0}
-            step={10}
-            className="w-full"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground mt-2">
-            <span>{filters.priceRange[0]} zł</span>
-            <span>{filters.priceRange[1]} zł</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Wiek uczestników</Label>
-        <div className="px-2">
-          <Slider
-            value={filters.ageRange || [0, 18]}
-            onValueChange={(value) => updateFilter("ageRange", value as [number, number])}
-            max={18}
-            min={0}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground mt-2">
-            <span>{filters.ageRange?.[0] || 0} lat</span>
-            <span>{(filters.ageRange?.[1] || 18) === 18 ? "18+" : `${filters.ageRange?.[1] || 18} lat`}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Attraction Types */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Typ rozrywki</Label>
-        <div className="grid grid-cols-1 gap-2">
-          {ATTRACTION_TYPES.map((type) => (
-            <div key={type} className="flex items-center space-x-2">
-              <Checkbox
-                id={`type-${type}`}
-                checked={filters.attractionTypes.includes(type)}
-                onCheckedChange={() => toggleAttractionType(type)}
-              />
-              <Label htmlFor={`type-${type}`} className="text-sm capitalize">
-                {type.replace("_", " ")}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Amenities */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Udogodnienia</Label>
-        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-          {AMENITIES.map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <Checkbox
-                id={`amenity-${amenity}`}
-                checked={filters.amenities.includes(amenity)}
-                onCheckedChange={() => toggleAmenity(amenity)}
-              />
-              <Label htmlFor={`amenity-${amenity}`} className="text-sm">
-                {AMENITY_LABELS[amenity] || amenity}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Clear Filters */}
-      <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
-        <X className="h-4 w-4 mr-2" />
-        Wyczyść filtry
-      </Button>
-    </div>
-  )
+  const activeFiltersCount = [
+    filters.guests !== "1",
+    filters.priceRange[0] > 0 || filters.priceRange[1] < 500,
+    Boolean(filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)),
+    filters.attractionTypes.length > 0,
+    filters.amenities.length > 0,
+  ].filter(Boolean).length
 
   return (
-    <div className="space-y-6">
-      {/* Search Bar */}
-      <SearchBar />
-
-      {/* Results and Sort */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-muted-foreground">{totalResults} miejsc znaleziono</span>
-
-          {/* Active Filters */}
-          {getActiveFiltersCount() > 0 && (
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary">
-                {getActiveFiltersCount()} filtr{getActiveFiltersCount() !== 1 ? "y" : ""} aktywne
-              </Badge>
-              {filters.attractionTypes.map((type) => (
-                <Badge key={type} variant="outline" className="capitalize">
-                  {type.replace("_", " ")}
-                  <button onClick={() => toggleAttractionType(type)} className="ml-1 hover:bg-muted rounded-full">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+    <div className="space-y-3">
+      <div className="surface-3d flex flex-col gap-2 rounded-2xl border bg-background p-2 md:flex-row md:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5 focus-within:bg-muted/50">
+          <MapPin className="h-4 w-4 shrink-0 text-[#ff5a1f]" />
+          <Input
+            value={filters.location ?? ""}
+            onChange={(event) => updateFilter("location", event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && onSearch()}
+            placeholder="Miasto, okolica lub atrakcja"
+            aria-label="Lokalizacja lub nazwa atrakcji"
+            className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+          />
         </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Sort */}
-          <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
-            <SelectTrigger className="w-48">
+        <div className="hidden h-8 w-px bg-border md:block" />
+
+        <Select value={filters.guests} onValueChange={(value) => updateFilter("guests", value)}>
+          <SelectTrigger className="h-11 w-full rounded-xl border-0 bg-transparent shadow-none md:w-[150px]">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
               <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 20 }, (_, index) => index + 1).map((number) => (
+              <SelectItem key={number} value={number.toString()}>{number} {number === 1 ? "osoba" : "osoby"}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {/* Mobile Filters Button */}
-          <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="md:hidden bg-transparent">
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Filtry
-                {getActiveFiltersCount() > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {getActiveFiltersCount()}
-                  </Badge>
-                )}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Filtry</DialogTitle>
-              </DialogHeader>
-              <FilterPanel isMobile />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Dialog open={showFilters} onOpenChange={setShowFilters}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="h-11 rounded-xl bg-background px-4">
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Filtry
+              {activeFiltersCount > 0 && (
+                <Badge className="ml-2 bg-[#ff5a1f] text-white hover:bg-[#ff5a1f]">{activeFiltersCount}</Badge>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Dopasuj atrakcje</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-7 py-2">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Budżet za osobę</Label>
+                  <span className="text-sm font-medium">{filters.priceRange[0]}–{filters.priceRange[1]} zł</span>
+                </div>
+                <Slider
+                  value={filters.priceRange}
+                  onValueChange={(value) => updateFilter("priceRange", value as [number, number])}
+                  max={500}
+                  min={0}
+                  step={10}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Wiek uczestników</Label>
+                  <span className="text-sm font-medium">
+                    {filters.ageRange?.[0] ?? 0}–{(filters.ageRange?.[1] ?? 18) === 18 ? "18+" : filters.ageRange?.[1]} lat
+                  </span>
+                </div>
+                <Slider
+                  value={filters.ageRange ?? [0, 18]}
+                  onValueChange={(value) => updateFilter("ageRange", value as [number, number])}
+                  max={18}
+                  min={0}
+                  step={1}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label>Typ atrakcji</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {ATTRACTION_TYPES.map((type) => (
+                    <label key={type} className="flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm hover:bg-muted/50">
+                      <Checkbox checked={filters.attractionTypes.includes(type)} onCheckedChange={() => toggleAttractionType(type)} />
+                      <span>{TYPE_LABELS[type] ?? type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Udogodnienia</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {AMENITIES.map((amenity) => (
+                    <label key={amenity} className="flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm hover:bg-muted/50">
+                      <Checkbox checked={filters.amenities.includes(amenity)} onCheckedChange={() => toggleAmenity(amenity)} />
+                      <span>{AMENITY_LABELS[amenity] ?? amenity}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 border-t pt-4">
+                <Button type="button" variant="ghost" onClick={clearFilters} className="flex-1">
+                  <X className="mr-2 h-4 w-4" />Wyczyść
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    onSearch()
+                    setShowFilters(false)
+                  }}
+                  className="flex-1 bg-[#ff5a1f] text-white hover:bg-[#e94f18]"
+                >
+                  Pokaż {totalResults}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Button onClick={onSearch} className="h-11 rounded-xl bg-[#ff5a1f] px-5 text-white hover:bg-[#e94f18]">
+          <Search className="mr-2 h-4 w-4" />Szukaj
+        </Button>
       </div>
 
-      {/* Desktop Filters Sidebar */}
-      <div className="hidden md:block">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Filter className="h-5 w-5 mr-2" />
-              Filtry
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FilterPanel />
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{totalResults}</span> atrakcji</p>
+        <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
+          <SelectTrigger className="h-9 w-[180px] rounded-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )

@@ -2,8 +2,9 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AttractionsView from "@/components/attractions-view"
+import { TopNav } from "@/components/top-nav"
+import { BottomNav } from "@/components/bottom-nav"
 
-// Enable ISR - revalidate every 60 seconds
 export const revalidate = 60
 
 export default async function AttractionsPage() {
@@ -11,14 +12,12 @@ export default async function AttractionsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="border-destructive">
-          <CardContent className="text-center py-12">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
               <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
-            <h3 className="text-lg font-semibold mb-2 text-destructive">Błąd konfiguracji</h3>
-            <p className="text-muted-foreground">
-              Baza danych nie jest skonfigurowana. Skontaktuj się z administratorem.
-            </p>
+            <h3 className="mb-2 text-lg font-semibold text-destructive">Błąd konfiguracji</h3>
+            <p className="text-muted-foreground">Baza danych nie jest skonfigurowana. Skontaktuj się z administratorem.</p>
           </CardContent>
         </Card>
       </div>
@@ -26,8 +25,6 @@ export default async function AttractionsPage() {
   }
 
   const supabase = createClient()
-
-  // Get all active attractions with user information
   const { data, error } = await supabase
     .from("properties")
     .select(`
@@ -42,14 +39,10 @@ export default async function AttractionsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="border-destructive">
-          <CardContent className="text-center py-12">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2 text-destructive">Błąd pobierania danych</h3>
-            <p className="text-muted-foreground">
-              Wystąpił błąd podczas pobierania listy atrakcji. Spróbuj odświeżyć stronę.
-            </p>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="mx-auto mb-4 h-10 w-10 text-destructive" />
+            <h3 className="mb-2 text-lg font-semibold text-destructive">Błąd pobierania danych</h3>
+            <p className="text-muted-foreground">Nie udało się pobrać listy atrakcji. Spróbuj odświeżyć stronę.</p>
           </CardContent>
         </Card>
       </div>
@@ -57,14 +50,20 @@ export default async function AttractionsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Wszystkie atrakcje</h1>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <div className="hidden md:block">
+        <TopNav />
       </div>
 
-      <section>
+      <main className="mx-auto w-full max-w-[1800px] px-3 py-3 sm:px-4 sm:py-5 xl:px-6">
+        <div className="mb-4 px-1">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Odkrywaj atrakcje</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca na mapie i rezerwuj bez zbędnych kroków.</p>
+        </div>
         <AttractionsView attractions={data || []} />
-      </section>
+      </main>
+
+      <BottomNav />
     </div>
   )
 }

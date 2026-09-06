@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CreditCard, Loader2 } from "lucide-react"
+import { CreditCard, Loader2, LockKeyhole } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -15,9 +15,7 @@ export function PaymentButton({ orderId }: { orderId: string }) {
     setError(null)
 
     try {
-      const response = await fetch(`/api/ticketing/orders/${orderId}/payment`, {
-        method: "POST",
-      })
+      const response = await fetch(`/api/ticketing/orders/${orderId}/payment`, { method: "POST" })
       const result = await response.json() as { url?: string; error?: string }
 
       if (!response.ok || !result.url) {
@@ -36,24 +34,24 @@ export function PaymentButton({ orderId }: { orderId: string }) {
   return (
     <div className="space-y-3">
       {error && (
-        <Alert variant="destructive" role="alert">
+        <Alert variant="destructive" role="alert" className="rounded-xl">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       <Button
         type="button"
         size="lg"
-        className="press-3d w-full"
+        className="press-3d h-12 w-full rounded-xl bg-[#ff5a1f] font-semibold text-white hover:bg-[#e94f18]"
         onClick={startPayment}
         disabled={isStarting}
       >
         {isStarting
           ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           : <CreditCard className="mr-2 h-4 w-4" />}
-        {isStarting ? "Otwieram bezpieczną płatność…" : "Przejdź do płatności"}
+        {isStarting ? "Otwieram płatność…" : "Zapłać bezpiecznie"}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">
-        Płatność obsługuje Stripe. Dostępne metody zależą od konfiguracji konta.
+      <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+        <LockKeyhole className="h-3.5 w-3.5" />Płatność obsługuje Stripe.
       </p>
     </div>
   )
