@@ -38,6 +38,7 @@ interface Attraction {
 
 interface AttractionsViewProps {
   attractions: Attraction[]
+  mobileImmersive?: boolean
 }
 
 function attractionHref(attraction: Attraction) {
@@ -49,15 +50,7 @@ function attractionHref(attraction: Attraction) {
   })}`
 }
 
-function AttractionListItem({
-  attraction,
-  selected,
-  onSelect,
-}: {
-  attraction: Attraction
-  selected: boolean
-  onSelect: () => void
-}) {
+function AttractionListItem({ attraction, selected, onSelect }: { attraction: Attraction; selected: boolean; onSelect: () => void }) {
   const image = attraction.images?.find(Boolean) || "/placeholder.jpg"
 
   return (
@@ -72,13 +65,7 @@ function AttractionListItem({
     >
       <Link href={attractionHref(attraction)} className="grid grid-cols-[40%_1fr] gap-0 sm:grid-cols-[42%_1fr]">
         <div className="relative min-h-36 overflow-hidden bg-muted">
-          <Image
-            src={image}
-            alt={attraction.title}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 768px) 40vw, 260px"
-          />
+          <Image src={image} alt={attraction.title} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" sizes="(max-width: 768px) 40vw, 260px" />
         </div>
 
         <div className="flex min-w-0 flex-col justify-between p-4">
@@ -99,23 +86,15 @@ function AttractionListItem({
             </p>
 
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize">
-                {attraction.property_type.replaceAll("_", " ")}
-              </Badge>
+              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize">{attraction.property_type.replaceAll("_", " ")}</Badge>
               {attraction.max_guests > 0 && (
-                <Badge variant="outline" className="rounded-full border-black/[0.07] px-2 py-0.5 text-[10px] font-medium">
-                  <Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób
-                </Badge>
+                <Badge variant="outline" className="rounded-full border-black/[0.07] px-2 py-0.5 text-[10px] font-medium"><Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób</Badge>
               )}
             </div>
           </div>
 
           <div className="mt-3 flex items-end justify-between gap-2 border-t border-black/[0.05] pt-3">
-            <div>
-              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span>
-              <span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.price_per_night)} zł</span>
-              <span className="text-[11px] text-muted-foreground"> / os.</span>
-            </div>
+            <div><span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span><span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.price_per_night)} zł</span><span className="text-[11px] text-muted-foreground"> / os.</span></div>
             {attraction.reviewCount ? <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span> : null}
           </div>
         </div>
@@ -127,18 +106,14 @@ function AttractionListItem({
 function EmptyList() {
   return (
     <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[26px] border border-dashed border-primary/20 bg-gradient-to-br from-secondary/70 to-white px-7 text-center">
-      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]">
-        <Sparkles className="h-6 w-6" />
-      </span>
+      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]"><Sparkles className="h-6 w-6" /></span>
       <h2 className="text-lg font-bold tracking-[-0.025em]">Mapa jest gotowa do odkrywania</h2>
-      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-        W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy.
-      </p>
+      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy.</p>
     </div>
   )
 }
 
-export default function AttractionsView({ attractions }: AttractionsViewProps) {
+export default function AttractionsView({ attractions, mobileImmersive = false }: AttractionsViewProps) {
   const [mobileMode, setMobileMode] = useState<"map" | "list">("map")
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
@@ -189,62 +164,42 @@ export default function AttractionsView({ attractions }: AttractionsViewProps) {
   }, [attractions, filters])
 
   const list = filteredAttractions.length > 0 ? (
-    <div className="space-y-3">
+    <div className="space-y-3 px-3 pb-6 md:px-0 md:pb-0">
       {filteredAttractions.map((attraction) => (
-        <AttractionListItem
-          key={attraction.id}
-          attraction={attraction}
-          selected={selectedAttraction === attraction.id}
-          onSelect={() => setSelectedAttraction(attraction.id)}
-        />
+        <AttractionListItem key={attraction.id} attraction={attraction} selected={selectedAttraction === attraction.id} onSelect={() => setSelectedAttraction(attraction.id)} />
       ))}
     </div>
-  ) : <EmptyList />
+  ) : <div className="px-3 md:px-0"><EmptyList /></div>
 
   return (
-    <div className="space-y-4">
-      <AttractionFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        onSearch={() => undefined}
-        totalResults={filteredAttractions.length}
-      />
+    <div className={mobileImmersive ? "md:space-y-4" : "space-y-4"}>
+      <div className={mobileImmersive ? "hidden lg:block" : "hidden md:block"}>
+        <AttractionFilters filters={filters} onFiltersChange={setFilters} onSearch={() => undefined} totalResults={filteredAttractions.length} />
+      </div>
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
-        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">
-          {list}
-        </div>
+        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">{list}</div>
         <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-black/[0.06] bg-muted shadow-[0_14px_38px_rgba(55,37,19,0.08)]">
-          <AttractionMap
-            attractions={filteredAttractions}
-            selectedAttraction={selectedAttraction}
-            onAttractionSelect={setSelectedAttraction}
-            className="h-full border-0 shadow-none"
-          />
+          <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" />
         </div>
       </div>
 
       <div className="lg:hidden">
         {mobileMode === "map" ? (
-          <div className="relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]">
-            <AttractionMap
-              attractions={filteredAttractions}
-              selectedAttraction={selectedAttraction}
-              onAttractionSelect={setSelectedAttraction}
-              className="h-full border-0 shadow-none"
-            />
+          <div className={mobileImmersive ? "relative h-[calc(100dvh-188px)] min-h-[430px] overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]"}>
+            <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
-          <div className="pb-24">{list}</div>
+          <div className={mobileImmersive ? "max-h-[calc(100dvh-188px)] overflow-y-auto bg-[#fbfaf8] pt-3" : "pb-24"}>{list}</div>
         )}
 
-        <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2">
+        <div className={`fixed left-1/2 z-[700] -translate-x-1/2 ${mobileImmersive ? "bottom-[max(18px,env(safe-area-inset-bottom))]" : "bottom-24"}`}>
           <Button
             onClick={() => setMobileMode((mode) => (mode === "map" ? "list" : "map"))}
             className="h-12 rounded-full bg-[#28231f] px-5 font-bold text-white shadow-[0_12px_28px_rgba(37,29,22,0.24)] hover:bg-[#171411]"
           >
             {mobileMode === "map" ? <List className="mr-2 h-4 w-4" /> : <Map className="mr-2 h-4 w-4" />}
-            {mobileMode === "map" ? `Pokaż listę (${filteredAttractions.length})` : "Pokaż mapę"}
+            {mobileMode === "map" ? `Pokaż listę${filteredAttractions.length ? ` (${filteredAttractions.length})` : ""}` : "Pokaż mapę"}
           </Button>
         </div>
       </div>
