@@ -4,7 +4,16 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthSheet } from "@/components/auth-sheet"
-import { Search, User as UserIcon, Plus, LogOut, Settings, Heart } from "lucide-react"
+import {
+  CalendarDays,
+  Heart,
+  LogOut,
+  MapPin,
+  Menu,
+  Search,
+  Settings,
+  User as UserIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
@@ -26,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import { BrandLogo } from "@/components/brand-logo"
 
 export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
   const router = useRouter()
@@ -39,14 +48,12 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
   useEffect(() => {
     const supabase = createClient()
-    
-    // Get initial session
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
       setLoading(false)
     })
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -54,7 +61,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
     })
 
     return () => {
-      if (subscription && typeof subscription.unsubscribe === 'function') {
+      if (subscription && typeof subscription.unsubscribe === "function") {
         subscription.unsubscribe()
       }
     }
@@ -94,89 +101,97 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
   return (
     <>
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo - Left side */}
-            <Link href="/" className="flex items-center flex-shrink-0">
-              <div className="flex items-center space-x-2">
-                <Image 
-                  src="/placeholder-logo.svg" 
-                  alt="EnjoyHub" 
-                  width={40} 
-                  height={40}
-                  className="h-8 w-8 md:h-10 md:w-10"
-                />
-                <span className="hidden sm:block text-xl md:text-2xl font-bold text-primary">EnjoyHub</span>
-              </div>
-            </Link>
+      <header className="border-b border-black/[0.06] bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1600px] px-3 py-3 md:px-6 md:py-4">
+          <div className="flex items-center gap-3 md:gap-5">
+            <div className="shrink-0">
+              <BrandLogo compact={false} />
+            </div>
 
-            {/* Search Button - Center */}
-            <Button
+            <nav className="hidden xl:flex items-center gap-1 text-sm font-medium text-muted-foreground">
+              <Link href="/attractions" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">
+                Odkrywaj
+              </Link>
+              <Link href="/attractions?sort=rating" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">
+                Popularne
+              </Link>
+              <Link href="/dla-organizatorow" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">
+                Dla firm
+              </Link>
+            </nav>
+
+            <button
               onClick={onSearchClick}
-              variant="outline"
-              size="lg"
-              className="flex-1 max-w-xl bg-white hover:bg-gray-50 border-2 justify-start text-left font-normal h-12 md:h-14 rounded-full shadow-sm"
+              className="brand-surface group mx-auto flex h-[52px] min-w-0 flex-1 items-center rounded-full px-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(56,38,20,0.10)] md:max-w-[680px] md:h-[58px]"
+              aria-label="Otwórz wyszukiwarkę atrakcji"
             >
-              <Search className="h-4 w-4 md:h-5 md:w-5 mr-2 md:mr-3 text-muted-foreground" />
-              <span className="text-sm md:text-base text-muted-foreground">Wyszukaj</span>
-            </Button>
+              <span className="flex min-w-0 flex-1 items-center gap-3 px-3 md:px-4">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-primary md:h-10 md:w-10">
+                  <Search className="h-4 w-4 md:h-5 md:w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-foreground md:text-[15px]">Znajdź atrakcję</span>
+                  <span className="block truncate text-xs text-muted-foreground md:hidden">Gdzie i kiedy?</span>
+                </span>
+              </span>
 
-            {/* Action Buttons - Right side */}
-            <div className="hidden md:flex items-center gap-2">
-              {/* Ticketing setup */}
-              <Button asChild variant="outline" className="flex items-center gap-2">
-                <Link href="/dla-organizatorow">
-                  <Plus className="h-4 w-4" />
-                  <span>Zostań gospodarzem</span>
-                </Link>
+              <span className="hidden min-w-[145px] items-center gap-2 border-l px-4 md:flex">
+                <MapPin className="h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <span className="block text-[11px] font-medium text-muted-foreground">Lokalizacja</span>
+                  <span className="block text-sm font-semibold text-foreground">W pobliżu</span>
+                </span>
+              </span>
+
+              <span className="hidden min-w-[125px] items-center gap-2 border-l px-4 lg:flex">
+                <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <span className="block text-[11px] font-medium text-muted-foreground">Kiedy</span>
+                  <span className="block text-sm font-semibold text-foreground">Dowolnie</span>
+                </span>
+              </span>
+
+              <span className="hidden h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(244,117,33,0.28)] transition-transform group-hover:scale-105 md:grid">
+                <Search className="h-4 w-4" />
+              </span>
+            </button>
+
+            <div className="hidden md:flex shrink-0 items-center gap-2">
+              <Button asChild variant="ghost" className="hidden lg:inline-flex rounded-full px-4 font-semibold">
+                <Link href="/dla-organizatorow">Zostań gospodarzem</Link>
               </Button>
 
-              {/* User Authentication */}
               {loading ? (
-                <div className="h-10 w-20 bg-muted rounded-lg animate-pulse" />
+                <div className="h-10 w-20 animate-pulse rounded-full bg-muted" />
               ) : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="outline" className="h-11 rounded-full border-black/10 bg-white px-2.5 shadow-sm">
+                      <Menu className="h-4 w-4" />
+                      <Avatar className="h-7 w-7">
                         <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {initials}
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-primary text-xs text-primary-foreground">{initials}</AvatarFallback>
                       </Avatar>
-                      <span className="hidden lg:inline">{displayName}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" sideOffset={10}>
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <div className="flex flex-col space-y-1 leading-none">
-                        <p className="font-medium">{displayName}</p>
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
-                      </div>
+                  <DropdownMenuContent className="w-60 rounded-2xl p-2" align="end" sideOffset={10}>
+                    <div className="p-2">
+                      <p className="font-semibold">{displayName}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
-                        <UserIcon className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl">
+                      <Link href="/dashboard" className="cursor-pointer"><UserIcon className="mr-2 h-4 w-4" />Dashboard</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/favorites" className="cursor-pointer">
-                        <Heart className="mr-2 h-4 w-4" />
-                        Ulubione
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl">
+                      <Link href="/dashboard/favorites" className="cursor-pointer"><Heart className="mr-2 h-4 w-4" />Ulubione</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/profile" className="cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Ustawienia
-                      </Link>
+                    <DropdownMenuItem asChild className="rounded-xl">
+                      <Link href="/dashboard/profile" className="cursor-pointer"><Settings className="mr-2 h-4 w-4" />Ustawienia</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      className="cursor-pointer rounded-xl text-red-600 focus:text-red-600"
                       onClick={() => setShowLogoutDialog(true)}
                       disabled={isLoading}
                     >
@@ -187,20 +202,15 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                 </DropdownMenu>
               ) : (
                 <>
-                  <Button variant="ghost" onClick={openLoginSheet}>
-                    Zaloguj
-                  </Button>
-                  <Button onClick={openSignupSheet}>
-                    Zarejestruj
-                  </Button>
+                  <Button variant="ghost" className="rounded-full" onClick={openLoginSheet}>Zaloguj</Button>
+                  <Button className="rounded-full px-5 orange-glow" onClick={openSignupSheet}>Dołącz</Button>
                 </>
               )}
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Auth Sheet */}
       <AuthSheet
         open={authSheetOpen}
         onOpenChange={setAuthSheetOpen}
@@ -209,14 +219,11 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
         returnToPath="/host"
       />
 
-      {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Potwierdź wylogowanie</AlertDialogTitle>
-            <AlertDialogDescription>
-              Czy na pewno chcesz się wylogować? Zostaniesz przekierowany do strony głównej.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Czy na pewno chcesz się wylogować?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Anuluj</AlertDialogCancel>
