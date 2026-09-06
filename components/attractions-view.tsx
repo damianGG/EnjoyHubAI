@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useMemo, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { Map, MapPin, Star, List, Users } from "lucide-react"
+
+import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
+import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, MapPin, Users, Bed, Bath, Map, Grid3X3 } from "lucide-react"
-import Link from "next/link"
-import AttractionMap from "@/components/attraction-map"
-import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 import { generateAttractionSlug } from "@/lib/utils"
-import AttractionCard from "@/components/AttractionCard"
 
 interface Attraction {
   id: string
@@ -21,6 +21,12 @@ interface Attraction {
   longitude?: number
   price_per_night: number
   property_type: string
+  category_slug?: string | null
+  category_icon?: string | null
+  category_image_url?: string | null
+  subcategory_slug?: string | null
+  subcategory_icon?: string | null
+  subcategory_image_url?: string | null
   max_guests: number
   bedrooms: number
   bathrooms: number
@@ -28,295 +34,228 @@ interface Attraction {
   avgRating?: number
   reviewCount?: number
   amenities?: string[]
-  users?: {
-    full_name: string
-  }
 }
 
 interface AttractionsViewProps {
   attractions: Attraction[]
 }
 
+function attractionHref(attraction: Attraction) {
+  return `/attractions/${generateAttractionSlug({
+    city: attraction.city,
+    category: attraction.property_type,
+    title: attraction.title,
+    id: attraction.id,
+  })}`
+}
+
+function AttractionListItem({
+  attraction,
+  selected,
+  onSelect,
+}: {
+  attraction: Attraction
+  selected: boolean
+  onSelect: () => void
+}) {
+  const image = attraction.images?.find(Boolean) || "/placeholder.jpg"
+
+  return (
+    <article
+      onMouseEnter={onSelect}
+      onClick={onSelect}
+      className={`group overflow-hidden rounded-2xl border bg-background transition-all hover:shadow-lg ${
+        selected ? "border-[#ff5a1f] shadow-md ring-1 ring-[#ff5a1f]/20" : "border-border"
+      }`}
+    >
+      <Link href={attractionHref(attraction)} className="grid grid-cols-[40%_1fr] gap-0 sm:grid-cols-[42%_1fr]">
+        <div className="relative min-h-36 overflow-hidden bg-muted">
+          <Image
+            src={image}
+            alt={attraction.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 768px) 40vw, 260px"
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col justify-between p-4">
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="line-clamp-2 text-base font-semibold leading-tight">{attraction.title}</h3>
+              {Boolean(attraction.avgRating) && (
+                <div className="flex shrink-0 items-center gap-1 text-sm font-medium">
+                  <Star className="h-3.5 w-3.5 fill-[#ff9f0a] text-[#ff9f0a]" />
+                  {attraction.avgRating?.toFixed(1)}
+                </div>
+              )}
+            </div>
+
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{attraction.city}{attraction.region ? `, ${attraction.region}` : ""}</span>
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+                {attraction.property_type.replaceAll("_", " ")}
+              </Badge>
+              {attraction.max_guests > 0 && (
+                <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+                  <Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-end justify-between gap-2">
+            <div>
+              <span className="text-xs text-muted-foreground">od </span>
+              <span className="text-lg font-bold">{Math.round(attraction.price_per_night)} zł</span>
+            </div>
+            {attraction.reviewCount ? (
+              <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span>
+            ) : null}
+          </div>
+        </div>
+      </Link>
+    </article>
+  )
+}
+
 export default function AttractionsView({ attractions }: AttractionsViewProps) {
-  const [isMounted, setIsMounted] = useState(false)
-  const [viewMode, setViewMode] = useState<"grid" | "map">("grid")
+  const [mobileMode, setMobileMode] = useState<"map" | "list">("map")
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
     location: "",
     checkIn: "",
     checkOut: "",
     guests: "1",
-    priceRange: [0, 1000],
+    priceRange: [0, 500],
     ageRange: [0, 18],
     attractionTypes: [],
     amenities: [],
     sortBy: "newest",
   })
 
-  // Ensure component is mounted to avoid hydration mismatches
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const filteredAttractions = useMemo(() => {
+    if (!Array.isArray(attractions)) return []
 
-  const filteredAndSortedAttractions = useMemo(() => {
-    // Ensure attractions is an array
-    if (!Array.isArray(attractions)) {
-      return []
-    }
+    const result = attractions.filter((attraction) => {
+      if (!attraction?.title || !attraction.city || !attraction.country) return false
 
-    const filtered = attractions.filter((attraction) => {
-      // Safety checks for required fields
-      if (!attraction || !attraction.city || !attraction.country || !attraction.title) {
-        return false
+      if (filters.location?.trim()) {
+        const query = filters.location.trim().toLowerCase()
+        const haystack = `${attraction.title} ${attraction.city} ${attraction.region ?? ""} ${attraction.country}`.toLowerCase()
+        if (!haystack.includes(query)) return false
       }
 
-      // Location filter
-      if (filters.location) {
-        const searchTerm = filters.location.toLowerCase()
-        const matchesLocation =
-          attraction.city.toLowerCase().includes(searchTerm) ||
-          attraction.country.toLowerCase().includes(searchTerm) ||
-          attraction.title.toLowerCase().includes(searchTerm)
-        if (!matchesLocation) return false
-      }
-
-      // Guests filter
-      if (Number.parseInt(filters.guests) > attraction.max_guests) return false
-
-      // Price range filter
-      if (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1])
-        return false
-
-      // Attraction type filter
+      if (Number.parseInt(filters.guests, 10) > attraction.max_guests) return false
+      if (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1]) return false
       if (filters.attractionTypes.length > 0 && !filters.attractionTypes.includes(attraction.property_type)) return false
 
-      // Amenities filter
       if (filters.amenities.length > 0) {
-        const attractionAmenities = attraction.amenities || []
-        const hasAllAmenities = filters.amenities.every((amenity) => attractionAmenities.includes(amenity))
-        if (!hasAllAmenities) return false
+        const amenities = attraction.amenities ?? []
+        if (!filters.amenities.every((amenity) => amenities.includes(amenity))) return false
       }
 
       return true
     })
 
-    // Sort attractions
-    filtered.sort((a, b) => {
+    return result.sort((a, b) => {
       switch (filters.sortBy) {
         case "price_low":
           return a.price_per_night - b.price_per_night
         case "price_high":
           return b.price_per_night - a.price_per_night
         case "rating":
-          return (b.avgRating || 0) - (a.avgRating || 0)
+          return (b.avgRating ?? 0) - (a.avgRating ?? 0)
         case "reviews":
-          return (b.reviewCount || 0) - (a.reviewCount || 0)
-        case "newest":
+          return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
         default:
-          return 0 // Keep original order for newest
+          return 0
       }
     })
-
-    return filtered
   }, [attractions, filters])
 
-  const handleSearch = () => {
-    // Search is handled by the filtering logic above
-    // This could trigger additional actions like analytics
-    console.log("Search triggered with filters:", filters)
-  }
+  const list = (
+    <div className="space-y-3">
+      {filteredAttractions.map((attraction) => (
+        <AttractionListItem
+          key={attraction.id}
+          attraction={attraction}
+          selected={selectedAttraction === attraction.id}
+          onSelect={() => setSelectedAttraction(attraction.id)}
+        />
+      ))}
+    </div>
+  )
 
-  // Prevent hydration issues by only rendering on client
-  if (!isMounted) {
-    return null
+  if (filteredAttractions.length === 0) {
+    return (
+      <div className="space-y-6">
+        <AttractionFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onSearch={() => undefined}
+          totalResults={0}
+        />
+        <div className="rounded-3xl border border-dashed bg-muted/30 px-6 py-20 text-center">
+          <MapPin className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h2 className="text-xl font-semibold">Nie znaleźliśmy atrakcji w tym zakresie</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Zmień lokalizację, liczbę osób albo filtry cenowe.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <AttractionFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onSearch={handleSearch}
-            totalResults={filteredAndSortedAttractions.length}
+    <div className="space-y-4">
+      <AttractionFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onSearch={() => undefined}
+        totalResults={filteredAttractions.length}
+      />
+
+      {/* Desktop: list + persistent map, inspired by map-first marketplaces. */}
+      <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(380px,43%)_1fr]">
+        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">
+          {list}
+        </div>
+        <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-3xl border bg-muted">
+          <AttractionMap
+            attractions={filteredAttractions}
+            selectedAttraction={selectedAttraction}
+            onAttractionSelect={setSelectedAttraction}
+            className="h-full border-0 shadow-none"
           />
         </div>
+      </div>
 
-        <div className="lg:col-span-3">
-          {/* View Toggle */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={viewMode === "grid" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-              >
-                <Grid3X3 className="h-4 w-4 mr-2" />
-                Widok kafelków
-              </Button>
-              <Button variant={viewMode === "map" ? "default" : "outline"} size="sm" onClick={() => setViewMode("map")}>
-                <Map className="h-4 w-4 mr-2" />
-                Widok mapy
-              </Button>
-            </div>
+      {/* Mobile/tablet: one immersive surface at a time. */}
+      <div className="lg:hidden">
+        {mobileMode === "map" ? (
+          <div className="relative h-[calc(100dvh-15rem)] min-h-[520px] overflow-hidden rounded-3xl border bg-muted">
+            <AttractionMap
+              attractions={filteredAttractions}
+              selectedAttraction={selectedAttraction}
+              onAttractionSelect={setSelectedAttraction}
+              className="h-full border-0 shadow-none"
+            />
           </div>
+        ) : (
+          <div className="pb-24">{list}</div>
+        )}
 
-          {viewMode === "map" ? (
-            /* Map View */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {filteredAndSortedAttractions.map((attraction) => (
-                  <Card
-                    key={attraction.id}
-                    className={`cursor-pointer transition-all ${
-                      selectedAttraction === attraction.id ? "ring-2 ring-primary" : ""
-                    }`}
-                    onClick={() => setSelectedAttraction(attraction.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex space-x-4">
-                        <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          {Array.isArray(attraction.images) && attraction.images.length > 0 ? (
-                            <img
-                              src={attraction.images[0] || "/placeholder.jpg"}
-                              alt={attraction.title || 'Attraction'}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <MapPin className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold line-clamp-1">{attraction.title}</h3>
-                            {attraction.avgRating != null && attraction.avgRating > 0 && (
-                              <div className="flex items-center space-x-1 text-sm">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span>{attraction.avgRating}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            <span>
-                              {attraction.city}, {attraction.country}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-2">
-                            <div className="flex items-center">
-                              <Users className="h-4 w-4 mr-1" />
-                              <span>{attraction.max_guests}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Bed className="h-4 w-4 mr-1" />
-                              <span>{attraction.bedrooms}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Bath className="h-4 w-4 mr-1" />
-                              <span>{attraction.bathrooms}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-semibold">${attraction.price_per_night}</span>
-                              <span className="text-muted-foreground text-sm"> / night</span>
-                            </div>
-                            <Link href={`/attractions/${generateAttractionSlug({
-                              city: attraction.city,
-                              category: attraction.property_type,
-                              title: attraction.title,
-                              id: attraction.id
-                            })}`}>
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="sticky top-8">
-                <AttractionMap
-                  attractions={filteredAndSortedAttractions}
-                  selectedAttraction={selectedAttraction}
-                  onAttractionSelect={setSelectedAttraction}
-                  className="h-[600px]"
-                />
-              </div>
-            </div>
-          ) : (
-            /* Grid View */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {filteredAndSortedAttractions.map((attraction) => {
-                const slug = generateAttractionSlug({
-                  city: attraction.city,
-                  category: attraction.property_type,
-                  title: attraction.title,
-                  id: attraction.id
-                })
-                
-                return (
-                  <AttractionCard
-                    key={attraction.id}
-                    id={attraction.id}
-                    images={attraction.images || []}
-                    title={attraction.title}
-                    city={attraction.city}
-                    region={attraction.region || attraction.city}
-                    country={attraction.country}
-                    rating={attraction.avgRating || 0}
-                    reviewsCount={attraction.reviewCount || 0}
-                    price={attraction.price_per_night}
-                    priceUnit="noc"
-                    href={`/attractions/${slug}`}
-                  />
-                )
-              })}
-            </div>
-          )}
-
-          {/* No Results */}
-          {filteredAndSortedAttractions.length === 0 && (
-            <Card>
-              <CardContent className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Nie znaleziono atrakcji</h3>
-                <p className="text-muted-foreground mb-4">Spróbuj zmienić kryteria wyszukiwania lub filtry</p>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setFilters({
-                      location: "",
-                      checkIn: "",
-                      checkOut: "",
-                      guests: "1",
-                      priceRange: [0, 1000],
-                      ageRange: [0, 18],
-                      attractionTypes: [],
-                      amenities: [],
-                      sortBy: "newest",
-                    })
-                  }
-                >
-                  Clear All Filters
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+        <div className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2">
+          <Button
+            onClick={() => setMobileMode((mode) => (mode === "map" ? "list" : "map"))}
+            className="press-3d h-12 rounded-full bg-[#0b1220] px-5 text-white shadow-xl hover:bg-[#182238]"
+          >
+            {mobileMode === "map" ? <List className="mr-2 h-4 w-4" /> : <Map className="mr-2 h-4 w-4" />}
+            {mobileMode === "map" ? `Pokaż listę (${filteredAttractions.length})` : "Pokaż mapę"}
+          </Button>
         </div>
       </div>
     </div>
