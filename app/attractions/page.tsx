@@ -2,68 +2,64 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AttractionsView from "@/components/attractions-view"
-import { TopNav } from "@/components/top-nav"
-import { BottomNav } from "@/components/bottom-nav"
+import { DiscoveryChrome } from "@/components/discovery-chrome"
 
 export const revalidate = 60
 
 export default async function AttractionsPage() {
+  let data: any[] = []
+  let errorMessage: string | null = null
+
   if (!isSupabaseConfigured) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="border-destructive">
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold text-destructive">Błąd konfiguracji</h3>
-            <p className="text-muted-foreground">Baza danych nie jest skonfigurowana. Skontaktuj się z administratorem.</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+    errorMessage = "Baza danych nie jest skonfigurowana w tym środowisku preview."
+  } else {
+    try {
+      const supabase = createClient()
+      const result = await supabase
+        .from("properties")
+        .select(`
+          *,
+          users (
+            full_name
+          )
+        `)
+        .eq("is_active", true)
 
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from("properties")
-    .select(`
-      *,
-      users (
-        full_name
-      )
-    `)
-    .eq("is_active", true)
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="border-destructive">
-          <CardContent className="py-12 text-center">
-            <AlertCircle className="mx-auto mb-4 h-10 w-10 text-destructive" />
-            <h3 className="mb-2 text-lg font-semibold text-destructive">Błąd pobierania danych</h3>
-            <p className="text-muted-foreground">Nie udało się pobrać listy atrakcji. Spróbuj odświeżyć stronę.</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
+      if (result.error) {
+        errorMessage = "Nie udało się pobrać listy atrakcji w tym środowisku."
+      } else {
+        data = result.data || []
+      }
+    } catch {
+      errorMessage = "Nie udało się połączyć z bazą danych w tym środowisku."
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <div className="hidden md:block">
-        <TopNav />
-      </div>
-
-      <main className="mx-auto w-full max-w-[1800px] px-3 py-3 sm:px-4 sm:py-5 xl:px-6">
-        <div className="mb-4 px-1">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Odkrywaj atrakcje</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca na mapie i rezerwuj bez zbędnych kroków.</p>
+    <DiscoveryChrome>
+      <main className="mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-4 sm:py-7 xl:px-6">
+        <div className="mb-5 flex items-end justify-between gap-4 px-1">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Mapa EnjoyHub</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">Odkrywaj atrakcje</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca, ceny i dostępność bezpośrednio na mapie.</p>
+          </div>
         </div>
-        <AttractionsView attractions={data || []} />
-      </main>
 
-      <BottomNav />
-    </div>
+        {errorMessage ? (
+          <Card className="mb-5 border-primary/15 bg-secondary/60 shadow-none">
+            <CardContent className="flex items-start gap-3 py-4 text-sm">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-semibold">Podgląd nowego interfejsu jest aktywny</p>
+                <p className="mt-0.5 text-muted-foreground">{errorMessage} Połączenie danych można naprawić niezależnie od warstwy wizualnej.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <AttractionsView attractions={data} />
+      </main>
+    </DiscoveryChrome>
   )
 }
