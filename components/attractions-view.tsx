@@ -179,7 +179,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   const ageMaxFilter = searchParams.get("age_max") || ""
   const hasSearchCriteria = selectedCategorySlugs.length > 0 || Boolean(urlLocation) || urlGuests > 1 || Boolean(dateFilter) || Boolean(ageMinFilter) || Boolean(ageMaxFilter)
 
-  const attractionById = useMemo(() => new Map(attractions.map((attraction) => [attraction.id, attraction])), [attractions])
+  const attractionById = useMemo(() => new globalThis.Map(attractions.map((attraction) => [attraction.id, attraction])), [attractions])
 
   const urlFilteredAttractions = useMemo(() => {
     if (!Array.isArray(attractions)) return []
