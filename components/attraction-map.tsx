@@ -142,6 +142,29 @@ function markerHtml(attraction: Attraction, index: number) {
   `
 }
 
+function focusMarkerAboveMobileCard(map: any, marker: any) {
+  if (typeof window === "undefined" || !map || !marker) return
+
+  window.setTimeout(() => {
+    if (!map.getSize || !marker.getLatLng) return
+
+    const size = map.getSize()
+    const point = map.latLngToContainerPoint(marker.getLatLng())
+    const targetX = size.x / 2
+    const targetY = Math.max(112, Math.min(180, size.y * 0.29))
+    const offsetX = point.x - targetX
+    const offsetY = point.y - targetY
+
+    if (Math.abs(offsetX) < 4 && Math.abs(offsetY) < 4) return
+
+    map.panBy([offsetX, offsetY], {
+      animate: true,
+      duration: 0.35,
+      easeLinearity: 0.25,
+    })
+  }, 70)
+}
+
 export default function AttractionMap({
   attractions,
   selectedAttraction,
@@ -235,6 +258,7 @@ export default function AttractionMap({
       marker.on("click", () => {
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
+        if (immersiveMobile) focusMarkerAboveMobileCard(map, marker)
       })
       marker.addTo(markerLayerRef.current)
       markersByIdRef.current.set(attraction.id, marker)
@@ -275,8 +299,8 @@ export default function AttractionMap({
   return (
     <>
       <div
-        className={`relative h-full min-h-80 overflow-hidden bg-muted ${
-          isFullscreen ? "fixed inset-3 z-50 min-h-0 rounded-3xl shadow-2xl" : immersiveMobile ? "rounded-none" : "rounded-3xl"
+        className={`relative isolate z-0 h-full min-h-80 overflow-hidden bg-muted ${
+          isFullscreen ? "fixed inset-3 z-[1400] min-h-0 rounded-3xl shadow-2xl" : immersiveMobile ? "rounded-none" : "rounded-3xl"
         } ${className}`}
       >
         <div ref={mapRef} className="h-full min-h-80 w-full" />
@@ -307,35 +331,43 @@ export default function AttractionMap({
         )}
 
         {popupAttraction && (
-          <div className={`absolute left-1/2 z-[650] -translate-x-1/2 ${immersiveMobile ? "bottom-4 w-[calc(100%-1rem)]" : "bottom-4 w-[calc(100%-2rem)] max-w-sm"}`}>
-            <div className={`relative overflow-hidden bg-white shadow-[0_18px_46px_rgba(28,20,14,0.24)] ring-1 ring-black/[0.06] ${immersiveMobile ? "rounded-[24px]" : "rounded-2xl"}`}>
+          <div
+            className={`absolute left-1/2 z-[800] -translate-x-1/2 ${
+              immersiveMobile ? "w-[calc(100%-1rem)] max-w-[460px]" : "bottom-4 w-[calc(100%-2rem)] max-w-sm"
+            }`}
+            style={immersiveMobile ? { bottom: "calc(max(16px, env(safe-area-inset-bottom)) + 66px)" } : undefined}
+          >
+            <div className={`relative overflow-hidden bg-white shadow-[0_20px_54px_rgba(28,20,14,0.28)] ring-1 ring-black/[0.07] ${immersiveMobile ? "rounded-[28px]" : "rounded-2xl"}`}>
               <button
                 type="button"
-                onClick={() => setPopupAttraction(null)}
-                className="absolute right-2.5 top-2.5 z-30 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-md"
+                onClick={() => {
+                  setPopupAttraction(null)
+                  onAttractionSelect?.(null)
+                }}
+                className={`absolute right-3 top-3 z-30 grid place-items-center rounded-full bg-white/95 shadow-md ${immersiveMobile ? "h-9 w-9" : "h-8 w-8"}`}
                 aria-label="Zamknij podgląd atrakcji"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <Link href={hrefFor(popupAttraction)} className="block">
-                <div className={immersiveMobile ? "grid grid-cols-[116px_1fr]" : "grid grid-cols-[105px_1fr]"}>
-                  <div className="relative min-h-[126px] overflow-hidden bg-muted">
-                    <Image src={previewImage} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
+                <div className={immersiveMobile ? "grid min-h-[168px] grid-cols-[138px_1fr]" : "grid grid-cols-[105px_1fr]"}>
+                  <div className={`relative overflow-hidden bg-muted ${immersiveMobile ? "min-h-[168px]" : "min-h-[126px]"}`}>
+                    <Image src={previewImage} alt={popupAttraction.title} fill className="object-cover" sizes={immersiveMobile ? "150px" : "140px"} />
                   </div>
 
-                  <div className="min-w-0 p-3.5 pr-11">
-                    <div className="mb-1.5 flex items-center gap-2">
-                      <span className="rounded-full bg-secondary px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-primary">Polecane</span>
+                  <div className={immersiveMobile ? "min-w-0 p-4 pr-12" : "min-w-0 p-3.5 pr-11"}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className={`rounded-full bg-secondary font-bold uppercase tracking-[0.08em] text-primary ${immersiveMobile ? "px-2.5 py-1 text-[10px]" : "px-2 py-1 text-[9px]"}`}>Atrakcja</span>
                       {Boolean(popupAttraction.avgRating) && (
-                        <span className="flex items-center gap-1 text-[11px] font-bold"><Star className="h-3 w-3 fill-primary text-primary" />{popupAttraction.avgRating?.toFixed(1)}</span>
+                        <span className={`flex items-center gap-1 font-bold ${immersiveMobile ? "text-xs" : "text-[11px]"}`}><Star className="h-3.5 w-3.5 fill-primary text-primary" />{popupAttraction.avgRating?.toFixed(1)}</span>
                       )}
                     </div>
-                    <h3 className="line-clamp-2 text-[14px] font-extrabold leading-tight tracking-[-0.025em] text-foreground">{popupAttraction.title}</h3>
-                    <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><MapPin className="h-3 w-3 shrink-0 text-primary" />{popupAttraction.city}</p>
-                    <div className="mt-3 flex items-end justify-between gap-2">
-                      <div><span className="text-[10px] text-muted-foreground">od </span><span className="text-base font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span><span className="text-[10px] text-muted-foreground"> / os.</span></div>
-                      <span className="flex items-center text-[11px] font-bold text-primary">Szczegóły <ChevronRight className="h-3.5 w-3.5" /></span>
+                    <h3 className={`line-clamp-2 font-extrabold leading-tight tracking-[-0.025em] text-foreground ${immersiveMobile ? "text-[16px]" : "text-[14px]"}`}>{popupAttraction.title}</h3>
+                    <p className={`mt-2 flex items-center gap-1.5 font-medium text-muted-foreground ${immersiveMobile ? "text-xs" : "text-[11px]"}`}><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />{popupAttraction.city}</p>
+                    <div className={immersiveMobile ? "mt-4 flex items-end justify-between gap-2" : "mt-3 flex items-end justify-between gap-2"}>
+                      <div><span className="text-[10px] text-muted-foreground">od </span><span className={immersiveMobile ? "text-lg font-extrabold" : "text-base font-extrabold"}>{Math.round(popupAttraction.price_per_night)} zł</span><span className="text-[10px] text-muted-foreground"> / os.</span></div>
+                      <span className={`flex items-center rounded-full bg-primary/10 font-bold text-primary ${immersiveMobile ? "px-2.5 py-1.5 text-[11px]" : "text-[11px]"}`}>Szczegóły <ChevronRight className="h-3.5 w-3.5" /></span>
                     </div>
                   </div>
                 </div>
@@ -481,7 +513,7 @@ export default function AttractionMap({
         `}</style>
       </div>
 
-      {isFullscreen && <div className="fixed inset-0 z-40 bg-black/45" onClick={() => setIsFullscreen(false)} />}
+      {isFullscreen && <div className="fixed inset-0 z-[1300] bg-black/45" onClick={() => setIsFullscreen(false)} />}
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     </>
   )
