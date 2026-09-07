@@ -51,6 +51,26 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
   "Paris, France": [48.8566, 2.3522],
 }
 
+const CATEGORY_ICON_FALLBACKS: Record<string, string> = {
+  paintball: "🎯",
+  gokarty: "🏎️",
+  "park-trampolin": "🤸",
+  trampoliny: "🤸",
+  "plac-zabaw": "🛝",
+  playground: "🛝",
+  "park-linowy": "🧗",
+  "adventure-park": "🧗",
+  "escape-room": "🗝️",
+  escape_room: "🗝️",
+  dmuchance: "🎈",
+  dmuchaniec: "🎈",
+  bowling: "🎳",
+  cinema: "🎬",
+  restaurant: "🍽️",
+  "sports-center": "⚽",
+  sports_center: "⚽",
+}
+
 function stableOffset(seed: string, axis: number) {
   let hash = 2166136261
   for (let index = 0; index < seed.length; index += 1) {
@@ -74,6 +94,54 @@ function hrefFor(attraction: Attraction) {
   })}`
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
+}
+
+function safeImageUrl(value?: string | null) {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    return escapeHtml(url.toString())
+  } catch {
+    return null
+  }
+}
+
+function markerVisual(attraction: Attraction) {
+  const imageUrl = safeImageUrl(attraction.subcategory_image_url || attraction.category_image_url)
+  if (imageUrl) {
+    return `<img class="eh-object-marker__image" src="${imageUrl}" alt="" loading="lazy" />`
+  }
+
+  const slug = (attraction.subcategory_slug || attraction.category_slug || attraction.property_type || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("_", "-")
+  const icon = attraction.subcategory_icon || attraction.category_icon || CATEGORY_ICON_FALLBACKS[slug] || "✨"
+  return `<span class="eh-object-marker__emoji" aria-hidden="true">${escapeHtml(icon)}</span>`
+}
+
+function markerHtml(attraction: Attraction, index: number) {
+  const delay = Math.min(index * 24, 216)
+  const price = Number.isFinite(attraction.price_per_night) ? Math.round(attraction.price_per_night) : 0
+
+  return `
+    <div class="eh-object-marker" style="--eh-enter-delay:${delay}ms" aria-label="${escapeHtml(attraction.title)}">
+      <span class="eh-object-marker__halo" aria-hidden="true"></span>
+      <span class="eh-object-marker__bubble">${markerVisual(attraction)}</span>
+      <span class="eh-object-marker__price">${price} zł</span>
+      <span class="eh-object-marker__tip" aria-hidden="true"></span>
+    </div>
+  `
+}
+
 export default function AttractionMap({
   attractions,
   selectedAttraction,
@@ -85,6 +153,7 @@ export default function AttractionMap({
   const mapInstanceRef = useRef<any>(null)
   const leafletRef = useRef<any>(null)
   const markerLayerRef = useRef<any>(null)
+  const markersByIdRef = useRef<Map<string, any>>(new Map())
   const [map, setMap] = useState<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
@@ -121,7 +190,7 @@ export default function AttractionMap({
     void initMap()
 
     return () => {
-      disposed = true
+      markersByIdRef.current.clear()
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
@@ -134,42 +203,66 @@ export default function AttractionMap({
 
     const L = leafletRef.current
     markerLayerRef.current.clearLayers()
+    markersByIdRef.current.clear()
 
     if (attractions.length === 0) return
 
     const bounds = L.latLngBounds([])
 
-    attractions.forEach((attraction) => {
+    attractions.forEach((attraction, index) => {
       const coordinates: [number, number] =
         typeof attraction.latitude === "number" && typeof attraction.longitude === "number"
           ? [attraction.latitude, attraction.longitude]
           : getFallbackCoordinates(attraction)
 
       bounds.extend(coordinates)
-      const isSelected = selectedAttraction === attraction.id
-      const markerHtml = `<div class="eh-price-pin${isSelected ? " eh-price-pin--selected" : ""}">${Math.round(attraction.price_per_night)} zł</div>`
+
       const icon = L.divIcon({
-        html: markerHtml,
-        className: "eh-price-pin-wrapper",
-        iconSize: [82, 38],
-        iconAnchor: [41, 19],
+        html: markerHtml(attraction, index),
+        className: "eh-object-marker-wrapper",
+        iconSize: [64, 76],
+        iconAnchor: [32, 70],
+        tooltipAnchor: [0, -52],
       })
 
       const marker = L.marker(coordinates, { icon, riseOnHover: true })
+      marker.bindTooltip(attraction.title, {
+        direction: "top",
+        offset: [0, -8],
+        opacity: 0.96,
+        className: "eh-object-marker-tooltip",
+      })
       marker.on("click", () => {
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
       })
       marker.addTo(markerLayerRef.current)
+      markersByIdRef.current.set(attraction.id, marker)
     })
 
     if (bounds.isValid()) {
       map.fitBounds(bounds, {
-        padding: immersiveMobile ? [38, 38] : [55, 55],
+        padding: immersiveMobile ? [46, 46] : [60, 60],
         maxZoom: attractions.length === 1 ? 14 : 13,
       })
     }
-  }, [attractions, map, onAttractionSelect, selectedAttraction, immersiveMobile])
+  }, [attractions, map, onAttractionSelect, immersiveMobile])
+
+  useEffect(() => {
+    markersByIdRef.current.forEach((marker, id) => {
+      const root = marker.getElement()?.querySelector(".eh-object-marker") as HTMLElement | null
+      if (!root) return
+      const selected = id === selectedAttraction
+      root.classList.toggle("eh-object-marker--selected", selected)
+      marker.setZIndexOffset(selected ? 1000 : 0)
+    })
+  }, [selectedAttraction, attractions])
+
+  useEffect(() => {
+    if (popupAttraction && !attractions.some((attraction) => attraction.id === popupAttraction.id)) {
+      setPopupAttraction(null)
+    }
+  }, [attractions, popupAttraction])
 
   useEffect(() => {
     if (!map) return
@@ -188,7 +281,7 @@ export default function AttractionMap({
       >
         <div ref={mapRef} className="h-full min-h-80 w-full" />
 
-        <div className={`absolute z-[500] ${immersiveMobile ? "right-3 top-3" : "right-3 top-3"}`}>
+        <div className="absolute right-3 top-3 z-[500]">
           <Button
             type="button"
             variant="secondary"
@@ -209,7 +302,7 @@ export default function AttractionMap({
 
         {attractions.length === 0 && immersiveMobile && (
           <div className="absolute left-1/2 top-4 z-[500] -translate-x-1/2 rounded-full border border-black/[0.07] bg-white/95 px-4 py-2 text-[11px] font-semibold text-muted-foreground shadow-md backdrop-blur">
-            Przesuń mapę, aby odkrywać
+            Zmień filtry lub przesuń mapę
           </div>
         )}
 
@@ -252,27 +345,137 @@ export default function AttractionMap({
         )}
 
         <style>{`
-          .eh-price-pin-wrapper { background: transparent !important; border: 0 !important; }
-          .eh-price-pin {
-            display: inline-flex;
-            min-width: 64px;
-            height: 36px;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(11, 18, 32, .12);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .98);
-            color: #0b1220;
-            padding: 0 12px;
-            font: 700 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            box-shadow: 0 5px 16px rgba(11, 18, 32, .18);
-            transform-origin: center;
-            transition: transform .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
-            white-space: nowrap;
+          .eh-object-marker-wrapper {
+            background: transparent !important;
+            border: 0 !important;
+            overflow: visible !important;
           }
-          .eh-price-pin:hover { transform: scale(1.08); box-shadow: 0 8px 22px rgba(11, 18, 32, .24); }
-          .eh-price-pin--selected { background: #f47521; color: white; border-color: #f47521; transform: scale(1.1); }
-          .leaflet-control-zoom { border: 0 !important; box-shadow: 0 5px 18px rgba(11, 18, 32, .18) !important; margin-bottom: ${immersiveMobile ? "76px" : "10px"} !important; }
+          .eh-object-marker {
+            --eh-orange: #f47521;
+            position: relative;
+            display: flex;
+            height: 76px;
+            width: 64px;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: 50% 88%;
+            animation: eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both;
+            animation-delay: var(--eh-enter-delay, 0ms);
+            cursor: pointer;
+          }
+          .eh-object-marker__halo {
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            width: 56px;
+            height: 56px;
+            border-radius: 20px;
+            background: rgba(244,117,33,.22);
+            opacity: 0;
+            pointer-events: none;
+          }
+          .eh-object-marker__bubble {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            width: 50px;
+            height: 50px;
+            place-items: center;
+            overflow: hidden;
+            border: 2px solid rgba(11,18,32,.12);
+            border-radius: 18px;
+            background: rgba(255,255,255,.98);
+            box-shadow: 0 7px 20px rgba(11,18,32,.20), 0 2px 5px rgba(11,18,32,.10);
+            transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+            will-change: transform;
+          }
+          .eh-object-marker__emoji {
+            font-size: 27px;
+            line-height: 1;
+            filter: saturate(1.05);
+          }
+          .eh-object-marker__image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .eh-object-marker__price {
+            position: relative;
+            z-index: 4;
+            margin-top: -5px;
+            min-width: 42px;
+            border: 1px solid rgba(11,18,32,.10);
+            border-radius: 999px;
+            background: rgba(255,255,255,.98);
+            color: #0b1220;
+            padding: 3px 7px;
+            box-shadow: 0 3px 10px rgba(11,18,32,.16);
+            font: 800 10px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+            text-align: center;
+            white-space: nowrap;
+            transition: background .16s ease, color .16s ease, transform .16s ease;
+          }
+          .eh-object-marker__tip {
+            position: absolute;
+            z-index: 1;
+            bottom: 5px;
+            left: 27px;
+            width: 10px;
+            height: 10px;
+            transform: rotate(45deg);
+            border-right: 1px solid rgba(11,18,32,.10);
+            border-bottom: 1px solid rgba(11,18,32,.10);
+            background: white;
+          }
+          .eh-object-marker:hover .eh-object-marker__bubble {
+            transform: translateY(-3px) scale(1.07);
+            border-color: rgba(244,117,33,.45);
+            box-shadow: 0 11px 27px rgba(11,18,32,.23), 0 3px 7px rgba(244,117,33,.13);
+          }
+          .eh-object-marker--selected .eh-object-marker__halo {
+            animation: eh-marker-selected-pulse 1.8s ease-out infinite;
+          }
+          .eh-object-marker--selected .eh-object-marker__bubble {
+            transform: translateY(-4px) scale(1.1);
+            border-color: var(--eh-orange);
+            background: #fff8f2;
+            box-shadow: 0 12px 30px rgba(244,117,33,.28), 0 4px 9px rgba(11,18,32,.14);
+          }
+          .eh-object-marker--selected .eh-object-marker__price {
+            transform: translateY(-2px);
+            border-color: var(--eh-orange);
+            background: var(--eh-orange);
+            color: white;
+          }
+          .eh-object-marker-tooltip {
+            border: 0 !important;
+            border-radius: 12px !important;
+            background: rgba(35,30,26,.96) !important;
+            color: white !important;
+            box-shadow: 0 8px 24px rgba(11,18,32,.18) !important;
+            padding: 7px 10px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+          }
+          .eh-object-marker-tooltip::before { display: none !important; }
+          @keyframes eh-marker-enter {
+            from { opacity: 0; transform: translateY(10px) scale(.76); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes eh-marker-selected-pulse {
+            0% { opacity: .38; transform: scale(.84); }
+            60% { opacity: .04; transform: scale(1.22); }
+            100% { opacity: 0; transform: scale(1.28); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .eh-object-marker,
+            .eh-object-marker--selected .eh-object-marker__halo {
+              animation: none !important;
+            }
+            .eh-object-marker__bubble,
+            .eh-object-marker__price { transition: none !important; }
+          }
+          .leaflet-control-zoom { border: 0 !important; box-shadow: 0 5px 18px rgba(11,18,32,.18) !important; margin-bottom: ${immersiveMobile ? "76px" : "10px"} !important; }
           .leaflet-control-zoom a { color: #0b1220 !important; border: 0 !important; }
           .leaflet-control-attribution { font-size: 8px !important; }
         `}</style>
