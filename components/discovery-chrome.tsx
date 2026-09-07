@@ -16,14 +16,16 @@ export function DiscoveryChrome({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-0">
+    <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-50">
         <TopNav onSearchClick={() => setSearchOpen(true)} />
         <CategoryBar useNavigation />
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       {children}
-      <BottomNav onSearchClick={() => setSearchOpen(true)} />
+      <div className="hidden md:block">
+        <BottomNav onSearchClick={() => setSearchOpen(true)} />
+      </div>
     </div>
   )
 }
