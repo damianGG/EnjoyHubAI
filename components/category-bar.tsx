@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ScrollableCategoryNav, type Category } from "@/components/scrollable-category-nav"
 import { ScrollableSubcategoryNav } from "@/components/scrollable-subcategory-nav"
@@ -29,13 +30,16 @@ export function CategoryBar({
   useNavigation = false,
   compact = false,
 }: CategoryBarProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlSearchString = searchParams.toString()
   const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
   const [loading, setLoading] = useState(true)
   const [localSelectedCategory, setLocalSelectedCategory] = useState<string | null>(selectedCategory ?? null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
-    setLocalSelectedCategory(selectedCategory ?? null)
+    if (selectedCategory !== undefined) setLocalSelectedCategory(selectedCategory ?? null)
   }, [selectedCategory])
 
   useEffect(() => {
@@ -70,8 +74,39 @@ export function CategoryBar({
       setLoading(false)
     }
 
-    loadCategoriesWithSubcategories()
+    void loadCategoriesWithSubcategories()
   }, [])
+
+  useEffect(() => {
+    if (!useNavigation || selectedCategory !== undefined) return
+
+    const activeSlug = (searchParams.get("categories") || "")
+      .split(",")
+      .map((value) => value.trim())
+      .find(Boolean) ?? null
+
+    if (!activeSlug) {
+      setLocalSelectedCategory(null)
+      setSelectedSubcategory(null)
+      return
+    }
+
+    const directCategory = categories.find((category) => category.slug === activeSlug)
+    if (directCategory) {
+      setLocalSelectedCategory(directCategory.slug)
+      setSelectedSubcategory(null)
+      return
+    }
+
+    const parentCategory = categories.find((category) =>
+      category.subcategories?.some((subcategory) => subcategory.slug === activeSlug),
+    )
+
+    if (parentCategory) {
+      setLocalSelectedCategory(parentCategory.slug)
+      setSelectedSubcategory(activeSlug)
+    }
+  }, [useNavigation, selectedCategory, urlSearchString, categories, searchParams])
 
   const handleCategorySelect = (categorySlug: string | null) => {
     setLocalSelectedCategory(categorySlug)
@@ -82,12 +117,17 @@ export function CategoryBar({
   const handleSubcategorySelect = (subcategorySlug: string | null) => {
     setSelectedSubcategory(subcategorySlug)
     onCategorySelect?.(subcategorySlug)
+
+    if (useNavigation) {
+      router.push(subcategorySlug ? `/attractions?categories=${encodeURIComponent(subcategorySlug)}` : "/attractions")
+    }
   }
 
   const handleCloseSubcategories = () => {
     setLocalSelectedCategory(null)
     setSelectedSubcategory(null)
     onCategorySelect?.(null)
+    if (useNavigation) router.push("/attractions")
   }
 
   const selectedCategoryData = categories.find((cat) => cat.slug === localSelectedCategory)
