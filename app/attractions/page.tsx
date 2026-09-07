@@ -6,6 +6,11 @@ import { DiscoveryChrome } from "@/components/discovery-chrome"
 
 export const revalidate = 60
 
+function firstRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value ?? null
+}
+
 export default async function AttractionsPage() {
   let data: any[] = []
   let errorMessage: string | null = null
@@ -21,6 +26,16 @@ export default async function AttractionsPage() {
           *,
           users (
             full_name
+          ),
+          categories (
+            slug,
+            icon,
+            image_url
+          ),
+          subcategories (
+            slug,
+            icon,
+            image_url
           )
         `)
         .eq("is_active", true)
@@ -28,7 +43,20 @@ export default async function AttractionsPage() {
       if (result.error) {
         errorMessage = "Nie udało się pobrać listy atrakcji w tym środowisku."
       } else {
-        data = result.data || []
+        data = (result.data || []).map((row: any) => {
+          const category = firstRelation(row.categories)
+          const subcategory = firstRelation(row.subcategories)
+
+          return {
+            ...row,
+            category_slug: category?.slug ?? null,
+            category_icon: category?.icon ?? null,
+            category_image_url: category?.image_url ?? null,
+            subcategory_slug: subcategory?.slug ?? null,
+            subcategory_icon: subcategory?.icon ?? null,
+            subcategory_image_url: subcategory?.image_url ?? null,
+          }
+        })
       }
     } catch {
       errorMessage = "Nie udało się połączyć z bazą danych w tym środowisku."
