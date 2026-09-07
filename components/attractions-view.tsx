@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { List, Map, MapPin, Sparkles, Star, Users } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { List, Loader2, Map, MapPin, SearchX, Sparkles, Star, Users } from "lucide-react"
 
 import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 import AttractionMap from "@/components/attraction-map"
@@ -36,6 +37,26 @@ interface Attraction {
   amenities?: string[]
 }
 
+interface SearchApiItem {
+  id: string
+  title: string
+  city: string
+  country: string
+  region?: string
+  latitude?: number
+  longitude?: number
+  price_per_night: number
+  images?: string[]
+  category_slug?: string | null
+  category_icon?: string | null
+  category_image_url?: string | null
+  subcategory_slug?: string | null
+  subcategory_icon?: string | null
+  subcategory_image_url?: string | null
+  avg_rating?: number
+  review_count?: number
+}
+
 interface AttractionsViewProps {
   attractions: Attraction[]
   mobileImmersive?: boolean
@@ -48,6 +69,10 @@ function attractionHref(attraction: Attraction) {
     title: attraction.title,
     id: attraction.id,
   })}`
+}
+
+function normalizeSlug(value?: string | null) {
+  return (value ?? "").trim().toLowerCase().replaceAll("_", "-")
 }
 
 function AttractionListItem({ attraction, selected, onSelect }: { attraction: Attraction; selected: boolean; onSelect: () => void }) {
@@ -103,24 +128,34 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
   )
 }
 
-function EmptyList() {
+function EmptyList({ searched }: { searched: boolean }) {
   return (
     <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[26px] border border-dashed border-primary/20 bg-gradient-to-br from-secondary/70 to-white px-7 text-center">
-      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]"><Sparkles className="h-6 w-6" /></span>
-      <h2 className="text-lg font-bold tracking-[-0.025em]">Mapa jest gotowa do odkrywania</h2>
-      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy.</p>
+      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]">
+        {searched ? <SearchX className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+      </span>
+      <h2 className="text-lg font-bold tracking-[-0.025em]">{searched ? "Nie znaleźliśmy takich atrakcji" : "Mapa jest gotowa do odkrywania"}</h2>
+      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+        {searched
+          ? "Zmień kategorię, lokalizację albo liczbę osób i spróbuj ponownie."
+          : "W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy."}
+      </p>
     </div>
   )
 }
 
 export default function AttractionsView({ attractions, mobileImmersive = false }: AttractionsViewProps) {
+  const searchParams = useSearchParams()
+  const urlSearchString = searchParams.toString()
   const [mobileMode, setMobileMode] = useState<"map" | "list">("map")
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
+  const [remoteAttractions, setRemoteAttractions] = useState<Attraction[] | null>(null)
+  const [availabilityLoading, setAvailabilityLoading] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
-    location: "",
+    location: searchParams.get("q") || "",
     checkIn: "",
     checkOut: "",
-    guests: "1",
+    guests: searchParams.get("guests") || "1",
     priceRange: [0, 500],
     ageRange: [0, 18],
     attractionTypes: [],
@@ -128,10 +163,136 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     sortBy: "newest",
   })
 
-  const filteredAttractions = useMemo(() => {
+  const selectedCategorySlugs = useMemo(
+    () => (searchParams.get("categories") || "")
+      .split(",")
+      .map(normalizeSlug)
+      .filter(Boolean),
+    [urlSearchString],
+  )
+
+  const urlLocation = (searchParams.get("q") || "").trim().toLowerCase()
+  const urlGuestsRaw = Number.parseInt(searchParams.get("guests") || "1", 10)
+  const urlGuests = Number.isFinite(urlGuestsRaw) && urlGuestsRaw > 0 ? urlGuestsRaw : 1
+  const dateFilter = searchParams.get("date") || ""
+  const ageMinFilter = searchParams.get("age_min") || ""
+  const ageMaxFilter = searchParams.get("age_max") || ""
+  const hasSearchCriteria = selectedCategorySlugs.length > 0 || Boolean(urlLocation) || urlGuests > 1 || Boolean(dateFilter) || Boolean(ageMinFilter) || Boolean(ageMaxFilter)
+
+  const attractionById = useMemo(() => new Map(attractions.map((attraction) => [attraction.id, attraction])), [attractions])
+
+  const urlFilteredAttractions = useMemo(() => {
     if (!Array.isArray(attractions)) return []
 
-    const result = attractions.filter((attraction) => {
+    return attractions.filter((attraction) => {
+      if (!attraction?.title || !attraction.city || !attraction.country) return false
+
+      if (selectedCategorySlugs.length > 0) {
+        const attractionSlugs = new Set([
+          normalizeSlug(attraction.category_slug),
+          normalizeSlug(attraction.subcategory_slug),
+          normalizeSlug(attraction.property_type),
+        ].filter(Boolean))
+
+        if (!selectedCategorySlugs.some((slug) => attractionSlugs.has(slug))) return false
+      }
+
+      if (urlLocation) {
+        const haystack = `${attraction.title} ${attraction.city} ${attraction.region ?? ""} ${attraction.country}`.toLowerCase()
+        if (!haystack.includes(urlLocation)) return false
+      }
+
+      if (urlGuests > (attraction.max_guests || Number.MAX_SAFE_INTEGER)) return false
+
+      return true
+    })
+  }, [attractions, selectedCategorySlugs, urlLocation, urlGuests])
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      location: searchParams.get("q") || "",
+      guests: searchParams.get("guests") || "1",
+    }))
+  }, [urlSearchString])
+
+  useEffect(() => {
+    const needsAvailabilitySearch = Boolean(dateFilter || ageMinFilter || ageMaxFilter)
+
+    if (!needsAvailabilitySearch) {
+      setRemoteAttractions(null)
+      setAvailabilityLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    const keys = ["categories", "q", "date", "age_min", "age_max", "sort"]
+    keys.forEach((key) => {
+      const value = searchParams.get(key)
+      if (value) params.set(key, value)
+    })
+    params.set("page", "1")
+    params.set("per", "50")
+
+    setAvailabilityLoading(true)
+    setRemoteAttractions(null)
+
+    void fetch(`/api/search?${params.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Search failed: ${response.status}`)
+        return response.json()
+      })
+      .then((payload) => {
+        const items = Array.isArray(payload?.items) ? payload.items as SearchApiItem[] : []
+        const mapped = items.map((item) => {
+          const base = attractionById.get(item.id)
+          return {
+            ...base,
+            id: item.id,
+            title: item.title,
+            city: item.city,
+            country: item.country,
+            region: item.region ?? base?.region,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            price_per_night: item.price_per_night,
+            property_type: base?.property_type ?? item.category_slug ?? "attraction",
+            category_slug: item.category_slug ?? base?.category_slug ?? null,
+            category_icon: item.category_icon ?? base?.category_icon ?? null,
+            category_image_url: item.category_image_url ?? base?.category_image_url ?? null,
+            subcategory_slug: item.subcategory_slug ?? base?.subcategory_slug ?? null,
+            subcategory_icon: item.subcategory_icon ?? base?.subcategory_icon ?? null,
+            subcategory_image_url: item.subcategory_image_url ?? base?.subcategory_image_url ?? null,
+            max_guests: base?.max_guests ?? 999,
+            bedrooms: base?.bedrooms ?? 0,
+            bathrooms: base?.bathrooms ?? 0,
+            images: item.images ?? base?.images ?? [],
+            avgRating: item.avg_rating ?? base?.avgRating,
+            reviewCount: item.review_count ?? base?.reviewCount,
+            amenities: base?.amenities ?? [],
+          } satisfies Attraction
+        })
+        setRemoteAttractions(mapped)
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        console.error("[search] Failed to refresh availability filters", error)
+        setRemoteAttractions(null)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAvailabilityLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [dateFilter, ageMinFilter, ageMaxFilter, urlSearchString, attractionById])
+
+  const searchBaseAttractions = remoteAttractions ?? urlFilteredAttractions
+
+  const filteredAttractions = useMemo(() => {
+    if (!Array.isArray(searchBaseAttractions)) return []
+
+    const result = searchBaseAttractions.filter((attraction) => {
       if (!attraction?.title || !attraction.city || !attraction.country) return false
 
       if (filters.location?.trim()) {
@@ -141,7 +302,10 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       }
 
       if (Number.parseInt(filters.guests, 10) > attraction.max_guests) return false
-      if (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1]) return false
+
+      const priceFilterIsActive = filters.priceRange[0] > 0 || filters.priceRange[1] < 500
+      if (priceFilterIsActive && (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1])) return false
+
       if (filters.attractionTypes.length > 0 && !filters.attractionTypes.includes(attraction.property_type)) return false
 
       if (filters.amenities.length > 0) {
@@ -161,15 +325,26 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
         default: return 0
       }
     })
-  }, [attractions, filters])
+  }, [searchBaseAttractions, filters])
+
+  useEffect(() => {
+    if (selectedAttraction && !filteredAttractions.some((attraction) => attraction.id === selectedAttraction)) {
+      setSelectedAttraction(null)
+    }
+  }, [filteredAttractions, selectedAttraction])
 
   const list = filteredAttractions.length > 0 ? (
     <div className="space-y-3 px-3 pb-6 md:px-0 md:pb-0">
+      {availabilityLoading && (
+        <div className="flex items-center gap-2 rounded-2xl bg-secondary/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję dostępność…
+        </div>
+      )}
       {filteredAttractions.map((attraction) => (
         <AttractionListItem key={attraction.id} attraction={attraction} selected={selectedAttraction === attraction.id} onSelect={() => setSelectedAttraction(attraction.id)} />
       ))}
     </div>
-  ) : <div className="px-3 md:px-0"><EmptyList /></div>
+  ) : <div className="px-3 md:px-0"><EmptyList searched={hasSearchCriteria} /></div>
 
   return (
     <div className={mobileImmersive ? "md:space-y-4" : "space-y-4"}>
