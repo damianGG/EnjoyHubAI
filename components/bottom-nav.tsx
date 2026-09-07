@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthSheet } from "@/components/auth-sheet"
-import { Search, User as UserIcon, Heart, Plus } from "lucide-react"
+import { Compass, Heart, Plus, User as UserIcon } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import {
@@ -26,7 +26,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { LogOut, Settings } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 interface BottomNavProps {
   onSearchClick?: () => void
@@ -44,25 +43,16 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
 
   useEffect(() => {
     const supabase = createClient()
-    
-    // Get initial session
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
       setLoading(false)
     })
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
 
-    return () => {
-      if (subscription && typeof subscription.unsubscribe === 'function') {
-        subscription.unsubscribe()
-      }
-    }
+    return () => subscription?.unsubscribe?.()
   }, [])
 
   const openLoginSheet = () => {
@@ -76,7 +66,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
       const supabase = createClient()
       await supabase.auth.signOut()
       setShowLogoutDialog(false)
-      router.refresh() // Stay on the same page and refresh
+      router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
     } finally {
@@ -85,157 +75,91 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
-  const initials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
-
+  const initials = displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
   const isActive = (path: string) => pathname === path
+
+  const itemClass = (active: boolean) =>
+    `flex min-w-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold transition-all ${
+      active ? "text-primary" : "text-muted-foreground"
+    }`
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg">
-        <div className="container mx-auto px-4 py-1.5">
-          <div className="flex items-center justify-around max-w-2xl mx-auto">
-            {/* Search/Explore Button */}
-            <button
-              onClick={onSearchClick}
-              className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                isActive('/') 
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-              }`}
-            >
-              <Search className="h-4 w-4" />
-              <span className="text-xs font-medium">Szukaj</span>
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] md:hidden">
+        <div className="pointer-events-auto mx-auto max-w-md rounded-[26px] border border-black/[0.07] bg-white/95 px-2 py-1.5 shadow-[0_16px_42px_rgba(44,30,16,0.18)] backdrop-blur-xl">
+          <div className="grid grid-cols-4 items-center gap-1">
+            <button onClick={onSearchClick} className={itemClass(isActive('/'))}>
+              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/') ? 'bg-primary text-white shadow-[0_6px_14px_rgba(244,117,33,0.25)]' : 'bg-secondary'}`}>
+                <Compass className="h-4 w-4" />
+              </span>
+              Odkrywaj
             </button>
 
-            {/* Favorites Button */}
-            <Link href="/dashboard/favorites">
-              <button
-                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive('/dashboard/favorites') 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                }`}
-              >
+            <Link href="/dashboard/favorites" className={itemClass(isActive('/dashboard/favorites'))}>
+              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/dashboard/favorites') ? 'bg-primary text-white' : 'bg-secondary'}`}>
                 <Heart className="h-4 w-4" />
-                <span className="text-xs font-medium">Ulubione</span>
-              </button>
-            </Link>
-
-            {/* Ticketing setup */}
-            <Link
-              href="/dla-organizatorow"
-              className={`flex min-w-0 flex-col items-center justify-center space-y-0.5 rounded-lg px-2 py-1.5 transition-colors ${
-                isActive('/dla-organizatorow')
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-              }`}
-              aria-label="Zostań gospodarzem"
-              aria-current={isActive('/dla-organizatorow') ? "page" : undefined}
-            >
-              <Plus className="h-4 w-4" />
-              <span className="max-w-[76px] text-center text-[10px] font-medium leading-3">
-                Zostań gospodarzem
               </span>
+              Ulubione
             </Link>
 
-            {/* User/Login Button */}
+            <Link href="/dla-organizatorow" className={itemClass(isActive('/dla-organizatorow'))}>
+              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/dla-organizatorow') ? 'bg-primary text-white' : 'bg-secondary'}`}>
+                <Plus className="h-4 w-4" />
+              </span>
+              Dodaj miejsce
+            </Link>
+
             {loading ? (
-              <div className="h-12 w-16 bg-muted rounded-lg animate-pulse" />
+              <div className="mx-auto h-12 w-14 animate-pulse rounded-xl bg-muted" />
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors hover:bg-primary/5">
-                    <Avatar className="h-4 w-4">
+                  <button className={itemClass(pathname.startsWith('/dashboard'))}>
+                    <Avatar className="h-8 w-8 ring-2 ring-white shadow-sm">
                       <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
-                        {initials}
-                      </AvatarFallback>
+                      <AvatarFallback className="bg-primary text-[9px] text-white">{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-medium">Profil</span>
+                    Profil
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" sideOffset={10}>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{displayName}</p>
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
-                    </div>
+                <DropdownMenuContent className="mb-3 w-60 rounded-2xl p-2" align="end">
+                  <div className="p-2">
+                    <p className="font-semibold">{displayName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/favorites" className="cursor-pointer">
-                      <Heart className="mr-2 h-4 w-4" />
-                      Ulubione
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile" className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Ustawienia
-                    </Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/favorites"><Heart className="mr-2 h-4 w-4" />Ulubione</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/profile"><Settings className="mr-2 h-4 w-4" />Ustawienia</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer text-red-600 focus:text-red-600"
-                    onClick={() => setShowLogoutDialog(true)}
-                    disabled={isLoading}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {isLoading ? "Wylogowywanie..." : "Wyloguj się"}
+                  <DropdownMenuItem className="rounded-xl text-red-600 focus:text-red-600" onClick={() => setShowLogoutDialog(true)} disabled={isLoading}>
+                    <LogOut className="mr-2 h-4 w-4" />{isLoading ? "Wylogowywanie..." : "Wyloguj się"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <button
-                onClick={openLoginSheet}
-                className={`flex flex-col items-center justify-center space-y-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  authSheetOpen 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                }`}
-              >
-                <UserIcon className="h-4 w-4" />
-                <span className="text-xs font-medium">Zaloguj</span>
+              <button onClick={openLoginSheet} className={itemClass(authSheetOpen)}>
+                <span className={`grid h-8 w-8 place-items-center rounded-xl ${authSheetOpen ? 'bg-primary text-white' : 'bg-secondary'}`}>
+                  <UserIcon className="h-4 w-4" />
+                </span>
+                Profil
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Auth Sheet */}
-      <AuthSheet
-        open={authSheetOpen}
-        onOpenChange={setAuthSheetOpen}
-        mode={authMode}
-        onModeChange={setAuthMode}
-        returnToPath="/host"
-      />
+      <AuthSheet open={authSheetOpen} onOpenChange={setAuthSheetOpen} mode={authMode} onModeChange={setAuthMode} returnToPath="/host" />
 
-      {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Potwierdź wylogowanie</AlertDialogTitle>
-            <AlertDialogDescription>
-              Czy na pewno chcesz się wylogować? Zostaniesz przekierowany do strony głównej.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Czy na pewno chcesz się wylogować?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLoading}>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSignOut} disabled={isLoading}>
-              {isLoading ? "Wylogowywanie..." : "Wyloguj się"}
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleSignOut} disabled={isLoading}>{isLoading ? "Wylogowywanie..." : "Wyloguj się"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

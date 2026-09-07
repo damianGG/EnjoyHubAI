@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { BrandLogo } from "@/components/brand-logo"
 import LoginForm from "@/components/login-form"
 import ForgotPasswordForm from "@/components/forgot-password-form"
 import SignUpForm from "@/components/sign-up-form"
-import { useRouter } from "next/navigation"
 import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface AuthSheetProps {
@@ -16,13 +18,11 @@ interface AuthSheetProps {
   returnToPath?: string | null
 }
 
-// Internal mode type that extends the public mode with forgot-password
 type InternalMode = "login" | "signup" | "forgot-password"
 
 export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath }: AuthSheetProps) {
   const router = useRouter()
   const destination = getSafeAuthReturnTo(returnToPath)
-  // Internal mode can be forgot-password, but external API only supports login/signup
   const [currentMode, setCurrentMode] = useState<InternalMode>(mode)
 
   const handleSuccess = () => {
@@ -33,9 +33,7 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
 
   const handleSwitchToLogin = () => {
     setCurrentMode("login")
-    if (onModeChange) {
-      onModeChange("login")
-    }
+    onModeChange?.("login")
   }
 
   const handleSwitchToSignUp = () => {
@@ -43,32 +41,35 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     onModeChange?.("signup")
   }
 
-  const handleSwitchToForgotPassword = () => {
-    setCurrentMode("forgot-password")
-  }
+  const handleSwitchToForgotPassword = () => setCurrentMode("forgot-password")
 
-  // Keep the sheet in sync when it is opened from a different navigation action.
   useEffect(() => {
     setCurrentMode(mode)
   }, [mode, open])
 
-  const getTitle = () => {
-    switch (currentMode) {
-      case "login":
-      case "signup":
-        return "Zaloguj się lub zarejestruj"
-      case "forgot-password":
-        return "Zresetuj hasło"
-    }
-  }
+  const title = currentMode === "forgot-password"
+    ? "Zresetuj hasło"
+    : currentMode === "signup"
+      ? "Utwórz konto"
+      : "Zaloguj się"
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
-        <SheetHeader className="p-6 pb-0 border-b">
-          <SheetTitle className="text-base font-normal">{getTitle()}</SheetTitle>
+      <SheetContent
+        side="right"
+        className="h-[100dvh] w-full max-w-none overflow-y-auto border-0 bg-white p-0 sm:max-w-md sm:border-l"
+      >
+        <SheetHeader className="sticky top-0 z-10 border-b border-black/[0.055] bg-white/95 px-5 pb-4 pt-[max(14px,env(safe-area-inset-top))] text-left backdrop-blur-xl sm:p-6 sm:pb-4">
+          <div className="mb-2 sm:hidden"><BrandLogo mobile href={undefined} /></div>
+          <SheetTitle className="text-xl font-extrabold tracking-[-0.035em] sm:text-lg">{title}</SheetTitle>
+          <p className="pr-8 text-xs leading-5 text-muted-foreground sm:text-sm">
+            {currentMode === "forgot-password"
+              ? "Podaj adres e-mail, a wyślemy Ci instrukcję resetowania hasła."
+              : "Twoje rezerwacje, bilety i ulubione miejsca będą zawsze pod ręką."}
+          </p>
         </SheetHeader>
-        <div className="p-6">
+
+        <div className="mx-auto w-full max-w-md px-5 py-6 sm:px-6">
           {currentMode === "login" && (
             <LoginForm
               inline

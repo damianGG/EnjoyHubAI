@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -53,192 +53,148 @@ export function ScrollableCategoryNav({
   const checkScroll = () => {
     const container = scrollContainerRef.current
     if (!container) return
-
-    setShowLeftButton(container.scrollLeft > 0)
-    setShowRightButton(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - 1
-    )
+    setShowLeftButton(container.scrollLeft > 4)
+    setShowRightButton(container.scrollLeft < container.scrollWidth - container.clientWidth - 4)
   }
 
   useEffect(() => {
     checkScroll()
     const container = scrollContainerRef.current
-    if (container) {
-      container.addEventListener('scroll', checkScroll)
-      window.addEventListener('resize', checkScroll)
-      return () => {
-        container.removeEventListener('scroll', checkScroll)
-        window.removeEventListener('resize', checkScroll)
-      }
+    if (!container) return
+    container.addEventListener('scroll', checkScroll)
+    window.addEventListener('resize', checkScroll)
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
     }
   }, [categories])
 
   const scroll = (direction: 'left' | 'right') => {
     const container = scrollContainerRef.current
     if (!container) return
-
-    const scrollAmount = 300
-    const targetScroll =
-      direction === 'left'
-        ? container.scrollLeft - scrollAmount
-        : container.scrollLeft + scrollAmount
-
     container.scrollTo({
-      left: targetScroll,
+      left: container.scrollLeft + (direction === 'left' ? -360 : 360),
       behavior: 'smooth',
     })
   }
 
   const handleCategoryClick = (categorySlug: string) => {
-    if (selectedCategory === categorySlug) {
-      onCategorySelect(null)
-    } else {
-      onCategorySelect(categorySlug)
-    }
+    onCategorySelect(selectedCategory === categorySlug ? null : categorySlug)
   }
 
-  const renderCategoryIcon = (category: Category) => {
+  const CategoryVisual = ({ category }: { category: Category }) => {
     if (category.image_url) {
       return (
-        <div className="relative w-4 h-4 rounded-full overflow-hidden">
-          <Image
-            src={category.image_url}
-            alt={category.name}
-            fill
-            className="object-cover"
-          />
-        </div>
+        <span className="relative h-12 w-12 overflow-hidden rounded-[15px] bg-gradient-to-br from-orange-50 to-amber-50 shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14">
+          <Image src={category.image_url} alt="" fill className="object-cover" sizes="56px" />
+        </span>
       )
     }
-    return <span className="text-lg">{category.icon}</span>
+
+    return (
+      <span className="grid h-12 w-12 place-items-center rounded-[15px] bg-gradient-to-br from-orange-50 via-white to-amber-50 text-[28px] shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14 md:text-[31px]">
+        {category.icon || '✨'}
+      </span>
+    )
   }
 
   return (
-    <div className="relative w-full bg-card">
-      <div className="relative flex items-center">
+    <div className={cn(
+      "relative w-full border-b border-black/[0.055] bg-white/95 backdrop-blur-xl",
+      compact ? "shadow-[0_8px_24px_rgba(48,31,16,0.04)]" : ""
+    )}>
+      <div className="relative mx-auto flex max-w-[1600px] items-center px-1 md:px-3">
         {showLeftButton && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="absolute left-0 z-10 h-full rounded-none bg-gradient-to-r from-card via-card to-transparent px-2 hover:bg-card"
+            className="absolute left-2 z-20 h-9 w-9 rounded-full border-black/10 bg-white/95 shadow-lg md:left-4"
             onClick={() => scroll('left')}
+            aria-label="Przewiń kategorie w lewo"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
 
         <div
           ref={scrollContainerRef}
           className={cn(
-            "hide-scrollbar flex gap-2 overflow-x-auto overflow-y-hidden px-4",
-            compact ? "py-1.5" : "py-2"
+            "hide-scrollbar flex w-full overflow-x-auto overflow-y-hidden scroll-smooth",
+            compact ? "gap-2 px-3 py-2.5 md:px-4" : "gap-2.5 px-3 py-3 md:gap-4 md:px-4 md:py-4"
           )}
-          style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {/* All Categories Button */}
           <button
             onClick={() => {
-              if (useNavigation) {
-                router.push('/attractions')
-              }
+              if (useNavigation) router.push('/attractions')
               onCategorySelect(null)
             }}
             className={cn(
-              compact 
-                ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
-              !selectedCategory
-                ? 'text-primary font-semibold'
-                : 'text-foreground hover:text-primary transition-colors'
+              "shrink-0 transition-all",
+              compact
+                ? "brand-pill flex h-9 items-center gap-2 rounded-full px-4 text-xs font-semibold"
+                : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
+              !selectedCategory ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {!compact && (
-              <div className="flex h-4 w-4 items-center justify-center">
-                <div className="w-3 h-3 border-2 border-current rounded" />
-              </div>
+              <span className={cn(
+                "grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14",
+                !selectedCategory ? "bg-primary text-white" : "bg-gradient-to-br from-orange-50 to-white text-primary"
+              )}>
+                <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
+              </span>
             )}
-            <span className={cn(
-              "block truncate text-center font-medium",
-              compact ? "text-xs" : "text-xs w-full"
-            )}>
-              Wszystkie
-            </span>
+            <span className={cn("whitespace-nowrap font-semibold", compact ? "text-xs" : "text-[11px] md:text-xs")}>Wszystkie</span>
           </button>
 
           {categories.map((category) => {
-            const buttonContent = compact ? (
-              <span className="block truncate text-center text-xs font-medium whitespace-nowrap">
-                {category.name}
-              </span>
-            ) : (
+            const selected = selectedCategory === category.slug
+            const content = (
               <>
-                <div className="flex h-4 w-4 items-center justify-center">
-                  {renderCategoryIcon(category)}
-                </div>
-                <span className="block w-full truncate text-center text-xs font-medium">
+                {!compact && <CategoryVisual category={category} />}
+                <span className={cn(
+                  "max-w-[104px] truncate whitespace-nowrap text-center font-semibold",
+                  compact ? "text-xs" : "text-[11px] md:text-xs"
+                )}>
                   {category.name}
                 </span>
               </>
             )
 
+            const className = cn(
+              "shrink-0 transition-all duration-200",
+              compact
+                ? "brand-pill flex h-9 items-center rounded-full px-4"
+                : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
+              selected ? "text-primary" : "text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
+            )
+
             return useNavigation ? (
               <Link href={`/attractions?categories=${category.slug}`} key={category.id}>
-                <button
-                  onClick={() => onCategorySelect(category.slug)}
-                  className={cn(
-                    compact 
-                      ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                      : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
-                    selectedCategory === category.slug
-                      ? 'text-primary font-semibold'
-                      : selectedCategory && selectedCategory !== category.slug
-                        ? 'text-muted-foreground hover:text-primary transition-colors'
-                        : 'text-foreground hover:text-primary transition-colors'
-                  )}
-                >
-                  {buttonContent}
-                </button>
+                <button onClick={() => onCategorySelect(category.slug)} className={className}>{content}</button>
               </Link>
             ) : (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryClick(category.slug)}
-                className={cn(
-                  compact 
-                    ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                    : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-2',
-                  selectedCategory === category.slug
-                    ? 'text-primary font-semibold'
-                    : selectedCategory && selectedCategory !== category.slug
-                      ? 'text-muted-foreground hover:text-primary transition-colors'
-                      : 'text-foreground hover:text-primary transition-colors'
-                )}
-              >
-                {buttonContent}
-              </button>
+              <button key={category.id} onClick={() => handleCategoryClick(category.slug)} className={className}>{content}</button>
             )
           })}
         </div>
 
         {showRightButton && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="absolute right-0 z-10 h-full rounded-none bg-gradient-to-l from-card via-card to-transparent px-2 hover:bg-card"
+            className="absolute right-2 z-20 h-9 w-9 rounded-full border-black/10 bg-white/95 shadow-lg md:right-4"
             onClick={() => scroll('right')}
+            aria-label="Przewiń kategorie w prawo"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         )}
       </div>
 
       <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   )
