@@ -1,40 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import { ArrowLeft, CalendarDays, MapPin, Minus, Plus, Search, Sparkles, Users } from "lucide-react"
+
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Search, X, ChevronDown, ChevronUp, Calendar as CalendarIcon } from "lucide-react"
+import { BrandLogo } from "@/components/brand-logo"
 import { useUrlState } from "@/lib/search/url-state"
 import { createClient } from "@/lib/supabase/client"
-import Image from "next/image"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { pl } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-
-interface Subcategory {
-  id: string
-  parent_category_id: string
-  name: string
-  slug: string
-  icon?: string
-  description?: string
-  image_url?: string
-  image_public_id?: string
-}
 
 interface Category {
   id: string
   name: string
   slug: string
-  icon: string
-  description: string
+  icon?: string
   image_url?: string
-  image_public_id?: string
-  subcategories?: Subcategory[]
 }
 
 interface SearchDialogProps {
@@ -42,390 +26,226 @@ interface SearchDialogProps {
   onOpenChange?: (open: boolean) => void
 }
 
+const fallbackCategories: Category[] = [
+  { id: "paintball", name: "Paintball", slug: "paintball", icon: "🎯" },
+  { id: "gokarty", name: "Gokarty", slug: "gokarty", icon: "🏎️" },
+  { id: "trampoliny", name: "Park trampolin", slug: "park-trampolin", icon: "🤸" },
+  { id: "plac-zabaw", name: "Place zabaw", slug: "plac-zabaw", icon: "🛝" },
+  { id: "park-linowy", name: "Park linowy", slug: "park-linowy", icon: "🧗" },
+  { id: "escape-room", name: "Escape room", slug: "escape-room", icon: "🗝️" },
+]
+
 export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnOpenChange }: SearchDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
-  const urlState = useUrlState()
-  
-  // Filter state
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [categories, setCategories] = useState<Category[]>(fallbackCategories)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [location, setLocation] = useState("")
+  const [date, setDate] = useState("")
+  const [guests, setGuests] = useState(1)
   const [ageMin, setAgeMin] = useState("")
   const [ageMax, setAgeMax] = useState("")
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const urlState = useUrlState()
 
   const isControlled = controlledOpen !== undefined
-  const isOpen = isControlled ? controlledOpen : open
-  const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setOpen
+  const isOpen = isControlled ? controlledOpen : internalOpen
+  const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setInternalOpen
 
   useEffect(() => {
-    const loadCategoriesWithSubcategories = async () => {
-      const s = createClient()
-      
-      // Load categories
-      const { data: categoriesData, error: categoriesError } = await s
-        .from("categories")
-        .select("id,name,slug,icon,description,image_url,image_public_id")
-        .order("name")
-      
-      if (categoriesError || !categoriesData) {
-        setLoading(false)
-        return
+    const loadCategories = async () => {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from("categories")
+          .select("id,name,slug,icon,image_url")
+          .order("name")
+
+        if (data?.length) setCategories(data)
+      } catch {
+        // The visual search flow remains usable with local fallbacks in preview environments.
       }
-      
-      // Load all subcategories
-      const { data: subcategoriesData, error: subcategoriesError } = await s
-        .from("subcategories")
-        .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
-        .order("name")
-      
-      if (!subcategoriesError && subcategoriesData) {
-        // Group subcategories by parent category
-        const categoriesWithSubs = categoriesData.map((cat) => ({
-          ...cat,
-          subcategories: subcategoriesData.filter(
-            (sub) => sub.parent_category_id === cat.id
-          ),
-        }))
-        setCategories(categoriesWithSubs)
-      } else {
-        setCategories(categoriesData)
-      }
-      
-      setLoading(false)
     }
 
-    loadCategoriesWithSubcategories()
+    void loadCategories()
   }, [])
 
-  // Load current filters from URL when dialog opens
   useEffect(() => {
-    if (isOpen) {
-      const currentCategories = urlState.get("categories") || ""
-      setSelectedCategories(currentCategories ? currentCategories.split(",") : [])
-      
-      const currentLocation = urlState.get("q") || ""
-      setLocation(currentLocation)
-      
-      const currentAgeMin = urlState.get("age_min") || ""
-      const currentAgeMax = urlState.get("age_max") || ""
-      setAgeMin(currentAgeMin)
-      setAgeMax(currentAgeMax)
-      
-      const currentDate = urlState.get("date") || ""
-      if (currentDate && /^\d{4}-\d{2}-\d{2}$/.test(currentDate)) {
-        const [year, month, day] = currentDate.split("-").map(Number)
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-          setSelectedDate(new Date(year, month - 1, day))
-        }
-      } else {
-        setSelectedDate(undefined)
-      }
-    }
+    if (!isOpen) return
+
+    const currentCategories = urlState.get("categories") || ""
+    setSelectedCategories(currentCategories ? currentCategories.split(",") : [])
+    setLocation(urlState.get("q") || "")
+    setDate(urlState.get("date") || "")
+    setAgeMin(urlState.get("age_min") || "")
+    setAgeMax(urlState.get("age_max") || "")
+
+    const currentGuests = Number.parseInt(urlState.get("guests") || "1", 10)
+    setGuests(Number.isFinite(currentGuests) && currentGuests > 0 ? currentGuests : 1)
   }, [isOpen])
 
-  const toggleCategory = (categorySlug: string) => {
-    setSelectedCategories((prev) => {
-      if (prev.includes(categorySlug)) {
-        return prev.filter((s) => s !== categorySlug)
-      } else {
-        return [...prev, categorySlug]
-      }
-    })
+  const toggleCategory = (slug: string) => {
+    setSelectedCategories((current) =>
+      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]
+    )
   }
 
-  const toggleCategoryExpansion = (categorySlug: string) => {
-    setExpandedCategories((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(categorySlug)) {
-        newSet.delete(categorySlug)
-      } else {
-        newSet.add(categorySlug)
-      }
-      return newSet
-    })
+  const clearAll = () => {
+    setSelectedCategories([])
+    setLocation("")
+    setDate("")
+    setGuests(1)
+    setAgeMin("")
+    setAgeMax("")
   }
 
   const handleSearch = () => {
-    const updates: Record<string, any> = {
-      page: 1,
+    let normalizedMin = ageMin.trim()
+    let normalizedMax = ageMax.trim()
+
+    const min = Number.parseInt(normalizedMin, 10)
+    const max = Number.parseInt(normalizedMax, 10)
+    if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
+      normalizedMin = String(max)
+      normalizedMax = String(min)
     }
 
-    if (selectedCategories.length > 0) {
-      updates.categories = selectedCategories.join(",")
-    } else {
-      updates.categories = ""
-    }
-
-    if (location.trim()) {
-      updates.q = location.trim()
-    } else {
-      updates.q = ""
-    }
-
-    const parsedAgeMin = ageMin.trim() ? parseInt(ageMin, 10) : null
-    const parsedAgeMax = ageMax.trim() ? parseInt(ageMax, 10) : null
-    const hasValidAgeMin = parsedAgeMin !== null && !Number.isNaN(parsedAgeMin)
-    const hasValidAgeMax = parsedAgeMax !== null && !Number.isNaN(parsedAgeMax)
-
-    let normalizedAgeMin = hasValidAgeMin ? parsedAgeMin : null
-    let normalizedAgeMax = hasValidAgeMax ? parsedAgeMax : null
-
-    if (normalizedAgeMin !== null && normalizedAgeMax !== null && normalizedAgeMin > normalizedAgeMax) {
-      [normalizedAgeMin, normalizedAgeMax] = [normalizedAgeMax, normalizedAgeMin]
-    }
-
-    updates.age_min = normalizedAgeMin !== null ? String(normalizedAgeMin) : ""
-    updates.age_max = normalizedAgeMax !== null ? String(normalizedAgeMax) : ""
-
-    if (selectedDate) {
-      // Format date as YYYY-MM-DD
-      const year = selectedDate.getFullYear()
-      const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0")
-      const day = selectedDate.getDate().toString().padStart(2, "0")
-      updates.date = `${year}-${month}-${day}`
-    } else {
-      updates.date = ""
-    }
-
-    urlState.setMany(updates)
-    setIsOpen(false)
-  }
-
-  const handleClearAll = () => {
-    setSelectedCategories([])
-    setLocation("")
-    setAgeMin("")
-    setAgeMax("")
-    setSelectedDate(undefined)
-    
     urlState.setMany({
-      categories: "",
-      q: "",
-      age_min: "",
-      age_max: "",
-      date: "",
       page: 1,
+      categories: selectedCategories.join(","),
+      q: location.trim(),
+      date,
+      guests: String(guests),
+      age_min: normalizedMin,
+      age_max: normalizedMax,
     })
+    setIsOpen(false)
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl p-0 gap-0 h-full md:h-auto w-full max-h-screen md:max-h-[90vh] flex flex-col" showCloseButton={false}>
-        {/* Hidden title for screen readers */}
-        <DialogTitle className="sr-only">Wyszukiwanie atrakcji</DialogTitle>
-        
-        {/* Close button in top right */}
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute right-4 top-4 rounded-full p-2 hover:bg-gray-100 transition-colors z-10 bg-white shadow-sm"
-        >
-          <X className="h-5 w-5" />
-        </button>
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-[#fffdfa] p-0 md:h-auto md:max-h-[88vh] md:max-w-2xl md:rounded-[28px]"
+      >
+        <DialogTitle className="sr-only">Znajdź atrakcję</DialogTitle>
 
-        {/* Scrollable content area */}
-        <ScrollArea className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6 pb-32">
-            {/* Categories Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Kategorie</h3>
-              {loading ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {categories.map((category) => (
-                    <div key={category.id} className="space-y-2">
-                      {/* Main Category */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={selectedCategories.includes(category.slug) ? "default" : "outline"}
-                          onClick={() => toggleCategory(category.slug)}
-                          className="flex-1 h-auto py-3 px-3 flex items-center justify-start space-x-3 text-sm"
-                        >
-                          {category.image_url ? (
-                            <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                              <Image
-                                src={category.image_url}
-                                alt={category.name}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-2xl flex-shrink-0">{category.icon}</span>
-                          )}
-                          <span className="font-medium text-left flex-1">{category.name}</span>
-                        </Button>
-                        
-                        {/* Expand/Collapse button for subcategories */}
-                        {category.subcategories && category.subcategories.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleCategoryExpansion(category.slug)}
-                            className="flex-shrink-0 h-12 w-12"
-                          >
-                            {expandedCategories.has(category.slug) ? (
-                              <ChevronUp className="h-5 w-5" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
+        <header className="sticky top-0 z-20 border-b border-black/[0.055] bg-white/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:py-5">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.07] bg-white text-foreground"
+              aria-label="Wróć"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="md:hidden"><BrandLogo mobile href={undefined} /></div>
+            <button onClick={clearAll} className="text-xs font-bold text-primary md:text-sm">Wyczyść</button>
+          </div>
 
-                      {/* Subcategories - shown when expanded */}
-                      {category.subcategories && 
-                       category.subcategories.length > 0 && 
-                       expandedCategories.has(category.slug) && (
-                        <div className="pl-4 space-y-1">
-                          {category.subcategories.map((subcategory) => (
-                            <Button
-                              key={subcategory.id}
-                              variant={selectedCategories.includes(subcategory.slug) ? "default" : "outline"}
-                              onClick={() => toggleCategory(subcategory.slug)}
-                              className="w-full h-auto py-2 px-3 flex items-center justify-start space-x-2 text-sm"
-                            >
-                              {subcategory.image_url ? (
-                                <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                                  <Image
-                                    src={subcategory.image_url}
-                                    alt={subcategory.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              ) : subcategory.icon ? (
-                                <span className="text-lg flex-shrink-0">{subcategory.icon}</span>
-                              ) : (
-                                <span className="text-lg flex-shrink-0">•</span>
-                              )}
-                              <span className="font-normal text-left flex-1">{subcategory.name}</span>
-                            </Button>
-                          ))}
-                        </div>
+          <div className="mt-4 md:mt-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary md:text-xs">Odkrywaj</p>
+            <h2 className="mt-1 text-[1.65rem] font-extrabold leading-tight tracking-[-0.045em] text-foreground md:text-3xl">
+              Znajdź coś dla siebie
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground md:text-sm">
+              Wybierz rodzaj atrakcji, miejsce i termin. Resztę pokażemy na mapie.
+            </p>
+          </div>
+        </header>
+
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="space-y-7 px-4 py-5 pb-32 md:px-6 md:py-6">
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><Sparkles className="h-3.5 w-3.5" /></span>
+                <h3 className="text-sm font-extrabold tracking-[-0.02em]">Czego szukasz?</h3>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                {categories.map((category) => {
+                  const selected = selectedCategories.includes(category.slug)
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => toggleCategory(category.slug)}
+                      className={cn(
+                        "flex min-h-[94px] flex-col items-center justify-center rounded-[20px] border bg-white px-2 py-3 text-center transition-all",
+                        selected
+                          ? "border-primary bg-secondary shadow-[0_8px_22px_rgba(244,117,33,0.12)] ring-1 ring-primary/15"
+                          : "border-black/[0.06] shadow-[0_5px_16px_rgba(58,39,20,0.05)]"
                       )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    >
+                      {category.image_url ? (
+                        <span className="relative mb-2 h-10 w-10 overflow-hidden rounded-xl">
+                          <Image src={category.image_url} alt="" fill className="object-cover" sizes="40px" />
+                        </span>
+                      ) : (
+                        <span className="mb-2 text-[28px] leading-none">{category.icon || "✨"}</span>
+                      )}
+                      <span className={cn("line-clamp-2 text-[10.5px] font-bold leading-tight", selected ? "text-primary" : "text-foreground")}>{category.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
 
-            {/* Where Section */}
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold">Gdzie?</h2>
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><MapPin className="h-3.5 w-3.5" /></span>
+                <h3 className="text-sm font-extrabold tracking-[-0.02em]">Gdzie?</h3>
+              </div>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                 <Input
-                  type="text"
-                  placeholder="Wyszukaj kierunki"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="pl-12 h-14 text-base border-2 rounded-xl focus-visible:ring-0 focus-visible:border-primary"
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="Miasto, okolica lub nazwa atrakcji"
+                  className="h-14 rounded-[18px] border-black/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
                 />
               </div>
-            </div>
+            </section>
 
-            {/* When Section - Date Picker */}
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold">Kiedy?</h2>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full h-14 justify-start text-left font-normal border-2 rounded-xl",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-5 w-5" />
-                    {selectedDate ? (
-                      format(selectedDate, "PPP", { locale: pl })
-                    ) : (
-                      <span>Wybierz datę</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <section className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><CalendarDays className="h-3.5 w-3.5" /></span>
+                  <h3 className="text-sm font-extrabold tracking-[-0.02em]">Kiedy?</h3>
+                </div>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                  className="h-14 rounded-[18px] border-black/[0.07] bg-white px-4 text-sm shadow-sm focus-visible:ring-primary/25"
+                />
+              </div>
 
-            {/* Age Section */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Wiek uczestników</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <Input
-                        type="number"
-                        placeholder="Od"
-                        value={ageMin}
-                        onChange={(e) => setAgeMin(e.target.value)}
-                        className="h-10 border-gray-300"
-                        min="0"
-                        max="99"
-                      />
-                    </div>
-                    <span className="text-gray-400">-</span>
-                    <div className="flex-1">
-                      <Input
-                        type="number"
-                        placeholder="Do"
-                        value={ageMax}
-                        onChange={(e) => setAgeMax(e.target.value)}
-                        className="h-10 border-gray-300"
-                        min="0"
-                        max="99"
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><Users className="h-3.5 w-3.5" /></span>
+                  <h3 className="text-sm font-extrabold tracking-[-0.02em]">Ile osób?</h3>
+                </div>
+                <div className="flex h-14 items-center justify-between rounded-[18px] border border-black/[0.07] bg-white px-3 shadow-sm">
+                  <button type="button" onClick={() => setGuests((value) => Math.max(1, value - 1))} className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-primary" aria-label="Mniej osób"><Minus className="h-4 w-4" /></button>
+                  <div className="text-center"><span className="block text-base font-extrabold">{guests}</span><span className="block text-[9px] font-semibold text-muted-foreground">{guests === 1 ? "osoba" : "osoby"}</span></div>
+                  <button type="button" onClick={() => setGuests((value) => Math.min(30, value + 1))} className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-primary" aria-label="Więcej osób"><Plus className="h-4 w-4" /></button>
                 </div>
               </div>
-            </div>
+            </section>
+
+            <section>
+              <h3 className="mb-3 text-sm font-extrabold tracking-[-0.02em]">Wiek uczestników <span className="font-medium text-muted-foreground">(opcjonalnie)</span></h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 rounded-[16px] border-black/[0.07] bg-white shadow-sm" />
+                <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 rounded-[16px] border-black/[0.07] bg-white shadow-sm" />
+              </div>
+            </section>
           </div>
         </ScrollArea>
 
-        {/* Bottom Action Bar - Fixed at bottom */}
-        <div className="border-t p-4 flex items-center justify-between bg-white flex-shrink-0">
-          <Button 
-            variant="ghost" 
-            onClick={handleClearAll}
-            className="text-sm underline hover:no-underline"
-          >
-            Wyczyść wszystko
-          </Button>
-          
-          {/* Selection Counter */}
-          {selectedCategories.length > 0 && (
-            <div className="text-sm text-gray-600 font-medium">
-              Wybrano: {selectedCategories.length}
-            </div>
-          )}
-          
-          <Button 
-            onClick={handleSearch}
-            className="bg-pink-600 hover:bg-pink-700 text-white px-8 rounded-lg"
-            size="lg"
-          >
-            <Search className="h-4 w-4 mr-2" />
-            Szukaj
+        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-black/[0.055] bg-white/96 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:static md:px-6 md:pb-5">
+          <Button onClick={handleSearch} className="h-13 w-full rounded-full text-sm font-extrabold orange-glow md:h-12">
+            <Search className="mr-2 h-4 w-4" />
+            Pokaż atrakcje
           </Button>
         </div>
       </DialogContent>
