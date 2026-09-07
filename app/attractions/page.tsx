@@ -65,15 +65,7 @@ export default async function AttractionsPage() {
 
   return (
     <DiscoveryChrome>
-      <main className="mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-4 sm:py-7 xl:px-6">
-        <div className="mb-5 flex items-end justify-between gap-4 px-1">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Mapa EnjoyHub</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">Odkrywaj atrakcje</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca, ceny i dostępność bezpośrednio na mapie.</p>
-          </div>
-        </div>
-
+      <main className="mx-auto w-full max-w-[1600px] px-3 py-3 sm:px-4 sm:py-5 xl:px-6">
         {errorMessage ? (
           <Card className="mb-5 border-primary/15 bg-secondary/60 shadow-none">
             <CardContent className="flex items-start gap-3 py-4 text-sm">
