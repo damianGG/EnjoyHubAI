@@ -120,7 +120,7 @@ function markerVisual(attraction: Attraction) {
     getEnjoyHubCategoryIcon(attraction.property_type)
 
   if (localImage) {
-    return `<img class="eh-object-marker__image eh-object-marker__image--local" src="${escapeHtml(localImage)}" alt="" loading="lazy" />`
+    return `<img class="eh-object-marker__image eh-object-marker__image--local" src="${escapeHtml(localImage)}" alt="" loading="lazy" style="display:block;width:42px;height:42px;max-width:42px;max-height:42px;object-fit:contain;object-position:center;padding:3px;box-sizing:border-box;background:#fffaf5" />`
   }
 
   const remoteImage = safeRemoteImageUrl(attraction.subcategory_image_url || attraction.category_image_url)
@@ -438,7 +438,7 @@ export default function AttractionMap({
           .eh-object-marker__halo { position:absolute; top:-4px; left:2px; width:56px; height:56px; border-radius:20px; background:rgba(244,117,33,.22); opacity:0; pointer-events:none; }
           .eh-object-marker__bubble { position:relative; z-index:2; display:grid; width:52px; height:52px; place-items:center; overflow:hidden; border:2px solid rgba(11,18,32,.12); border-radius:18px; background:rgba(255,255,255,.98); box-shadow:0 7px 20px rgba(11,18,32,.20),0 2px 5px rgba(11,18,32,.10); transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
           .eh-object-marker__image { width:100%; height:100%; object-fit:cover; }
-          .eh-object-marker__image--local { object-fit:contain; padding:2px; background:#fffaf5; }
+          .eh-object-marker__image--local { width:42px; height:42px; max-width:42px; max-height:42px; object-fit:contain; object-position:center; padding:3px; box-sizing:border-box; background:#fffaf5; }
           .eh-object-marker__emoji { font-size:28px; line-height:1; }
           .eh-object-marker__tip { position:absolute; z-index:1; bottom:4px; left:25px; width:10px; height:10px; transform:rotate(45deg); border-right:1px solid rgba(11,18,32,.10); border-bottom:1px solid rgba(11,18,32,.10); background:white; }
           .eh-object-marker:hover .eh-object-marker__bubble { transform:translateY(-3px) scale(1.07); border-color:rgba(244,117,33,.45); }
