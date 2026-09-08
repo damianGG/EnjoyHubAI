@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { generateAttractionSlug } from "@/lib/utils"
 
 interface Attraction {
@@ -46,9 +47,6 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
   "Wrocław, Poland": [51.1079, 17.0385],
   "Gdańsk, Poland": [54.352, 18.6466],
   "Poznań, Poland": [52.4064, 16.9252],
-  "New York, United States": [40.7128, -74.006],
-  "London, United Kingdom": [51.5074, -0.1278],
-  "Paris, France": [48.8566, 2.3522],
 }
 
 const CATEGORY_ICON_FALLBACKS: Record<string, string> = {
@@ -62,20 +60,20 @@ const CATEGORY_ICON_FALLBACKS: Record<string, string> = {
   "park-linowy": "🧗",
   "adventure-park": "🧗",
   "escape-room": "🗝️",
-  escape_room: "🗝️",
   dmuchance: "🎈",
-  dmuchaniec: "🎈",
   bowling: "🎳",
   cinema: "🎬",
   restaurant: "🍽️",
-  "sports-center": "⚽",
-  sports_center: "⚽",
+}
+
+function normalizeSlug(value?: string | null) {
+  return (value ?? "").trim().toLowerCase().replaceAll("_", "-")
 }
 
 function stableOffset(seed: string, axis: number) {
   let hash = 2166136261
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index) + axis * 31
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i) + axis * 31
     hash = Math.imul(hash, 16777619)
   }
   return ((Math.abs(hash) % 1000) / 1000 - 0.5) * 0.08
@@ -104,7 +102,7 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;")
 }
 
-function safeImageUrl(value?: string | null) {
+function safeRemoteImageUrl(value?: string | null) {
   if (!value) return null
   try {
     const url = new URL(value)
@@ -116,15 +114,21 @@ function safeImageUrl(value?: string | null) {
 }
 
 function markerVisual(attraction: Attraction) {
-  const imageUrl = safeImageUrl(attraction.subcategory_image_url || attraction.category_image_url)
-  if (imageUrl) {
-    return `<img class="eh-object-marker__image" src="${imageUrl}" alt="" loading="lazy" />`
+  const localImage =
+    getEnjoyHubCategoryIcon(attraction.subcategory_slug) ||
+    getEnjoyHubCategoryIcon(attraction.category_slug) ||
+    getEnjoyHubCategoryIcon(attraction.property_type)
+
+  if (localImage) {
+    return `<img class="eh-object-marker__image eh-object-marker__image--local" src="${escapeHtml(localImage)}" alt="" loading="lazy" />`
   }
 
-  const slug = (attraction.subcategory_slug || attraction.category_slug || attraction.property_type || "")
-    .trim()
-    .toLowerCase()
-    .replaceAll("_", "-")
+  const remoteImage = safeRemoteImageUrl(attraction.subcategory_image_url || attraction.category_image_url)
+  if (remoteImage) {
+    return `<img class="eh-object-marker__image" src="${remoteImage}" alt="" loading="lazy" />`
+  }
+
+  const slug = normalizeSlug(attraction.subcategory_slug || attraction.category_slug || attraction.property_type)
   const icon = attraction.subcategory_icon || attraction.category_icon || CATEGORY_ICON_FALLBACKS[slug] || "✨"
   return `<span class="eh-object-marker__emoji" aria-hidden="true">${escapeHtml(icon)}</span>`
 }
@@ -140,30 +144,18 @@ function markerHtml(attraction: Attraction, index: number) {
   `
 }
 
-function focusMarkerAboveMobileCard(map: any, marker: any, cardRef: { current: HTMLDivElement | null }) {
+function focusMarkerAboveCard(map: any, marker: any, cardRef: { current: HTMLDivElement | null }) {
   if (typeof window === "undefined" || !map || !marker) return
-
   window.setTimeout(() => {
     if (!map.getSize || !marker.getLatLng) return
-
     const size = map.getSize()
     const point = map.latLngToContainerPoint(marker.getLatLng())
-    const cardHeight = cardRef.current?.getBoundingClientRect().height ?? Math.min(330, size.y * 0.52)
-    const bottomUi = 84
-    const openMapHeight = Math.max(130, size.y - cardHeight - bottomUi)
+    const cardHeight = cardRef.current?.getBoundingClientRect().height ?? Math.min(340, size.y * 0.52)
+    const openHeight = Math.max(140, size.y - cardHeight - 78)
     const targetX = size.x / 2
-    const targetY = Math.max(78, Math.min(165, openMapHeight * 0.53))
-    const offsetX = point.x - targetX
-    const offsetY = point.y - targetY
-
-    if (Math.abs(offsetX) < 4 && Math.abs(offsetY) < 4) return
-
-    map.panBy([offsetX, offsetY], {
-      animate: true,
-      duration: 0.35,
-      easeLinearity: 0.25,
-    })
-  }, 100)
+    const targetY = Math.max(80, Math.min(165, openHeight * 0.5))
+    map.panBy([point.x - targetX, point.y - targetY], { animate: true, duration: 0.35 })
+  }, 110)
 }
 
 export default function AttractionMap({
@@ -180,6 +172,7 @@ export default function AttractionMap({
   const markersByIdRef = useRef<Map<string, any>>(new Map())
   const popupCardRef = useRef<HTMLDivElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
+
   const [map, setMap] = useState<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
@@ -187,15 +180,14 @@ export default function AttractionMap({
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return
-
     let disposed = false
 
-    async function initMap() {
+    void (async () => {
       const L = (await import("leaflet")).default
       if (disposed || !mapRef.current) return
-
       leafletRef.current = L
-      const mapInstance = L.map(mapRef.current, {
+
+      const instance = L.map(mapRef.current, {
         center: immersiveMobile ? [52.2297, 21.0122] : [52.0693, 19.4803],
         zoom: immersiveMobile ? 11 : 6,
         zoomControl: false,
@@ -206,34 +198,28 @@ export default function AttractionMap({
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: "abcd",
         maxZoom: 20,
-      }).addTo(mapInstance)
+      }).addTo(instance)
 
-      L.control.zoom({ position: "topleft" }).addTo(mapInstance)
-      markerLayerRef.current = L.layerGroup().addTo(mapInstance)
-      mapInstanceRef.current = mapInstance
-      setMap(mapInstance)
-    }
-
-    void initMap()
+      L.control.zoom({ position: "topleft" }).addTo(instance)
+      markerLayerRef.current = L.layerGroup().addTo(instance)
+      mapInstanceRef.current = instance
+      setMap(instance)
+    })()
 
     return () => {
       disposed = true
       markersByIdRef.current.clear()
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
-      }
+      mapInstanceRef.current?.remove()
+      mapInstanceRef.current = null
     }
   }, [immersiveMobile])
 
   useEffect(() => {
     if (!map || !leafletRef.current || !markerLayerRef.current) return
-
     const L = leafletRef.current
     markerLayerRef.current.clearLayers()
     markersByIdRef.current.clear()
-
-    if (attractions.length === 0) return
+    if (!attractions.length) return
 
     const bounds = L.latLngBounds([])
 
@@ -244,7 +230,6 @@ export default function AttractionMap({
           : getFallbackCoordinates(attraction)
 
       bounds.extend(coordinates)
-
       const icon = L.divIcon({
         html: markerHtml(attraction, index),
         className: "eh-object-marker-wrapper",
@@ -264,7 +249,7 @@ export default function AttractionMap({
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
         setPopupImageIndex(0)
-        if (immersiveMobile) focusMarkerAboveMobileCard(map, marker, popupCardRef)
+        if (immersiveMobile) focusMarkerAboveCard(map, marker, popupCardRef)
       })
       marker.addTo(markerLayerRef.current)
       markersByIdRef.current.set(attraction.id, marker)
@@ -289,9 +274,7 @@ export default function AttractionMap({
   }, [selectedAttraction, attractions])
 
   useEffect(() => {
-    if (popupAttraction && !attractions.some((attraction) => attraction.id === popupAttraction.id)) {
-      setPopupAttraction(null)
-    }
+    if (popupAttraction && !attractions.some((item) => item.id === popupAttraction.id)) setPopupAttraction(null)
   }, [attractions, popupAttraction])
 
   useEffect(() => {
@@ -301,27 +284,25 @@ export default function AttractionMap({
 
   useEffect(() => {
     if (!map) return
-    const timeout = window.setTimeout(() => map.invalidateSize(), 160)
-    return () => window.clearTimeout(timeout)
+    const timer = window.setTimeout(() => map.invalidateSize(), 160)
+    return () => window.clearTimeout(timer)
   }, [isFullscreen, map])
 
-  const popupImages = popupAttraction
-    ? (popupAttraction.images?.filter((image): image is string => Boolean(image)) ?? [])
-    : []
-  const galleryImages = popupImages.length > 0 ? popupImages : ["/placeholder.jpg"]
-  const desktopPreviewImage = galleryImages[0]
-
-  const handleGalleryScroll = () => {
-    const element = galleryRef.current
-    if (!element || element.clientWidth <= 0) return
-    const index = Math.round(element.scrollLeft / element.clientWidth)
-    setPopupImageIndex(Math.max(0, Math.min(index, galleryImages.length - 1)))
-  }
+  const galleryImages = popupAttraction?.images?.filter(Boolean).length
+    ? popupAttraction.images!.filter(Boolean)
+    : ["/placeholder.jpg"]
 
   const closePopup = () => {
     setPopupAttraction(null)
     setPopupImageIndex(0)
     onAttractionSelect?.(null)
+  }
+
+  const handleGalleryScroll = () => {
+    const el = galleryRef.current
+    if (!el || !el.clientWidth) return
+    const next = Math.round(el.scrollLeft / el.clientWidth)
+    setPopupImageIndex(Math.max(0, Math.min(next, galleryImages.length - 1)))
   }
 
   return (
@@ -350,18 +331,6 @@ export default function AttractionMap({
           </Button>
         </div>
 
-        {attractions.length > 0 && !immersiveMobile && (
-          <div className="absolute left-3 top-[104px] z-[500] rounded-full border border-black/[0.07] bg-white/95 px-3 py-2 text-xs font-semibold text-[#0b1220] shadow-md backdrop-blur">
-            {attractions.length} {attractions.length === 1 ? "atrakcja" : "atrakcji"}
-          </div>
-        )}
-
-        {attractions.length === 0 && immersiveMobile && (
-          <div className="absolute left-1/2 top-4 z-[500] -translate-x-1/2 rounded-full border border-black/[0.07] bg-white/95 px-4 py-2 text-[11px] font-semibold text-muted-foreground shadow-md backdrop-blur">
-            Zmień filtry lub przesuń mapę
-          </div>
-        )}
-
         {popupAttraction && immersiveMobile && (
           <div
             ref={popupCardRef}
@@ -377,116 +346,66 @@ export default function AttractionMap({
                 >
                   {galleryImages.map((image, index) => (
                     <div key={`${image}-${index}`} className="relative h-full min-w-full snap-center">
-                      <Image
-                        src={image}
-                        alt={`${popupAttraction.title} — zdjęcie ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 520px"
-                        priority={index === 0}
-                      />
+                      <Image src={image} alt={popupAttraction.title} fill className="object-cover" sizes="(max-width: 640px) 96vw, 520px" />
                     </div>
                   ))}
                 </div>
 
-                <span className="absolute left-3 top-3 z-20 rounded-full bg-white/94 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-primary shadow-md backdrop-blur">
-                  Atrakcja
-                </span>
-
                 <button
                   type="button"
                   onClick={closePopup}
-                  className="absolute right-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-white/96 text-foreground shadow-md backdrop-blur"
+                  className="absolute right-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-full bg-white/95 shadow-md"
                   aria-label="Zamknij podgląd atrakcji"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
 
                 {galleryImages.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-1.5 backdrop-blur-sm">
+                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/25 px-2.5 py-1.5 backdrop-blur-sm">
                     {galleryImages.slice(0, 7).map((_, index) => (
                       <span
                         key={index}
-                        className={`block rounded-full bg-white transition-all ${index === popupImageIndex ? "h-2 w-2" : "h-1.5 w-1.5 opacity-70"}`}
+                        className={`h-1.5 w-1.5 rounded-full transition-all ${index === popupImageIndex ? "w-3 bg-white" : "bg-white/55"}`}
                       />
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="px-4 pb-4 pt-3.5">
+              <Link href={hrefFor(popupAttraction)} className="block px-4 pb-4 pt-3.5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <h3 className="line-clamp-2 text-[17px] font-extrabold leading-tight tracking-[-0.025em] text-foreground">
                       {popupAttraction.title}
                     </h3>
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="truncate">{popupAttraction.city}</span>
+                      {popupAttraction.city}
                     </p>
                   </div>
-
                   {Boolean(popupAttraction.avgRating) && (
-                    <span className="flex shrink-0 items-center gap-1 text-sm font-extrabold text-foreground">
-                      <Star className="h-4 w-4 fill-foreground text-foreground" />
-                      {popupAttraction.avgRating?.toFixed(2)}
-                      {popupAttraction.reviewCount ? <span className="font-medium text-muted-foreground">({popupAttraction.reviewCount})</span> : null}
+                    <span className="flex shrink-0 items-center gap-1 text-sm font-bold">
+                      <Star className="h-4 w-4 fill-primary text-primary" />
+                      {popupAttraction.avgRating?.toFixed(1)}
                     </span>
                   )}
                 </div>
 
-                <div className="mt-2 flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
-                  {popupAttraction.max_guests > 0 && (
-                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />do {popupAttraction.max_guests} osób</span>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-end justify-between gap-3 border-t border-black/[0.055] pt-3">
+                <div className="mt-3 flex items-end justify-between gap-3 border-t border-black/[0.05] pt-3">
                   <div>
-                    <span className="text-[10px] font-medium text-muted-foreground">od </span>
-                    <span className="text-[20px] font-extrabold tracking-[-0.03em] text-foreground">{Math.round(popupAttraction.price_per_night)} zł</span>
-                    <span className="text-[10px] text-muted-foreground"> / os.</span>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</div>
+                    <span className="text-lg font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span>
+                    <span className="text-[11px] text-muted-foreground"> / os.</span>
                   </div>
-                  <Link
-                    href={hrefFor(popupAttraction)}
-                    className="flex h-10 items-center rounded-full bg-primary px-4 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(244,117,33,0.24)]"
-                  >
-                    Szczegóły <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {popupAttraction && !immersiveMobile && (
-          <div className="absolute bottom-4 left-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
-            <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_20px_54px_rgba(28,20,14,0.28)] ring-1 ring-black/[0.07]">
-              <button
-                type="button"
-                onClick={closePopup}
-                className="absolute right-3 top-3 z-30 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-md"
-                aria-label="Zamknij podgląd atrakcji"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              <Link href={hrefFor(popupAttraction)} className="grid grid-cols-[105px_1fr]">
-                <div className="relative min-h-[126px] overflow-hidden bg-muted">
-                  <Image src={desktopPreviewImage} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
-                </div>
-                <div className="min-w-0 p-3.5 pr-11">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded-full bg-secondary px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-primary">Atrakcja</span>
-                    {Boolean(popupAttraction.avgRating) && (
-                      <span className="flex items-center gap-1 text-[11px] font-bold"><Star className="h-3.5 w-3.5 fill-primary text-primary" />{popupAttraction.avgRating?.toFixed(1)}</span>
+                  <div className="flex items-center gap-2">
+                    {popupAttraction.max_guests > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" /> do {popupAttraction.max_guests}
+                      </span>
                     )}
-                  </div>
-                  <h3 className="line-clamp-2 text-[14px] font-extrabold leading-tight tracking-[-0.025em] text-foreground">{popupAttraction.title}</h3>
-                  <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />{popupAttraction.city}</p>
-                  <div className="mt-3 flex items-end justify-between gap-2">
-                    <div><span className="text-[10px] text-muted-foreground">od </span><span className="text-base font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span><span className="text-[10px] text-muted-foreground"> / os.</span></div>
-                    <span className="flex items-center text-[11px] font-bold text-primary">Szczegóły <ChevronRight className="h-3.5 w-3.5" /></span>
+                    <span className="flex items-center rounded-full bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary">
+                      Szczegóły <ChevronRight className="h-3.5 w-3.5" />
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -494,129 +413,45 @@ export default function AttractionMap({
           </div>
         )}
 
+        {popupAttraction && !immersiveMobile && (
+          <div className="absolute bottom-4 left-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
+            <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/[0.07]">
+              <Link href={hrefFor(popupAttraction)} className="grid grid-cols-[105px_1fr]">
+                <div className="relative min-h-[126px] bg-muted">
+                  <Image src={galleryImages[0]} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
+                </div>
+                <div className="min-w-0 p-3.5 pr-10">
+                  <h3 className="line-clamp-2 text-sm font-extrabold">{popupAttraction.title}</h3>
+                  <p className="mt-2 text-xs text-muted-foreground">{popupAttraction.city}</p>
+                  <p className="mt-4 text-base font-extrabold">od {Math.round(popupAttraction.price_per_night)} zł</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
+
         <style>{`
-          .eh-object-marker-wrapper {
-            background: transparent !important;
-            border: 0 !important;
-            overflow: visible !important;
-          }
-          .eh-object-marker {
-            --eh-orange: #f47521;
-            position: relative;
-            display: grid;
-            height: 64px;
-            width: 60px;
-            place-items: start center;
-            transform-origin: 50% 92%;
-            animation: eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both;
-            animation-delay: var(--eh-enter-delay, 0ms);
-            cursor: pointer;
-          }
-          .eh-object-marker__halo {
-            position: absolute;
-            top: -4px;
-            left: 2px;
-            width: 56px;
-            height: 56px;
-            border-radius: 20px;
-            background: rgba(244,117,33,.22);
-            opacity: 0;
-            pointer-events: none;
-          }
-          .eh-object-marker__bubble {
-            position: relative;
-            z-index: 2;
-            display: grid;
-            width: 52px;
-            height: 52px;
-            place-items: center;
-            overflow: hidden;
-            border: 2px solid rgba(11,18,32,.12);
-            border-radius: 18px;
-            background: rgba(255,255,255,.98);
-            box-shadow: 0 7px 20px rgba(11,18,32,.20), 0 2px 5px rgba(11,18,32,.10);
-            transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
-            will-change: transform;
-          }
-          .eh-object-marker__emoji {
-            font-size: 28px;
-            line-height: 1;
-            filter: saturate(1.05);
-          }
-          .eh-object-marker__image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-          .eh-object-marker__tip {
-            position: absolute;
-            z-index: 1;
-            bottom: 4px;
-            left: 25px;
-            width: 10px;
-            height: 10px;
-            transform: rotate(45deg);
-            border-right: 1px solid rgba(11,18,32,.10);
-            border-bottom: 1px solid rgba(11,18,32,.10);
-            background: white;
-          }
-          .eh-object-marker:hover .eh-object-marker__bubble {
-            transform: translateY(-3px) scale(1.07);
-            border-color: rgba(244,117,33,.45);
-            box-shadow: 0 11px 27px rgba(11,18,32,.23), 0 3px 7px rgba(244,117,33,.13);
-          }
-          .eh-object-marker--selected .eh-object-marker__halo {
-            animation: eh-marker-selected-pulse 1.8s ease-out infinite;
-          }
-          .eh-object-marker--selected .eh-object-marker__bubble {
-            transform: translateY(-4px) scale(1.1);
-            border-color: var(--eh-orange);
-            background: #fff8f2;
-            box-shadow: 0 12px 30px rgba(244,117,33,.28), 0 4px 9px rgba(11,18,32,.14);
-          }
-          .eh-object-marker-tooltip {
-            border: 0 !important;
-            border-radius: 12px !important;
-            background: rgba(35,30,26,.96) !important;
-            color: white !important;
-            box-shadow: 0 8px 24px rgba(11,18,32,.18) !important;
-            padding: 7px 10px !important;
-            font-size: 11px !important;
-            font-weight: 700 !important;
-          }
-          .eh-object-marker-tooltip::before { display: none !important; }
-          .eh-map-gallery { scrollbar-width: none; -ms-overflow-style: none; }
           .eh-map-gallery::-webkit-scrollbar { display: none; }
-          @keyframes eh-marker-enter {
-            from { opacity: 0; transform: translateY(10px) scale(.76); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          @keyframes eh-marker-selected-pulse {
-            0% { opacity: .38; transform: scale(.84); }
-            60% { opacity: .04; transform: scale(1.22); }
-            100% { opacity: 0; transform: scale(1.28); }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .eh-object-marker,
-            .eh-object-marker--selected .eh-object-marker__halo {
-              animation: none !important;
-            }
-            .eh-object-marker__bubble { transition: none !important; }
-          }
-          .leaflet-control-zoom {
-            border: 0 !important;
-            box-shadow: 0 5px 18px rgba(11,18,32,.18) !important;
-            margin-left: 12px !important;
-            margin-top: 12px !important;
-          }
-          .leaflet-control-zoom a {
-            color: #0b1220 !important;
-            border: 0 !important;
-            width: 38px !important;
-            height: 38px !important;
-            line-height: 38px !important;
-          }
-          .leaflet-control-attribution { font-size: 8px !important; }
+          .eh-map-gallery { scrollbar-width: none; }
+          .eh-object-marker-wrapper { background: transparent !important; border: 0 !important; overflow: visible !important; }
+          .eh-object-marker { --eh-orange:#f47521; position:relative; display:grid; height:64px; width:60px; place-items:start center; transform-origin:50% 92%; animation:eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both; animation-delay:var(--eh-enter-delay,0ms); cursor:pointer; }
+          .eh-object-marker__halo { position:absolute; top:-4px; left:2px; width:56px; height:56px; border-radius:20px; background:rgba(244,117,33,.22); opacity:0; pointer-events:none; }
+          .eh-object-marker__bubble { position:relative; z-index:2; display:grid; width:52px; height:52px; place-items:center; overflow:hidden; border:2px solid rgba(11,18,32,.12); border-radius:18px; background:rgba(255,255,255,.98); box-shadow:0 7px 20px rgba(11,18,32,.20),0 2px 5px rgba(11,18,32,.10); transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
+          .eh-object-marker__image { width:100%; height:100%; object-fit:cover; }
+          .eh-object-marker__image--local { object-fit:contain; padding:2px; background:#fffaf5; }
+          .eh-object-marker__emoji { font-size:28px; line-height:1; }
+          .eh-object-marker__tip { position:absolute; z-index:1; bottom:4px; left:25px; width:10px; height:10px; transform:rotate(45deg); border-right:1px solid rgba(11,18,32,.10); border-bottom:1px solid rgba(11,18,32,.10); background:white; }
+          .eh-object-marker:hover .eh-object-marker__bubble { transform:translateY(-3px) scale(1.07); border-color:rgba(244,117,33,.45); }
+          .eh-object-marker--selected .eh-object-marker__halo { animation:eh-marker-selected-pulse 1.8s ease-out infinite; }
+          .eh-object-marker--selected .eh-object-marker__bubble { transform:translateY(-4px) scale(1.1); border-color:var(--eh-orange); box-shadow:0 12px 30px rgba(244,117,33,.28); }
+          .eh-object-marker-tooltip { border:0 !important; border-radius:12px !important; background:rgba(35,30,26,.96) !important; color:white !important; box-shadow:0 8px 24px rgba(11,18,32,.18) !important; padding:7px 10px !important; font-size:11px !important; font-weight:700 !important; }
+          .eh-object-marker-tooltip::before { display:none !important; }
+          .leaflet-control-zoom { border:0 !important; box-shadow:0 5px 18px rgba(11,18,32,.18) !important; margin-top:12px !important; margin-left:12px !important; }
+          .leaflet-control-zoom a { color:#0b1220 !important; border:0 !important; }
+          .leaflet-control-attribution { font-size:8px !important; }
+          @keyframes eh-marker-enter { from { opacity:0; transform:translateY(10px) scale(.76); } to { opacity:1; transform:translateY(0) scale(1); } }
+          @keyframes eh-marker-selected-pulse { 0% { opacity:.38; transform:scale(.84); } 60% { opacity:.04; transform:scale(1.22); } 100% { opacity:0; transform:scale(1.28); } }
+          @media (prefers-reduced-motion: reduce) { .eh-object-marker,.eh-object-marker--selected .eh-object-marker__halo { animation:none !important; } .eh-object-marker__bubble { transition:none !important; } }
         `}</style>
       </div>
 
