@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, MapPin, Maximize2, Minimize2, Star, X } from "lucide-react"
+import { ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { generateAttractionSlug } from "@/lib/utils"
@@ -54,6 +54,7 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
 const CATEGORY_ICON_FALLBACKS: Record<string, string> = {
   paintball: "🎯",
   gokarty: "🏎️",
+  "go-karts": "🏎️",
   "park-trampolin": "🤸",
   trampoliny: "🤸",
   "plac-zabaw": "🛝",
@@ -130,7 +131,6 @@ function markerVisual(attraction: Attraction) {
 
 function markerHtml(attraction: Attraction, index: number) {
   const delay = Math.min(index * 24, 216)
-
   return `
     <div class="eh-object-marker" style="--eh-enter-delay:${delay}ms" aria-label="${escapeHtml(attraction.title)}">
       <span class="eh-object-marker__halo" aria-hidden="true"></span>
@@ -140,7 +140,7 @@ function markerHtml(attraction: Attraction, index: number) {
   `
 }
 
-function focusMarkerAboveMobileCard(map: any, marker: any) {
+function focusMarkerAboveMobileCard(map: any, marker: any, cardRef: { current: HTMLDivElement | null }) {
   if (typeof window === "undefined" || !map || !marker) return
 
   window.setTimeout(() => {
@@ -148,8 +148,11 @@ function focusMarkerAboveMobileCard(map: any, marker: any) {
 
     const size = map.getSize()
     const point = map.latLngToContainerPoint(marker.getLatLng())
+    const cardHeight = cardRef.current?.getBoundingClientRect().height ?? Math.min(330, size.y * 0.52)
+    const bottomUi = 84
+    const openMapHeight = Math.max(130, size.y - cardHeight - bottomUi)
     const targetX = size.x / 2
-    const targetY = Math.max(112, Math.min(180, size.y * 0.29))
+    const targetY = Math.max(78, Math.min(165, openMapHeight * 0.53))
     const offsetX = point.x - targetX
     const offsetY = point.y - targetY
 
@@ -160,7 +163,7 @@ function focusMarkerAboveMobileCard(map: any, marker: any) {
       duration: 0.35,
       easeLinearity: 0.25,
     })
-  }, 70)
+  }, 100)
 }
 
 export default function AttractionMap({
@@ -175,9 +178,12 @@ export default function AttractionMap({
   const leafletRef = useRef<any>(null)
   const markerLayerRef = useRef<any>(null)
   const markersByIdRef = useRef<Map<string, any>>(new Map())
+  const popupCardRef = useRef<HTMLDivElement>(null)
+  const galleryRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
+  const [popupImageIndex, setPopupImageIndex] = useState(0)
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return
@@ -202,7 +208,7 @@ export default function AttractionMap({
         maxZoom: 20,
       }).addTo(mapInstance)
 
-      L.control.zoom({ position: "bottomright" }).addTo(mapInstance)
+      L.control.zoom({ position: "topleft" }).addTo(mapInstance)
       markerLayerRef.current = L.layerGroup().addTo(mapInstance)
       mapInstanceRef.current = mapInstance
       setMap(mapInstance)
@@ -211,6 +217,7 @@ export default function AttractionMap({
     void initMap()
 
     return () => {
+      disposed = true
       markersByIdRef.current.clear()
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
@@ -256,7 +263,8 @@ export default function AttractionMap({
       marker.on("click", () => {
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
-        if (immersiveMobile) focusMarkerAboveMobileCard(map, marker)
+        setPopupImageIndex(0)
+        if (immersiveMobile) focusMarkerAboveMobileCard(map, marker, popupCardRef)
       })
       marker.addTo(markerLayerRef.current)
       markersByIdRef.current.set(attraction.id, marker)
@@ -287,20 +295,44 @@ export default function AttractionMap({
   }, [attractions, popupAttraction])
 
   useEffect(() => {
+    setPopupImageIndex(0)
+    if (galleryRef.current) galleryRef.current.scrollLeft = 0
+  }, [popupAttraction?.id])
+
+  useEffect(() => {
     if (!map) return
     const timeout = window.setTimeout(() => map.invalidateSize(), 160)
     return () => window.clearTimeout(timeout)
   }, [isFullscreen, map])
 
-  const previewImage = popupAttraction?.images?.find(Boolean) || "/placeholder.jpg"
+  const popupImages = popupAttraction
+    ? (popupAttraction.images?.filter((image): image is string => Boolean(image)) ?? [])
+    : []
+  const galleryImages = popupImages.length > 0 ? popupImages : ["/placeholder.jpg"]
+  const desktopPreviewImage = galleryImages[0]
+
+  const handleGalleryScroll = () => {
+    const element = galleryRef.current
+    if (!element || element.clientWidth <= 0) return
+    const index = Math.round(element.scrollLeft / element.clientWidth)
+    setPopupImageIndex(Math.max(0, Math.min(index, galleryImages.length - 1)))
+  }
+
+  const closePopup = () => {
+    setPopupAttraction(null)
+    setPopupImageIndex(0)
+    onAttractionSelect?.(null)
+  }
 
   return (
     <>
       <div
-        className={`relative isolate z-0 h-full overflow-hidden bg-muted ${
-          immersiveMobile ? "min-h-0" : "min-h-80"
-        } ${
-          isFullscreen ? "fixed inset-3 z-[1400] min-h-0 rounded-3xl shadow-2xl" : immersiveMobile ? "rounded-none" : "rounded-3xl"
+        className={`relative isolate z-0 h-full overflow-hidden bg-muted ${immersiveMobile ? "min-h-0" : "min-h-80"} ${
+          isFullscreen
+            ? "fixed inset-0 z-[1400] min-h-0 rounded-none shadow-2xl md:inset-3 md:rounded-3xl"
+            : immersiveMobile
+              ? "rounded-none"
+              : "rounded-3xl"
         } ${className}`}
       >
         <div ref={mapRef} className={`h-full w-full ${immersiveMobile ? "min-h-0" : "min-h-80"}`} />
@@ -318,8 +350,8 @@ export default function AttractionMap({
           </Button>
         </div>
 
-        {attractions.length > 0 && (
-          <div className={`absolute left-3 top-3 z-[500] rounded-full border border-black/[0.07] bg-white/95 px-3 py-2 text-xs font-semibold text-[#0b1220] shadow-md backdrop-blur ${immersiveMobile ? "hidden sm:block" : ""}`}>
+        {attractions.length > 0 && !immersiveMobile && (
+          <div className="absolute left-3 top-[104px] z-[500] rounded-full border border-black/[0.07] bg-white/95 px-3 py-2 text-xs font-semibold text-[#0b1220] shadow-md backdrop-blur">
             {attractions.length} {attractions.length === 1 ? "atrakcja" : "atrakcji"}
           </div>
         )}
@@ -330,45 +362,131 @@ export default function AttractionMap({
           </div>
         )}
 
-        {popupAttraction && (
+        {popupAttraction && immersiveMobile && (
           <div
-            className={`absolute left-1/2 z-[800] -translate-x-1/2 ${
-              immersiveMobile ? "w-[calc(100%-1rem)] max-w-[460px]" : "bottom-4 w-[calc(100%-2rem)] max-w-sm"
-            }`}
-            style={immersiveMobile ? { bottom: "calc(max(16px, env(safe-area-inset-bottom)) + 66px)" } : undefined}
+            ref={popupCardRef}
+            className="absolute left-1/2 z-[800] w-[calc(100%-1.25rem)] max-w-[520px] -translate-x-1/2"
+            style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 64px)" }}
           >
-            <div className={`relative overflow-hidden bg-white shadow-[0_20px_54px_rgba(28,20,14,0.28)] ring-1 ring-black/[0.07] ${immersiveMobile ? "rounded-[28px]" : "rounded-2xl"}`}>
+            <div className="relative overflow-hidden rounded-[28px] bg-white shadow-[0_22px_60px_rgba(28,20,14,0.30)] ring-1 ring-black/[0.07]">
+              <div className="relative h-[190px] bg-muted sm:h-[220px]">
+                <div
+                  ref={galleryRef}
+                  onScroll={handleGalleryScroll}
+                  className="eh-map-gallery flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
+                >
+                  {galleryImages.map((image, index) => (
+                    <div key={`${image}-${index}`} className="relative h-full min-w-full snap-center">
+                      <Image
+                        src={image}
+                        alt={`${popupAttraction.title} — zdjęcie ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 520px"
+                        priority={index === 0}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <span className="absolute left-3 top-3 z-20 rounded-full bg-white/94 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-primary shadow-md backdrop-blur">
+                  Atrakcja
+                </span>
+
+                <button
+                  type="button"
+                  onClick={closePopup}
+                  className="absolute right-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-white/96 text-foreground shadow-md backdrop-blur"
+                  aria-label="Zamknij podgląd atrakcji"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                {galleryImages.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-1.5 backdrop-blur-sm">
+                    {galleryImages.slice(0, 7).map((_, index) => (
+                      <span
+                        key={index}
+                        className={`block rounded-full bg-white transition-all ${index === popupImageIndex ? "h-2 w-2" : "h-1.5 w-1.5 opacity-70"}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="px-4 pb-4 pt-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="line-clamp-2 text-[17px] font-extrabold leading-tight tracking-[-0.025em] text-foreground">
+                      {popupAttraction.title}
+                    </h3>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span className="truncate">{popupAttraction.city}</span>
+                    </p>
+                  </div>
+
+                  {Boolean(popupAttraction.avgRating) && (
+                    <span className="flex shrink-0 items-center gap-1 text-sm font-extrabold text-foreground">
+                      <Star className="h-4 w-4 fill-foreground text-foreground" />
+                      {popupAttraction.avgRating?.toFixed(2)}
+                      {popupAttraction.reviewCount ? <span className="font-medium text-muted-foreground">({popupAttraction.reviewCount})</span> : null}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2 flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+                  {popupAttraction.max_guests > 0 && (
+                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />do {popupAttraction.max_guests} osób</span>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-end justify-between gap-3 border-t border-black/[0.055] pt-3">
+                  <div>
+                    <span className="text-[10px] font-medium text-muted-foreground">od </span>
+                    <span className="text-[20px] font-extrabold tracking-[-0.03em] text-foreground">{Math.round(popupAttraction.price_per_night)} zł</span>
+                    <span className="text-[10px] text-muted-foreground"> / os.</span>
+                  </div>
+                  <Link
+                    href={hrefFor(popupAttraction)}
+                    className="flex h-10 items-center rounded-full bg-primary px-4 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(244,117,33,0.24)]"
+                  >
+                    Szczegóły <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {popupAttraction && !immersiveMobile && (
+          <div className="absolute bottom-4 left-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
+            <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_20px_54px_rgba(28,20,14,0.28)] ring-1 ring-black/[0.07]">
               <button
                 type="button"
-                onClick={() => {
-                  setPopupAttraction(null)
-                  onAttractionSelect?.(null)
-                }}
-                className={`absolute right-3 top-3 z-30 grid place-items-center rounded-full bg-white/95 shadow-md ${immersiveMobile ? "h-9 w-9" : "h-8 w-8"}`}
+                onClick={closePopup}
+                className="absolute right-3 top-3 z-30 grid h-8 w-8 place-items-center rounded-full bg-white/95 shadow-md"
                 aria-label="Zamknij podgląd atrakcji"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <Link href={hrefFor(popupAttraction)} className="block">
-                <div className={immersiveMobile ? "grid min-h-[168px] grid-cols-[138px_1fr]" : "grid grid-cols-[105px_1fr]"}>
-                  <div className={`relative overflow-hidden bg-muted ${immersiveMobile ? "min-h-[168px]" : "min-h-[126px]"}`}>
-                    <Image src={previewImage} alt={popupAttraction.title} fill className="object-cover" sizes={immersiveMobile ? "150px" : "140px"} />
+              <Link href={hrefFor(popupAttraction)} className="grid grid-cols-[105px_1fr]">
+                <div className="relative min-h-[126px] overflow-hidden bg-muted">
+                  <Image src={desktopPreviewImage} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
+                </div>
+                <div className="min-w-0 p-3.5 pr-11">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rounded-full bg-secondary px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-primary">Atrakcja</span>
+                    {Boolean(popupAttraction.avgRating) && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold"><Star className="h-3.5 w-3.5 fill-primary text-primary" />{popupAttraction.avgRating?.toFixed(1)}</span>
+                    )}
                   </div>
-
-                  <div className={immersiveMobile ? "min-w-0 p-4 pr-12" : "min-w-0 p-3.5 pr-11"}>
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className={`rounded-full bg-secondary font-bold uppercase tracking-[0.08em] text-primary ${immersiveMobile ? "px-2.5 py-1 text-[10px]" : "px-2 py-1 text-[9px]"}`}>Atrakcja</span>
-                      {Boolean(popupAttraction.avgRating) && (
-                        <span className={`flex items-center gap-1 font-bold ${immersiveMobile ? "text-xs" : "text-[11px]"}`}><Star className="h-3.5 w-3.5 fill-primary text-primary" />{popupAttraction.avgRating?.toFixed(1)}</span>
-                      )}
-                    </div>
-                    <h3 className={`line-clamp-2 font-extrabold leading-tight tracking-[-0.025em] text-foreground ${immersiveMobile ? "text-[16px]" : "text-[14px]"}`}>{popupAttraction.title}</h3>
-                    <p className={`mt-2 flex items-center gap-1.5 font-medium text-muted-foreground ${immersiveMobile ? "text-xs" : "text-[11px]"}`}><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />{popupAttraction.city}</p>
-                    <div className={immersiveMobile ? "mt-4 flex items-end justify-between gap-2" : "mt-3 flex items-end justify-between gap-2"}>
-                      <div><span className="text-[10px] text-muted-foreground">od </span><span className={immersiveMobile ? "text-lg font-extrabold" : "text-base font-extrabold"}>{Math.round(popupAttraction.price_per_night)} zł</span><span className="text-[10px] text-muted-foreground"> / os.</span></div>
-                      <span className={`flex items-center rounded-full bg-primary/10 font-bold text-primary ${immersiveMobile ? "px-2.5 py-1.5 text-[11px]" : "text-[11px]"}`}>Szczegóły <ChevronRight className="h-3.5 w-3.5" /></span>
-                    </div>
+                  <h3 className="line-clamp-2 text-[14px] font-extrabold leading-tight tracking-[-0.025em] text-foreground">{popupAttraction.title}</h3>
+                  <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />{popupAttraction.city}</p>
+                  <div className="mt-3 flex items-end justify-between gap-2">
+                    <div><span className="text-[10px] text-muted-foreground">od </span><span className="text-base font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span><span className="text-[10px] text-muted-foreground"> / os.</span></div>
+                    <span className="flex items-center text-[11px] font-bold text-primary">Szczegóły <ChevronRight className="h-3.5 w-3.5" /></span>
                   </div>
                 </div>
               </Link>
@@ -467,6 +585,8 @@ export default function AttractionMap({
             font-weight: 700 !important;
           }
           .eh-object-marker-tooltip::before { display: none !important; }
+          .eh-map-gallery { scrollbar-width: none; -ms-overflow-style: none; }
+          .eh-map-gallery::-webkit-scrollbar { display: none; }
           @keyframes eh-marker-enter {
             from { opacity: 0; transform: translateY(10px) scale(.76); }
             to { opacity: 1; transform: translateY(0) scale(1); }
@@ -483,8 +603,19 @@ export default function AttractionMap({
             }
             .eh-object-marker__bubble { transition: none !important; }
           }
-          .leaflet-control-zoom { border: 0 !important; box-shadow: 0 5px 18px rgba(11,18,32,.18) !important; margin-bottom: ${immersiveMobile ? "76px" : "10px"} !important; }
-          .leaflet-control-zoom a { color: #0b1220 !important; border: 0 !important; }
+          .leaflet-control-zoom {
+            border: 0 !important;
+            box-shadow: 0 5px 18px rgba(11,18,32,.18) !important;
+            margin-left: 12px !important;
+            margin-top: 12px !important;
+          }
+          .leaflet-control-zoom a {
+            color: #0b1220 !important;
+            border: 0 !important;
+            width: 38px !important;
+            height: 38px !important;
+            line-height: 38px !important;
+          }
           .leaflet-control-attribution { font-size: 8px !important; }
         `}</style>
       </div>
