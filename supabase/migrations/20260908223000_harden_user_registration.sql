@@ -2,6 +2,7 @@
 -- 1) Keep auth.users -> public.users synchronization deterministic.
 -- 2) Remove the legacy INSERT policy that unintentionally allowed every role.
 -- 3) Restrict profile writes to the authenticated user's own row.
+-- 4) Prevent clients from calling the SECURITY DEFINER trigger function as RPC.
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -31,6 +32,9 @@ exception
     return new;
 end;
 $$;
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+grant execute on function public.handle_new_user() to postgres, service_role;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
