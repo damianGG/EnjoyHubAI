@@ -65,9 +65,9 @@ export default async function AttractionsPage() {
 
   return (
     <DiscoveryChrome>
-      <main className="mx-auto w-full max-w-[1600px] px-3 py-3 sm:px-4 sm:py-5 xl:px-6">
+      <main className="h-full min-h-0 md:mx-auto md:h-auto md:w-full md:max-w-[1600px] md:px-4 md:py-5 xl:px-6">
         {errorMessage ? (
-          <Card className="mb-5 border-primary/15 bg-secondary/60 shadow-none">
+          <Card className="mx-3 mb-3 border-primary/15 bg-secondary/60 shadow-none md:mx-0 md:mb-5">
             <CardContent className="flex items-start gap-3 py-4 text-sm">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div>
@@ -78,7 +78,7 @@ export default async function AttractionsPage() {
           </Card>
         ) : null}
 
-        <AttractionsView attractions={data} />
+        <AttractionsView attractions={data} mobileImmersive />
       </main>
     </DiscoveryChrome>
   )
