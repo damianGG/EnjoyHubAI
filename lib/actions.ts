@@ -22,7 +22,7 @@ async function createSupabaseServerClient() {
           })
         },
       },
-    }
+    },
   )
 }
 
@@ -30,11 +30,16 @@ type ActionResult = {
   ok?: boolean
   message?: string
   error?: string
+  email?: string
   requiresEmailConfirmation?: boolean
 }
 
 function validateEmail(e: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase()
 }
 
 function getSiteUrl() {
@@ -52,9 +57,12 @@ function getSiteUrl() {
 }
 
 function getAuthCallbackUrl(returnTo?: unknown) {
-  const callbackUrl = new URL(
-    process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${getSiteUrl()}/auth/callback`,
-  )
+  const devOverride =
+    process.env.NODE_ENV !== "production"
+      ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
+      : undefined
+
+  const callbackUrl = new URL(devOverride || `${getSiteUrl()}/auth/callback`)
   callbackUrl.searchParams.set("next", getSafeAuthReturnTo(returnTo))
   return callbackUrl.toString()
 }
@@ -104,7 +112,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
 
   if (!email || !password) return { error: "Email i hasło są wymagane" }
 
-  const emailStr = String(email).trim()
+  const emailStr = normalizeEmail(String(email))
   const passwordStr = String(password)
 
   if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
@@ -112,7 +120,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
 
   try {
     const supabase = await createSupabaseServerClient()
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: emailStr,
       password: passwordStr,
@@ -137,23 +145,20 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
   const email = formData.get("email")
   const password = formData.get("password")
-  const confirmPassword = formData.get("confirmPassword")
   const fullName = formData.get("fullName")
-  const isHost = formData.get("isHost") === "on"
 
-  if (!email || !password || !confirmPassword || !fullName) {
-    return { error: "Email, hasło, potwierdzenie hasła oraz imię i nazwisko są wymagane" }
+  if (!email || !password || !fullName) {
+    return { error: "Imię i nazwisko, email oraz hasło są wymagane" }
   }
 
-  const emailStr = String(email).trim()
+  const emailStr = normalizeEmail(String(email))
   const passwordStr = String(password)
-  const confirmPasswordStr = String(confirmPassword)
-  const fullNameStr = String(fullName).trim()
+  const fullNameStr = String(fullName).trim().replace(/\s+/g, " ")
 
-  if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+  if (!validateEmail(emailStr) || emailStr.length > 254) return { error: "Nieprawidłowy adres email" }
   if (fullNameStr.length < 2) return { error: "Imię i nazwisko musi zawierać co najmniej 2 znaki" }
+  if (fullNameStr.length > 120) return { error: "Imię i nazwisko jest zbyt długie" }
   if (passwordStr.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków" }
-  if (passwordStr !== confirmPasswordStr) return { error: "Hasła nie są identyczne" }
 
   const supabase = await createSupabaseServerClient()
 
@@ -165,7 +170,6 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
         emailRedirectTo: getAuthCallbackUrl(formData.get("next")),
         data: {
           full_name: fullNameStr,
-          is_host: isHost,
         },
       },
     })
@@ -175,18 +179,17 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
       return { error: getSignUpErrorMessage(error.code) }
     }
 
-    // With email confirmation enabled there is no authenticated session yet, so the
-    // callback creates the profile after confirmation. Without confirmation we can
-    // create it immediately.
+    // If confirmation is disabled, a session exists immediately. Synchronize the
+    // application profile here. With confirmation enabled the callback performs the
+    // same upsert after the email link is opened.
     if (data?.session && data.user?.id) {
       const { error: profileError } = await supabase
         .from("users")
         .upsert(
           {
             id: data.user.id,
-            email: data.user.email,
+            email: data.user.email || emailStr,
             full_name: fullNameStr,
-            is_host: isHost,
           },
           { onConflict: "id" },
         )
@@ -198,14 +201,50 @@ export async function signUp(prevState: any, formData: FormData): Promise<Action
 
     return {
       ok: true,
+      email: emailStr,
       requiresEmailConfirmation,
       message: requiresEmailConfirmation
-        ? "Sprawdź skrzynkę email, aby potwierdzić konto."
+        ? `Wysłaliśmy link potwierdzający na ${emailStr}.`
         : "Konto zostało utworzone i jesteś już zalogowany.",
     }
   } catch (err) {
     console.error("Sign up error:", err)
     return { error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." }
+  }
+}
+
+export async function resendSignUpConfirmation(prevState: any, formData: FormData): Promise<ActionResult> {
+  if (!formData) return { error: "Brak danych formularza" }
+
+  const email = formData.get("email")
+  if (!email) return { error: "Brak adresu email" }
+
+  const emailStr = normalizeEmail(String(email))
+  if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
+
+  const supabase = await createSupabaseServerClient()
+
+  try {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: emailStr,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(formData.get("next")),
+      },
+    })
+
+    if (error) {
+      console.error("Resend sign-up confirmation error:", error)
+      if (error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
+        return { error: "Link był wysyłany niedawno. Odczekaj chwilę i spróbuj ponownie." }
+      }
+      return { error: "Nie udało się ponownie wysłać wiadomości. Spróbuj za chwilę." }
+    }
+
+    return { ok: true, email: emailStr, message: "Wysłaliśmy nowy link potwierdzający." }
+  } catch (err) {
+    console.error("Resend sign-up confirmation error:", err)
+    return { error: "Nie udało się ponownie wysłać wiadomości. Spróbuj za chwilę." }
   }
 }
 
@@ -258,7 +297,7 @@ export async function requestPasswordReset(prevState: any, formData: FormData): 
 
   if (!email) return { error: "Email jest wymagany" }
 
-  const emailStr = String(email).trim()
+  const emailStr = normalizeEmail(String(email))
 
   if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
 
@@ -397,7 +436,7 @@ export async function verifyPhoneOTP(prevState: any, formData: FormData): Promis
           {
             id: data.user.id,
             phone: phoneStr,
-            email: data.user.email || `noemail+${data.user.id}@enjoyhub.local`, // Fallback email for phone-only users
+            email: data.user.email || `noemail+${data.user.id}@enjoyhub.local`,
           },
           { onConflict: "id" },
         )
