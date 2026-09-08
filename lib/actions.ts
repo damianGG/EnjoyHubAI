@@ -43,7 +43,10 @@ function normalizeEmail(value: string) {
 }
 
 function getSiteUrl() {
-  const candidates = [process.env.NEXT_PUBLIC_SITE_URL, process.env.VERCEL_URL]
+  const candidates =
+    process.env.VERCEL_ENV === "preview"
+      ? [process.env.VERCEL_URL, process.env.NEXT_PUBLIC_SITE_URL]
+      : [process.env.NEXT_PUBLIC_SITE_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_URL]
 
   for (const candidate of candidates) {
     const value = candidate?.trim()
@@ -253,7 +256,7 @@ export async function signOut() {
   const supabase = await createSupabaseServerClient()
 
   await supabase.auth.signOut()
-  redirect("/auth/login")
+  redirect("/")
 }
 
 // Google OAuth sign in action
@@ -302,10 +305,13 @@ export async function requestPasswordReset(prevState: any, formData: FormData): 
   if (!validateEmail(emailStr)) return { error: "Nieprawidłowy adres email" }
 
   const supabase = await createSupabaseServerClient()
+  const returnTo = getSafeAuthReturnTo(formData.get("next"))
+  const resetUrl = new URL(`${getSiteUrl()}/auth/reset-password`)
+  resetUrl.searchParams.set("next", returnTo)
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(emailStr, {
-      redirectTo: `${getSiteUrl()}/auth/reset-password`,
+      redirectTo: resetUrl.toString(),
     })
 
     if (error) {
@@ -350,6 +356,9 @@ export async function updatePassword(prevState: any, formData: FormData): Promis
       }
       return { error: "Nie udało się zaktualizować hasła. Spróbuj ponownie." }
     }
+
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "local" })
+    if (signOutError) console.error("Password recovery sign-out error:", signOutError)
 
     return { ok: true, message: "Hasło zostało zmienione. Możesz się teraz zalogować." }
   } catch (err) {
