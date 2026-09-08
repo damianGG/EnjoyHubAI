@@ -1,4 +1,4 @@
-export const DEFAULT_AUTH_RETURN_TO = "/host"
+export const DEFAULT_AUTH_RETURN_TO = "/"
 
 const returnToOrigin = "https://return.enjoyhub.local"
 
