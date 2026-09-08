@@ -130,13 +130,11 @@ function markerVisual(attraction: Attraction) {
 
 function markerHtml(attraction: Attraction, index: number) {
   const delay = Math.min(index * 24, 216)
-  const price = Number.isFinite(attraction.price_per_night) ? Math.round(attraction.price_per_night) : 0
 
   return `
     <div class="eh-object-marker" style="--eh-enter-delay:${delay}ms" aria-label="${escapeHtml(attraction.title)}">
       <span class="eh-object-marker__halo" aria-hidden="true"></span>
       <span class="eh-object-marker__bubble">${markerVisual(attraction)}</span>
-      <span class="eh-object-marker__price">${price} zł</span>
       <span class="eh-object-marker__tip" aria-hidden="true"></span>
     </div>
   `
@@ -243,9 +241,9 @@ export default function AttractionMap({
       const icon = L.divIcon({
         html: markerHtml(attraction, index),
         className: "eh-object-marker-wrapper",
-        iconSize: [64, 76],
-        iconAnchor: [32, 70],
-        tooltipAnchor: [0, -52],
+        iconSize: [60, 64],
+        iconAnchor: [30, 61],
+        tooltipAnchor: [0, -48],
       })
 
       const marker = L.marker(coordinates, { icon, riseOnHover: true })
@@ -299,13 +297,15 @@ export default function AttractionMap({
   return (
     <>
       <div
-        className={`relative isolate z-0 h-full min-h-80 overflow-hidden bg-muted ${
+        className={`relative isolate z-0 h-full overflow-hidden bg-muted ${
+          immersiveMobile ? "min-h-0" : "min-h-80"
+        } ${
           isFullscreen ? "fixed inset-3 z-[1400] min-h-0 rounded-3xl shadow-2xl" : immersiveMobile ? "rounded-none" : "rounded-3xl"
         } ${className}`}
       >
-        <div ref={mapRef} className="h-full min-h-80 w-full" />
+        <div ref={mapRef} className={`h-full w-full ${immersiveMobile ? "min-h-0" : "min-h-80"}`} />
 
-        <div className="absolute right-3 top-3 z-[500]">
+        <div className="absolute right-3 top-3 z-[900]">
           <Button
             type="button"
             variant="secondary"
@@ -385,12 +385,11 @@ export default function AttractionMap({
           .eh-object-marker {
             --eh-orange: #f47521;
             position: relative;
-            display: flex;
-            height: 76px;
-            width: 64px;
-            flex-direction: column;
-            align-items: center;
-            transform-origin: 50% 88%;
+            display: grid;
+            height: 64px;
+            width: 60px;
+            place-items: start center;
+            transform-origin: 50% 92%;
             animation: eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both;
             animation-delay: var(--eh-enter-delay, 0ms);
             cursor: pointer;
@@ -398,7 +397,7 @@ export default function AttractionMap({
           .eh-object-marker__halo {
             position: absolute;
             top: -4px;
-            left: 4px;
+            left: 2px;
             width: 56px;
             height: 56px;
             border-radius: 20px;
@@ -410,8 +409,8 @@ export default function AttractionMap({
             position: relative;
             z-index: 2;
             display: grid;
-            width: 50px;
-            height: 50px;
+            width: 52px;
+            height: 52px;
             place-items: center;
             overflow: hidden;
             border: 2px solid rgba(11,18,32,.12);
@@ -422,7 +421,7 @@ export default function AttractionMap({
             will-change: transform;
           }
           .eh-object-marker__emoji {
-            font-size: 27px;
+            font-size: 28px;
             line-height: 1;
             filter: saturate(1.05);
           }
@@ -431,27 +430,11 @@ export default function AttractionMap({
             height: 100%;
             object-fit: cover;
           }
-          .eh-object-marker__price {
-            position: relative;
-            z-index: 4;
-            margin-top: -5px;
-            min-width: 42px;
-            border: 1px solid rgba(11,18,32,.10);
-            border-radius: 999px;
-            background: rgba(255,255,255,.98);
-            color: #0b1220;
-            padding: 3px 7px;
-            box-shadow: 0 3px 10px rgba(11,18,32,.16);
-            font: 800 10px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-            text-align: center;
-            white-space: nowrap;
-            transition: background .16s ease, color .16s ease, transform .16s ease;
-          }
           .eh-object-marker__tip {
             position: absolute;
             z-index: 1;
-            bottom: 5px;
-            left: 27px;
+            bottom: 4px;
+            left: 25px;
             width: 10px;
             height: 10px;
             transform: rotate(45deg);
@@ -472,12 +455,6 @@ export default function AttractionMap({
             border-color: var(--eh-orange);
             background: #fff8f2;
             box-shadow: 0 12px 30px rgba(244,117,33,.28), 0 4px 9px rgba(11,18,32,.14);
-          }
-          .eh-object-marker--selected .eh-object-marker__price {
-            transform: translateY(-2px);
-            border-color: var(--eh-orange);
-            background: var(--eh-orange);
-            color: white;
           }
           .eh-object-marker-tooltip {
             border: 0 !important;
@@ -504,8 +481,7 @@ export default function AttractionMap({
             .eh-object-marker--selected .eh-object-marker__halo {
               animation: none !important;
             }
-            .eh-object-marker__bubble,
-            .eh-object-marker__price { transition: none !important; }
+            .eh-object-marker__bubble { transition: none !important; }
           }
           .leaflet-control-zoom { border: 0 !important; box-shadow: 0 5px 18px rgba(11,18,32,.18) !important; margin-bottom: ${immersiveMobile ? "76px" : "10px"} !important; }
           .leaflet-control-zoom a { color: #0b1220 !important; border: 0 !important; }
