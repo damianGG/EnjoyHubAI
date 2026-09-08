@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { getEnjoyHubCategoryIcon } from '@/lib/category-icon-assets'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -83,10 +84,19 @@ export function ScrollableCategoryNav({
   }
 
   const CategoryVisual = ({ category }: { category: Category }) => {
-    if (category.image_url) {
+    const localImage = getEnjoyHubCategoryIcon(category.slug)
+    const imageUrl = localImage || category.image_url
+
+    if (imageUrl) {
       return (
         <span className="relative h-12 w-12 overflow-hidden rounded-[15px] bg-gradient-to-br from-orange-50 to-amber-50 shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14">
-          <Image src={category.image_url} alt="" fill className="object-cover" sizes="56px" />
+          <Image
+            src={imageUrl}
+            alt=""
+            fill
+            className={localImage ? "object-contain p-1" : "object-cover"}
+            sizes="56px"
+          />
         </span>
       )
     }
