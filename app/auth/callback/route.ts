@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
   const metadata = data.user.user_metadata || {}
   const fullName = String(metadata.full_name || metadata.name || "Użytkownik").trim().slice(0, 120)
   const avatarUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null
+  const profileEmail = data.user.email || `noemail+${data.user.id}@enjoyhub.local`
 
   // Keep the public application profile in sync for both email/password sign-up and
   // OAuth. The database trigger may have created the row before email confirmation,
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     .upsert(
       {
         id: data.user.id,
-        email: data.user.email,
+        email: profileEmail,
         full_name: fullName || "Użytkownik",
         avatar_url: avatarUrl,
       },
