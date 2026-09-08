@@ -5,11 +5,16 @@ import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, CheckCircle, KeyRound, AlertCircle } from "lucide-react"
+import { AlertCircle, CheckCircle, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { updatePassword } from "@/lib/actions"
 import { createClient } from "@/lib/supabase/client"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
+
+interface ResetPasswordFormProps {
+  returnToPath?: string | null
+}
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -31,85 +36,83 @@ function SubmitButton() {
   )
 }
 
-export default function ResetPasswordForm() {
+export default function ResetPasswordForm({ returnToPath }: ResetPasswordFormProps) {
   const router = useRouter()
   const [state, formAction] = useActionState(updatePassword, null)
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
   const [tokenError, setTokenError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const destination = getSafeAuthReturnTo(returnToPath)
+  const loginHref = `/auth/login?next=${encodeURIComponent(destination)}`
+  const forgotHref = `/auth/forgot-password?next=${encodeURIComponent(destination)}`
 
-  // Handle the recovery token from the URL hash
   useEffect(() => {
-    const handleRecoveryToken = async () => {
+    const validateRecoverySession = async () => {
+      const supabase = createClient()
+
+      // Current SSR/PKCE flow exchanges ?code=... in middleware before this page
+      // renders. Keep hash-token handling only as a backwards-compatible fallback.
       const hash = window.location.hash
-      
-      if (hash && hash.includes("access_token")) {
-        // Parse the hash fragment
+      if (hash.includes("access_token")) {
         const params = new URLSearchParams(hash.substring(1))
         const accessToken = params.get("access_token")
         const refreshToken = params.get("refresh_token")
         const type = params.get("type")
 
-        if (type === "recovery" && accessToken) {
-          try {
-            const supabase = createClient()
-            
-            // Set the session with the recovery token
-            // Supabase requires refresh_token even if empty for recovery flow
-            const { error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken ?? "",
-            })
-
-            if (error) {
-              setTokenError("Link do resetowania hasła wygasł lub jest nieprawidłowy.")
-              setIsValidToken(false)
-            } else {
-              setIsValidToken(true)
-              // Clear the hash from URL for security
-              window.history.replaceState(null, "", window.location.pathname)
-            }
-          } catch {
-            setTokenError("Wystąpił błąd podczas weryfikacji linku.")
-            setIsValidToken(false)
-          }
-        } else {
+        if (type !== "recovery" || !accessToken) {
           setTokenError("Nieprawidłowy link do resetowania hasła.")
           setIsValidToken(false)
+          return
         }
-      } else {
-        // Check if user already has a valid recovery session
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session) {
-          setIsValidToken(true)
-        } else {
-          setTokenError("Brak tokenu resetowania hasła. Poproś o nowy link.")
+
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken ?? "",
+        })
+
+        if (error) {
+          setTokenError("Link do resetowania hasła wygasł lub jest nieprawidłowy.")
           setIsValidToken(false)
+          return
         }
+
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`)
       }
+
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        setTokenError("Link do resetowania hasła wygasł lub jest nieprawidłowy. Poproś o nowy link.")
+        setIsValidToken(false)
+        return
+      }
+
+      setIsValidToken(true)
     }
 
-    handleRecoveryToken()
+    validateRecoverySession().catch(() => {
+      setTokenError("Wystąpił błąd podczas weryfikacji linku.")
+      setIsValidToken(false)
+    })
   }, [])
 
-  // Redirect to login after successful password reset
   useEffect(() => {
-    if (state?.ok) {
-      const timer = setTimeout(() => {
-        router.push("/auth/login")
-      }, 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [state, router])
+    if (!state?.ok) return
 
-  // Loading state while checking token
+    const timer = setTimeout(() => {
+      router.replace(loginHref)
+      router.refresh()
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [state, router, loginHref])
+
   if (isValidToken === null) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Ustaw nowe hasło</CardTitle>
-          <CardDescription>Weryfikacja linku...</CardDescription>
+          <CardDescription>Weryfikujemy bezpieczny link...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
@@ -120,13 +123,12 @@ export default function ResetPasswordForm() {
     )
   }
 
-  // Invalid token state
-  if (isValidToken === false) {
+  if (!isValidToken) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Ustaw nowe hasło</CardTitle>
-          <CardDescription>Wystąpił problem</CardDescription>
+          <CardDescription>Nie udało się zweryfikować linku</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -135,12 +137,12 @@ export default function ResetPasswordForm() {
                 <AlertCircle className="h-8 w-8 text-destructive" />
               </div>
             </div>
-            <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded text-center">
+            <div className="rounded border border-destructive/50 bg-destructive/10 px-4 py-3 text-center text-destructive">
               {tokenError}
             </div>
             <div className="text-center">
-              <Link href="/auth/forgot-password" className="text-primary hover:underline">
-                Poproś o nowy link do resetowania hasła
+              <Link href={forgotHref} className="text-primary hover:underline">
+                Wyślij nowy link do resetowania
               </Link>
             </div>
           </div>
@@ -153,7 +155,7 @@ export default function ResetPasswordForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Ustaw nowe hasło</CardTitle>
-        <CardDescription>Wprowadź nowe hasło dla swojego konta</CardDescription>
+        <CardDescription>Wprowadź nowe hasło dla swojego konta EnjoyHub</CardDescription>
       </CardHeader>
       <CardContent>
         {state?.ok ? (
@@ -163,14 +165,14 @@ export default function ResetPasswordForm() {
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
             </div>
-            <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded text-center">
+            <div className="rounded border border-green-500/50 bg-green-500/10 px-4 py-3 text-center text-green-700">
               {state.message}
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Za chwilę zostaniesz przekierowany do strony logowania...
+            <p className="text-center text-sm text-muted-foreground">
+              Za chwilę przejdziesz do logowania, a po zalogowaniu wrócisz tam, gdzie byłeś.
             </p>
             <div className="text-center">
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link href={loginHref} className="text-primary hover:underline">
                 Przejdź do logowania
               </Link>
             </div>
@@ -178,7 +180,7 @@ export default function ResetPasswordForm() {
         ) : (
           <form action={formAction} className="space-y-4">
             {state?.error && (
-              <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+              <div className="rounded border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">
                 {state.error}
               </div>
             )}
@@ -187,35 +189,57 @@ export default function ResetPasswordForm() {
               <label htmlFor="password" className="block text-sm font-medium">
                 Nowe hasło
               </label>
-              <Input 
-                id="password" 
-                name="password" 
-                type="password" 
-                placeholder="Minimum 8 znaków"
-                required 
-              />
-              <p className="text-xs text-muted-foreground">
-                Hasło musi mieć co najmniej 8 znaków
-              </p>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Minimum 8 znaków"
+                  className="pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Ukryj hasło" : "Pokaż hasło"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Hasło musi mieć co najmniej 8 znaków.</p>
             </div>
 
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="block text-sm font-medium">
                 Potwierdź nowe hasło
               </label>
-              <Input 
-                id="confirmPassword" 
-                name="confirmPassword" 
-                type="password" 
-                placeholder="Powtórz hasło"
-                required 
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmation ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Powtórz hasło"
+                  className="pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmation((current) => !current)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+                  aria-label={showConfirmation ? "Ukryj hasło" : "Pokaż hasło"}
+                >
+                  {showConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <SubmitButton />
 
             <div className="text-center text-sm text-muted-foreground">
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link href={loginHref} className="text-primary hover:underline">
                 Wróć do logowania
               </Link>
             </div>
