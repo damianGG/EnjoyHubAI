@@ -88,7 +88,11 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
             />
           )}
           {currentMode === "forgot-password" && (
-            <ForgotPasswordForm inline onSwitchToLogin={handleSwitchToLogin} />
+            <ForgotPasswordForm
+              inline
+              returnToPath={destination}
+              onSwitchToLogin={handleSwitchToLogin}
+            />
           )}
         </div>
       </SheetContent>
