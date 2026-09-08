@@ -1,5 +1,5 @@
 const CATEGORY_ICON_PATHS: Record<string, string> = {
-  paintball: "/icons/categories/paintball.svg",
+  paintball: "/icons/categories/paintball.webp",
   gokarty: "/icons/categories/gokarty.webp",
   "go-karts": "/icons/categories/gokarty.webp",
   "park-trampolin": "/icons/categories/park-trampolin.webp",
