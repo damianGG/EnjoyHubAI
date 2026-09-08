@@ -1,14 +1,14 @@
 const CATEGORY_ICON_PATHS: Record<string, string> = {
-  paintball: "/icons/categories/marker-paintball.svg",
-  gokarty: "/icons/categories/marker-gokarty.svg",
-  "go-karts": "/icons/categories/marker-gokarty.svg",
-  "park-trampolin": "/icons/categories/marker-park-trampolin.svg",
-  trampoliny: "/icons/categories/marker-park-trampolin.svg",
-  "plac-zabaw": "/icons/categories/marker-plac-zabaw.svg",
-  "place-zabaw": "/icons/categories/marker-plac-zabaw.svg",
-  playground: "/icons/categories/marker-plac-zabaw.svg",
-  "park-linowy": "/icons/categories/marker-park-linowy.svg",
-  "adventure-park": "/icons/categories/marker-park-linowy.svg",
+  paintball: "/icons/categories/paintball.webp",
+  gokarty: "/icons/categories/gokarty.webp",
+  "go-karts": "/icons/categories/gokarty.webp",
+  "park-trampolin": "/icons/categories/park-trampolin.webp",
+  trampoliny: "/icons/categories/park-trampolin.webp",
+  "plac-zabaw": "/icons/categories/plac-zabaw.webp",
+  "place-zabaw": "/icons/categories/plac-zabaw.webp",
+  playground: "/icons/categories/plac-zabaw.webp",
+  "park-linowy": "/icons/categories/park-linowy.webp",
+  "adventure-park": "/icons/categories/park-linowy.webp",
 }
 
 export function getEnjoyHubCategoryIcon(slug?: string | null) {
