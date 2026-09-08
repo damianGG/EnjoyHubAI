@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import {
   CalendarDays,
@@ -38,8 +38,49 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
+const CATEGORY_LABELS: Record<string, string> = {
+  paintball: "Paintball",
+  gokarty: "Gokarty",
+  "go-karts": "Gokarty",
+  "park-trampolin": "Park trampolin",
+  trampoliny: "Park trampolin",
+  "plac-zabaw": "Place zabaw",
+  playground: "Place zabaw",
+  "park-linowy": "Park linowy",
+  "adventure-park": "Park linowy",
+  "escape-room": "Escape room",
+  escape_room: "Escape room",
+  dmuchance: "Dmuchance",
+  dmuchaniec: "Dmuchance",
+  wydarzenia: "Wydarzenia",
+  koncerty: "Koncerty",
+  piknik: "Piknik",
+  "mini-golf": "Mini golf",
+}
+
+function humanizeSlug(slug: string) {
+  if (CATEGORY_LABELS[slug]) return CATEGORY_LABELS[slug]
+  const normalized = slug.replaceAll("_", " ").replaceAll("-", " ").trim()
+  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Atrakcje"
+}
+
+function formatDateLabel(value: string) {
+  const [year, month, day] = value.split("-").map(Number)
+  if (!year || !month || !day) return value
+  const date = new Date(year, month - 1, day)
+  return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short" }).format(date)
+}
+
+function formatAgeLabel(min: string, max: string) {
+  if (min && max) return `wiek ${min}–${max}`
+  if (min) return `od ${min} lat`
+  if (max) return `do ${max} lat`
+  return ""
+}
+
 export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
@@ -87,6 +128,41 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
       setIsLoading(false)
     }
   }
+
+  const categorySlugs = (searchParams.get("categories") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const locationFilter = (searchParams.get("q") || "").trim()
+  const dateFilter = (searchParams.get("date") || "").trim()
+  const guestsValue = Number.parseInt(searchParams.get("guests") || "1", 10)
+  const guestsFilter = Number.isFinite(guestsValue) && guestsValue > 1 ? guestsValue : null
+  const ageMinFilter = (searchParams.get("age_min") || "").trim()
+  const ageMaxFilter = (searchParams.get("age_max") || "").trim()
+
+  const categoryLabel = categorySlugs.length
+    ? `${humanizeSlug(categorySlugs[0])}${categorySlugs.length > 1 ? ` +${categorySlugs.length - 1}` : ""}`
+    : ""
+
+  const activeFilterCount =
+    (categorySlugs.length ? 1 : 0) +
+    (locationFilter ? 1 : 0) +
+    (dateFilter ? 1 : 0) +
+    (guestsFilter ? 1 : 0) +
+    (ageMinFilter || ageMaxFilter ? 1 : 0)
+
+  const mobilePrimaryLabel = categoryLabel || locationFilter || "Czego szukasz?"
+  const mobileSecondaryParts = [
+    categoryLabel && locationFilter ? locationFilter : "",
+    dateFilter ? formatDateLabel(dateFilter) : "",
+    guestsFilter ? `${guestsFilter} os.` : "",
+    formatAgeLabel(ageMinFilter, ageMaxFilter),
+  ].filter(Boolean)
+  const mobileSecondaryLabel = activeFilterCount
+    ? mobileSecondaryParts.length
+      ? mobileSecondaryParts.join(" · ")
+      : "Filtr aktywny"
+    : "W pobliżu · Kiedy? · Liczba osób"
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
   const initials = displayName
@@ -139,18 +215,27 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
           <button
             onClick={onSearchClick}
-            className="flex h-[50px] w-full items-center rounded-full border border-black/[0.08] bg-white px-2 text-left shadow-[0_5px_18px_rgba(53,37,20,0.09)]"
-            aria-label="Otwórz wyszukiwarkę atrakcji"
+            className={`flex h-[50px] w-full items-center rounded-full border px-2 text-left shadow-[0_5px_18px_rgba(53,37,20,0.09)] transition-colors ${
+              activeFilterCount ? "border-primary/30 bg-[#fffaf5]" : "border-black/[0.08] bg-white"
+            }`}
+            aria-label={activeFilterCount ? `Otwórz wyszukiwarkę, aktywne filtry: ${activeFilterCount}` : "Otwórz wyszukiwarkę atrakcji"}
           >
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-primary">
               <Search className="h-4 w-4" />
             </span>
             <span className="min-w-0 flex-1 px-2.5">
-              <span className="block truncate text-[12.5px] font-bold leading-tight text-foreground">Czego szukasz?</span>
-              <span className="mt-0.5 block truncate text-[10.5px] font-medium text-muted-foreground">W pobliżu · Kiedy? · Liczba osób</span>
+              <span className="block truncate text-[12.5px] font-bold leading-tight text-foreground">{mobilePrimaryLabel}</span>
+              <span className={`mt-0.5 block truncate text-[10.5px] font-medium ${activeFilterCount ? "text-primary/80" : "text-muted-foreground"}`}>
+                {mobileSecondaryLabel}
+              </span>
             </span>
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_6px_14px_rgba(244,117,33,0.24)]">
+            <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_6px_14px_rgba(244,117,33,0.24)]">
               <Search className="h-3.5 w-3.5" />
+              {activeFilterCount > 0 ? (
+                <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#28231f] px-1 text-[8px] font-extrabold leading-none text-white">
+                  {activeFilterCount}
+                </span>
+              ) : null}
             </span>
           </button>
         </div>
@@ -168,22 +253,30 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
             <button
               onClick={onSearchClick}
-              className="brand-surface group mx-auto flex h-[58px] min-w-0 flex-1 items-center rounded-full px-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(56,38,20,0.10)] md:max-w-[680px]"
+              className={`brand-surface group mx-auto flex h-[58px] min-w-0 flex-1 items-center rounded-full px-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(56,38,20,0.10)] md:max-w-[680px] ${activeFilterCount ? "ring-1 ring-primary/25" : ""}`}
               aria-label="Otwórz wyszukiwarkę atrakcji"
             >
               <span className="flex min-w-0 flex-1 items-center gap-3 px-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-secondary text-primary"><Search className="h-5 w-5" /></span>
-                <span className="min-w-0"><span className="block truncate text-[15px] font-semibold text-foreground">Znajdź atrakcję</span></span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[15px] font-semibold text-foreground">{categoryLabel || "Znajdź atrakcję"}</span>
+                  {categoryLabel && activeFilterCount ? <span className="block truncate text-[10px] font-semibold text-primary">Filtry aktywne</span> : null}
+                </span>
               </span>
               <span className="flex min-w-[145px] items-center gap-2 border-l px-4">
                 <MapPin className="h-4 w-4 shrink-0 text-primary" />
-                <span><span className="block text-[11px] font-medium text-muted-foreground">Lokalizacja</span><span className="block text-sm font-semibold text-foreground">W pobliżu</span></span>
+                <span><span className="block text-[11px] font-medium text-muted-foreground">Lokalizacja</span><span className="block max-w-[130px] truncate text-sm font-semibold text-foreground">{locationFilter || "W pobliżu"}</span></span>
               </span>
               <span className="hidden min-w-[125px] items-center gap-2 border-l px-4 lg:flex">
                 <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
-                <span><span className="block text-[11px] font-medium text-muted-foreground">Kiedy</span><span className="block text-sm font-semibold text-foreground">Dowolnie</span></span>
+                <span><span className="block text-[11px] font-medium text-muted-foreground">Kiedy</span><span className="block text-sm font-semibold text-foreground">{dateFilter ? formatDateLabel(dateFilter) : "Dowolnie"}</span></span>
               </span>
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(244,117,33,0.28)] transition-transform group-hover:scale-105"><Search className="h-4 w-4" /></span>
+              <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(244,117,33,0.28)] transition-transform group-hover:scale-105">
+                <Search className="h-4 w-4" />
+                {activeFilterCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#28231f] px-1 text-[8px] font-extrabold leading-none text-white">{activeFilterCount}</span>
+                ) : null}
+              </span>
             </button>
 
             <div className="flex shrink-0 items-center gap-2">
