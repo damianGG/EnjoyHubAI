@@ -50,15 +50,15 @@ export function HomeDiscovery({ attractions }: { attractions: Attraction[] }) {
   const [searchOpen, setSearchOpen] = useState(false)
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background md:block md:h-auto md:min-h-screen md:overflow-visible">
-      <div className="sticky top-0 z-[1200] shrink-0 bg-background">
+    <div className="fixed inset-0 flex h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-background md:static md:block md:h-auto md:min-h-screen md:overflow-visible md:overscroll-auto">
+      <div className="relative z-[1200] shrink-0 bg-background md:sticky md:top-0">
         <TopNav onSearchClick={() => setSearchOpen(true)} />
         <CategoryBar useNavigation />
       </div>
 
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
-      <main className="min-h-0 flex-1 md:block">
+      <main className="min-h-0 flex-1 overflow-hidden md:block md:overflow-visible">
         {/* Desktop marketing hero. On mobile the map starts immediately below categories. */}
         <section className="relative hidden overflow-hidden border-b border-black/[0.05] bg-gradient-to-br from-[#fff8f1] via-white to-[#fff2e5] md:block">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
