@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { BrandLogo } from "@/components/brand-logo"
 import { useUrlState } from "@/lib/search/url-state"
+import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
@@ -163,6 +164,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
               <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                 {categories.map((category) => {
                   const selected = selectedCategories.includes(category.slug)
+                  const localImage = getEnjoyHubCategoryIcon(category.slug)
+                  const imageUrl = localImage || category.image_url
+
                   return (
                     <button
                       key={category.id}
@@ -175,9 +179,15 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                           : "border-black/[0.06] shadow-[0_5px_16px_rgba(58,39,20,0.05)]"
                       )}
                     >
-                      {category.image_url ? (
-                        <span className="relative mb-2 h-10 w-10 overflow-hidden rounded-xl">
-                          <Image src={category.image_url} alt="" fill className="object-cover" sizes="40px" />
+                      {imageUrl ? (
+                        <span className="relative mb-2 h-11 w-11 overflow-hidden rounded-xl bg-orange-50/70">
+                          <Image
+                            src={imageUrl}
+                            alt=""
+                            fill
+                            className={localImage ? "object-contain p-0.5" : "object-cover"}
+                            sizes="44px"
+                          />
                         </span>
                       ) : (
                         <span className="mb-2 text-[28px] leading-none">{category.icon || "✨"}</span>

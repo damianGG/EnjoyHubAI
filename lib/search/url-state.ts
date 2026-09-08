@@ -8,6 +8,15 @@ interface SetManyOptions {
   debounceMs?: number
 }
 
+const MARKETPLACE_SEARCH_KEYS = new Set([
+  "categories",
+  "q",
+  "date",
+  "guests",
+  "age_min",
+  "age_max",
+])
+
 export function useUrlState() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -25,8 +34,7 @@ export function useUrlState() {
     (updates: Record<string, string | number | null | undefined>, options?: SetManyOptions) => {
       const performUpdate = () => {
         const params = new URLSearchParams(searchParams.toString())
-        
-        // Apply all updates
+
         Object.entries(updates).forEach(([key, value]) => {
           if (value === null || value === undefined || value === "") {
             params.delete(key)
@@ -35,28 +43,27 @@ export function useUrlState() {
           }
         })
 
-        // Replace the URL without adding to history
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+        const isMarketplaceSearch = Object.keys(updates).some((key) => MARKETPLACE_SEARCH_KEYS.has(key))
+        const targetPath = pathname === "/" && isMarketplaceSearch ? "/attractions" : pathname
+        const query = params.toString()
+
+        router.replace(query ? `${targetPath}?${query}` : targetPath, { scroll: false })
       }
 
-      // Determine debounce value
-      const debounceValue = typeof options?.debounce === 'number' 
-        ? options.debounce 
+      const debounceValue = typeof options?.debounce === "number"
+        ? options.debounce
         : options?.debounceMs || (options?.debounce ? 300 : 0)
 
       if (debounceValue > 0) {
-        // Clear existing timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current)
         }
 
-        // Set new timer
         debounceTimerRef.current = setTimeout(() => {
           performUpdate()
           debounceTimerRef.current = null
         }, debounceValue)
       } else {
-        // Execute immediately
         performUpdate()
       }
     },

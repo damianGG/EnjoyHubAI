@@ -50,15 +50,15 @@ export function HomeDiscovery({ attractions }: { attractions: Attraction[] }) {
   const [searchOpen, setSearchOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50">
+    <div className="fixed inset-0 flex h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-background md:static md:block md:h-auto md:min-h-screen md:overflow-visible md:overscroll-auto">
+      <div className="relative z-[1200] shrink-0 bg-background md:sticky md:top-0">
         <TopNav onSearchClick={() => setSearchOpen(true)} />
         <CategoryBar useNavigation />
       </div>
 
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
-      <main>
+      <main className="min-h-0 flex-1 overflow-hidden md:block md:overflow-visible">
         {/* Desktop marketing hero. On mobile the map starts immediately below categories. */}
         <section className="relative hidden overflow-hidden border-b border-black/[0.05] bg-gradient-to-br from-[#fff8f1] via-white to-[#fff2e5] md:block">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
@@ -115,7 +115,7 @@ export function HomeDiscovery({ attractions }: { attractions: Attraction[] }) {
           </div>
         </section>
 
-        <section id="mapa" className="md:mx-auto md:max-w-[1600px] md:px-6 md:py-8">
+        <section id="mapa" className="h-full min-h-0 md:mx-auto md:h-auto md:max-w-[1600px] md:px-6 md:py-8">
           <div className="mb-5 hidden items-end justify-between gap-4 px-1 md:flex">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Odkrywaj</p>

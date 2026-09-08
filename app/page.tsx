@@ -28,6 +28,11 @@ type Attraction = {
   amenities?: string[]
 }
 
+function firstRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value ?? null
+}
+
 async function getAttractions(): Promise<Attraction[]> {
   if (!isSupabaseConfigured) return []
 
@@ -35,7 +40,19 @@ async function getAttractions(): Promise<Attraction[]> {
     const supabase = createClient()
     const { data, error } = await supabase
       .from("properties")
-      .select("*")
+      .select(`
+        *,
+        categories (
+          slug,
+          icon,
+          image_url
+        ),
+        subcategories (
+          slug,
+          icon,
+          image_url
+        )
+      `)
       .eq("is_active", true)
       .limit(120)
 
@@ -44,7 +61,20 @@ async function getAttractions(): Promise<Attraction[]> {
       return []
     }
 
-    return data as Attraction[]
+    return data.map((row: any) => {
+      const category = firstRelation(row.categories)
+      const subcategory = firstRelation(row.subcategories)
+
+      return {
+        ...row,
+        category_slug: category?.slug ?? null,
+        category_icon: category?.icon ?? null,
+        category_image_url: category?.image_url ?? null,
+        subcategory_slug: subcategory?.slug ?? null,
+        subcategory_icon: subcategory?.icon ?? null,
+        subcategory_image_url: subcategory?.image_url ?? null,
+      } as Attraction
+    })
   } catch (error) {
     console.error("[home] Unexpected attractions error", error)
     return []
