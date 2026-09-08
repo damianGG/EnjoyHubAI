@@ -347,7 +347,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   ) : <div className="px-3 md:px-0"><EmptyList searched={hasSearchCriteria} /></div>
 
   return (
-    <div className={mobileImmersive ? "md:space-y-4" : "space-y-4"}>
+    <div className={mobileImmersive ? "h-full min-h-0 md:h-auto md:space-y-4" : "space-y-4"}>
       <div className={mobileImmersive ? "hidden lg:block" : "hidden md:block"}>
         <AttractionFilters filters={filters} onFiltersChange={setFilters} onSearch={() => undefined} totalResults={filteredAttractions.length} />
       </div>
@@ -359,13 +359,13 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
         </div>
       </div>
 
-      <div className="lg:hidden">
+      <div className={mobileImmersive ? "h-full min-h-0 lg:hidden" : "lg:hidden"}>
         {mobileMode === "map" ? (
-          <div className={mobileImmersive ? "relative h-[calc(100dvh-188px)] min-h-[430px] overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]"}>
+          <div className={mobileImmersive ? "relative h-full min-h-0 overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]"}>
             <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
-          <div className={mobileImmersive ? "max-h-[calc(100dvh-188px)] overflow-y-auto bg-[#fbfaf8] pt-3" : "pb-24"}>{list}</div>
+          <div className={mobileImmersive ? "h-full min-h-0 overflow-y-auto bg-[#fbfaf8] pt-3" : "pb-24"}>{list}</div>
         )}
 
         <div className={`fixed left-1/2 z-[700] -translate-x-1/2 ${mobileImmersive ? "bottom-[max(18px,env(safe-area-inset-bottom))]" : "bottom-24"}`}>
