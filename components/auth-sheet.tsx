@@ -57,9 +57,9 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="h-[100dvh] w-full max-w-none overflow-y-auto border-0 bg-white p-0 sm:max-w-md sm:border-l"
+        className="h-[100dvh] w-full max-w-none overflow-y-auto border-0 bg-white p-0 sm:max-w-md sm:border-l sm:border-[#0b1220]/[0.07]"
       >
-        <SheetHeader className="sticky top-0 z-10 border-b border-black/[0.055] bg-white/95 px-5 pb-4 pt-[max(14px,env(safe-area-inset-top))] text-left backdrop-blur-xl sm:p-6 sm:pb-4">
+        <SheetHeader className="sticky top-0 z-10 border-b border-[#0b1220]/[0.055] bg-white/95 px-5 pb-4 pt-[max(14px,env(safe-area-inset-top))] text-left backdrop-blur-xl sm:p-6 sm:pb-4">
           <div className="mb-2 sm:hidden"><BrandLogo mobile href={undefined} /></div>
           <SheetTitle className="text-xl font-extrabold tracking-[-0.035em] sm:text-lg">{title}</SheetTitle>
           <p className="pr-8 text-xs leading-5 text-muted-foreground sm:text-sm">
@@ -88,7 +88,11 @@ export function AuthSheet({ open, onOpenChange, mode, onModeChange, returnToPath
             />
           )}
           {currentMode === "forgot-password" && (
-            <ForgotPasswordForm inline onSwitchToLogin={handleSwitchToLogin} />
+            <ForgotPasswordForm
+              inline
+              returnToPath={destination}
+              onSwitchToLogin={handleSwitchToLogin}
+            />
           )}
         </div>
       </SheetContent>

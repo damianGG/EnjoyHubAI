@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, ArrowLeft, Mail, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { requestPasswordReset } from "@/lib/actions"
+import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
 
 interface ForgotPasswordFormProps {
   inline?: boolean
   onSwitchToLogin?: () => void
+  returnToPath?: string | null
 }
 
 function SubmitButton() {
@@ -34,8 +36,14 @@ function SubmitButton() {
   )
 }
 
-export default function ForgotPasswordForm({ inline = false, onSwitchToLogin }: ForgotPasswordFormProps = {}) {
+export default function ForgotPasswordForm({
+  inline = false,
+  onSwitchToLogin,
+  returnToPath,
+}: ForgotPasswordFormProps = {}) {
   const [state, formAction] = useActionState(requestPasswordReset, null)
+  const destination = getSafeAuthReturnTo(returnToPath)
+  const loginHref = `/auth/login?next=${encodeURIComponent(destination)}`
 
   const content = (
     <>
@@ -46,24 +54,24 @@ export default function ForgotPasswordForm({ inline = false, onSwitchToLogin }: 
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded text-center">
+          <div className="rounded border border-green-500/50 bg-green-500/10 px-4 py-3 text-center text-green-700">
             {state.message}
           </div>
-          <p className="text-sm text-muted-foreground text-center">
-            Sprawdź swoją skrzynkę pocztową (w tym folder spam) i kliknij link w wiadomości.
+          <p className="text-center text-sm text-muted-foreground">
+            Sprawdź swoją skrzynkę pocztową, również folder spam, i kliknij link w wiadomości.
           </p>
           <div className="text-center">
             {onSwitchToLogin ? (
               <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="text-primary hover:underline inline-flex items-center"
+                className="inline-flex items-center text-primary hover:underline"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Wróć do logowania
               </button>
             ) : (
-              <Link href="/auth/login" className="text-primary hover:underline inline-flex items-center">
+              <Link href={loginHref} className="inline-flex items-center text-primary hover:underline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Wróć do logowania
               </Link>
@@ -72,21 +80,30 @@ export default function ForgotPasswordForm({ inline = false, onSwitchToLogin }: 
         </div>
       ) : (
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="next" value={destination} />
+
           {state?.error && (
-            <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+            <div className="rounded border border-destructive/50 bg-destructive/10 px-4 py-3 text-destructive">
               {state.error}
             </div>
           )}
 
           <p className="text-sm text-muted-foreground">
-            Podaj adres email powiązany z Twoim kontem. Wyślemy Ci link do resetowania hasła.
+            Podaj adres email powiązany z Twoim kontem. Wyślemy Ci bezpieczny link do ustawienia nowego hasła.
           </p>
 
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium">
               Email
             </label>
-            <Input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="twoj@email.com"
+              autoComplete="email"
+              required
+            />
           </div>
 
           <SubmitButton />
@@ -94,15 +111,11 @@ export default function ForgotPasswordForm({ inline = false, onSwitchToLogin }: 
           <div className="text-center text-sm text-muted-foreground">
             Pamiętasz hasło?{" "}
             {onSwitchToLogin ? (
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="text-primary hover:underline"
-              >
+              <button type="button" onClick={onSwitchToLogin} className="text-primary hover:underline">
                 Zaloguj się
               </button>
             ) : (
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link href={loginHref} className="text-primary hover:underline">
                 Zaloguj się
               </Link>
             )}

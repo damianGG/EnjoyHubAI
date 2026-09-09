@@ -36,27 +36,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(getLoginErrorUrl(requestUrl.origin, next))
   }
 
-  const { data: existingUser, error: profileLookupError } = await supabase
+  const metadata = data.user.user_metadata || {}
+  const fullName = String(metadata.full_name || metadata.name || "Użytkownik").trim().slice(0, 120)
+  const avatarUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null
+  const profileEmail = data.user.email || `noemail+${data.user.id}@enjoyhub.local`
+
+  // Keep the public application profile in sync for both email/password sign-up and
+  // OAuth. The database trigger may have created the row before email confirmation,
+  // so this must be an upsert rather than an insert-only fallback.
+  const { error: profileError } = await supabase
     .from("users")
-    .select("id")
-    .eq("id", data.user.id)
-    .maybeSingle()
+    .upsert(
+      {
+        id: data.user.id,
+        email: profileEmail,
+        full_name: fullName || "Użytkownik",
+        avatar_url: avatarUrl,
+      },
+      { onConflict: "id" },
+    )
 
-  if (profileLookupError) {
-    console.error("Auth callback profile lookup error:", profileLookupError)
-  }
-
-  if (!existingUser) {
-    const { error: profileError } = await supabase.from("users").insert({
-      id: data.user.id,
-      email: data.user.email,
-      full_name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || "Użytkownik",
-      is_host: Boolean(data.user.user_metadata?.is_host),
-    })
-
-    if (profileError) {
-      console.error("Auth callback profile creation error:", profileError)
-    }
+  if (profileError) {
+    console.error("Auth callback profile synchronization error:", profileError)
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin))

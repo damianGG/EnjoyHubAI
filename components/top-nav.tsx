@@ -174,7 +174,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
   return (
     <>
-      <header className="border-b border-black/[0.06] bg-white/95 backdrop-blur-xl">
+      <header className="border-b border-[#0b1220]/[0.06] bg-white/95 backdrop-blur-xl">
         {/* Mobile: compact brand + search. The map is deliberately not the visual priority here. */}
         <div className="px-3 pb-2.5 pt-[max(8px,env(safe-area-inset-top))] md:hidden">
           <div className="mb-2.5 flex h-9 items-center justify-between">
@@ -182,7 +182,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
             <div className="flex items-center gap-1.5">
               <Link
                 href="/dashboard/favorites"
-                className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.06] bg-white"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[#0b1220]/[0.06] bg-white"
                 aria-label="Ulubione"
               >
                 <Heart className="h-[17px] w-[17px]" />
@@ -193,7 +193,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
               ) : user ? (
                 <Link
                   href="/dashboard"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.06] bg-white"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-[#0b1220]/[0.06] bg-white"
                   aria-label="Konto"
                 >
                   <Avatar className="h-7 w-7">
@@ -204,7 +204,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
               ) : (
                 <button
                   onClick={openLoginSheet}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.06] bg-white"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-[#0b1220]/[0.06] bg-white"
                   aria-label="Zaloguj się"
                 >
                   <UserIcon className="h-[18px] w-[18px]" />
@@ -215,8 +215,8 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
           <button
             onClick={onSearchClick}
-            className={`flex h-[50px] w-full items-center rounded-full border px-2 text-left shadow-[0_5px_18px_rgba(53,37,20,0.09)] transition-colors ${
-              activeFilterCount ? "border-primary/30 bg-[#fffaf5]" : "border-black/[0.08] bg-white"
+            className={`flex h-[50px] w-full items-center rounded-full border px-2 text-left shadow-[0_5px_18px_rgba(11,18,32,0.09)] transition-colors ${
+              activeFilterCount ? "border-primary/30 bg-secondary" : "border-[#0b1220]/[0.08] bg-white"
             }`}
             aria-label={activeFilterCount ? `Otwórz wyszukiwarkę, aktywne filtry: ${activeFilterCount}` : "Otwórz wyszukiwarkę atrakcji"}
           >
@@ -229,10 +229,10 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                 {mobileSecondaryLabel}
               </span>
             </span>
-            <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_6px_14px_rgba(244,117,33,0.24)]">
+            <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-white shadow-[0_6px_14px_rgba(255,90,31,0.24)]">
               <Search className="h-3.5 w-3.5" />
               {activeFilterCount > 0 ? (
-                <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#28231f] px-1 text-[8px] font-extrabold leading-none text-white">
+                <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#0b1220] px-1 text-[8px] font-extrabold leading-none text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -253,7 +253,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
             <button
               onClick={onSearchClick}
-              className={`brand-surface group mx-auto flex h-[58px] min-w-0 flex-1 items-center rounded-full px-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(56,38,20,0.10)] md:max-w-[680px] ${activeFilterCount ? "ring-1 ring-primary/25" : ""}`}
+              className={`brand-surface group mx-auto flex h-[58px] min-w-0 flex-1 items-center rounded-full px-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(11,18,32,0.10)] md:max-w-[680px] ${activeFilterCount ? "ring-1 ring-primary/25" : ""}`}
               aria-label="Otwórz wyszukiwarkę atrakcji"
             >
               <span className="flex min-w-0 flex-1 items-center gap-3 px-4">
@@ -271,10 +271,10 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                 <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
                 <span><span className="block text-[11px] font-medium text-muted-foreground">Kiedy</span><span className="block text-sm font-semibold text-foreground">{dateFilter ? formatDateLabel(dateFilter) : "Dowolnie"}</span></span>
               </span>
-              <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(244,117,33,0.28)] transition-transform group-hover:scale-105">
+              <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(255,90,31,0.28)] transition-transform group-hover:scale-105">
                 <Search className="h-4 w-4" />
                 {activeFilterCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#28231f] px-1 text-[8px] font-extrabold leading-none text-white">{activeFilterCount}</span>
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#0b1220] px-1 text-[8px] font-extrabold leading-none text-white">{activeFilterCount}</span>
                 ) : null}
               </span>
             </button>
@@ -289,7 +289,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
               ) : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-11 rounded-full border-black/10 bg-white px-2.5 shadow-sm">
+                    <Button variant="outline" className="h-11 rounded-full border-[#0b1220]/10 bg-white px-2.5 shadow-sm">
                       <Menu className="h-4 w-4" />
                       <Avatar className="h-7 w-7">
                         <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />

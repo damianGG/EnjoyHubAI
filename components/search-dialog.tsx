@@ -125,15 +125,15 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-[#fffdfa] p-0 md:h-auto md:max-h-[88vh] md:max-w-2xl md:rounded-[28px]"
+        className="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-background p-0 md:h-auto md:max-h-[88vh] md:max-w-2xl md:rounded-[28px]"
       >
         <DialogTitle className="sr-only">Znajdź atrakcję</DialogTitle>
 
-        <header className="sticky top-0 z-20 border-b border-black/[0.055] bg-white/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:py-5">
+        <header className="sticky top-0 z-20 border-b border-[#0b1220]/[0.055] bg-white/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:py-5">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setIsOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-full border border-black/[0.07] bg-white text-foreground"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[#0b1220]/[0.07] bg-white text-foreground"
               aria-label="Wróć"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -175,12 +175,12 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                       className={cn(
                         "flex min-h-[94px] flex-col items-center justify-center rounded-[20px] border bg-white px-2 py-3 text-center transition-all",
                         selected
-                          ? "border-primary bg-secondary shadow-[0_8px_22px_rgba(244,117,33,0.12)] ring-1 ring-primary/15"
-                          : "border-black/[0.06] shadow-[0_5px_16px_rgba(58,39,20,0.05)]"
+                          ? "border-primary bg-secondary shadow-[0_8px_22px_rgba(255,90,31,0.12)] ring-1 ring-primary/15"
+                          : "border-[#0b1220]/[0.06] shadow-[0_5px_16px_rgba(11,18,32,0.05)]"
                       )}
                     >
                       {imageUrl ? (
-                        <span className="relative mb-2 h-11 w-11 overflow-hidden rounded-xl bg-orange-50/70">
+                        <span className="relative mb-2 h-11 w-11 overflow-hidden rounded-xl bg-secondary">
                           <Image
                             src={imageUrl}
                             alt=""
@@ -210,7 +210,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
                   placeholder="Miasto, okolica lub nazwa atrakcji"
-                  className="h-14 rounded-[18px] border-black/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
+                  className="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
                 />
               </div>
             </section>
@@ -225,7 +225,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="h-14 rounded-[18px] border-black/[0.07] bg-white px-4 text-sm shadow-sm focus-visible:ring-primary/25"
+                  className="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white px-4 text-sm shadow-sm focus-visible:ring-primary/25"
                 />
               </div>
 
@@ -234,7 +234,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><Users className="h-3.5 w-3.5" /></span>
                   <h3 className="text-sm font-extrabold tracking-[-0.02em]">Ile osób?</h3>
                 </div>
-                <div className="flex h-14 items-center justify-between rounded-[18px] border border-black/[0.07] bg-white px-3 shadow-sm">
+                <div className="flex h-14 items-center justify-between rounded-[18px] border border-[#0b1220]/[0.07] bg-white px-3 shadow-sm">
                   <button type="button" onClick={() => setGuests((value) => Math.max(1, value - 1))} className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-primary" aria-label="Mniej osób"><Minus className="h-4 w-4" /></button>
                   <div className="text-center"><span className="block text-base font-extrabold">{guests}</span><span className="block text-[9px] font-semibold text-muted-foreground">{guests === 1 ? "osoba" : "osoby"}</span></div>
                   <button type="button" onClick={() => setGuests((value) => Math.min(30, value + 1))} className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-primary" aria-label="Więcej osób"><Plus className="h-4 w-4" /></button>
@@ -245,14 +245,14 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
             <section>
               <h3 className="mb-3 text-sm font-extrabold tracking-[-0.02em]">Wiek uczestników <span className="font-medium text-muted-foreground">(opcjonalnie)</span></h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 rounded-[16px] border-black/[0.07] bg-white shadow-sm" />
-                <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 rounded-[16px] border-black/[0.07] bg-white shadow-sm" />
+                <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
+                <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
               </div>
             </section>
           </div>
         </ScrollArea>
 
-        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-black/[0.055] bg-white/96 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:static md:px-6 md:pb-5">
+        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-[#0b1220]/[0.055] bg-white/96 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:static md:px-6 md:pb-5">
           <Button onClick={handleSearch} className="h-13 w-full rounded-full text-sm font-extrabold orange-glow md:h-12">
             <Search className="mr-2 h-4 w-4" />
             Pokaż atrakcje

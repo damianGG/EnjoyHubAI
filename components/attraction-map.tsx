@@ -120,7 +120,7 @@ function markerVisual(attraction: Attraction) {
     getEnjoyHubCategoryIcon(attraction.property_type)
 
   if (localImage) {
-    return `<img class="eh-object-marker__image eh-object-marker__image--local" src="${escapeHtml(localImage)}" alt="" loading="lazy" style="display:block;width:42px;height:42px;max-width:42px;max-height:42px;object-fit:contain;object-position:center;padding:3px;box-sizing:border-box;background:#fffaf5" />`
+    return `<img class="eh-object-marker__image eh-object-marker__image--local" src="${escapeHtml(localImage)}" alt="" loading="lazy" style="display:block;width:42px;height:42px;max-width:42px;max-height:42px;object-fit:contain;object-position:center;padding:3px;box-sizing:border-box;background:#fff1eb" />`
   }
 
   const remoteImage = safeRemoteImageUrl(attraction.subcategory_image_url || attraction.category_image_url)
@@ -237,7 +237,6 @@ export default function AttractionMap({
         iconAnchor: [30, 61],
         tooltipAnchor: [0, -48],
       })
-
       const marker = L.marker(coordinates, { icon, riseOnHover: true })
       marker.bindTooltip(attraction.title, {
         direction: "top",
@@ -324,7 +323,7 @@ export default function AttractionMap({
             variant="secondary"
             size="icon"
             onClick={() => setIsFullscreen((value) => !value)}
-            className="h-10 w-10 rounded-full border border-black/[0.08] bg-white/95 text-[#0b1220] shadow-lg backdrop-blur hover:bg-white"
+            className="h-10 w-10 rounded-full border border-[#0b1220]/[0.08] bg-white/95 text-[#0b1220] shadow-lg backdrop-blur hover:bg-white"
             aria-label={isFullscreen ? "Zamknij pełny ekran mapy" : "Powiększ mapę"}
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -337,7 +336,7 @@ export default function AttractionMap({
             className="absolute left-1/2 z-[800] w-[calc(100%-1.25rem)] max-w-[520px] -translate-x-1/2"
             style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 64px)" }}
           >
-            <div className="relative overflow-hidden rounded-[28px] bg-white shadow-[0_22px_60px_rgba(28,20,14,0.30)] ring-1 ring-black/[0.07]">
+            <div className="relative overflow-hidden rounded-[28px] bg-white shadow-[0_22px_60px_rgba(11,18,32,0.30)] ring-1 ring-[#0b1220]/[0.07]">
               <div className="relative h-[190px] bg-muted sm:h-[220px]">
                 <div
                   ref={galleryRef}
@@ -361,7 +360,7 @@ export default function AttractionMap({
                 </button>
 
                 {galleryImages.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/25 px-2.5 py-1.5 backdrop-blur-sm">
+                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 rounded-full bg-[#0b1220]/30 px-2.5 py-1.5 backdrop-blur-sm">
                     {galleryImages.slice(0, 7).map((_, index) => (
                       <span
                         key={index}
@@ -391,7 +390,7 @@ export default function AttractionMap({
                   )}
                 </div>
 
-                <div className="mt-3 flex items-end justify-between gap-3 border-t border-black/[0.05] pt-3">
+                <div className="mt-3 flex items-end justify-between gap-3 border-t border-[#0b1220]/[0.05] pt-3">
                   <div>
                     <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</div>
                     <span className="text-lg font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span>
@@ -415,7 +414,7 @@ export default function AttractionMap({
 
         {popupAttraction && !immersiveMobile && (
           <div className="absolute bottom-4 left-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
-            <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/[0.07]">
+            <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-[#0b1220]/[0.07]">
               <Link href={hrefFor(popupAttraction)} className="grid grid-cols-[105px_1fr]">
                 <div className="relative min-h-[126px] bg-muted">
                   <Image src={galleryImages[0]} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
@@ -434,17 +433,17 @@ export default function AttractionMap({
           .eh-map-gallery::-webkit-scrollbar { display: none; }
           .eh-map-gallery { scrollbar-width: none; }
           .eh-object-marker-wrapper { background: transparent !important; border: 0 !important; overflow: visible !important; }
-          .eh-object-marker { --eh-orange:#f47521; position:relative; display:grid; height:64px; width:60px; place-items:start center; transform-origin:50% 92%; animation:eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both; animation-delay:var(--eh-enter-delay,0ms); cursor:pointer; }
-          .eh-object-marker__halo { position:absolute; top:-4px; left:2px; width:56px; height:56px; border-radius:20px; background:rgba(244,117,33,.22); opacity:0; pointer-events:none; }
+          .eh-object-marker { --eh-orange:#ff5a1f; position:relative; display:grid; height:64px; width:60px; place-items:start center; transform-origin:50% 92%; animation:eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both; animation-delay:var(--eh-enter-delay,0ms); cursor:pointer; }
+          .eh-object-marker__halo { position:absolute; top:-4px; left:2px; width:56px; height:56px; border-radius:20px; background:rgba(255,90,31,.22); opacity:0; pointer-events:none; }
           .eh-object-marker__bubble { position:relative; z-index:2; display:grid; width:52px; height:52px; place-items:center; overflow:hidden; border:2px solid rgba(11,18,32,.12); border-radius:18px; background:rgba(255,255,255,.98); box-shadow:0 7px 20px rgba(11,18,32,.20),0 2px 5px rgba(11,18,32,.10); transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
           .eh-object-marker__image { width:100%; height:100%; object-fit:cover; }
-          .eh-object-marker__image--local { width:42px; height:42px; max-width:42px; max-height:42px; object-fit:contain; object-position:center; padding:3px; box-sizing:border-box; background:#fffaf5; }
+          .eh-object-marker__image--local { width:42px; height:42px; max-width:42px; max-height:42px; object-fit:contain; object-position:center; padding:3px; box-sizing:border-box; background:#fff1eb; }
           .eh-object-marker__emoji { font-size:28px; line-height:1; }
           .eh-object-marker__tip { position:absolute; z-index:1; bottom:4px; left:25px; width:10px; height:10px; transform:rotate(45deg); border-right:1px solid rgba(11,18,32,.10); border-bottom:1px solid rgba(11,18,32,.10); background:white; }
-          .eh-object-marker:hover .eh-object-marker__bubble { transform:translateY(-3px) scale(1.07); border-color:rgba(244,117,33,.45); }
+          .eh-object-marker:hover .eh-object-marker__bubble { transform:translateY(-3px) scale(1.07); border-color:rgba(255,90,31,.45); }
           .eh-object-marker--selected .eh-object-marker__halo { animation:eh-marker-selected-pulse 1.8s ease-out infinite; }
-          .eh-object-marker--selected .eh-object-marker__bubble { transform:translateY(-4px) scale(1.1); border-color:var(--eh-orange); box-shadow:0 12px 30px rgba(244,117,33,.28); }
-          .eh-object-marker-tooltip { border:0 !important; border-radius:12px !important; background:rgba(35,30,26,.96) !important; color:white !important; box-shadow:0 8px 24px rgba(11,18,32,.18) !important; padding:7px 10px !important; font-size:11px !important; font-weight:700 !important; }
+          .eh-object-marker--selected .eh-object-marker__bubble { transform:translateY(-4px) scale(1.1); border-color:var(--eh-orange); box-shadow:0 12px 30px rgba(255,90,31,.28); }
+          .eh-object-marker-tooltip { border:0 !important; border-radius:12px !important; background:rgba(11,18,32,.96) !important; color:white !important; box-shadow:0 8px 24px rgba(11,18,32,.18) !important; padding:7px 10px !important; font-size:11px !important; font-weight:700 !important; }
           .eh-object-marker-tooltip::before { display:none !important; }
           .leaflet-control-zoom { border:0 !important; box-shadow:0 5px 18px rgba(11,18,32,.18) !important; margin-top:12px !important; margin-left:12px !important; }
           .leaflet-control-zoom a { color:#0b1220 !important; border:0 !important; }
@@ -455,7 +454,7 @@ export default function AttractionMap({
         `}</style>
       </div>
 
-      {isFullscreen && <div className="fixed inset-0 z-[1300] bg-black/45" onClick={() => setIsFullscreen(false)} />}
+      {isFullscreen && <div className="fixed inset-0 z-[1300] bg-[#0b1220]/45" onClick={() => setIsFullscreen(false)} />}
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     </>
   )

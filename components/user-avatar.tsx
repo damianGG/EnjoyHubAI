@@ -41,7 +41,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
-  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User"
+  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Użytkownik"
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -53,9 +53,12 @@ export function UserAvatar({ user }: UserAvatarProps) {
     setIsLoading(true)
     try {
       const supabase = createClient()
-      await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+
       setShowLogoutDialog(false)
-      router.refresh() // Stay on the same page and refresh
+      router.replace("/")
+      router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
     } finally {
@@ -85,7 +88,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
           <DropdownMenuItem asChild>
             <Link href="/dashboard" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
-              Dashboard
+              Moje konto
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>

@@ -92,7 +92,7 @@ function AttractionCard({
   }))
 
   const body = (
-    <article className="group overflow-hidden rounded-[22px] border border-black/[0.06] bg-white shadow-[0_8px_28px_rgba(55,37,19,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(55,37,19,0.12)]">
+    <article className="group overflow-hidden rounded-[22px] border border-[#0b1220]/[0.06] bg-white shadow-[0_8px_28px_rgba(11,18,32,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(11,18,32,0.12)]">
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <Carousel setApi={setApi} className="h-full w-full">
           <CarouselContent className="h-full">
@@ -115,7 +115,7 @@ function AttractionCard({
                       sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       onLoad={() => setImageLoadingStates((prev) => ({ ...prev, [index]: false }))}
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/25 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0b1220]/30 to-transparent" />
                   </div>
                 </CarouselItem>
               )
@@ -200,7 +200,7 @@ function AttractionCard({
           </div>
         )}
 
-        <div className="flex items-end justify-between gap-3 border-t border-black/[0.055] pt-3">
+        <div className="flex items-end justify-between gap-3 border-t border-[#0b1220]/[0.055] pt-3">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</p>
             {priceFrom !== undefined ? (
