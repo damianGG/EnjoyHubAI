@@ -10,35 +10,33 @@ interface BrandLogoProps {
 
 function SmileMark({ small = false }: { small?: boolean }) {
   return (
-    <span
-      className={cn(
-        "relative grid shrink-0 place-items-center bg-primary shadow-[0_7px_18px_rgba(244,117,33,0.22)]",
-        small ? "h-7 w-7 rounded-[10px]" : "h-10 w-10 rounded-[14px]"
-      )}
+    <svg
+      viewBox="0 0 64 64"
+      className={small ? "h-8 w-8 shrink-0" : "h-10 w-10 shrink-0"}
+      aria-hidden="true"
     >
-      <svg viewBox="0 0 40 40" className={small ? "h-[22px] w-[22px]" : "h-8 w-8"} aria-hidden="true">
-        <circle cx="13.5" cy="15" r="2.2" fill="white" />
-        <circle cx="26.5" cy="15" r="2.2" fill="white" />
-        <path
-          d="M10.8 22.2c2.3 4.2 5.5 6.3 9.4 6.3 3.8 0 6.9-2.1 9-6.3"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.8"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
+      <circle cx="32" cy="15" r="8.5" fill="#FF5A1F" />
+      <path
+        fill="#FF5A1F"
+        d="M12.9 24.2c2.9-3.5 8.2-2.8 10.3 1.2 2.2 4.1 5 6.3 8.8 6.3s6.7-2.2 8.8-6.3c2.1-4 7.4-4.7 10.3-1.2 3 3.5 2.6 9.1-.7 13.1L35.8 55.1c-2 2.4-5.6 2.4-7.6 0L13.6 37.3c-3.3-4-3.7-9.6-.7-13.1Z"
+      />
+    </svg>
   )
 }
 
-function SignatureY() {
+function SignatureY({ mobile = false }: { mobile?: boolean }) {
   return (
-    <svg viewBox="0 0 18 24" className="mx-[1px] h-[20px] w-[15px] overflow-visible" aria-hidden="true">
+    <svg
+      viewBox="0 0 38 48"
+      className={cn("overflow-visible", mobile ? "h-[26px] w-[21px]" : "h-[35px] w-[28px]")}
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="11" r="5.2" fill="#FF5A1F" />
       <path
-        d="M2.2 4.2 8 11.2l5.8-7M8 11.2v2.3c0 4.6 2.6 6.6 6.1 6.6"
+        d="M4.5 10.5c1.8 9.5 7 14.4 14 14.4 7.3 0 12.4-5 14.1-14.4M32.5 10.5c-.5 17.5-6.2 27-17.5 29.5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.8"
+        strokeWidth="6.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -47,28 +45,34 @@ function SignatureY() {
 }
 
 export function BrandLogo({ href = "/", compact = false, mobile = false, className }: BrandLogoProps) {
-  const content = (
-    <span className={cn("inline-flex items-center", mobile ? "gap-1.5" : "gap-2.5", className)} aria-label="EnjoyHub">
+  const content = compact ? (
+    <span className={cn("inline-flex items-center", className)} aria-label="EnjoyHub">
       <SmileMark small={mobile} />
-      {!compact && (
-        <span
-          className={cn(
-            "inline-flex items-center font-bold tracking-[-0.055em] text-foreground",
-            mobile ? "text-[1.05rem]" : "text-[1.45rem] md:text-[1.65rem]"
-          )}
-        >
-          <span>enjo</span>
-          <span className="inline-flex text-primary"><SignatureY /></span>
-          <span>hub</span>
-        </span>
+    </span>
+  ) : (
+    <span
+      className={cn(
+        "inline-flex items-center font-black leading-none tracking-[-0.075em] text-[#0B1220] dark:text-white",
+        mobile ? "text-[1.28rem]" : "text-[1.8rem] md:text-[2rem]",
+        className,
       )}
+      aria-label="EnjoyHub"
+    >
+      <span>enjo</span>
+      <span className="-mx-[0.03em] inline-flex text-[#0B1220] dark:text-white">
+        <SignatureY mobile={mobile} />
+      </span>
+      <span className="text-[#FF5A1F]">hub</span>
     </span>
   )
 
   if (!href) return content
 
   return (
-    <Link href={href} className="inline-flex items-center rounded-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-primary/40">
+    <Link
+      href={href}
+      className="inline-flex items-center rounded-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
       {content}
     </Link>
   )
