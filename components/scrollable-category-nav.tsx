@@ -89,7 +89,7 @@ export function ScrollableCategoryNav({
 
     if (imageUrl) {
       return (
-        <span className="relative h-12 w-12 overflow-hidden rounded-[15px] bg-gradient-to-br from-orange-50 to-amber-50 shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14">
+        <span className="relative h-12 w-12 overflow-hidden rounded-[15px] bg-gradient-to-br from-secondary to-white shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 ring-[#0b1220]/[0.05] md:h-14 md:w-14">
           <Image
             src={imageUrl}
             alt=""
@@ -102,7 +102,7 @@ export function ScrollableCategoryNav({
     }
 
     return (
-      <span className="grid h-12 w-12 place-items-center rounded-[15px] bg-gradient-to-br from-orange-50 via-white to-amber-50 text-[28px] shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14 md:text-[31px]">
+      <span className="grid h-12 w-12 place-items-center rounded-[15px] bg-gradient-to-br from-secondary via-white to-[#fff8f4] text-[28px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 ring-[#0b1220]/[0.05] md:h-14 md:w-14 md:text-[31px]">
         {category.icon || '✨'}
       </span>
     )
@@ -110,15 +110,15 @@ export function ScrollableCategoryNav({
 
   return (
     <div className={cn(
-      "relative w-full border-b border-black/[0.055] bg-white/95 backdrop-blur-xl",
-      compact ? "shadow-[0_8px_24px_rgba(48,31,16,0.04)]" : ""
+      "relative w-full border-b border-[#0b1220]/[0.055] bg-white/95 backdrop-blur-xl",
+      compact ? "shadow-[0_8px_24px_rgba(11,18,32,0.04)]" : ""
     )}>
       <div className="relative mx-auto flex max-w-[1600px] items-center px-1 md:px-3">
         {showLeftButton && (
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 z-20 h-9 w-9 rounded-full border-black/10 bg-white/95 shadow-lg md:left-4"
+            className="absolute left-2 z-20 h-9 w-9 rounded-full border-[#0b1220]/10 bg-white/95 shadow-lg md:left-4"
             onClick={() => scroll('left')}
             aria-label="Przewiń kategorie w lewo"
           >
@@ -149,8 +149,8 @@ export function ScrollableCategoryNav({
           >
             {!compact && (
               <span className={cn(
-                "grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(87,53,20,0.10)] ring-1 ring-black/[0.05] md:h-14 md:w-14",
-                !selectedCategory ? "bg-primary text-white" : "bg-gradient-to-br from-orange-50 to-white text-primary"
+                "grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 ring-[#0b1220]/[0.05] md:h-14 md:w-14",
+                !selectedCategory ? "bg-primary text-white" : "bg-gradient-to-br from-secondary to-white text-primary"
               )}>
                 <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
               </span>
@@ -194,7 +194,7 @@ export function ScrollableCategoryNav({
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 z-20 h-9 w-9 rounded-full border-black/10 bg-white/95 shadow-lg md:right-4"
+            className="absolute right-2 z-20 h-9 w-9 rounded-full border-[#0b1220]/10 bg-white/95 shadow-lg md:right-4"
             onClick={() => scroll('right')}
             aria-label="Przewiń kategorie w prawo"
           >
