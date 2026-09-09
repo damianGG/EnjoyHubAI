@@ -84,8 +84,8 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
       onClick={onSelect}
       className={`group overflow-hidden rounded-[22px] border bg-white transition-all duration-200 ${
         selected
-          ? "border-primary shadow-[0_12px_30px_rgba(244,117,33,0.14)] ring-1 ring-primary/15"
-          : "border-black/[0.065] shadow-[0_6px_22px_rgba(55,37,19,0.055)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(55,37,19,0.10)]"
+          ? "border-primary shadow-[0_12px_30px_rgba(255,90,31,0.14)] ring-1 ring-primary/15"
+          : "border-[#0b1220]/[0.065] shadow-[0_6px_22px_rgba(11,18,32,0.055)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(11,18,32,0.10)]"
       }`}
     >
       <Link href={attractionHref(attraction)} className="grid grid-cols-[40%_1fr] gap-0 sm:grid-cols-[42%_1fr]">
@@ -113,12 +113,12 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
             <div className="flex flex-wrap gap-1.5">
               <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize">{attraction.property_type.replaceAll("_", " ")}</Badge>
               {attraction.max_guests > 0 && (
-                <Badge variant="outline" className="rounded-full border-black/[0.07] px-2 py-0.5 text-[10px] font-medium"><Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób</Badge>
+                <Badge variant="outline" className="rounded-full border-[#0b1220]/[0.07] px-2 py-0.5 text-[10px] font-medium"><Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób</Badge>
               )}
             </div>
           </div>
 
-          <div className="mt-3 flex items-end justify-between gap-2 border-t border-black/[0.05] pt-3">
+          <div className="mt-3 flex items-end justify-between gap-2 border-t border-[#0b1220]/[0.05] pt-3">
             <div><span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span><span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.price_per_night)} zł</span><span className="text-[11px] text-muted-foreground"> / os.</span></div>
             {attraction.reviewCount ? <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span> : null}
           </div>
@@ -131,7 +131,7 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
 function EmptyList({ searched }: { searched: boolean }) {
   return (
     <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[26px] border border-dashed border-primary/20 bg-gradient-to-br from-secondary/70 to-white px-7 text-center">
-      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(64,41,18,0.08)]">
+      <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(11,18,32,0.08)]">
         {searched ? <SearchX className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
       </span>
       <h2 className="text-lg font-bold tracking-[-0.025em]">{searched ? "Nie znaleźliśmy takich atrakcji" : "Mapa jest gotowa do odkrywania"}</h2>
@@ -354,24 +354,24 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">{list}</div>
-        <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-black/[0.06] bg-muted shadow-[0_14px_38px_rgba(55,37,19,0.08)]">
+        <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_14px_38px_rgba(11,18,32,0.08)]">
           <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" />
         </div>
       </div>
 
       <div className={mobileImmersive ? "h-full min-h-0 lg:hidden" : "lg:hidden"}>
         {mobileMode === "map" ? (
-          <div className={mobileImmersive ? "relative h-full min-h-0 overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-black/[0.06] bg-muted shadow-[0_12px_30px_rgba(55,37,19,0.07)]"}>
+          <div className={mobileImmersive ? "relative h-full min-h-0 overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_12px_30px_rgba(11,18,32,0.07)]"}>
             <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
-          <div className={mobileImmersive ? "h-full min-h-0 overflow-y-auto bg-[#fbfaf8] pt-3" : "pb-24"}>{list}</div>
+          <div className={mobileImmersive ? "h-full min-h-0 overflow-y-auto bg-background pt-3" : "pb-24"}>{list}</div>
         )}
 
         <div className={`fixed left-1/2 z-[700] -translate-x-1/2 ${mobileImmersive ? "bottom-[max(18px,env(safe-area-inset-bottom))]" : "bottom-24"}`}>
           <Button
             onClick={() => setMobileMode((mode) => (mode === "map" ? "list" : "map"))}
-            className="h-12 rounded-full bg-[#28231f] px-5 font-bold text-white shadow-[0_12px_28px_rgba(37,29,22,0.24)] hover:bg-[#171411]"
+            className="h-12 rounded-full bg-[#0b1220] px-5 font-bold text-white shadow-[0_12px_28px_rgba(11,18,32,0.24)] hover:bg-[#111827]"
           >
             {mobileMode === "map" ? <List className="mr-2 h-4 w-4" /> : <Map className="mr-2 h-4 w-4" />}
             {mobileMode === "map" ? `Pokaż listę${filteredAttractions.length ? ` (${filteredAttractions.length})` : ""}` : "Pokaż mapę"}
