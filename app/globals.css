@@ -4,37 +4,37 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* EnjoyHub — warm, optimistic marketplace palette */
-  --background: oklch(0.992 0.004 70);
-  --foreground: oklch(0.19 0.012 55);
+  /* EnjoyHub brand palette */
+  --background: #fffefc;
+  --foreground: #0b1220;
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.012 55);
+  --card: #ffffff;
+  --card-foreground: #0b1220;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.012 55);
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
 
-  /* Signature EnjoyHub orange */
-  --primary: oklch(0.705 0.19 48);
-  --primary-foreground: oklch(0.99 0.003 70);
+  /* EnjoyHub Orange #FF5A1F */
+  --primary: #ff5a1f;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.965 0.021 67);
-  --secondary-foreground: oklch(0.28 0.035 48);
+  --secondary: #fff1eb;
+  --secondary-foreground: #0b1220;
 
-  --muted: oklch(0.965 0.008 70);
-  --muted-foreground: oklch(0.49 0.018 55);
+  --muted: #f5f6f8;
+  --muted-foreground: #5e6673;
 
-  --accent: oklch(0.94 0.048 68);
-  --accent-foreground: oklch(0.31 0.055 46);
+  --accent: #ffe1d5;
+  --accent-foreground: #0b1220;
 
   --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive-foreground: #ffffff;
 
-  --border: oklch(0.91 0.012 70);
-  --input: oklch(0.91 0.012 70);
-  --ring: oklch(0.705 0.19 48);
+  --border: #e6e8ec;
+  --input: #e6e8ec;
+  --ring: #ff5a1f;
 
-  --chart-1: oklch(0.705 0.19 48);
+  --chart-1: #ff5a1f;
   --chart-2: oklch(0.68 0.12 180);
   --chart-3: oklch(0.55 0.11 255);
   --chart-4: oklch(0.78 0.15 86);
@@ -42,10 +42,10 @@
 
   --radius: 1rem;
 
-  --elevation-1: 0 1px 2px rgba(37, 28, 18, 0.04), 0 2px 5px rgba(37, 28, 18, 0.04);
-  --elevation-2: 0 2px 5px rgba(37, 28, 18, 0.04), 0 10px 24px rgba(37, 28, 18, 0.07);
-  --elevation-3: 0 8px 18px rgba(37, 28, 18, 0.06), 0 22px 48px rgba(37, 28, 18, 0.10);
-  --elevation-hover: 0 10px 22px rgba(37, 28, 18, 0.08), 0 28px 58px rgba(37, 28, 18, 0.12);
+  --elevation-1: 0 1px 2px rgba(11, 18, 32, 0.04), 0 2px 5px rgba(11, 18, 32, 0.04);
+  --elevation-2: 0 2px 5px rgba(11, 18, 32, 0.04), 0 10px 24px rgba(11, 18, 32, 0.07);
+  --elevation-3: 0 8px 18px rgba(11, 18, 32, 0.06), 0 22px 48px rgba(11, 18, 32, 0.10);
+  --elevation-hover: 0 10px 22px rgba(11, 18, 32, 0.08), 0 28px 58px rgba(11, 18, 32, 0.12);
   --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 
   --sidebar-background: var(--background);
@@ -59,33 +59,33 @@
 }
 
 .dark {
-  --background: oklch(0.17 0.012 55);
-  --foreground: oklch(0.97 0.006 70);
+  --background: #0b1220;
+  --foreground: #f8fafc;
 
-  --card: oklch(0.205 0.014 55);
-  --card-foreground: oklch(0.97 0.006 70);
+  --card: #111827;
+  --card-foreground: #f8fafc;
 
-  --popover: oklch(0.205 0.014 55);
-  --popover-foreground: oklch(0.97 0.006 70);
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
 
-  --primary: oklch(0.76 0.18 50);
-  --primary-foreground: oklch(0.18 0.015 52);
+  --primary: #ff5a1f;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.27 0.025 52);
-  --secondary-foreground: oklch(0.96 0.01 70);
+  --secondary: #182033;
+  --secondary-foreground: #f8fafc;
 
-  --muted: oklch(0.265 0.012 55);
-  --muted-foreground: oklch(0.72 0.012 70);
+  --muted: #171f2f;
+  --muted-foreground: #a7afbc;
 
-  --accent: oklch(0.31 0.045 50);
-  --accent-foreground: oklch(0.96 0.01 70);
+  --accent: #3a1d14;
+  --accent-foreground: #fff1eb;
 
   --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive-foreground: #ffffff;
 
-  --border: oklch(0.31 0.012 55);
-  --input: oklch(0.31 0.012 55);
-  --ring: oklch(0.76 0.18 50);
+  --border: #2a3345;
+  --input: #2a3345;
+  --ring: #ff5a1f;
 
   --elevation-1: 0 2px 5px rgba(0, 0, 0, 0.38);
   --elevation-2: 0 8px 22px rgba(0, 0, 0, 0.42);
@@ -93,7 +93,7 @@
   --elevation-hover: 0 20px 56px rgba(0, 0, 0, 0.56);
   --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 
-  --chart-1: oklch(0.76 0.18 50);
+  --chart-1: #ff5a1f;
   --chart-2: oklch(0.72 0.12 180);
   --chart-3: oklch(0.7 0.12 255);
   --chart-4: oklch(0.8 0.14 86);
@@ -154,11 +154,11 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(circle at 15% -10%, rgba(247, 135, 55, 0.07), transparent 28rem);
+    background-image: radial-gradient(circle at 15% -10%, rgba(255, 90, 31, 0.07), transparent 28rem);
   }
 
   ::selection {
-    background: rgba(244, 117, 33, 0.2);
+    background: rgba(255, 90, 31, 0.2);
   }
 }
 
@@ -205,7 +205,7 @@
   }
 
   .field-3d {
-    box-shadow: inset 0 1px 2px rgba(37, 28, 18, 0.05);
+    box-shadow: inset 0 1px 2px rgba(11, 18, 32, 0.05);
   }
 
   .dark .field-3d {
@@ -218,19 +218,19 @@
 
   .brand-surface {
     background: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(71, 52, 31, 0.08);
-    box-shadow: 0 10px 34px rgba(62, 42, 20, 0.07);
+    border: 1px solid rgba(11, 18, 32, 0.08);
+    box-shadow: 0 10px 34px rgba(11, 18, 32, 0.07);
     backdrop-filter: blur(18px);
   }
 
   .brand-pill {
     background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(71, 52, 31, 0.09);
-    box-shadow: 0 5px 18px rgba(62, 42, 20, 0.07);
+    border: 1px solid rgba(11, 18, 32, 0.09);
+    box-shadow: 0 5px 18px rgba(11, 18, 32, 0.07);
   }
 
   .orange-glow {
-    box-shadow: 0 12px 30px rgba(244, 117, 33, 0.22);
+    box-shadow: 0 12px 30px rgba(255, 90, 31, 0.22);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -249,19 +249,19 @@
 
 .leaflet-container {
   font-family: var(--font-sans);
-  background: #f5f2ed;
+  background: #f5f6f8;
 }
 
 .leaflet-control-zoom {
   border: none !important;
-  box-shadow: 0 7px 22px rgba(42, 31, 20, 0.14) !important;
+  box-shadow: 0 7px 22px rgba(11, 18, 32, 0.14) !important;
   border-radius: 14px !important;
   overflow: hidden;
 }
 
 .leaflet-control-zoom a {
   background-color: rgba(255, 255, 255, 0.96) !important;
-  color: #2d2925 !important;
+  color: #0b1220 !important;
   border: none !important;
   width: 38px !important;
   height: 38px !important;
@@ -271,12 +271,12 @@
 }
 
 .leaflet-control-zoom a:hover {
-  background-color: #fff6ef !important;
-  color: #e96616 !important;
+  background-color: #fff1eb !important;
+  color: #ff5a1f !important;
 }
 
 .leaflet-control-zoom a:first-child {
-  border-bottom: 1px solid #ece7e1 !important;
+  border-bottom: 1px solid #e6e8ec !important;
 }
 
 .leaflet-control-attribution {
@@ -296,7 +296,7 @@
 
 .leaflet-popup-content-wrapper {
   border-radius: 18px !important;
-  box-shadow: 0 16px 42px rgba(42, 31, 20, 0.18) !important;
+  box-shadow: 0 16px 42px rgba(11, 18, 32, 0.18) !important;
   padding: 0 !important;
 }
 
@@ -315,12 +315,12 @@
 }
 
 .leaflet-popup-close-button {
-  color: #6e655d !important;
+  color: #5e6673 !important;
   font-size: 20px !important;
   padding: 8px 8px 0 0 !important;
   transition: color 0.2s ease !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: #2d2925 !important;
+  color: #0b1220 !important;
 }
