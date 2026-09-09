@@ -86,10 +86,10 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   return (
     <>
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] md:hidden">
-        <div className="pointer-events-auto mx-auto max-w-md rounded-[26px] border border-black/[0.07] bg-white/95 px-2 py-1.5 shadow-[0_16px_42px_rgba(44,30,16,0.18)] backdrop-blur-xl">
+        <div className="pointer-events-auto mx-auto max-w-md rounded-[26px] border border-[#0b1220]/[0.07] bg-white/95 px-2 py-1.5 shadow-[0_16px_42px_rgba(11,18,32,0.18)] backdrop-blur-xl">
           <div className="grid grid-cols-4 items-center gap-1">
             <button onClick={onSearchClick} className={itemClass(isActive('/'))}>
-              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/') ? 'bg-primary text-white shadow-[0_6px_14px_rgba(244,117,33,0.25)]' : 'bg-secondary'}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/') ? 'bg-primary text-white shadow-[0_6px_14px_rgba(255,90,31,0.25)]' : 'bg-secondary'}`}>
                 <Compass className="h-4 w-4" />
               </span>
               Odkrywaj
