@@ -53,10 +53,11 @@ interface RawVenue {
   property_id: string | null
 }
 
-interface RawMarketplaceProperty {
+interface RawOrganizerAttraction {
   id: string
-  title: string
+  name: string
   city: string
+  venue_id: string | null
 }
 
 interface RawProduct {
@@ -85,31 +86,30 @@ async function loadConfiguration() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  const [membershipResult, propertyResult] = await Promise.all([
+  const [membershipResult, attractionResult] = await Promise.all([
     supabase
       .from("organization_memberships")
       .select("organization_id, role")
       .eq("user_id", user.id),
     supabase
-      .from("properties")
-      .select("id, title, city")
-      .eq("host_id", user.id)
+      .from("organizer_attractions")
+      .select("id, name, city, venue_id")
       .eq("is_active", true)
-      .order("title"),
+      .order("name"),
   ])
   const { data: memberships, error: membershipError } = membershipResult
 
-  if (membershipError || propertyResult.error) {
-    return { error: "Nie udało się odczytać organizacji. Sprawdź, czy migracje ticketingu są uruchomione." } as const
+  if (membershipError || attractionResult.error) {
+    return { error: "Nie udało się odczytać organizacji i atrakcji. Sprawdź, czy migracje domeny organizatora są uruchomione." } as const
   }
 
-  let marketplaceProperties: TicketingMarketplaceProperty[] = ((
-    propertyResult.data ?? []
-  ) as RawMarketplaceProperty[]).map((property) => ({
-    id: property.id,
-    title: property.title,
-    city: property.city,
-    canAssign: true,
+  const marketplaceProperties: TicketingMarketplaceProperty[] = ((
+    attractionResult.data ?? []
+  ) as RawOrganizerAttraction[]).map((attraction) => ({
+    id: attraction.id,
+    title: attraction.name,
+    city: attraction.city,
+    canAssign: attraction.venue_id === null,
   }))
 
   const managerMemberships = ((memberships ?? []) as RawMembership[]).filter((membership) =>
@@ -152,34 +152,6 @@ async function loadConfiguration() {
   const rawVenues = ((venuesResult.data ?? []) as RawVenue[]).filter((venue) =>
     activeOrganizationIds.has(venue.organization_id),
   )
-  const knownPropertyIds = new Set(marketplaceProperties.map((property) => property.id))
-  const missingLinkedPropertyIds = rawVenues
-    .map((venue) => venue.property_id)
-    .filter((propertyId): propertyId is string => (
-      propertyId !== null && !knownPropertyIds.has(propertyId)
-    ))
-
-  if (missingLinkedPropertyIds.length > 0) {
-    const { data: linkedPropertyData, error: linkedPropertyError } = await supabase
-      .from("properties")
-      .select("id, title, city")
-      .in("id", missingLinkedPropertyIds)
-      .eq("is_active", true)
-
-    if (linkedPropertyError) {
-      return { error: "Nie udało się odczytać atrakcji połączonych z obiektami." } as const
-    }
-
-    marketplaceProperties = [
-      ...marketplaceProperties,
-      ...((linkedPropertyData ?? []) as RawMarketplaceProperty[]).map((property) => ({
-        id: property.id,
-        title: property.title,
-        city: property.city,
-        canAssign: false,
-      })),
-    ]
-  }
   const venueIds = rawVenues.map((venue) => venue.id)
   const organizationNames = new Map(rawOrganizations.map((organization) => [organization.id, organization.name]))
 
