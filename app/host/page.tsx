@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  CalendarClock,
   PlusCircle,
   ScanLine,
   Settings2,
@@ -75,7 +76,7 @@ export default async function HostDashboard() {
             <Badge variant="secondary" className="mb-3">Panel organizatora</Badge>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Twoje atrakcje w EnjoyHub</h1>
             <p className="mt-2 text-muted-foreground">
-              Witaj, {displayName}. Zarządzaj atrakcjami, ofertami, zamówieniami i kontrolą biletów.
+              Witaj, {displayName}. Zarządzaj atrakcjami, ofertami, dostępnością, zamówieniami i kontrolą biletów.
             </p>
           </div>
           {memberships.length > 0 && (
@@ -96,7 +97,7 @@ export default async function HostDashboard() {
               </div>
               <h2 className="text-xl font-semibold">Dodaj pierwszą atrakcję</h2>
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                Krótki kreator utworzy organizację, atrakcję, pierwszy bilet i terminy. Dane prawne uzupełnisz później.
+                Krótki kreator utworzy organizację, atrakcję, pierwszą ofertę, bilet i regułę dostępności. Dane prawne uzupełnisz później.
               </p>
               <Button asChild className="mt-6">
                 <Link href="/host/start">
@@ -127,8 +128,16 @@ export default async function HostDashboard() {
               <ActionCard
                 href="/host/sprzedaz/konfiguracja"
                 icon={Settings2}
-                title="Oferty i terminy"
-                description="Zarządzaj cennikiem, pulą miejsc i harmonogramem sprzedaży."
+                title="Oferty i cennik"
+                description="Zarządzaj tym, co kupuje klient: ofertami, wariantami biletów, cenami i pulą miejsc."
+              />
+            )}
+            {canManage && (
+              <ActionCard
+                href="/host/sprzedaz/dostepnosc"
+                icon={CalendarClock}
+                title="Kalendarz i dostępność"
+                description="Ustaw reguły tygodniowe oraz wyjątki: zamknięcia, specjalne godziny i pojemność."
               />
             )}
             {canManage && (
