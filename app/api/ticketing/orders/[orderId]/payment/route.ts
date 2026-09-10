@@ -64,6 +64,23 @@ export async function POST(
   }
 
   const supabase = createAdminClient()
+  const { data: paymentAllowed, error: paymentAccessError } = await supabase.rpc(
+    "ticketing_order_payment_allowed",
+    { p_order_id: orderId },
+  )
+
+  if (paymentAccessError) {
+    console.error("Organizer payment readiness check failed", paymentAccessError)
+    return paymentError("Nie udało się sprawdzić gotowości organizatora do płatności.", 503)
+  }
+
+  if (!paymentAllowed) {
+    return paymentError(
+      "Sprzedaż online dla tej atrakcji nie jest jeszcze aktywna. Organizator musi zakończyć weryfikację firmy.",
+      409,
+    )
+  }
+
   const { data, error } = await supabase.rpc("ticketing_prepare_payment_checkout", {
     p_order_id: orderId,
     p_hold_token: checkoutCookie!.holdToken,
