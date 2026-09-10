@@ -17,6 +17,8 @@ const exceptionSchema = z.object({
 })
 
 function errorCode(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? ""
+  if (message.includes("weekday of its recurring schedule")) return "dzien"
   if (error?.code === "P0001") return "rezerwacje"
   if (error?.code === "42501") return "uprawnienia"
   if (error?.code === "22023") return "dane"
