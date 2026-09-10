@@ -28,12 +28,16 @@ export const metadata: Metadata = {
   description: "Atrakcja i pierwsza oferta biletowa zostały przygotowane.",
 }
 
-interface ProductWithVenue {
+interface OrganizerAttraction {
   id: string
   name: string
-  venues: {
-    property_id: string | null
-  }
+  venue_id: string | null
+}
+
+interface ProductForAttraction {
+  id: string
+  name: string
+  attraction_id: string | null
 }
 
 export default async function OrganizerOnboardingCompletePage({
@@ -50,31 +54,33 @@ export default async function OrganizerOnboardingCompletePage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login?next=/host")
 
-  const [propertyResult, productResult] = await Promise.all([
+  // `organizer_attractions` is scoped by organization membership. We no longer
+  // authorize this screen by the legacy properties.host_id field.
+  const [attractionResult, productResult] = await Promise.all([
     supabase
-      .from("properties")
-      .select("id, title")
+      .from("organizer_attractions")
+      .select("id, name, venue_id")
       .eq("id", query.atrakcja)
-      .eq("host_id", user.id)
       .single(),
     supabase
       .from("products")
-      .select("id, name, venues!inner (property_id)")
+      .select("id, name, attraction_id")
       .eq("id", query.oferta)
       .single(),
   ])
 
-  const product = productResult.data as ProductWithVenue | null
+  const attraction = attractionResult.data as OrganizerAttraction | null
+  const product = productResult.data as ProductForAttraction | null
+
   if (
-    propertyResult.error
+    attractionResult.error
     || productResult.error
-    || !propertyResult.data
+    || !attraction
     || !product
-    || product.venues.property_id !== propertyResult.data.id
+    || product.attraction_id !== attraction.id
   ) {
     redirect("/host")
   }
-  const verifiedProduct = product as ProductWithVenue
 
   const publicSalesReady = isTicketingCheckoutEnabled && isTicketingPaymentsEnabled
 
@@ -89,7 +95,7 @@ export default async function OrganizerOnboardingCompletePage({
           <Badge variant="secondary" className="mt-5">Konfiguracja gotowa</Badge>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Twoja atrakcja i bilety są przygotowane</h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            „{propertyResult.data.title}” ma publiczną stronę, ofertę „{verifiedProduct.name}”, cennik oraz pierwsze 90 dni terminów.
+            „{attraction.name}” ma publiczną stronę, ofertę „{product.name}”, cennik oraz pierwsze 90 dni terminów.
           </p>
         </div>
 
@@ -120,13 +126,13 @@ export default async function OrganizerOnboardingCompletePage({
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button asChild size="lg" className="h-12">
-                <Link href={`/attractions/${propertyResult.data.id}`}>
+                <Link href={`/attractions/${attraction.id}`}>
                   Zobacz stronę atrakcji <ExternalLink className="h-4 w-4" />
                 </Link>
               </Button>
               {isTicketingCheckoutEnabled ? (
                 <Button asChild size="lg" variant="outline" className="h-12">
-                  <Link href={`/bilety/${verifiedProduct.id}`}>Zobacz ofertę <ShoppingCart className="h-4 w-4" /></Link>
+                  <Link href={`/bilety/${product.id}`}>Zobacz ofertę <ShoppingCart className="h-4 w-4" /></Link>
                 </Button>
               ) : null}
               <Button asChild size="lg" variant="outline" className="h-12">
