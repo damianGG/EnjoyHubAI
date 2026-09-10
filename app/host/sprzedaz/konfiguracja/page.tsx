@@ -343,7 +343,7 @@ export default async function TicketingConfigurationPage({
             </AlertTitle>
             <AlertDescription>
               {query.blad === "powiazanie"
-                ? "Sprawdź migrację etapu 2B, własność atrakcji oraz uprawnienia do obiektu."
+                ? "Sprawdź uprawnienia do organizacji i powiązanie atrakcji z obiektem."
                 : "Sprawdź swoje uprawnienia i spróbuj ponownie."}
             </AlertDescription>
           </Alert>
@@ -363,7 +363,7 @@ export default async function TicketingConfigurationPage({
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 id="managed-products-heading" className="text-2xl font-semibold">Twoje oferty biletowe</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Stałe linki można umieścić na stronie obiektu, w social mediach i kodzie QR przy kasie.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Stałe linki można umieścić na stronie atrakcji, w social mediach i kodzie QR przy kasie.</p>
             </div>
             <Badge variant="outline">{configuration.products.length}</Badge>
           </div>
@@ -405,7 +405,7 @@ export default async function TicketingConfigurationPage({
                         <form action={linkTicketingVenueToProperty} className="mt-4 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-center">
                           <input type="hidden" name="venueId" value={product.venueId} />
                           <label htmlFor={`property-${product.id}`} className="text-sm font-medium text-amber-950">
-                            Pokaż na stronie atrakcji:
+                            Pokaż ofertę przy atrakcji:
                           </label>
                           <select
                             id={`property-${product.id}`}
