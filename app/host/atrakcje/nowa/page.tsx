@@ -47,8 +47,8 @@ export default async function NewOrganizerAttractionPage({ searchParams }: { sea
     <main className="min-h-screen bg-muted/20">
       <header className="border-b bg-background"><div className="container mx-auto max-w-5xl px-4 py-4"><Link href="/host" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Panel organizatora</Link></div></header>
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
-        <div className="mb-8 max-w-3xl"><Badge variant="secondary">Nowa atrakcja</Badge><h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Dodaj kolejną atrakcję</h1><p className="mt-3 text-muted-foreground">Nie przechodzisz drugi raz onboardingu firmy. Wybierasz organizację, dodajesz atrakcję i jej pierwszą ofertę.</p></div>
-        {query.blad ? <Alert variant="destructive" className="mb-6"><AlertTitle>Nie udało się dodać atrakcji</AlertTitle><AlertDescription>{query.blad === "dane" ? "Sprawdź wymagane pola, mapę, cenę i godziny." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription></Alert> : null}
+        <div className="mb-8 max-w-3xl"><Badge variant="secondary">Nowa atrakcja</Badge><h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Dodaj kolejną atrakcję</h1><p className="mt-3 text-muted-foreground">Nie przechodzisz drugi raz onboardingu firmy. Wybierasz organizację, dodajesz atrakcję, pierwszą ofertę, rodzaj biletu i stałą regułę dostępności.</p></div>
+        {query.blad ? <Alert variant="destructive" className="mb-6"><AlertTitle>Nie udało się dodać atrakcji</AlertTitle><AlertDescription>{query.blad === "dane" ? "Sprawdź wymagane pola, mapę, ofertę, cenę i godziny." : query.blad === "konfiguracja" ? "Brakuje aktualnej konfiguracji ticketingu. Odśwież po wdrożeniu najnowszej migracji." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription></Alert> : null}
         <AddAttractionForm organizations={organizations} categories={categories} userId={user.id} />
       </div>
     </main>
