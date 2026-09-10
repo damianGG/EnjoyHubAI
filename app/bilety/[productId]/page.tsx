@@ -61,7 +61,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
       <section className="border-b bg-primary/5">
         <div className="container mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1fr_20rem] lg:items-start lg:py-16">
           <div>
-            <Badge variant="secondary" className="mb-4">Bilety online</Badge>
+            <Badge variant="secondary" className="mb-4">Oferta biletowa</Badge>
             <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-5xl">{product.name}</h1>
             {product.description && (
               <p className="mt-5 max-w-3xl whitespace-pre-line text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -94,7 +94,8 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
 
       <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-10 lg:grid-cols-[18rem_1fr] lg:py-14">
         <aside>
-          <h2 className="text-lg font-semibold">Cennik</h2>
+          <h2 className="text-lg font-semibold">Rodzaje biletów</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">Warianty ceny w ramach tej samej oferty. Wybierzesz ich liczbę po wskazaniu terminu.</p>
           <div className="mt-4 space-y-3">
             {product.ticketTypes.map((ticketType) => (
               <Card key={ticketType.id}>
@@ -120,7 +121,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
         <section aria-labelledby="sessions-heading">
           <div className="mb-5">
             <h2 id="sessions-heading" className="text-2xl font-semibold">Wybierz termin</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Po przejściu dalej wybierzesz liczbę i rodzaj biletów.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Potem wybierzesz rodzaj i liczbę biletów.</p>
           </div>
 
           {product.sessions.length === 0 ? (
@@ -128,7 +129,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
               <CardContent className="py-12 text-center">
                 <CalendarDays className="mx-auto mb-3 h-9 w-9 text-muted-foreground" />
                 <h3 className="font-semibold">Brak dostępnych terminów</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Nowe daty pojawią się tutaj po uzupełnieniu kalendarza przez organizatora.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Organizator może zmienić regułę dostępności lub dodać kolejne terminy.</p>
               </CardContent>
             </Card>
           ) : (
