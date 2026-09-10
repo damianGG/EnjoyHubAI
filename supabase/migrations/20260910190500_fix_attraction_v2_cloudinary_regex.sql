@@ -1,6 +1,6 @@
 -- Correct the escaped Cloudinary host regexp introduced in the v2 attraction RPC.
--- The previous source contained two backslashes before each dot, which matches a
--- literal backslash instead of a literal dot with standard_conforming_strings.
+-- Replace the whole regexp literal in the stored function definition so the
+-- migration is robust to how PostgreSQL renders backslashes in pg_get_functiondef.
 
 begin;
 
@@ -8,6 +8,7 @@ do $$
 declare
   function_oid oid;
   function_definition text;
+  corrected_definition text;
 begin
   select p.oid
     into function_oid
@@ -22,18 +23,17 @@ begin
   end if;
 
   function_definition := pg_get_functiondef(function_oid);
-
-  if position($old$^https://res\\.cloudinary\\.com/$old$ in function_definition) = 0 then
-    raise exception 'Expected escaped Cloudinary regexp was not found';
-  end if;
-
-  function_definition := replace(
+  corrected_definition := regexp_replace(
     function_definition,
-    $old$^https://res\\.cloudinary\\.com/$old$,
+    $rx$\^https://res[^']*cloudinary[^']*com/$rx$,
     $new$^https://res[.]cloudinary[.]com/$new$
   );
 
-  execute function_definition;
+  if corrected_definition = function_definition then
+    raise exception 'Cloudinary regexp was not found in attraction v2 function';
+  end if;
+
+  execute corrected_definition;
 end
 $$;
 
