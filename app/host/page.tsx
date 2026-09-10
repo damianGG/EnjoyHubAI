@@ -5,8 +5,10 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  PlusCircle,
   ScanLine,
   Settings2,
+  ShieldCheck,
   Ticket,
   type LucideIcon,
 } from "lucide-react"
@@ -94,7 +96,7 @@ export default async function HostDashboard() {
               </div>
               <h2 className="text-xl font-semibold">Dodaj pierwszą atrakcję</h2>
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                Kreator utworzy organizację, obiekt, atrakcję, pierwszą ofertę, bilety i terminy.
+                Krótki kreator utworzy organizację, atrakcję, pierwszy bilet i terminy. Dane prawne uzupełnisz później.
               </p>
               <Button asChild className="mt-6">
                 <Link href="/host/start">
@@ -105,6 +107,14 @@ export default async function HostDashboard() {
           </Card>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {canManage && (
+              <ActionCard
+                href="/host/atrakcje/nowa"
+                icon={PlusCircle}
+                title="Dodaj atrakcję"
+                description="Dodaj kolejną atrakcję do istniejącej organizacji bez powtarzania onboardingu firmy."
+              />
+            )}
             {canViewSales && (
               <ActionCard
                 href="/host/sprzedaz"
@@ -117,8 +127,16 @@ export default async function HostDashboard() {
               <ActionCard
                 href="/host/sprzedaz/konfiguracja"
                 icon={Settings2}
-                title="Atrakcje, oferty i terminy"
-                description="Zarządzaj ofertami, cennikiem, pulą miejsc i harmonogramem sprzedaży."
+                title="Oferty i terminy"
+                description="Zarządzaj cennikiem, pulą miejsc i harmonogramem sprzedaży."
+              />
+            )}
+            {canManage && (
+              <ActionCard
+                href="/host/weryfikacja"
+                icon={ShieldCheck}
+                title="Weryfikacja i płatności"
+                description="Uzupełnij dane prawne firmy i sprawdź gotowość do przyjmowania płatności."
               />
             )}
             {canScan && (
@@ -142,28 +160,13 @@ export default async function HostDashboard() {
   )
 }
 
-function ActionCard({
-  href,
-  icon: Icon,
-  title,
-  description,
-}: {
-  href: string
-  icon: LucideIcon
-  title: string
-  description: string
-}) {
+function ActionCard({ href, icon: Icon, title, description }: { href: string; icon: LucideIcon; title: string; description: string }) {
   return (
     <Link href={href} className="group block h-full">
       <Card className="h-full transition-colors group-hover:border-primary/50">
         <CardHeader>
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-          <CardTitle className="flex items-center justify-between gap-3">
-            {title}
-            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-          </CardTitle>
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+          <CardTitle className="flex items-center justify-between gap-3">{title}<ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" /></CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
       </Card>
@@ -172,14 +175,5 @@ function ActionCard({
 }
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <Card className="max-w-xl">
-        <CardContent className="flex items-start gap-3 p-8 text-muted-foreground">
-          <Building2 className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>{children}</p>
-        </CardContent>
-      </Card>
-    </main>
-  )
+  return <main className="flex min-h-screen items-center justify-center px-4"><Card className="max-w-xl"><CardContent className="flex items-start gap-3 p-8 text-muted-foreground"><Building2 className="mt-0.5 h-5 w-5 shrink-0" /><p>{children}</p></CardContent></Card></main>
 }
