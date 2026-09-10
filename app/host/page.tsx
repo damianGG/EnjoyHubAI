@@ -14,32 +14,26 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  hasOrganizerRole,
+  organizerManagementRoles,
+  organizerRoleLabels,
+  organizerSalesRoles,
+  organizerScannerRoles,
+  type OrganizerRole,
+} from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
 
-type TicketingRole = "owner" | "admin" | "manager" | "cashier" | "viewer"
-
-interface HostMembership {
+interface OrganizerMembership {
   organization_id: string
-  role: TicketingRole
-}
-
-const managementRoles: TicketingRole[] = ["owner", "admin", "manager"]
-const salesRoles: TicketingRole[] = [...managementRoles, "viewer"]
-const scannerRoles: TicketingRole[] = [...managementRoles, "cashier"]
-
-const roleLabels: Record<TicketingRole, string> = {
-  owner: "Właściciel",
-  admin: "Administrator",
-  manager: "Manager",
-  cashier: "Kasjer",
-  viewer: "Podgląd",
+  role: OrganizerRole
 }
 
 export default async function HostDashboard() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby otworzyć panel sprzedaży.</CenteredMessage>
+    return <CenteredMessage>Połącz Supabase, aby otworzyć panel organizatora.</CenteredMessage>
   }
 
   const supabase = createClient()
@@ -52,14 +46,14 @@ export default async function HostDashboard() {
     .eq("user_id", user.id)
 
   if (error) {
-    return <CenteredMessage>Nie udało się pobrać uprawnień do panelu sprzedaży.</CenteredMessage>
+    return <CenteredMessage>Nie udało się pobrać uprawnień do panelu organizatora.</CenteredMessage>
   }
 
-  const memberships = (data ?? []) as HostMembership[]
+  const memberships = (data ?? []) as OrganizerMembership[]
   const roles = new Set(memberships.map((membership) => membership.role))
-  const canManage = managementRoles.some((role) => roles.has(role))
-  const canViewSales = salesRoles.some((role) => roles.has(role))
-  const canScan = scannerRoles.some((role) => roles.has(role))
+  const canManage = hasOrganizerRole(roles, organizerManagementRoles)
+  const canViewSales = hasOrganizerRole(roles, organizerSalesRoles)
+  const canScan = hasOrganizerRole(roles, organizerScannerRoles)
   const organizationCount = new Set(memberships.map((membership) => membership.organization_id)).size
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Użytkowniku"
 
@@ -76,15 +70,15 @@ export default async function HostDashboard() {
       <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge variant="secondary" className="mb-3">Panel sprzedaży</Badge>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Panel EnjoyHub</h1>
+            <Badge variant="secondary" className="mb-3">Panel organizatora</Badge>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Twoje atrakcje w EnjoyHub</h1>
             <p className="mt-2 text-muted-foreground">
-              Witaj, {displayName}. Zarządzaj ofertami, zamówieniami i kontrolą biletów.
+              Witaj, {displayName}. Zarządzaj atrakcjami, ofertami, zamówieniami i kontrolą biletów.
             </p>
           </div>
           {memberships.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {[...roles].map((role) => <Badge key={role} variant="outline">{roleLabels[role]}</Badge>)}
+              {[...roles].map((role) => <Badge key={role} variant="outline">{organizerRoleLabels[role]}</Badge>)}
               <Badge variant="outline">
                 {organizationCount} {organizationCount === 1 ? "organizacja" : "organizacji"}
               </Badge>
@@ -98,9 +92,9 @@ export default async function HostDashboard() {
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                 <Ticket className="h-7 w-7 text-primary" />
               </div>
-              <h2 className="text-xl font-semibold">Uruchom pierwszą sprzedaż biletów</h2>
+              <h2 className="text-xl font-semibold">Dodaj pierwszą atrakcję</h2>
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                Kreator utworzy organizację, obiekt, ofertę, cennik i terminy bez ręcznego dodawania danych w Supabase.
+                Kreator utworzy organizację, obiekt, atrakcję, pierwszą ofertę, bilety i terminy.
               </p>
               <Button asChild className="mt-6">
                 <Link href="/host/start">
@@ -123,8 +117,8 @@ export default async function HostDashboard() {
               <ActionCard
                 href="/host/sprzedaz/konfiguracja"
                 icon={Settings2}
-                title="Oferty i terminy"
-                description="Twórz oferty, ustawiaj cennik, pulę miejsc i harmonogram sprzedaży."
+                title="Atrakcje, oferty i terminy"
+                description="Zarządzaj ofertami, cennikiem, pulą miejsc i harmonogramem sprzedaży."
               />
             )}
             {canScan && (
