@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Dodaj pierwszą atrakcję",
-  description: "Dodaj organizację, atrakcję i pierwszy bilet w kilku prostych krokach.",
+  description: "Dodaj organizację, atrakcję, pierwszą ofertę, rodzaj biletu i regułę dostępności w kilku prostych krokach.",
 }
 
 interface RawCategory {
