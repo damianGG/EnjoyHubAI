@@ -46,6 +46,7 @@ const organizerOnboardingSchema = z.object({
   weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7),
   tickets: z.array(z.object({
     name: z.string().trim().min(1).max(120),
+    description: optionalText(1000),
     priceAmount: z.number().positive().max(1000000),
     capacityUnits: z.number().int().min(1).max(100000),
     maxQuantityPerOrder: z.number().int().min(1).max(100),
@@ -127,13 +128,13 @@ function onboardingErrorMessage(error: { code?: string; message?: string } | nul
     return "Wybrana kategoria nie jest już dostępna. Odśwież stronę i wybierz ją ponownie."
   }
   if (error?.code === "23505") {
-    return "Taka konfiguracja już istnieje. Wróć do panelu i sprawdź swoje obiekty."
+    return "Taka konfiguracja już istnieje. Wróć do panelu i sprawdź swoje atrakcje."
   }
   if (error?.code === "42501") {
     return "Sesja logowania wygasła albo nie masz uprawnień do tej operacji. Zaloguj się ponownie."
   }
   if (error?.code === "22023") {
-    return "Sprawdź godziny, bilety i liczbę miejsc. Harmonogram musi tworzyć co najmniej jeden pełny termin."
+    return "Sprawdź ofertę, godziny, rodzaj biletu i liczbę miejsc. Reguła dostępności musi tworzyć co najmniej jeden pełny termin."
   }
 
   return "Nie udało się utworzyć konfiguracji. Nic nie zostało zapisane częściowo — sprawdź dane i spróbuj ponownie."
@@ -148,6 +149,10 @@ export async function completeOrganizerOnboarding(
   }
 
   const ticketNames = formData.getAll("ticketName").map(String)
+  const rawTicketDescriptions = formData.getAll("ticketDescription").map(String)
+  const ticketDescriptions = rawTicketDescriptions.length === ticketNames.length
+    ? rawTicketDescriptions
+    : ticketNames.map(() => "")
   const ticketPrices = formData.getAll("ticketPrice").map((value) => Number(String(value).replace(",", ".")))
   const ticketCapacityUnits = formData.getAll("ticketCapacityUnits").map(Number)
   const ticketLimits = formData.getAll("ticketMaxQuantity").map(Number)
@@ -186,6 +191,7 @@ export async function completeOrganizerOnboarding(
     weekdays: formData.getAll("weekdays").map(Number),
     tickets: ticketNames.map((name, index) => ({
       name,
+      description: ticketDescriptions[index] ?? "",
       priceAmount: ticketPrices[index],
       capacityUnits: ticketCapacityUnits[index],
       maxQuantityPerOrder: ticketLimits[index],
@@ -227,6 +233,7 @@ export async function completeOrganizerOnboarding(
     p_duration_minutes: input.durationMinutes,
     p_ticket_types: input.tickets.map((ticket) => ({
       name: ticket.name,
+      description: ticket.description || null,
       price_amount: ticket.priceAmount,
       capacity_units: ticket.capacityUnits,
       max_quantity_per_order: ticket.maxQuantityPerOrder,
@@ -257,6 +264,7 @@ export async function completeOrganizerOnboarding(
   revalidatePath("/host")
   revalidatePath("/host/sprzedaz")
   revalidatePath("/host/sprzedaz/konfiguracja")
+  revalidatePath("/host/sprzedaz/dostepnosc")
   revalidatePath(`/attractions/${result.created_property_id}`)
   redirect(`/host/onboarding/gotowe?atrakcja=${result.created_property_id}&oferta=${result.created_product_id}`)
   return {}
