@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowRight, CheckCircle2, ExternalLink, QrCode, Settings2, ShieldCheck, ShoppingCart } from "lucide-react"
+import { ArrowRight, CalendarClock, CheckCircle2, ExternalLink, QrCode, Settings2, ShieldCheck, ShoppingCart } from "lucide-react"
 
 import { ClearOrganizerOnboardingDraft } from "@/components/ticketing/clear-organizer-onboarding-draft"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -62,7 +62,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="h-8 w-8" /></div>
           <Badge variant="secondary" className="mt-5">Atrakcja opublikowana</Badge>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">„{attraction.name}” jest już w EnjoyHub</h1>
-          <p className="mt-4 text-lg text-muted-foreground">Strona atrakcji, oferta „{product.name}”, cennik i pierwsze 90 dni terminów są przygotowane.</p>
+          <p className="mt-4 text-lg text-muted-foreground">Strona atrakcji, oferta „{product.name}”, pierwszy rodzaj biletu i reguła dostępności są przygotowane. EnjoyHub automatycznie utrzymuje przyszłe terminy.</p>
         </div>
 
         {!organizerPaymentsReady ? (
@@ -75,22 +75,23 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
             </AlertDescription>
           </Alert>
         ) : !publicSalesReady ? (
-          <Alert className="mt-8 border-amber-200 bg-amber-50 text-amber-950"><Settings2 className="h-4 w-4" /><AlertTitle>Firma zweryfikowana</AlertTitle><AlertDescription>Płatności globalne EnjoyHub są jeszcze w trybie przygotowania. Możesz sprawdzić ofertę i kalendarz.</AlertDescription></Alert>
+          <Alert className="mt-8 border-amber-200 bg-amber-50 text-amber-950"><Settings2 className="h-4 w-4" /><AlertTitle>Firma zweryfikowana</AlertTitle><AlertDescription>Płatności globalne EnjoyHub są jeszcze w trybie przygotowania. Możesz sprawdzić ofertę, cennik i dostępność.</AlertDescription></Alert>
         ) : (
-          <Alert className="mt-8 border-emerald-200 bg-emerald-50 text-emerald-950"><ShoppingCart className="h-4 w-4" /><AlertTitle>Sprzedaż online jest aktywna</AlertTitle><AlertDescription>Klienci mogą wybrać termin, zapłacić i otrzymać bilet QR.</AlertDescription></Alert>
+          <Alert className="mt-8 border-emerald-200 bg-emerald-50 text-emerald-950"><ShoppingCart className="h-4 w-4" /><AlertTitle>Sprzedaż online jest aktywna</AlertTitle><AlertDescription>Klienci mogą wybrać termin, rodzaj biletu, zapłacić i otrzymać bilet QR.</AlertDescription></Alert>
         )}
 
         <Card className="surface-3d mt-6">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-lg font-semibold">Co dalej?</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <NextStep number="1" title="Sprawdź stronę" description="Zobacz atrakcję oczami klienta." />
-              <NextStep number="2" title={organizerPaymentsReady ? "Sprawdź ofertę" : "Zweryfikuj firmę"} description={organizerPaymentsReady ? "Sprawdź ceny i terminy." : "Uzupełnij dane prawne przed płatnościami."} />
-              <NextStep number="3" title="Panel organizatora" description="Dodawaj kolejne atrakcje i oferty." />
+              <NextStep number="1" title="Sprawdź stronę" description="Zobacz atrakcję i ofertę oczami klienta." />
+              <NextStep number="2" title={organizerPaymentsReady ? "Sprawdź dostępność" : "Zweryfikuj firmę"} description={organizerPaymentsReady ? "Sprawdź reguły i dodaj wyjątek, jeśli trzeba." : "Uzupełnij dane prawne przed płatnościami."} />
+              <NextStep number="3" title="Panel organizatora" description="Dodawaj kolejne atrakcje, oferty i bilety." />
             </div>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button asChild size="lg" className="h-12"><Link href={`/attractions/${attraction.id}`}>Zobacz stronę atrakcji <ExternalLink className="h-4 w-4" /></Link></Button>
               {isTicketingCheckoutEnabled ? <Button asChild size="lg" variant="outline" className="h-12"><Link href={`/bilety/${product.id}`}>Zobacz ofertę <ShoppingCart className="h-4 w-4" /></Link></Button> : null}
+              <Button asChild size="lg" variant="outline" className="h-12"><Link href="/host/sprzedaz/dostepnosc">Kalendarz i dostępność <CalendarClock className="h-4 w-4" /></Link></Button>
               <Button asChild size="lg" variant="outline" className="h-12"><Link href="/host/skaner">Otwórz skaner <QrCode className="h-4 w-4" /></Link></Button>
             </div>
           </CardContent>
