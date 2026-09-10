@@ -5,13 +5,14 @@ import { ArrowLeft } from "lucide-react"
 
 import { OrganizerOnboardingWizard } from "@/components/ticketing/organizer-onboarding-wizard"
 import { Card, CardContent } from "@/components/ui/card"
+import { organizerManagementRoles } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Konfiguracja organizatora",
-  description: "Dodaj atrakcję, bilety i terminy krok po kroku.",
+  description: "Dodaj organizację, obiekt, atrakcję, ofertę, bilety i terminy krok po kroku.",
 }
 
 interface RawCategory {
@@ -39,7 +40,7 @@ export default async function OrganizerOnboardingPage() {
       .from("organization_memberships")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["owner", "admin", "manager"])
+      .in("role", [...organizerManagementRoles])
       .limit(1),
   ])
 
