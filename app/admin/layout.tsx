@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { Building2, ClipboardList, FolderTree, ListTree, Shield, Users } from "lucide-react"
+import { Building2, ClipboardList, FolderTree, ListTree, Shield, ShieldCheck, Users } from "lucide-react"
 
+import { clearSupportContextAction } from "@/app/admin/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { clearSupportContextAction } from "@/app/admin/actions"
 import { platformStaffRoleLabels, requirePlatformStaff } from "@/lib/platform-admin/access"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -22,6 +22,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     supportName = (data as { organization?: { name?: string } } | null)?.organization?.name ?? null
   }
 
+  const canSupport = role === "platform_superadmin" || role === "platform_support"
+  const canAudit = canSupport || role === "platform_finance"
+  const canContent = role === "platform_superadmin" || role === "platform_content"
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -32,10 +36,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
           <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
             <AdminNav href="/admin/organizacje" icon={Building2}>Organizacje</AdminNav>
-            <AdminNav href="/admin/uzytkownicy" icon={Users}>Użytkownicy</AdminNav>
-            <AdminNav href="/admin/audyt" icon={ClipboardList}>Audyt</AdminNav>
-            <AdminNav href="/admin/categories" icon={FolderTree}>Kategorie</AdminNav>
-            <AdminNav href="/admin/fields" icon={ListTree}>Pola</AdminNav>
+            {canSupport && <AdminNav href="/admin/uzytkownicy" icon={Users}>Użytkownicy</AdminNav>}
+            {canAudit && <AdminNav href="/admin/audyt" icon={ClipboardList}>Audyt</AdminNav>}
+            {canContent && <AdminNav href="/admin/categories" icon={FolderTree}>Kategorie</AdminNav>}
+            {canContent && <AdminNav href="/admin/fields" icon={ListTree}>Pola</AdminNav>}
+            {role === "platform_superadmin" && <AdminNav href="/admin/administratorzy" icon={ShieldCheck}>Administratorzy</AdminNav>}
           </nav>
           <div className="flex items-center gap-2">
             <Badge variant="secondary">{platformStaffRoleLabels[role]}</Badge>
@@ -51,9 +56,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <strong>Tryb wsparcia:</strong> {supportName ?? "wybrana organizacja"}
               <span className="ml-2 text-amber-800">Działasz jako administrator EnjoyHub — wszystkie zmiany są logowane.</span>
             </div>
-            <form action={clearSupportContextAction}>
-              <Button type="submit" variant="outline" size="sm" className="border-amber-400 bg-white">Zakończ wsparcie</Button>
-            </form>
+            {canSupport && (
+              <form action={clearSupportContextAction}>
+                <Button type="submit" variant="outline" size="sm" className="border-amber-400 bg-white">Zakończ wsparcie</Button>
+              </form>
+            )}
           </div>
         </div>
       )}
