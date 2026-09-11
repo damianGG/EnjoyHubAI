@@ -11,14 +11,10 @@ export const isSupabaseConfigured =
 export async function updateSession(request: NextRequest) {
   // If Supabase is not configured, just continue without auth
   if (!isSupabaseConfigured) {
-    return NextResponse.next({
-      request,
-    })
+    return NextResponse.next({ request })
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +31,7 @@ export async function updateSession(request: NextRequest) {
           })
         },
       },
-    }
+    },
   )
 
   // The dedicated callback route exchanges login and sign-up codes and creates
@@ -55,8 +51,6 @@ export async function updateSession(request: NextRequest) {
     cleanUrl.searchParams.delete("code")
     const redirectResponse = NextResponse.redirect(cleanUrl)
 
-    // Session cookies were written to supabaseResponse by the cookie adapter.
-    // Preserve them on the redirect response.
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie)
     })
@@ -71,7 +65,6 @@ export async function updateSession(request: NextRequest) {
   let authenticatedUser = null
 
   try {
-    // Validate the session with the Auth server and refresh cookies when needed.
     const {
       data: { user },
       error,
@@ -86,7 +79,6 @@ export async function updateSession(request: NextRequest) {
     console.error("[v0] Session validation error:", error)
   }
 
-  // Protected routes - redirect to login if not authenticated for host routes
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/auth/login") ||
     request.nextUrl.pathname.startsWith("/auth/sign-up") ||
@@ -94,17 +86,16 @@ export async function updateSession(request: NextRequest) {
 
   const isHostRoute = request.nextUrl.pathname.startsWith("/host")
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin")
 
-  if ((isHostRoute || isDashboardRoute) && !isAuthRoute) {
-    if (!authenticatedUser) {
-      const redirectUrl = new URL("/", request.url)
-      redirectUrl.searchParams.set("login", "required")
-      redirectUrl.searchParams.set(
-        "returnTo",
-        `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      )
-      return NextResponse.redirect(redirectUrl)
-    }
+  if ((isHostRoute || isDashboardRoute || isAdminRoute) && !isAuthRoute && !authenticatedUser) {
+    const redirectUrl = new URL("/", request.url)
+    redirectUrl.searchParams.set("login", "required")
+    redirectUrl.searchParams.set(
+      "returnTo",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    )
+    return NextResponse.redirect(redirectUrl)
   }
 
   return supabaseResponse
