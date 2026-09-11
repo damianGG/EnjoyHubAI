@@ -21,6 +21,7 @@ export default async function OrganizationsPage({ searchParams }: { searchParams
 
   const organizations = (data ?? []) as any[]
   const canCreate = role === "platform_superadmin" || role === "platform_support"
+  const canSeeFinance = role === "platform_superadmin" || role === "platform_finance"
 
   return (
     <main className="container mx-auto max-w-7xl px-4 py-8">
@@ -28,12 +29,12 @@ export default async function OrganizationsPage({ searchParams }: { searchParams
         <div>
           <Badge variant="secondary" className="mb-3">Organizacje</Badge>
           <h1 className="text-3xl font-bold">Firmy i organizatorzy</h1>
-          <p className="mt-2 text-muted-foreground">Wyszukuj firmy, sprawdzaj konfigurację i wchodź w tryb wsparcia.</p>
+          <p className="mt-2 text-muted-foreground">Wyszukuj firmy, sprawdzaj konfigurację i pomagaj właścicielom zgodnie ze swoją rolą.</p>
         </div>
         <form className="flex w-full max-w-md gap-2" action="/admin/organizacje">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input name="q" defaultValue={q} placeholder="Nazwa, NIP, nazwa prawna…" className="pl-9" />
+            <Input name="q" defaultValue={q} placeholder={canSeeFinance ? "Nazwa, NIP, nazwa prawna…" : "Nazwa firmy…"} className="pl-9" />
           </div>
           <Button type="submit" variant="outline">Szukaj</Button>
         </form>
@@ -71,11 +72,11 @@ export default async function OrganizationsPage({ searchParams }: { searchParams
                 </div>
                 <div className="text-sm">
                   <p className="font-medium">{organization.offer_count} ofert</p>
-                  <p className="text-muted-foreground">{organization.order_count} zamówień</p>
+                  {role !== "platform_content" && <p className="text-muted-foreground">{organization.order_count} zamówień</p>}
                 </div>
                 <div className="text-sm">
-                  <p className="font-medium">{formatMoney(Number(organization.confirmed_revenue), "PLN")}</p>
-                  <p className="text-muted-foreground">potwierdzony obrót</p>
+                  <p className="font-medium">{canSeeFinance ? formatMoney(Number(organization.confirmed_revenue), "PLN") : "—"}</p>
+                  <p className="text-muted-foreground">{canSeeFinance ? "potwierdzony obrót" : "dane finansowe ukryte"}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   <Badge variant={organization.verification_status === "verified" ? "default" : "secondary"}>
