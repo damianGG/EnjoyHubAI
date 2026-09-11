@@ -87,7 +87,7 @@ comment on column public.products.attraction_id is
 comment on column public.users.is_host is
   'DEPRECATED. Organizer access is derived from organization_memberships.';
 comment on column public.users.role is
-  'Global platform role only (for example super_admin). Organizer roles are organization_memberships.role.';
+  'LEGACY profile role metadata. Organizer roles are organization_memberships.role; platform administration is platform_staff.';
 
 -- 2. Organizer authorization is organization-scoped.
 drop policy if exists "Hosts can manage their own properties" on public.properties;
