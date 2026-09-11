@@ -1,43 +1,21 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+
 import CategoryManagementEnhanced from "@/components/category-management-enhanced"
+import { requirePlatformStaff } from "@/lib/platform-admin/access"
 
 export default async function CategoriesPage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/auth/login")
-  }
-
-  // Check if user is super admin
-  const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
-
-  if (userData?.role !== "super_admin") {
-    redirect("/dashboard")
-  }
+  await requirePlatformStaff(["platform_superadmin", "platform_content"], "/admin/categories")
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/admin" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              Powrót do panelu admina
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        <CategoryManagementEnhanced />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Powrót do panelu admina
+        </Link>
       </div>
+      <CategoryManagementEnhanced />
     </div>
   )
 }
