@@ -8,6 +8,15 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
+function isExpectedMissingSession(error: unknown) {
+  return Boolean(
+    error
+    && typeof error === "object"
+    && "name" in error
+    && error.name === "AuthSessionMissingError",
+  )
+}
+
 export async function updateSession(request: NextRequest) {
   // If Supabase is not configured, just continue without auth
   if (!isSupabaseConfigured) {
@@ -71,12 +80,19 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (error) {
-      console.error("[v0] Session validation error:", error)
+      // An unauthenticated visitor has no Supabase session. That is normal for
+      // public pages and protected-route redirects, so it must not pollute
+      // production error telemetry.
+      if (!isExpectedMissingSession(error)) {
+        console.error("[v0] Session validation error:", error)
+      }
     } else {
       authenticatedUser = user
     }
   } catch (error) {
-    console.error("[v0] Session validation error:", error)
+    if (!isExpectedMissingSession(error)) {
+      console.error("[v0] Session validation error:", error)
+    }
   }
 
   const isAuthRoute =
