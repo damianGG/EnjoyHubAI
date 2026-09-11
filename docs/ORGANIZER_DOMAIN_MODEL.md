@@ -10,7 +10,8 @@ EnjoyHub has one identity per person. A person does not create a separate host a
 - `public.users` = profile.
 - Organizer access = membership in an organization.
 - `public.users.is_host` is legacy and must not be used for authorization.
-- `public.users.role` is only for global platform roles such as `super_admin`; organization roles live in `organization_memberships.role`.
+- `public.users.role` is legacy profile metadata and must not be used for platform administration authorization.
+- Platform administration access lives in `platform_staff`; organization roles live in `organization_memberships.role`.
 
 A person may simultaneously be a customer and an organizer, and may belong to multiple organizations with different roles.
 
@@ -18,6 +19,7 @@ A person may simultaneously be a customer and an organizer, and may belong to mu
 
 ```text
 User
+  ├── Platform staff role (optional: superadmin/support/content/finance)
   └── Organization membership (owner/admin/manager/cashier/viewer)
         └── Organization
               └── Venue / obiekt
@@ -85,17 +87,24 @@ Phase 2:
 Phase 3, only after all callers are migrated:
 
 - decide whether to rename the physical `properties` table to `attractions` or keep it as an internal storage name,
-- remove `venues.property_id`, `properties.host_id`, `users.is_host` and the `host` value of the global user role if no longer referenced.
+- remove `venues.property_id`, `properties.host_id`, `users.is_host` and the `host` value of the legacy global user role if no longer referenced.
 
 ## Authorization rules
 
-Organization membership is the source of truth:
+Organization membership is the source of truth for organizer access:
 
 - `owner`: full organization control and ownership transfer.
 - `admin`: organization configuration and team management except ownership transfer.
 - `manager`: venues, attractions, offers, schedules and operational sales management.
 - `cashier`: entry validation/scanner only.
 - `viewer`: read-only reporting/sales visibility.
+
+Platform administration is a separate authorization domain stored in `platform_staff`:
+
+- `platform_superadmin`: full platform administration,
+- `platform_support`: organization/user support without impersonating the organizer,
+- `platform_content`: categories, subcategories and dynamic content fields,
+- `platform_finance`: verification, payment readiness and finance-only data.
 
 An attraction must not disappear because the user who originally created it deletes their account. Business content belongs to the organization/venue.
 
