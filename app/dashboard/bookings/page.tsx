@@ -67,6 +67,7 @@ export default async function CustomerOrdersPage() {
 function CustomerOrderCard({ order }: { order: CustomerTicketingOrder }) {
   const firstItem = order.items[0]
   const isPaid = order.paymentStatus === "paid"
+  const usedTickets = order.tickets.filter((ticket) => ticket.status === "used").length
 
   return (
     <Card>
@@ -109,19 +110,34 @@ function CustomerOrderCard({ order }: { order: CustomerTicketingOrder }) {
         </div>
 
         {order.tickets.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {order.tickets.map((ticket) => (
-              <Button key={ticket.id} asChild variant="outline" size="sm">
-                <Link href={`/bilet/${ticket.ticketCode}`}>
-                  <Ticket className="h-4 w-4" /> Bilet #{ticket.sequenceNumber}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Bilety</span>
+              <span className="text-muted-foreground">{usedTickets}/{order.tickets.length} wykorzystanych</span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {order.tickets.map((ticket) => (
+                <Link
+                  key={ticket.id}
+                  href={`/bilet/${ticket.ticketCode}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium"><Ticket className="h-4 w-4 text-primary" /> Bilet #{ticket.sequenceNumber}</span>
+                  <TicketStatusBadge status={ticket.status} />
                 </Link>
-              </Button>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
   )
+}
+
+function TicketStatusBadge({ status }: { status: string }) {
+  if (status === "valid") return <Badge className="bg-emerald-600">Ważny</Badge>
+  if (status === "used") return <Badge variant="secondary">Wykorzystany</Badge>
+  return <Badge variant="destructive">Unieważniony</Badge>
 }
 
 function paymentLabel(status: string) {

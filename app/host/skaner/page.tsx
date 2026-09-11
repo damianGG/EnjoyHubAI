@@ -1,8 +1,9 @@
 import Link from "next/link"
-import { ArrowLeft, Camera, Keyboard, LogIn, Smartphone, TicketCheck } from "lucide-react"
+import { ArrowLeft, Camera, Keyboard, LogIn, ScanLine, Smartphone, TicketCheck } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import { ManualTicketRedeemer } from "@/components/ticketing/manual-ticket-redeemer"
+import { QrCameraScanner } from "@/components/ticketing/qr-camera-scanner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,22 +24,22 @@ export default async function TicketScannerPage() {
   if (!isTicketingPaymentsEnabled) {
     return (
       <CenteredMessage>
-        Kontrola wejścia jest gotowa, ale pozostaje wyłączona do czasu migracji 1D i uruchomienia płatności.
+        Kontrola wejścia jest wyłączona konfiguracją środowiska razem z obsługą płatności i biletów.
       </CenteredMessage>
     )
   }
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from("organization_memberships")
-    .select("id")
+    .select("organization_id, role")
     .eq("user_id", user.id)
     .in("role", ["owner", "admin", "manager", "cashier"])
     .limit(1)
 
-  if (!memberships?.length) {
+  if (membershipError || !memberships?.length) {
     return (
       <CenteredMessage>
-        Twoje konto nie ma roli właściciela, managera ani kasjera w żadnej organizacji.
+        Twoje konto nie ma uprawnień do kontroli wejścia w żadnej organizacji.
       </CenteredMessage>
     )
   }
@@ -58,26 +59,36 @@ export default async function TicketScannerPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <TicketCheck className="h-7 w-7 text-primary" />
           </div>
-          <Badge variant="secondary">Panel kasjera</Badge>
+          <Badge variant="secondary">Panel obsługi wejścia</Badge>
           <h1 className="mt-3 text-3xl font-bold">Kontrola wejścia</h1>
           <p className="mt-2 text-muted-foreground">
-            Bez dodatkowego sprzętu — wystarczy aparat w telefonie zalogowanego pracownika.
+            Zeskanuj QR w panelu albo użyj zwykłego aparatu telefonu. Po odczytaniu biletu zobaczysz jego status przed wpuszczeniem gościa.
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          <InstructionCard icon={LogIn} step="1" title="Zaloguj kasjera">
-            Na tym telefonie konto musi mieć rolę kasjera lub managera.
+        <Card className="surface-3d border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5 text-primary" /> Skaner QR</CardTitle>
+            <CardDescription>Najwygodniejszy tryb na telefonie pracownika przy wejściu.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <QrCameraScanner />
+          </CardContent>
+        </Card>
+
+        <div className="mt-7 grid gap-5 sm:grid-cols-3">
+          <InstructionCard icon={LogIn} step="1" title="Zaloguj obsługę">
+            Konto musi mieć rolę właściciela, administratora, managera albo obsługi wejścia.
           </InstructionCard>
-          <InstructionCard icon={Camera} step="2" title="Zeskanuj QR">
-            Otwórz zwykły aparat telefonu i skieruj go na kod gościa.
+          <InstructionCard icon={Camera} step="2" title="Odczytaj QR">
+            Użyj skanera powyżej. Jeśli przeglądarka go nie obsługuje, zwykły aparat telefonu też otworzy bilet.
           </InstructionCard>
           <InstructionCard icon={Smartphone} step="3" title="Potwierdź wejście">
-            Otwórz wykryty link i naciśnij „Wpuść gościa”.
+            Sprawdź, czy bilet jest ważny, i naciśnij „Wpuść gościa”. Ponowny skan pokaże, że bilet był już użyty.
           </InstructionCard>
         </div>
 
-        <Card className="mt-7 surface-3d">
+        <Card className="mt-7">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Keyboard className="h-5 w-5 text-primary" /> Tryb awaryjny

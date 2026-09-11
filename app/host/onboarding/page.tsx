@@ -3,15 +3,16 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 
-import { OrganizerOnboardingWizard } from "@/components/ticketing/organizer-onboarding-wizard"
+import { OrganizerOnboardingLite } from "@/components/ticketing/organizer-onboarding-lite"
 import { Card, CardContent } from "@/components/ui/card"
+import { organizerManagementRoles } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Konfiguracja organizatora",
-  description: "Dodaj atrakcję, bilety i terminy krok po kroku.",
+  title: "Dodaj pierwszą atrakcję",
+  description: "Dodaj organizację, atrakcję, pierwszą ofertę, rodzaj biletu i regułę dostępności w kilku prostych krokach.",
 }
 
 interface RawCategory {
@@ -39,7 +40,7 @@ export default async function OrganizerOnboardingPage() {
       .from("organization_memberships")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["owner", "admin", "manager"])
+      .in("role", [...organizerManagementRoles])
       .limit(1),
   ])
 
@@ -67,11 +68,11 @@ export default async function OrganizerOnboardingPage() {
       <header className="border-b bg-background">
         <div className="container mx-auto max-w-6xl px-4 py-4">
           <Link href="/host/start" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Wróć do przygotowania
+            <ArrowLeft className="h-4 w-4" /> Wróć
           </Link>
         </div>
       </header>
-      <OrganizerOnboardingWizard
+      <OrganizerOnboardingLite
         categories={categories}
         userId={user.id}
         userEmail={user.email ?? ""}

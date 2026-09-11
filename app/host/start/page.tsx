@@ -7,11 +7,12 @@ import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, MapPin, Ticket }
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { organizerManagementRoles } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
   title: "Zostań organizatorem",
-  description: "Przygotuj swój obiekt i pierwszą ofertę biletową w EnjoyHub.",
+  description: "Dodaj organizację, obiekt, atrakcję i pierwszą ofertę w EnjoyHub.",
 }
 
 const preparationItems = [
@@ -34,7 +35,7 @@ export default async function OrganizerStartPage() {
     .from("organization_memberships")
     .select("role")
     .eq("user_id", user.id)
-    .in("role", ["owner", "admin", "manager"])
+    .in("role", [...organizerManagementRoles])
     .limit(1)
 
   if (error) {
@@ -61,12 +62,12 @@ export default async function OrganizerStartPage() {
         <div className="mx-auto max-w-2xl text-center">
           <Badge variant="secondary">Zostań organizatorem</Badge>
           <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
-            {alreadyOrganizer ? "Twój panel jest już gotowy" : `${displayName}, przygotujmy Twoją pierwszą sprzedaż`}
+            {alreadyOrganizer ? "Twój panel organizatora jest już gotowy" : `${displayName}, dodajmy Twoją pierwszą atrakcję`}
           </h1>
           <p className="mt-4 leading-7 text-muted-foreground">
             {alreadyOrganizer
-              ? "Masz już uprawnienia organizatora. Możesz przejść do panelu albo dodać kolejną ofertę dla istniejącego obiektu."
-              : "Przejdziesz przez krótkie kroki. Na końcu pokażemy całe podsumowanie i dopiero po Twoim potwierdzeniu utworzymy ofertę."}
+              ? "Korzystasz z tego samego konta jako klient i organizator. Twoje uprawnienia wynikają z organizacji, do których należysz."
+              : "Nie tworzysz osobnego konta firmowego. To samo konto pozostaje kontem klienta, a kreator doda do niego organizację i uprawnienia organizatora."}
           </p>
         </div>
 
@@ -76,7 +77,7 @@ export default async function OrganizerStartPage() {
               <Link href="/host">Otwórz panel <ArrowRight className="h-5 w-5" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-12">
-              <Link href="/host/sprzedaz/konfiguracja">Dodaj kolejną ofertę</Link>
+              <Link href="/host/sprzedaz/konfiguracja">Zarządzaj ofertami</Link>
             </Button>
           </div>
         ) : (
@@ -110,7 +111,7 @@ export default async function OrganizerStartPage() {
               <Button asChild size="lg" className="h-12 w-full px-8 text-base sm:w-auto">
                 <Link href="/host/onboarding">Zaczynamy <ArrowRight className="h-5 w-5" /></Link>
               </Button>
-              <p className="text-xs text-muted-foreground">Nic nie zostanie opublikowane bez końcowego potwierdzenia.</p>
+              <p className="text-xs text-muted-foreground">Na końcu zobaczysz podsumowanie przed utworzeniem organizacji, atrakcji i sprzedaży.</p>
             </div>
           </>
         )}
