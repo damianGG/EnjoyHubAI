@@ -9,6 +9,7 @@ import {
   createVenueAction,
   updateOrganizationAction,
 } from "@/app/admin/actions"
+import { updateOrganizationFinanceAction } from "@/app/admin/finance-actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,9 +41,11 @@ export default async function OrganizationAdminPage({
   const attractions = payload.attractions ?? []
   const offers = payload.offers ?? []
   const metrics = payload.metrics ?? {}
+
   const canSupport = canPlatformSupport(role)
   const canContent = canPlatformContent(role)
-  const canEditOrganization = role === "platform_superadmin"
+  const canSeeFinance = role === "platform_superadmin" || role === "platform_finance"
+  const canSeeOperations = role === "platform_superadmin" || role === "platform_support" || role === "platform_finance"
 
   return (
     <main className="container mx-auto max-w-7xl px-4 py-8">
@@ -61,6 +64,11 @@ export default async function OrganizationAdminPage({
           </div>
           <h1 className="text-3xl font-bold">{organization.name}</h1>
           <p className="mt-2 text-muted-foreground">ID: {organization.id}</p>
+          {canSeeFinance && (organization.legal_name || organization.tax_id || organization.billing_email) && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {[organization.legal_name, organization.tax_id && `NIP ${organization.tax_id}`, organization.billing_email].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
         {canSupport && (
           <form action={activateSupportContextAction}>
@@ -74,30 +82,30 @@ export default async function OrganizationAdminPage({
       {searchParams?.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się wykonać operacji. Sprawdź dane i uprawnienia.</p>}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Metric label="Członkowie" value={members.length} />
+        <Metric label="Członkowie" value={canSupport ? members.length : "—"} />
         <Metric label="Obiekty" value={venues.length} />
         <Metric label="Atrakcje" value={attractions.length} />
         <Metric label="Oferty" value={offers.length} />
-        <Metric label="Obrót" value={formatMoney(Number(metrics.revenue ?? 0), "PLN")} />
+        <Metric label="Obrót" value={canSeeFinance ? formatMoney(Number(metrics.revenue ?? 0), "PLN") : "—"} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Zespół</CardTitle>
-            <CardDescription>Administrator platformy może przypisać istniejące konto do tej organizacji.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="divide-y rounded-lg border">
-              {members.map((member: any) => (
-                <div key={member.userId} className="flex items-center justify-between gap-3 p-3 text-sm">
-                  <div><p className="font-medium">{member.fullName || member.email}</p><p className="text-muted-foreground">{member.email}</p></div>
-                  <Badge variant="outline">{member.role}</Badge>
-                </div>
-              ))}
-              {members.length === 0 && <p className="p-4 text-sm text-muted-foreground">Brak przypisanych osób.</p>}
-            </div>
-            {canSupport && (
+        {canSupport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Zespół</CardTitle>
+              <CardDescription>Wsparcie może naprawić przypisanie konta do organizacji. Właściciela może nadać tylko super administrator.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="divide-y rounded-lg border">
+                {members.map((member: any) => (
+                  <div key={member.userId} className="flex items-center justify-between gap-3 p-3 text-sm">
+                    <div><p className="font-medium">{member.fullName || member.email}</p><p className="text-muted-foreground">{member.email}</p></div>
+                    <Badge variant="outline">{member.role}</Badge>
+                  </div>
+                ))}
+                {members.length === 0 && <p className="p-4 text-sm text-muted-foreground">Brak przypisanych osób.</p>}
+              </div>
               <form action={assignOrganizationMemberAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                 <input type="hidden" name="organizationId" value={organization.id} />
                 <Input name="email" type="email" required placeholder="E-mail istniejącego konta" />
@@ -110,9 +118,9 @@ export default async function OrganizationAdminPage({
                 </select>
                 <Button type="submit">Przypisz</Button>
               </form>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -184,18 +192,21 @@ export default async function OrganizationAdminPage({
               </div>
             ))}
             {offers.length === 0 && <p className="text-sm text-muted-foreground">Brak ofert.</p>}
-            <div className="mt-4 rounded-lg bg-muted p-4 text-sm">
-              Zamówienia: <strong>{metrics.orders ?? 0}</strong> · Potwierdzone: <strong>{metrics.confirmedOrders ?? 0}</strong> · Bilety wykorzystane: <strong>{metrics.usedTickets ?? 0}/{metrics.tickets ?? 0}</strong>
-            </div>
+            {canSeeOperations && (
+              <div className="mt-4 rounded-lg bg-muted p-4 text-sm">
+                Zamówienia: <strong>{metrics.orders ?? 0}</strong> · Potwierdzone: <strong>{metrics.confirmedOrders ?? 0}</strong>
+                {canSupport && <> · Bilety wykorzystane: <strong>{metrics.usedTickets ?? 0}/{metrics.tickets ?? 0}</strong></>}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {canEditOrganization && (
+      {role === "platform_superadmin" && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Ustawienia administracyjne organizacji</CardTitle>
-            <CardDescription>Operacje wysokiego ryzyka są dostępne tylko dla super administratora i trafiają do audytu.</CardDescription>
+            <CardDescription>Super administrator może zmienić status firmy, weryfikację i gotowość płatności. Wszystko trafia do audytu.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={updateOrganizationAction} className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
@@ -205,6 +216,23 @@ export default async function OrganizationAdminPage({
               <select name="verificationStatus" defaultValue={organization.verification_status} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="not_started">Nie rozpoczęto</option><option value="pending">Oczekuje</option><option value="verified">Zweryfikowana</option><option value="rejected">Odrzucona</option></select>
               <select name="paymentsEnabled" defaultValue={organization.payments_enabled ? "true" : "false"} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="false">Płatności OFF</option><option value="true">Płatności ON</option></select>
               <Button type="submit">Zapisz ustawienia</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "platform_finance" && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Weryfikacja i płatności</CardTitle>
+            <CardDescription>Finanse mogą zmieniać wyłącznie status weryfikacji i gotowość płatności — bez edycji nazwy, statusu czy treści organizacji.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={updateOrganizationFinanceAction} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <input type="hidden" name="organizationId" value={organization.id} />
+              <select name="verificationStatus" defaultValue={organization.verification_status} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="not_started">Nie rozpoczęto</option><option value="pending">Oczekuje</option><option value="verified">Zweryfikowana</option><option value="rejected">Odrzucona</option></select>
+              <select name="paymentsEnabled" defaultValue={organization.payments_enabled ? "true" : "false"} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="false">Płatności OFF</option><option value="true">Płatności ON</option></select>
+              <Button type="submit">Zapisz</Button>
             </form>
           </CardContent>
         </Card>
