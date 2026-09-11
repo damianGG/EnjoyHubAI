@@ -9,6 +9,7 @@ import { requirePlatformStaff } from "@/lib/platform-admin/access"
 const organizationRoles = ["owner", "admin", "manager", "cashier", "viewer"] as const
 const verificationStatuses = ["not_started", "pending", "verified", "rejected"] as const
 const organizationStatuses = ["active", "suspended"] as const
+const platformRoles = ["platform_superadmin", "platform_support", "platform_content", "platform_finance"] as const
 
 function adminError(error: { code?: string; message?: string } | null) {
   const message = error?.message ?? ""
@@ -16,6 +17,7 @@ function adminError(error: { code?: string; message?: string } | null) {
   if (error?.code === "P0002") return "nie_znaleziono"
   if (message.includes("last organization owner")) return "ostatni_wlasciciel"
   if (message.includes("existing account")) return "brak_konta"
+  if (message.includes("own superadmin") || message.includes("active platform superadmin")) return "superadmin"
   return "blad"
 }
 
@@ -190,4 +192,31 @@ export async function clearSupportContextAction() {
   await supabase.rpc("platform_admin_clear_support_context")
   revalidatePath("/admin")
   redirect("/admin/organizacje")
+}
+
+export async function upsertPlatformStaffAction(formData: FormData) {
+  const parsed = z.object({
+    email: z.string().trim().email().max(320),
+    role: z.enum(platformRoles),
+    isActive: z.enum(["true", "false"]),
+  }).safeParse({
+    email: String(formData.get("email") ?? ""),
+    role: String(formData.get("role") ?? ""),
+    isActive: String(formData.get("isActive") ?? "true"),
+  })
+
+  if (!parsed.success) redirect("/admin/administratorzy?blad=dane")
+
+  const { supabase } = await requirePlatformStaff(["platform_superadmin"], "/admin/administratorzy")
+  const { error } = await supabase.rpc("platform_admin_upsert_staff", {
+    p_email: parsed.data.email,
+    p_role: parsed.data.role,
+    p_is_active: parsed.data.isActive === "true",
+  })
+
+  if (error) redirect(`/admin/administratorzy?blad=${adminError(error)}`)
+
+  revalidatePath("/admin/administratorzy")
+  revalidatePath("/admin/audyt")
+  redirect("/admin/administratorzy?ok=1")
 }
