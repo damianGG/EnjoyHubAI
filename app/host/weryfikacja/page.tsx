@@ -9,16 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { organizerVerificationRoles, type OrganizerRole } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
 
 type VerificationStatus = "not_started" | "pending" | "verified" | "rejected"
-type MembershipRole = "owner" | "admin" | "manager" | "cashier" | "viewer"
 
 interface Membership {
   organization_id: string
-  role: MembershipRole
+  role: OrganizerRole
 }
 
 interface Organization {
@@ -54,14 +54,16 @@ export default async function OrganizerVerificationPage({
     .from("organization_memberships")
     .select("organization_id, role")
     .eq("user_id", user.id)
+    .in("role", [...organizerVerificationRoles])
 
   if (membershipError) return <CenteredMessage>Nie udało się pobrać organizacji.</CenteredMessage>
 
   const memberships = (membershipData ?? []) as Membership[]
-  const manageable = memberships.filter((item) => ["owner", "admin", "manager"].includes(item.role))
-  if (manageable.length === 0) redirect("/host/start")
+  if (memberships.length === 0) {
+    return <CenteredMessage>Dane prawne i płatności może konfigurować wyłącznie właściciel lub administrator organizacji.</CenteredMessage>
+  }
 
-  const organizationIds = [...new Set(manageable.map((item) => item.organization_id))]
+  const organizationIds = [...new Set(memberships.map((item) => item.organization_id))]
   const { data: organizationData, error: organizationError } = await supabase
     .from("organizations")
     .select("id, name, legal_name, tax_id, billing_email, verification_status, payments_enabled")
@@ -71,15 +73,17 @@ export default async function OrganizerVerificationPage({
   if (organizationError) return <CenteredMessage>Nie udało się pobrać statusu weryfikacji.</CenteredMessage>
 
   const organizations = (organizationData ?? []) as Organization[]
-  const roleByOrganization = new Map(manageable.map((item) => [item.organization_id, item.role]))
 
   return (
     <main className="min-h-screen bg-muted/20">
       <header className="border-b bg-background">
         <div className="container mx-auto max-w-5xl px-4 py-4">
-          <Link href="/host" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Panel organizatora
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/host" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" /> Panel organizatora
+            </Link>
+            <Button asChild variant="outline" size="sm"><Link href="/host/zespol">Zespół i uprawnienia</Link></Button>
+          </div>
         </div>
       </header>
 
@@ -88,7 +92,7 @@ export default async function OrganizerVerificationPage({
           <Badge variant="secondary">Weryfikacja organizatora</Badge>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Najpierw publikacja, potem płatności</h1>
           <p className="mt-3 leading-7 text-muted-foreground">
-            Nie blokujemy dodawania atrakcji długim KYC. Stronę atrakcji i ofertę możesz przygotować od razu. Dane prawne są wymagane dopiero przed przyjmowaniem płatności i wypłatami.
+            Nie blokujemy dodawania atrakcji długim KYC. Dane prawne firmy są dostępne tylko dla właścicieli i administratorów oraz są wymagane przed przyjmowaniem płatności i wypłatami.
           </p>
         </div>
 
@@ -103,18 +107,13 @@ export default async function OrganizerVerificationPage({
           <Alert variant="destructive" className="mt-6">
             <XCircle className="h-4 w-4" />
             <AlertTitle>Nie udało się wysłać danych</AlertTitle>
-            <AlertDescription>
-              {query.blad === "dane" ? "Sprawdź pełną nazwę firmy, 10-cyfrowy NIP i adres e-mail." : "Sprawdź uprawnienia i spróbuj ponownie."}
-            </AlertDescription>
+            <AlertDescription>{query.blad === "dane" ? "Sprawdź pełną nazwę firmy, 10-cyfrowy NIP i adres e-mail." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="mt-8 grid gap-6">
           {organizations.map((organization) => {
             const meta = statusMeta[organization.verification_status]
-            const role = roleByOrganization.get(organization.id)
-            const canSubmit = role === "owner" || role === "admin"
-
             return (
               <Card key={organization.id} className="surface-3d">
                 <CardHeader>
@@ -125,9 +124,7 @@ export default async function OrganizerVerificationPage({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={organization.verification_status === "verified" ? "default" : "outline"}>{meta.label}</Badge>
-                      <Badge variant={organization.payments_enabled ? "default" : "secondary"}>
-                        {organization.payments_enabled ? "Płatności aktywne" : "Płatności wyłączone"}
-                      </Badge>
+                      <Badge variant={organization.payments_enabled ? "default" : "secondary"}>{organization.payments_enabled ? "Płatności aktywne" : "Płatności wyłączone"}</Badge>
                     </div>
                   </div>
                 </CardHeader>
@@ -137,7 +134,7 @@ export default async function OrganizerVerificationPage({
                       <Info icon={ShieldCheck} title="Firma zweryfikowana">Dane organizatora są zaakceptowane.</Info>
                       <Info icon={WalletCards} title="Płatności">{organization.payments_enabled ? "Można przyjmować płatności online." : "Oczekuje na aktywację płatności."}</Info>
                     </div>
-                  ) : canSubmit ? (
+                  ) : (
                     <form action={submitOrganizerVerification} className="grid gap-5 sm:grid-cols-2">
                       <input type="hidden" name="organizationId" value={organization.id} />
                       <div className="space-y-2 sm:col-span-2">
@@ -157,11 +154,6 @@ export default async function OrganizerVerificationPage({
                         <Button type="submit" className="shrink-0">Wyślij do weryfikacji</Button>
                       </div>
                     </form>
-                  ) : (
-                    <div className="flex items-start gap-3 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
-                      Właściciel lub administrator organizacji może uzupełnić i wysłać dane do weryfikacji.
-                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -183,5 +175,9 @@ function Info({ icon: Icon, title, children }: { icon: typeof ShieldCheck; title
 }
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
-  return <main className="flex min-h-screen items-center justify-center px-4"><Card><CardContent className="p-8 text-muted-foreground">{children}</CardContent></Card></main>
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <Card className="max-w-xl"><CardContent className="p-8 text-center text-muted-foreground">{children}</CardContent></Card>
+    </main>
+  )
 }
