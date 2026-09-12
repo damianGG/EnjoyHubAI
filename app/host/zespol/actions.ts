@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
-import type { OrganizerRole } from "@/lib/organizer/access"
+import { sendTransactionalEmail } from "@/lib/email/client"
+import { getEmailSiteUrl } from "@/lib/email/site-url"
+import { renderTeamInvitationEmail } from "@/lib/email/templates"
+import { organizerRoleLabels, type OrganizerRole } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 const editableRoles = ["owner", "admin", "manager", "cashier", "viewer"] as const
@@ -15,6 +18,8 @@ export interface TeamInvitationActionState {
   invitationPath?: string
   email?: string
   expiresAt?: string
+  emailSent?: boolean
+  emailWarning?: string
 }
 
 function teamError(error: { code?: string; message?: string } | null) {
@@ -65,11 +70,48 @@ export async function createTeamInvitation(
   const invitation = data?.[0] as { invitation_token?: string; expires_at?: string } | undefined
   if (!invitation?.invitation_token) return { error: "Zaproszenie zostało zapisane, ale nie udało się utworzyć linku." }
 
+  const invitationPath = `/host/zespol/zaproszenie/${invitation.invitation_token}`
+  let emailSent = false
+  let emailWarning: string | undefined
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", parsed.data.organizationId)
+    .maybeSingle()
+
+  if (organization?.name && invitation.expires_at) {
+    const rendered = renderTeamInvitationEmail({
+      organizationName: organization.name,
+      roleLabel: organizerRoleLabels[parsed.data.role],
+      inviteUrl: `${getEmailSiteUrl()}${invitationPath}`,
+      expiresAt: invitation.expires_at,
+    })
+    const result = await sendTransactionalEmail({
+      to: parsed.data.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      tags: [{ name: "type", value: "team-invitation" }],
+    })
+    emailSent = result.sent
+    if (!result.sent) {
+      emailWarning = result.reason === "not_configured"
+        ? "Zaproszenie jest ważne, ale automatyczna wysyłka e-mail nie jest jeszcze skonfigurowana. Skopiuj link poniżej."
+        : "Zaproszenie jest ważne, ale wiadomości nie udało się teraz dostarczyć. Skopiuj link poniżej."
+      console.error("Team invitation email failed", { reason: result.reason, error: result.error })
+    }
+  } else {
+    emailWarning = "Zaproszenie jest ważne, ale nie udało się przygotować wiadomości e-mail. Skopiuj link poniżej."
+  }
+
   revalidatePath("/host/zespol")
   return {
-    invitationPath: `/host/zespol/zaproszenie/${invitation.invitation_token}`,
+    invitationPath,
     email: parsed.data.email,
     expiresAt: invitation.expires_at,
+    emailSent,
+    emailWarning,
   }
 }
 
