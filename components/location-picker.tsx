@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import type { LeafletMouseEvent } from "leaflet"
+import type { LeafletMouseEvent, Map as LeafletMap, Marker } from "leaflet"
 import { CheckCircle2, MapPin } from "lucide-react"
 
 interface LocationPickerProps {
@@ -20,11 +20,13 @@ export default function LocationPicker({
   selectedLng = null,
 }: LocationPickerProps) {
   const mapElementRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<LeafletMap | null>(null)
+  const markerRef = useRef<Marker | null>(null)
   const callbackRef = useRef(onLocationSelect)
-  const initialSelectionRef = useRef({ lat: selectedLat, lng: selectedLng })
-  const [hasSelection, setHasSelection] = useState(
-    selectedLat !== null && selectedLng !== null,
-  )
+  const selectionRef = useRef({ lat: selectedLat, lng: selectedLng })
+  const [hasSelection, setHasSelection] = useState(selectedLat !== null && selectedLng !== null)
+
+  selectionRef.current = { lat: selectedLat, lng: selectedLng }
 
   useEffect(() => {
     callbackRef.current = onLocationSelect
@@ -47,15 +49,16 @@ export default function LocationPicker({
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
       })
 
-      const initialSelection = initialSelectionRef.current
-      const startsWithSelection = initialSelection.lat !== null && initialSelection.lng !== null
-      const startLat = initialSelection.lat ?? initialLat
-      const startLng = initialSelection.lng ?? initialLng
-      const map = L.map(mapElementRef.current).setView(
-        [startLat, startLng],
-        startsWithSelection ? 15 : 6,
-      )
-      let marker = startsWithSelection ? L.marker([startLat, startLng]).addTo(map) : null
+      const selection = selectionRef.current
+      const startsWithSelection = selection.lat !== null && selection.lng !== null
+      const startLat = selection.lat ?? initialLat
+      const startLng = selection.lng ?? initialLng
+      const map = L.map(mapElementRef.current).setView([startLat, startLng], startsWithSelection ? 15 : 6)
+      mapRef.current = map
+
+      if (startsWithSelection) {
+        markerRef.current = L.marker([startLat, startLng]).addTo(map)
+      }
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
@@ -65,8 +68,8 @@ export default function LocationPicker({
 
       const handleClick = (event: LeafletMouseEvent) => {
         const { lat, lng } = event.latlng
-        if (marker) marker.setLatLng([lat, lng])
-        else marker = L.marker([lat, lng]).addTo(map)
+        if (markerRef.current) markerRef.current.setLatLng([lat, lng])
+        else markerRef.current = L.marker([lat, lng]).addTo(map)
 
         setHasSelection(true)
         callbackRef.current(lat, lng)
@@ -76,6 +79,8 @@ export default function LocationPicker({
       cleanup = () => {
         map.off("click", handleClick)
         map.remove()
+        mapRef.current = null
+        markerRef.current = null
       }
     }
 
@@ -86,6 +91,35 @@ export default function LocationPicker({
       cleanup?.()
     }
   }, [initialLat, initialLng])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (selectedLat === null || selectedLng === null) {
+      if (markerRef.current) {
+        map.removeLayer(markerRef.current)
+        markerRef.current = null
+      }
+      setHasSelection(false)
+      return
+    }
+
+    let cancelled = false
+    void import("leaflet").then(({ default: L }) => {
+      if (cancelled || !mapRef.current) return
+
+      if (markerRef.current) markerRef.current.setLatLng([selectedLat, selectedLng])
+      else markerRef.current = L.marker([selectedLat, selectedLng]).addTo(mapRef.current)
+
+      mapRef.current.setView([selectedLat, selectedLng], Math.max(mapRef.current.getZoom(), 15))
+      setHasSelection(true)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedLat, selectedLng])
 
   return (
     <div className="space-y-3">
