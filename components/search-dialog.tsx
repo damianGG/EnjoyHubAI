@@ -208,10 +208,10 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
               <CityAutocomplete
                 value={location}
                 onValueChange={setLocation}
-                placeholder="Wpisz miasto, np. Rzeszów"
+                placeholder="Miasto lub miejscowość, np. Rzeszów"
                 inputClassName="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white text-sm shadow-sm focus-visible:ring-primary/25"
               />
-              <p className="text-xs text-muted-foreground">Podpowiadamy miejscowości, w których są obecnie dostępne atrakcje.</p>
+              <p className="text-xs text-muted-foreground">Podpowiadamy miasta i miejscowości z geokodowania, także zanim pojawi się tam pierwsza atrakcja EnjoyHub.</p>
             </section>
 
             <section className="grid gap-3 sm:grid-cols-2">
