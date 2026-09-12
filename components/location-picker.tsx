@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { LeafletMouseEvent, Map as LeafletMap, Marker } from "leaflet"
 import { CheckCircle2, MapPin } from "lucide-react"
 
@@ -32,6 +32,15 @@ export default function LocationPicker({
     callbackRef.current = onLocationSelect
   }, [onLocationSelect])
 
+  const bindMarker = useCallback((marker: Marker) => {
+    marker.on("dragend", () => {
+      const point = marker.getLatLng()
+      setHasSelection(true)
+      callbackRef.current(point.lat, point.lng)
+    })
+    return marker
+  }, [])
+
   useEffect(() => {
     if (!mapElementRef.current) return
 
@@ -57,7 +66,7 @@ export default function LocationPicker({
       mapRef.current = map
 
       if (startsWithSelection) {
-        markerRef.current = L.marker([startLat, startLng]).addTo(map)
+        markerRef.current = bindMarker(L.marker([startLat, startLng], { draggable: true }).addTo(map))
       }
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
@@ -69,7 +78,7 @@ export default function LocationPicker({
       const handleClick = (event: LeafletMouseEvent) => {
         const { lat, lng } = event.latlng
         if (markerRef.current) markerRef.current.setLatLng([lat, lng])
-        else markerRef.current = L.marker([lat, lng]).addTo(map)
+        else markerRef.current = bindMarker(L.marker([lat, lng], { draggable: true }).addTo(map))
 
         setHasSelection(true)
         callbackRef.current(lat, lng)
@@ -78,6 +87,7 @@ export default function LocationPicker({
       map.on("click", handleClick)
       cleanup = () => {
         map.off("click", handleClick)
+        markerRef.current?.off("dragend")
         map.remove()
         mapRef.current = null
         markerRef.current = null
@@ -90,7 +100,7 @@ export default function LocationPicker({
       disposed = true
       cleanup?.()
     }
-  }, [initialLat, initialLng])
+  }, [bindMarker, initialLat, initialLng])
 
   useEffect(() => {
     const map = mapRef.current
@@ -98,6 +108,7 @@ export default function LocationPicker({
 
     if (selectedLat === null || selectedLng === null) {
       if (markerRef.current) {
+        markerRef.current.off("dragend")
         map.removeLayer(markerRef.current)
         markerRef.current = null
       }
@@ -110,7 +121,7 @@ export default function LocationPicker({
       if (cancelled || !mapRef.current) return
 
       if (markerRef.current) markerRef.current.setLatLng([selectedLat, selectedLng])
-      else markerRef.current = L.marker([selectedLat, selectedLng]).addTo(mapRef.current)
+      else markerRef.current = bindMarker(L.marker([selectedLat, selectedLng], { draggable: true }).addTo(mapRef.current))
 
       mapRef.current.setView([selectedLat, selectedLng], Math.max(mapRef.current.getZoom(), 15))
       setHasSelection(true)
@@ -119,7 +130,7 @@ export default function LocationPicker({
     return () => {
       cancelled = true
     }
-  }, [selectedLat, selectedLng])
+  }, [bindMarker, selectedLat, selectedLng])
 
   return (
     <div className="space-y-3">
@@ -131,7 +142,7 @@ export default function LocationPicker({
         )}
         <p className={hasSelection ? "font-medium text-emerald-700" : "text-muted-foreground"}>
           {hasSelection
-            ? "Lokalizacja zaznaczona. Kliknij w inne miejsce, jeśli chcesz ją poprawić."
+            ? "Lokalizacja zaznaczona. Przeciągnij pinezkę albo kliknij inne miejsce, aby ustawić punkt dokładnie."
             : "Kliknij na mapie dokładnie tam, gdzie znajduje się wejście do obiektu."}
         </p>
       </div>
