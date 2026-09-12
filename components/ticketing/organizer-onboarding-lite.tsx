@@ -21,6 +21,7 @@ import {
   type OrganizerOnboardingActionState,
 } from "@/app/host/onboarding/actions"
 import { ImageUploadSection } from "@/components/forms/ImageUploadSection"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+import type { LocationReverseResponse, LocationSuggestion } from "@/lib/locations/types"
 import { cn } from "@/lib/utils"
 
 const LocationPicker = dynamic(() => import("@/components/location-picker"), {
@@ -97,6 +99,10 @@ function timeToMinutes(value: string) {
   return hours * 60 + minutes
 }
 
+function clean(value: string, maximum: number) {
+  return value.trim().slice(0, maximum)
+}
+
 export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props) {
   const [state, formAction] = useActionState(completeOrganizerOnboarding, initialState)
   const [step, setStep] = useState(0)
@@ -152,9 +158,39 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
     localStorage.setItem(storageKey, JSON.stringify({ values, days, location, images, salesMode }))
   }, [days, images, location, salesMode, storageKey, values])
 
+  const applyAddressSuggestion = useCallback((item: LocationSuggestion) => {
+    setValues((current) => ({
+      ...current,
+      address: clean(item.addressLine || item.label, 240),
+      postalCode: clean(item.postcode, 20),
+      city: clean(item.city, 120),
+    }))
+    setLocation({ lat: item.latitude, lng: item.longitude })
+    setError(null)
+  }, [])
+
   const onLocation = useCallback((lat: number, lng: number) => {
     setLocation({ lat, lng })
     setError(null)
+
+    void (async () => {
+      try {
+        const params = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+        const response = await fetch(`/api/locations/reverse?${params.toString()}`)
+        if (!response.ok) return
+        const payload = await response.json() as LocationReverseResponse
+        if (!payload.item) return
+
+        setValues((current) => ({
+          ...current,
+          address: clean(payload.item.addressLine || payload.item.label, 240),
+          postalCode: clean(payload.item.postcode, 20),
+          city: clean(payload.item.city, 120),
+        }))
+      } catch {
+        // Keep the chosen coordinates when reverse geocoding is temporarily unavailable.
+      }
+    })()
   }, [])
 
   function setValue<K extends keyof Values>(key: K, value: Values[K]) {
@@ -172,7 +208,7 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
       if (values.attractionDescription.trim().length < 20) return "Dodaj krótki opis atrakcji — minimum 20 znaków."
       if (!values.categoryId) return "Wybierz kategorię."
       if (values.address.trim().length < 3 || values.city.trim().length < 2) return "Uzupełnij adres i miejscowość."
-      if (!location) return "Zaznacz lokalizację na mapie."
+      if (!location) return "Wybierz adres z podpowiedzi albo zaznacz lokalizację na mapie."
     }
 
     if (step === 2) {
@@ -307,11 +343,34 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
                 </select>
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Ulica i numer" className="sm:col-span-2"><Input value={values.address} onChange={(e) => setValue("address", e.target.value)} placeholder="ul. Przykładowa 10" /></Field>
+                <Field label="Adres lub nazwa obiektu" className="sm:col-span-2">
+                  <LocationAutocomplete
+                    mode="address"
+                    value={values.address}
+                    onValueChange={(value) => {
+                      setValue("address", value)
+                      setLocation(null)
+                    }}
+                    onSelect={applyAddressSuggestion}
+                    placeholder="np. Rejtana 20, Rzeszów albo nazwa obiektu"
+                  />
+                </Field>
                 <Field label="Kod pocztowy"><Input value={values.postalCode} onChange={(e) => setValue("postalCode", e.target.value)} placeholder="35-001" /></Field>
-                <Field label="Miejscowość"><Input value={values.city} onChange={(e) => setValue("city", e.target.value)} placeholder="Rzeszów" /></Field>
+                <Field label="Miejscowość">
+                  <LocationAutocomplete
+                    mode="city"
+                    value={values.city}
+                    onValueChange={(value) => setValue("city", value)}
+                    onSelect={(item) => setValue("city", clean(item.city || item.label, 120))}
+                    placeholder="Rzeszów"
+                  />
+                </Field>
               </div>
-              <div className="space-y-2"><Label>Położenie na mapie</Label><LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} /></div>
+              <div className="space-y-2">
+                <Label>Położenie na mapie</Label>
+                <p className="text-xs text-muted-foreground">Po wybraniu adresu pinezka ustawi się automatycznie. Klikając mapę możesz skorygować punkt, a adres zostanie ponownie rozpoznany.</p>
+                <LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} />
+              </div>
               <ImageUploadSection images={images} onImagesChange={setImages} userId={userId} maxImages={8} />
             </CardContent>
           </Card>
