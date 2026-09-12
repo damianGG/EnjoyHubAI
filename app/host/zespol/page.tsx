@@ -243,7 +243,7 @@ function OrganizationTeam({ team }: { team: OrganizationTeamData }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5 text-primary" /> Zaproś pracownika</CardTitle>
-          <CardDescription>Tworzysz bezpieczny link ważny przez 7 dni. Na tym etapie wysyłasz go pracownikowi samodzielnie; automatyczne wiadomości dołączymy w module powiadomień.</CardDescription>
+          <CardDescription>Tworzysz bezpieczne zaproszenie ważne przez 7 dni. EnjoyHub wysyła je automatycznie e-mailem, a link możesz też skopiować ręcznie.</CardDescription>
         </CardHeader>
         <CardContent>
           <TeamInvitationForm organizationId={team.organization.id} actorRole={team.actorRole} />

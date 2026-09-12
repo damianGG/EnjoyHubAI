@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react"
 import { useFormStatus } from "react-dom"
-import { Check, Copy, Loader2, Mail, UserPlus } from "lucide-react"
+import { Check, Copy, Loader2, Mail, MailCheck, TriangleAlert, UserPlus } from "lucide-react"
 
 import {
   createTeamInvitation,
@@ -27,7 +27,7 @@ function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-      {pending ? <><Loader2 className="h-4 w-4 animate-spin" /> Tworzę zaproszenie…</> : <><UserPlus className="h-4 w-4" /> Zaproś do zespołu</>}
+      {pending ? <><Loader2 className="h-4 w-4 animate-spin" /> Wysyłam zaproszenie…</> : <><UserPlus className="h-4 w-4" /> Wyślij zaproszenie</>}
     </Button>
   )
 }
@@ -99,12 +99,14 @@ export function TeamInvitationForm({
       ) : null}
 
       {state.invitationPath ? (
-        <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
-          <Mail className="h-4 w-4" />
-          <AlertTitle>Zaproszenie gotowe</AlertTitle>
+        <Alert className={state.emailSent ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "border-amber-200 bg-amber-50 text-amber-950"}>
+          {state.emailSent ? <MailCheck className="h-4 w-4" /> : state.emailWarning ? <TriangleAlert className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+          <AlertTitle>{state.emailSent ? "Zaproszenie wysłane" : "Zaproszenie gotowe"}</AlertTitle>
           <AlertDescription className="space-y-3">
             <p>
-              Wyślij ten link do <strong>{state.email}</strong>. Link działa przez 7 dni i może go przyjąć wyłącznie konto zalogowane tym samym adresem e-mail.
+              {state.emailSent
+                ? <>Wysłaliśmy wiadomość do <strong>{state.email}</strong>. Link działa przez 7 dni i może go przyjąć wyłącznie konto zalogowane tym samym adresem e-mail.</>
+                : <>{state.emailWarning || <>Wyślij link do <strong>{state.email}</strong>.</>}</>}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input value={invitationUrl} readOnly className="bg-background font-mono text-xs" />
