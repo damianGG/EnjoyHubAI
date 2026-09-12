@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import type Stripe from "stripe"
 import { z } from "zod"
 
+import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import {
   getStripeClient,
@@ -127,6 +128,34 @@ async function handleSuccessfulCheckout(
       checkoutSessionId: session.id,
       paymentAttemptId: attemptId,
     })
+  }
+
+  // E-mail delivery is deliberately non-transactional. The Stripe webhook must
+  // never roll back or repeatedly re-fulfill a paid order because the mail
+  // provider is temporarily unavailable. Provider-event idempotency prevents a
+  // retry from sending the same confirmation twice.
+  if (fulfilled && !result.event_was_duplicate) {
+    const { data: attempt, error: attemptError } = await supabase
+      .from("payment_attempts")
+      .select("order_id")
+      .eq("id", attemptId)
+      .maybeSingle()
+
+    if (attemptError || !attempt?.order_id) {
+      console.error("Could not resolve order for confirmation email", {
+        paymentAttemptId: attemptId,
+        error: attemptError?.message,
+      })
+    } else {
+      const emailResult = await sendOrderConfirmationEmail(attempt.order_id)
+      if (!emailResult.sent) {
+        console.error("Paid order confirmation email failed", {
+          orderId: attempt.order_id,
+          reason: emailResult.reason,
+          error: emailResult.error,
+        })
+      }
+    }
   }
 
   return NextResponse.json({
