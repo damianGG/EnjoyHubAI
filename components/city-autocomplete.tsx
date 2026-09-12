@@ -18,5 +18,5 @@ interface CityAutocompleteProps {
 }
 
 export function CityAutocomplete(props: CityAutocompleteProps) {
-  return <LocationAutocomplete mode="city" {...props} />
+  return <LocationAutocomplete mode="city" behavior="autocomplete" {...props} />
 }
