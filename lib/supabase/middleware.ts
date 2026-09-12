@@ -43,12 +43,40 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // The dedicated callback route exchanges login and sign-up codes and creates
-  // the application profile. Middleware only handles recovery codes here.
+  // Password recovery links use token_hash instead of relying on a PKCE verifier
+  // cookie. This makes reset links work when the e-mail is opened in another
+  // browser/device or on a different approved application hostname. Keep the
+  // legacy ?code=... path as a backwards-compatible fallback for older e-mails.
   const requestUrl = new URL(request.url)
+  const isResetPasswordRoute = request.nextUrl.pathname === "/auth/reset-password"
+  const tokenHash = requestUrl.searchParams.get("token_hash")
+  const recoveryType = requestUrl.searchParams.get("type")
   const code = requestUrl.searchParams.get("code")
 
-  if (code && request.nextUrl.pathname === "/auth/reset-password") {
+  if (isResetPasswordRoute && tokenHash && recoveryType === "recovery") {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "recovery",
+    })
+
+    if (error) {
+      console.error("[v0] Password recovery token verification error:", error)
+      return NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url))
+    }
+
+    const cleanUrl = request.nextUrl.clone()
+    cleanUrl.searchParams.delete("token_hash")
+    cleanUrl.searchParams.delete("type")
+    const redirectResponse = NextResponse.redirect(cleanUrl)
+
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+
+    return redirectResponse
+  }
+
+  if (isResetPasswordRoute && code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
