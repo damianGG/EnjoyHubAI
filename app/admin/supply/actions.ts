@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { requirePlatformStaff } from "@/lib/platform-admin/access"
 
 const supplyRoles = ["platform_superadmin", "platform_support", "platform_content"] as const
+const claimReviewRoles = ["platform_superadmin", "platform_support"] as const
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -88,4 +89,41 @@ export async function updateSupplyLeadAction(leadId: string, formData: FormData)
   revalidatePath(`/admin/supply/${leadId}`)
   revalidatePath(`/admin/supply/${leadId}/podglad`)
   redirect(`/admin/supply/${leadId}?zapisano=1`)
+}
+
+export async function publishSupplyLeadAction(leadId: string, _formData: FormData) {
+  const { supabase } = await requirePlatformStaff(supplyRoles, `/admin/supply/${leadId}`)
+  const { data, error } = await supabase.rpc("platform_supply_publish_lead", { p_lead_id: leadId })
+
+  if (error || !data) {
+    redirect(`/admin/supply/${leadId}?blad=publish`)
+  }
+
+  revalidatePath("/admin/supply")
+  revalidatePath(`/admin/supply/${leadId}`)
+  revalidatePath(`/admin/supply/${leadId}/podglad`)
+  revalidatePath("/attractions")
+  redirect(`/admin/supply/${leadId}?opublikowano=1`)
+}
+
+export async function resolveSupplyClaimAction(
+  leadId: string,
+  requestId: string,
+  decision: "approved" | "rejected",
+  formData: FormData,
+) {
+  const { supabase } = await requirePlatformStaff(claimReviewRoles, `/admin/supply/${leadId}`)
+  const { error } = await supabase.rpc("platform_supply_resolve_claim", {
+    p_request_id: requestId,
+    p_decision: decision,
+    p_admin_note: text(formData, "admin_note") || null,
+  })
+
+  if (error) {
+    redirect(`/admin/supply/${leadId}?blad=claim`)
+  }
+
+  revalidatePath(`/admin/supply/${leadId}`)
+  revalidatePath("/attractions")
+  redirect(`/admin/supply/${leadId}?claim=${decision}`)
 }
