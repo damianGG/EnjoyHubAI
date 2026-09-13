@@ -1,8 +1,8 @@
 import Link from "next/link"
-import { ArrowLeft, ExternalLink, Eye, Save, Sparkles } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ExternalLink, Eye, Rocket, Save, Sparkles, XCircle } from "lucide-react"
 import { notFound } from "next/navigation"
 
-import { updateSupplyLeadAction } from "@/app/admin/supply/actions"
+import { publishSupplyLeadAction, resolveSupplyClaimAction, updateSupplyLeadAction } from "@/app/admin/supply/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,9 +25,12 @@ const statuses = [
   ["rejected", "Odrzucony"],
 ] as const
 
-export default async function SupplyLeadPage({ params, searchParams }: { params: { leadId: string }; searchParams?: { zapisano?: string; blad?: string } }) {
+export default async function SupplyLeadPage({ params, searchParams }: {
+  params: { leadId: string }
+  searchParams?: { zapisano?: string; blad?: string; opublikowano?: string; claim?: string }
+}) {
   const next = `/admin/supply/${params.leadId}`
-  const { supabase } = await requirePlatformStaff(supplyRoles, next)
+  const { supabase, role } = await requirePlatformStaff(supplyRoles, next)
   const [{ data, error }, categoriesResult, subcategoriesResult] = await Promise.all([
     supabase.rpc("platform_supply_get_lead", { p_lead_id: params.leadId }),
     supabase.from("categories").select("id,name").order("name"),
@@ -38,7 +41,11 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
   const lead = data as any
   const categories = categoriesResult.data ?? []
   const subcategories = subcategoriesResult.data ?? []
+  const claimRequests = (lead.claimRequests ?? []) as any[]
   const action = updateSupplyLeadAction.bind(null, params.leadId)
+  const publishAction = publishSupplyLeadAction.bind(null, params.leadId)
+  const canReviewClaims = role === "platform_superadmin" || role === "platform_support"
+  const canPublish = !lead.attraction_id && ["verified", "owner_approved"].includes(lead.status)
 
   return (
     <main className="container mx-auto max-w-7xl px-4 py-8">
@@ -50,7 +57,7 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
         <div>
           <div className="mb-3 flex flex-wrap gap-2">
             <Badge variant="secondary">{statusLabel(lead.status)}</Badge>
-            <Badge variant="outline">{lead.claim_status === "claimed" ? "Profil przejęty" : "Bez właściciela"}</Badge>
+            <Badge variant="outline">{lead.claim_status === "claimed" ? "Profil przejęty" : lead.claim_status === "claim_requested" ? "Czeka wniosek o przejęcie" : "Bez właściciela"}</Badge>
             {lead.attraction_id && <Badge>Połączony z atrakcją</Badge>}
           </div>
           <h1 className="text-3xl font-bold">{lead.name}</h1>
@@ -58,12 +65,21 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
         </div>
         <div className="flex flex-wrap gap-2">
           {lead.website_url && <Button asChild variant="outline"><a href={lead.website_url} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Strona źródłowa</a></Button>}
-          <Button asChild variant="outline"><Link href={`/admin/supply/${lead.id}/podglad`}><Eye className="mr-2 h-4 w-4" />Podgląd live</Link></Button>
+          <Button asChild variant="outline"><Link href={`/admin/supply/${lead.id}/podglad`}><Eye className="mr-2 h-4 w-4" />Podgląd roboczy</Link></Button>
+          {lead.attraction_id && <Button asChild variant="outline"><Link href={`/attractions/${lead.attraction_id}`} target="_blank"><ExternalLink className="mr-2 h-4 w-4" />Profil publiczny</Link></Button>}
+          {canPublish && (
+            <form action={publishAction}>
+              <Button type="submit" className="bg-emerald-600 text-white hover:bg-emerald-700"><Rocket className="mr-2 h-4 w-4" />Opublikuj profil</Button>
+            </form>
+          )}
         </div>
       </div>
 
-      {searchParams?.zapisano && <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">Zmiany zostały zapisane.</div>}
-      {searchParams?.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się zapisać zmian. Sprawdź dane.</div>}
+      {searchParams?.zapisano && <Notice>Zapisano zmiany.</Notice>}
+      {searchParams?.opublikowano && <Notice>Profil został opublikowany bez przypisywania właściciela. Może zostać przejęty przez zweryfikowanego operatora.</Notice>}
+      {searchParams?.claim === "approved" && <Notice>Wniosek został zaakceptowany. Użytkownik jest teraz właścicielem organizacji i może zarządzać profilem.</Notice>}
+      {searchParams?.claim === "rejected" && <Notice>Wniosek o przejęcie został odrzucony.</Notice>}
+      {searchParams?.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Operacja nie powiodła się. Przy publikacji profil musi być najpierw zweryfikowany i mieć uzupełnione miasto.</div>}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="EnjoyHub Score" value={`${lead.score}/100`} note="priorytet pozyskania" />
@@ -71,6 +87,44 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
         <Metric label="Opinie" value={lead.review_rating ? `${lead.review_rating} ★` : "—"} note={lead.review_count ? `${lead.review_count} opinii` : "brak danych"} />
         <Metric label="Rezerwacja" value={bookingLabel(lead.booking_method)} note={lead.booking_url ? "ma link bookingowy" : "bez linku"} />
       </div>
+
+      {claimRequests.length > 0 && (
+        <Card className="mb-6 border-amber-200">
+          <CardHeader>
+            <CardTitle>Wnioski o przejęcie profilu</CardTitle>
+            <CardDescription>Akceptacja nie tworzy duplikatu. Użytkownik dostaje rolę właściciela istniejącej organizacji i dostęp do istniejącego obiektu oraz atrakcji.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {claimRequests.map((claim) => (
+              <div key={claim.id} className="rounded-xl border p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{claim.claimantName || claim.claimant_email || "Użytkownik EnjoyHub"}</p>
+                      <Badge variant={claim.status === "approved" ? "default" : claim.status === "rejected" ? "destructive" : "secondary"}>{claimStatusLabel(claim.status)}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{claim.claimant_email}{claim.claimant_phone ? ` · ${claim.claimant_phone}` : ""}</p>
+                    {claim.message && <p className="mt-3 whitespace-pre-line text-sm">{claim.message}</p>}
+                    <p className="mt-2 text-xs text-muted-foreground">Wysłano: {new Date(claim.submitted_at).toLocaleString("pl-PL")}</p>
+                  </div>
+                  {canReviewClaims && claim.status === "pending" && (
+                    <div className="grid min-w-[280px] gap-2">
+                      <form action={resolveSupplyClaimAction.bind(null, params.leadId, claim.id, "approved")} className="space-y-2">
+                        <Input name="admin_note" placeholder="Notatka z weryfikacji (opcjonalnie)" />
+                        <Button type="submit" className="w-full bg-emerald-600 text-white hover:bg-emerald-700"><CheckCircle2 className="mr-2 h-4 w-4" />Zatwierdź przejęcie</Button>
+                      </form>
+                      <form action={resolveSupplyClaimAction.bind(null, params.leadId, claim.id, "rejected")}>
+                        <input type="hidden" name="admin_note" value="Wniosek odrzucony przez administratora." />
+                        <Button type="submit" variant="outline" className="w-full"><XCircle className="mr-2 h-4 w-4" />Odrzuć</Button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <form action={action} className="space-y-6">
         <Card>
@@ -149,7 +203,7 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Status i własność</CardTitle><CardDescription>Publikacja i przejęcie profilu będą osobnym, kontrolowanym krokiem.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Status i własność</CardTitle><CardDescription>Najpierw zweryfikuj lead. Dopiero osobny przycisk publikacji tworzy publiczny profil bez właściciela.</CardDescription></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Field label="Status leada">
               <select name="status" defaultValue={lead.status} className="h-10 w-full rounded-md border bg-background px-3 text-sm">{statuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
@@ -159,7 +213,7 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
             </Field>
             <div className="rounded-lg border p-4 text-sm">
               <p className="font-medium">Powiązanie marketplace</p>
-              <p className="mt-1 text-muted-foreground">{lead.attraction_id ? `Atrakcja: ${lead.attraction_id}` : "Jeszcze nie opublikowano jako atrakcja."}</p>
+              <p className="mt-1 break-all text-muted-foreground">{lead.attraction_id ? `Atrakcja: ${lead.attraction_id}` : "Jeszcze nie opublikowano jako atrakcja."}</p>
             </div>
           </CardContent>
         </Card>
@@ -170,6 +224,10 @@ export default async function SupplyLeadPage({ params, searchParams }: { params:
       </form>
     </main>
   )
+}
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">{children}</div>
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -185,4 +243,5 @@ function Metric({ label, value, note }: { label: string; value: string; note: st
 }
 
 function statusLabel(value: string) { return statuses.find(([status]) => status === value)?.[1] ?? value }
+function claimStatusLabel(value: string) { return ({ pending: "Oczekuje", approved: "Zaakceptowany", rejected: "Odrzucony" } as Record<string, string>)[value] ?? value }
 function bookingLabel(value: string) { return ({ unknown: "Nieznana", none: "Brak", phone: "Telefon", whatsapp: "WhatsApp", messenger: "Messenger", form: "Formularz", email: "E-mail", own_booking: "Online" } as Record<string, string>)[value] ?? value }
