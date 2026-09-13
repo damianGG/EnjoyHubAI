@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ImagePlus, Loader2, Trash2 } from "lucide-react"
+import { BrainCircuit, ImagePlus, Loader2, Trash2 } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +59,14 @@ export function SupplyImageManager({ leadId, images }: { leadId: string; images:
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-col gap-3 rounded-xl border bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-medium">Brakuje danych o atrakcji?</p>
+          <p className="text-sm text-muted-foreground">Uruchom research AI, sprawdź źródła i zatwierdź tylko wybrane informacje.</p>
+        </div>
+        <Button asChild variant="outline" className="shrink-0"><Link href={`/admin/supply/${leadId}/enrichment`}><BrainCircuit className="mr-2 h-4 w-4" />AI i kompletność</Link></Button>
+      </div>
+
       {images.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {images.map((image) => (
