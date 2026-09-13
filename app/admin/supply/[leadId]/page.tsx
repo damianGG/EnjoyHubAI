@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, ExternalLink, Eye, Rocket, Save, Sparkles, XCi
 import { notFound } from "next/navigation"
 
 import { publishSupplyLeadAction, resolveSupplyClaimAction, updateSupplyLeadAction } from "@/app/admin/supply/actions"
+import { SupplyImageManager } from "@/components/admin/supply-image-manager"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,6 +88,14 @@ export default async function SupplyLeadPage({ params, searchParams }: {
         <Metric label="Opinie" value={lead.review_rating ? `${lead.review_rating} ★` : "—"} note={lead.review_count ? `${lead.review_count} opinii` : "brak danych"} />
         <Metric label="Rezerwacja" value={bookingLabel(lead.booking_method)} note={lead.booking_url ? "ma link bookingowy" : "bez linku"} />
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Zdjęcia profilu</CardTitle>
+          <CardDescription>Możesz dodać zdjęcia przesłane przez operatora lub licencjonowane materiały. Tylko pliki z potwierdzonym prawem publikacji trafiają do publicznej galerii.</CardDescription>
+        </CardHeader>
+        <CardContent><SupplyImageManager leadId={lead.id} images={lead.images ?? []} /></CardContent>
+      </Card>
 
       {claimRequests.length > 0 && (
         <Card className="mb-6 border-amber-200">
