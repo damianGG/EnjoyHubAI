@@ -9,6 +9,7 @@ import {
   Share2,
   ShieldCheck,
   Star,
+  Store,
   Ticket,
   Users,
 } from "lucide-react"
@@ -45,7 +46,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   const { slug } = await params
   const id = extractIdFromSlug(slug)
 
-  const [attractionResult, ticketingVenue] = await Promise.all([
+  const [attractionResult, ticketingVenue, claimResult] = await Promise.all([
     supabase
       .from("properties")
       .select(`
@@ -63,11 +64,21 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       .eq("is_active", true)
       .single(),
     getMarketplaceTicketingVenue(id),
+    supabase.rpc("profile_claim_get", { p_attraction_id: id }),
   ])
 
   const attraction = attractionResult.data
   if (!attraction) notFound()
 
+  const { data: venueContact } = attraction.venue_id
+    ? await supabase
+        .from("venues")
+        .select("contact_phone,contact_email,website_url,external_booking_url")
+        .eq("id", attraction.venue_id)
+        .maybeSingle()
+    : { data: null }
+
+  const claimContext = claimResult.data as { claimable?: boolean } | null
   const ratings = attraction.reviews?.map((review: any) => review.rating) || []
   const avgRating = ratings.length > 0
     ? ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length
@@ -94,33 +105,21 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
   return (
     <div className="min-h-screen bg-background pb-36 md:pb-0">
-      <div className="hidden md:block">
-        <TopNav />
-      </div>
+      <div className="hidden md:block"><TopNav /></div>
 
       <div className="pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-4 pt-4 md:hidden">
-        <Link
-          href="/attractions"
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur"
-          aria-label="Powrót do mapy atrakcji"
-        >
+        <Link href="/attractions" className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Powrót do mapy atrakcji">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Udostępnij">
-            <Share2 className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Dodaj do ulubionych">
-            <Heart className="h-5 w-5" />
-          </Button>
+          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Udostępnij"><Share2 className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Dodaj do ulubionych"><Heart className="h-5 w-5" /></Button>
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-6">
         <div className="hidden items-center justify-between pb-4 md:flex">
-          <Link href="/attractions" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />Powrót do mapy
-          </Link>
+          <Link href="/attractions" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Powrót do mapy</Link>
           <div className="flex gap-2">
             <Button variant="outline" size="sm"><Heart className="mr-2 h-4 w-4" />Zapisz</Button>
             <Button variant="outline" size="sm"><Share2 className="mr-2 h-4 w-4" />Udostępnij</Button>
@@ -138,29 +137,17 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
                     <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{attraction.title}</h1>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                       {avgRating > 0 && (
-                        <span className="flex items-center gap-1 font-semibold">
-                          <Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />
-                          {roundedRating}
-                          <span className="font-normal text-muted-foreground">({ratings.length} opinii)</span>
-                        </span>
+                        <span className="flex items-center gap-1 font-semibold"><Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />{roundedRating}<span className="font-normal text-muted-foreground">({ratings.length} opinii)</span></span>
                       )}
-                      <a href="#location" className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline">
-                        <MapPin className="h-4 w-4" />{locationLabel || attraction.city}
-                      </a>
+                      <a href="#location" className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"><MapPin className="h-4 w-4" />{locationLabel || attraction.city}</a>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary" className="rounded-full px-3 py-1.5">{String(attraction.property_type).replaceAll("_", " ")}</Badge>
-                  {attraction.max_guests > 0 && (
-                    <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>
-                  )}
-                  {ticketingVenue && (
-                    <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800">
-                      <Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online
-                    </Badge>
-                  )}
+                  {attraction.max_guests > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
+                  {ticketingVenue && <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800"><Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online</Badge>}
                 </div>
               </header>
 
@@ -170,27 +157,16 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
               </section>
 
               <section className="grid grid-cols-3 gap-3 border-b pb-7">
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4">
-                  <Users className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" />
-                  <p className="text-xs font-medium sm:text-sm">Dla {attraction.max_guests || "grup"} osób</p>
-                </div>
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4">
-                  <CalendarDays className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" />
-                  <p className="text-xs font-medium sm:text-sm">Wybierz termin</p>
-                </div>
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4">
-                  <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" />
-                  <p className="text-xs font-medium sm:text-sm">Bezpieczna rezerwacja</p>
-                </div>
+                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><Users className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Dla {attraction.max_guests || "grup"} osób</p></div>
+                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><CalendarDays className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Wybierz termin</p></div>
+                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><ShieldCheck className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Bezpieczna rezerwacja</p></div>
               </section>
 
               {attraction.amenities?.length > 0 && (
                 <section className="space-y-4 border-b pb-7">
                   <h2 className="text-xl font-bold">Na miejscu</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {attraction.amenities.slice(0, 9).map((amenity: string) => (
-                      <div key={amenity} className="rounded-xl border px-3 py-3 text-sm">{amenity}</div>
-                    ))}
+                    {attraction.amenities.slice(0, 9).map((amenity: string) => <div key={amenity} className="rounded-xl border px-3 py-3 text-sm">{amenity}</div>)}
                   </div>
                 </section>
               )}
@@ -202,12 +178,14 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
                   <MarketplaceCalendar propertyId={attraction.id} />
                 ) : (
                   <PropertyContactInfo
-                    phone={attraction.users?.phone}
-                    email={attraction.users?.email}
+                    phone={venueContact?.contact_phone || attraction.users?.phone}
+                    email={venueContact?.contact_email || attraction.users?.email}
                     address={attraction.address}
                     city={attraction.city}
                     country={attraction.country}
                     openingHours={attraction.opening_hours}
+                    websiteUrl={venueContact?.website_url}
+                    bookingUrl={venueContact?.external_booking_url}
                   />
                 )}
               </div>
@@ -215,22 +193,24 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
 
             <div className="space-y-8">
               <section id="location" className="scroll-mt-24 space-y-4 border-t pt-7 lg:border-t-0 lg:pt-0">
-                <div>
-                  <h2 className="text-xl font-bold">Gdzie to jest</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{[attraction.address, attraction.city, attraction.country].filter(Boolean).join(", ")}</p>
-                </div>
-                <div className="h-72 overflow-hidden rounded-3xl sm:h-96">
-                  <AttractionMap attractions={[mapAttraction]} className="h-full border-0 shadow-none" />
-                </div>
+                <div><h2 className="text-xl font-bold">Gdzie to jest</h2><p className="mt-1 text-sm text-muted-foreground">{[attraction.address, attraction.city, attraction.country].filter(Boolean).join(", ")}</p></div>
+                <div className="h-72 overflow-hidden rounded-3xl sm:h-96"><AttractionMap attractions={[mapAttraction]} className="h-full border-0 shadow-none" /></div>
               </section>
 
               <ReviewsList reviews={attraction.reviews || []} avgRating={roundedRating} />
 
               {attraction.users?.full_name && (
-                <Card className="border-0 bg-muted/40 shadow-none">
-                  <CardContent className="p-5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Organizator</p>
-                    <p className="mt-1 font-semibold">{attraction.users.full_name}</p>
+                <Card className="border-0 bg-muted/40 shadow-none"><CardContent className="p-5"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Organizator</p><p className="mt-1 font-semibold">{attraction.users.full_name}</p></CardContent></Card>
+              )}
+
+              {claimContext?.claimable && (
+                <Card className="border-dashed bg-muted/20 shadow-none">
+                  <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="flex items-center gap-2 font-semibold"><Store className="h-4 w-4" />Zarządzasz tym miejscem?</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Przejmij profil, aby edytować zdjęcia, ofertę, ceny i później uruchomić sprzedaż w EnjoyHub.</p>
+                    </div>
+                    <Button asChild variant="outline"><Link href={`/przejmij-profil/${attraction.id}`}>Przejmij profil</Link></Button>
                   </CardContent>
                 </Card>
               )}
@@ -242,13 +222,8 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       {ticketingVenue && (
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-white/95 p-3 shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Cena od</p>
-              <p className="text-lg font-bold">{Math.round(attraction.price_per_night)} zł</p>
-            </div>
-            <Button asChild className="h-12 flex-1 rounded-xl bg-[#ff5a1f] text-base font-semibold text-white hover:bg-[#e94f18]">
-              <a href="#booking">Sprawdź terminy</a>
-            </Button>
+            <div><p className="text-xs text-muted-foreground">Cena od</p><p className="text-lg font-bold">{Math.round(attraction.price_per_night)} zł</p></div>
+            <Button asChild className="h-12 flex-1 rounded-xl bg-[#ff5a1f] text-base font-semibold text-white hover:bg-[#e94f18]"><a href="#booking">Sprawdź terminy</a></Button>
           </div>
         </div>
       )}
