@@ -14,9 +14,15 @@ import type { MarketplaceTicketingSession } from "@/lib/ticketing/marketplace"
 
 interface MarketplaceCalendarProps {
   propertyId: string
+  embedded?: boolean
+  checkoutTarget?: "_self" | "_blank" | "_top"
 }
 
-export function MarketplaceCalendar({ propertyId }: MarketplaceCalendarProps) {
+export function MarketplaceCalendar({
+  propertyId,
+  embedded = false,
+  checkoutTarget = "_self",
+}: MarketplaceCalendarProps) {
   const today = useMemo(() => {
     const date = new Date()
     date.setHours(0, 0, 0, 0)
@@ -72,10 +78,13 @@ export function MarketplaceCalendar({ propertyId }: MarketplaceCalendarProps) {
   const selectedSessions = sessions.filter((session) => session.localDate === selectedDateKey)
 
   return (
-    <Card className="surface-3d overflow-hidden rounded-3xl border-0 shadow-xl ring-1 ring-black/5">
-      <CardHeader className="border-b bg-[#fff7f3] pb-4">
+    <Card className={embedded
+      ? "overflow-hidden rounded-2xl border border-[#0b1220]/[0.08] bg-white shadow-none"
+      : "surface-3d overflow-hidden rounded-3xl border-0 shadow-xl ring-1 ring-black/5"
+    }>
+      <CardHeader className={embedded ? "border-b bg-[#fff7f3] p-4" : "border-b bg-[#fff7f3] pb-4"}>
         <div className="mb-1 flex items-center justify-between gap-3">
-          <CardTitle className="flex items-center gap-2 text-xl">
+          <CardTitle className={embedded ? "flex items-center gap-2 text-lg" : "flex items-center gap-2 text-xl"}>
             <Ticket className="h-5 w-5 text-[#ff5a1f]" />
             Wybierz termin
           </CardTitle>
@@ -84,7 +93,7 @@ export function MarketplaceCalendar({ propertyId }: MarketplaceCalendarProps) {
         <p className="text-sm text-muted-foreground">Data, godzina i bilety — bez dzwonienia do obiektu.</p>
       </CardHeader>
 
-      <CardContent className="space-y-5 p-4 sm:p-5">
+      <CardContent className={embedded ? "space-y-4 p-3 sm:p-4" : "space-y-5 p-4 sm:p-5"}>
         <div className="flex justify-center overflow-hidden rounded-2xl border bg-background p-1">
           <Calendar
             mode="single"
@@ -104,10 +113,12 @@ export function MarketplaceCalendar({ propertyId }: MarketplaceCalendarProps) {
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="h-2 w-2 rounded-full bg-[#ff5a1f]" />
-          Pomarańczowa kropka oznacza dostępne wejścia
-        </div>
+        {!embedded && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-[#ff5a1f]" />
+            Pomarańczowa kropka oznacza dostępne wejścia
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center rounded-2xl bg-muted/50 py-8 text-sm text-muted-foreground">
@@ -149,7 +160,13 @@ export function MarketplaceCalendar({ propertyId }: MarketplaceCalendarProps) {
                   </p>
                 </div>
                 <Button asChild className="mt-4 h-11 w-full rounded-xl bg-[#ff5a1f] font-semibold text-white hover:bg-[#e94f18]">
-                  <Link href={`/checkout/${session.id}`}>Wybierz i przejdź dalej</Link>
+                  <Link
+                    href={`/checkout/${session.id}?source=widget`}
+                    target={checkoutTarget}
+                    rel={checkoutTarget === "_blank" ? "noopener noreferrer" : undefined}
+                  >
+                    Wybierz i przejdź dalej
+                  </Link>
                 </Button>
               </div>
             ))}
