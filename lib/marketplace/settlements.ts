@@ -105,17 +105,24 @@ export async function recordMarketplaceSettlement(input: SettlementInput) {
   return data
 }
 
-export async function releaseEligibleMarketplaceSettlements(limit = 100) {
+export async function releaseEligibleMarketplaceSettlements(
+  limit = 100,
+  organizationId?: string,
+) {
   if (!isSupabaseAdminConfigured || !isStripeConfigured) {
     throw new Error("Stripe or Supabase admin is not configured")
   }
 
   const supabase = createAdminClient()
-  const { data: settlements, error } = await supabase
+  const baseQuery = supabase
     .from("marketplace_settlements")
     .select("id, order_id, organization_id, provider_charge_id, transfer_group, organizer_amount_minor, currency")
     .eq("status", "pending_service")
     .lte("eligible_at", new Date().toISOString())
+  const scopedQuery = organizationId
+    ? baseQuery.eq("organization_id", organizationId)
+    : baseQuery
+  const { data: settlements, error } = await scopedQuery
     .order("eligible_at", { ascending: true })
     .limit(limit)
 
