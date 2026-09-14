@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import AttractionGallery from "@/components/attraction-gallery"
+import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
 import { BottomNav } from "@/components/bottom-nav"
 import PropertyContactInfo from "@/components/property-contact-info"
@@ -31,9 +32,10 @@ export const revalidate = 120
 
 interface AttractionPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ zainteresowanie?: string; blad_zainteresowania?: string }>
 }
 
-export default async function AttractionPage({ params }: AttractionPageProps) {
+export default async function AttractionPage({ params, searchParams }: AttractionPageProps) {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 text-center">
@@ -43,7 +45,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
   }
 
   const supabase = createClient()
-  const { slug } = await params
+  const [{ slug }, query] = await Promise.all([params, searchParams])
   const id = extractIdFromSlug(slug)
 
   const [attractionResult, ticketingVenue, claimResult] = await Promise.all([
@@ -173,20 +175,30 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
             </div>
 
             <aside id="booking" className="scroll-mt-24 lg:row-span-2">
-              <div className="lg:sticky lg:top-5">
+              <div className="space-y-4 lg:sticky lg:top-5">
                 {ticketingVenue ? (
                   <MarketplaceCalendar propertyId={attraction.id} />
                 ) : (
-                  <PropertyContactInfo
-                    phone={venueContact?.contact_phone || attraction.users?.phone}
-                    email={venueContact?.contact_email || attraction.users?.email}
-                    address={attraction.address}
-                    city={attraction.city}
-                    country={attraction.country}
-                    openingHours={attraction.opening_hours}
-                    websiteUrl={venueContact?.website_url}
-                    bookingUrl={venueContact?.external_booking_url}
-                  />
+                  <>
+                    {claimContext?.claimable && (
+                      <AttractionDemandCard
+                        attractionId={attraction.id}
+                        slug={slug}
+                        success={query.zainteresowanie === "1"}
+                        error={query.blad_zainteresowania === "1"}
+                      />
+                    )}
+                    <PropertyContactInfo
+                      phone={venueContact?.contact_phone || attraction.users?.phone}
+                      email={venueContact?.contact_email || attraction.users?.email}
+                      address={attraction.address}
+                      city={attraction.city}
+                      country={attraction.country}
+                      openingHours={attraction.opening_hours}
+                      websiteUrl={venueContact?.website_url}
+                      bookingUrl={venueContact?.external_booking_url}
+                    />
+                  </>
                 )}
               </div>
             </aside>

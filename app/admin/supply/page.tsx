@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ExternalLink, Plus, Search, Sparkles } from "lucide-react"
+import { ExternalLink, Flame, Plus, Search, Sparkles } from "lucide-react"
 
 import { createSupplyLeadAction } from "@/app/admin/supply/actions"
 import { Badge } from "@/components/ui/badge"
@@ -48,7 +48,7 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
   const region = searchParams?.region?.trim() ?? ""
   const { supabase } = await requirePlatformStaff(supplyRoles, "/admin/supply")
 
-  const { data, error } = await supabase.rpc("platform_supply_list_leads", {
+  const { data, error } = await supabase.rpc("platform_supply_list_leads_with_demand", {
     p_search: q || null,
     p_status: status || null,
     p_region: region || null,
@@ -62,7 +62,7 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
         <div>
           <Badge variant="secondary" className="mb-3">EnjoyHub Supply</Badge>
           <h1 className="text-3xl font-bold">Potencjalne atrakcje i partnerzy</h1>
-          <p className="mt-2 max-w-3xl text-muted-foreground">Jedno miejsce do zbierania leadów, uzupełniania danych, kontaktu z właścicielami i przygotowania atrakcji do publikacji.</p>
+          <p className="mt-2 max-w-3xl text-muted-foreground">Jedno miejsce do zbierania leadów, uzupełniania danych, kontaktu z właścicielami i przygotowania atrakcji do publikacji. Leady z realnym zainteresowaniem klientów automatycznie trafiają wyżej.</p>
           <Button asChild variant="outline" className="mt-4">
             <Link href="/admin/supply/campaigns"><Search className="mr-2 h-4 w-4" />Kampanie Discovery</Link>
           </Button>
@@ -85,7 +85,7 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
         </form>
       </div>
 
-      {error && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się pobrać leadów Supply. Upewnij się, że migracja bazy została wdrożona.</div>}
+      {error && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się pobrać leadów Supply. Upewnij się, że najnowsza migracja bazy została wdrożona.</div>}
       {searchParams?.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się utworzyć leada. Sprawdź wprowadzone dane.</div>}
 
       <Card className="mb-8">
@@ -123,40 +123,54 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
 
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{leads.length} leadów</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Sparkles className="h-4 w-4" /> Najwyższy score = pierwszy kontakt</div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Sparkles className="h-4 w-4" /> Priorytet = potencjał + realny popyt klientów</div>
       </div>
 
       <div className="grid gap-3">
         {leads.length === 0 ? (
           <Card><CardContent className="py-12 text-center text-muted-foreground">Brak leadów pasujących do filtrów.</CardContent></Card>
-        ) : leads.map((lead) => (
-          <Card key={lead.lead_id} className="transition-colors hover:bg-muted/30">
-            <CardContent className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.5fr)_1fr_1fr_120px_auto] lg:items-center">
-              <div>
-                <Link href={`/admin/supply/${lead.lead_id}`} className="font-semibold hover:text-primary hover:underline">{lead.lead_name}</Link>
-                <p className="mt-1 text-sm text-muted-foreground">{[lead.city, lead.region].filter(Boolean).join(" · ") || "Lokalizacja do uzupełnienia"}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{lead.category_name || "Bez kategorii"}{lead.subcategory_name ? ` / ${lead.subcategory_name}` : ""}</p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium">{lead.price_from ? `od ${Number(lead.price_from).toFixed(0)} ${lead.currency}` : "Cena nieznana"}</p>
-                <p className="text-muted-foreground">Rezerwacja: {bookingLabel(lead.booking_method)}</p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium">{lead.review_rating ? `${lead.review_rating} ★` : "Brak oceny"}</p>
-                <p className="text-muted-foreground">{lead.review_count ? `${lead.review_count} opinii` : "opinie do sprawdzenia"}</p>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{lead.score}<span className="text-sm font-normal text-muted-foreground">/100</span></div>
-                <p className="text-xs text-muted-foreground">EnjoyHub Score</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <Badge variant={lead.status === "partner" ? "default" : lead.status === "rejected" ? "destructive" : "secondary"}>{statusLabel(lead.status)}</Badge>
-                {lead.website_url && <Button asChild variant="ghost" size="icon"><a href={lead.website_url} target="_blank" rel="noreferrer" aria-label="Otwórz stronę"><ExternalLink className="h-4 w-4" /></a></Button>}
-                <Button asChild size="sm"><Link href={`/admin/supply/${lead.lead_id}`}>Otwórz</Link></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        ) : leads.map((lead) => {
+          const demandPeople = Number(lead.demand_people_30d ?? 0)
+          const demandSeats = Number(lead.demand_seats_30d ?? 0)
+          const demandValue = Number(lead.estimated_demand_value_30d ?? 0)
+
+          return (
+            <Card key={lead.lead_id} className={demandPeople > 0 ? "border-[#ff5a1f]/30 bg-[#fffaf7] transition-colors hover:bg-[#fff6f0]" : "transition-colors hover:bg-muted/30"}>
+              <CardContent className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.5fr)_1fr_1fr_140px_auto] lg:items-center">
+                <div>
+                  <Link href={`/admin/supply/${lead.lead_id}`} className="font-semibold hover:text-primary hover:underline">{lead.lead_name}</Link>
+                  <p className="mt-1 text-sm text-muted-foreground">{[lead.city, lead.region].filter(Boolean).join(" · ") || "Lokalizacja do uzupełnienia"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{lead.category_name || "Bez kategorii"}{lead.subcategory_name ? ` / ${lead.subcategory_name}` : ""}</p>
+                  {demandPeople > 0 && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#ff5a1f]/10 px-2.5 py-1 text-xs font-semibold text-[#b63b12]">
+                      <Flame className="h-3.5 w-3.5" /> {demandPeople} zainteresowanych / 30 dni
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium">{lead.price_from ? `od ${Number(lead.price_from).toFixed(0)} ${lead.currency}` : "Cena nieznana"}</p>
+                  <p className="text-muted-foreground">Rezerwacja: {bookingLabel(lead.booking_method)}</p>
+                  {demandPeople > 0 && <p className="mt-1 text-xs font-medium text-[#b63b12]">{demandSeats} miejsc zgłoszonych{demandValue > 0 ? ` · ~${Math.round(demandValue)} zł` : ""}</p>}
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium">{lead.review_rating ? `${lead.review_rating} ★` : "Brak oceny"}</p>
+                  <p className="text-muted-foreground">{lead.review_count ? `${lead.review_count} opinii` : "opinie do sprawdzenia"}</p>
+                  {lead.next_requested_date && <p className="mt-1 text-xs text-muted-foreground">Najbliższy popyt: {new Date(`${lead.next_requested_date}T12:00:00`).toLocaleDateString("pl-PL")}</p>}
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{lead.priority_score ?? lead.score}<span className="text-sm font-normal text-muted-foreground">/100</span></div>
+                  <p className="text-xs text-muted-foreground">Priorytet kontaktu</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">bazowy score: {lead.score}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                  <Badge variant={lead.status === "partner" ? "default" : lead.status === "rejected" ? "destructive" : "secondary"}>{statusLabel(lead.status)}</Badge>
+                  {lead.website_url && <Button asChild variant="ghost" size="icon"><a href={lead.website_url} target="_blank" rel="noreferrer" aria-label="Otwórz stronę"><ExternalLink className="h-4 w-4" /></a></Button>}
+                  <Button asChild size="sm"><Link href={`/admin/supply/${lead.lead_id}`}>Otwórz</Link></Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </main>
   )
