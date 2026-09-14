@@ -6,6 +6,7 @@ import { ArrowRight, MapPin, ShieldCheck, Sparkles, TicketCheck } from "lucide-r
 
 import { TopNav } from "@/components/top-nav"
 import { CategoryBar } from "@/components/category-bar"
+import { QuickDiscoveryFilters } from "@/components/quick-discovery-filters"
 import AttractionsView from "@/components/attractions-view"
 import { Button } from "@/components/ui/button"
 
@@ -54,6 +55,7 @@ export function HomeDiscovery({ attractions }: { attractions: Attraction[] }) {
       <div className="relative z-[1200] shrink-0 bg-background md:sticky md:top-0">
         <TopNav onSearchClick={() => setSearchOpen(true)} />
         <CategoryBar useNavigation />
+        <QuickDiscoveryFilters />
       </div>
 
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
@@ -120,7 +122,7 @@ export function HomeDiscovery({ attractions }: { attractions: Attraction[] }) {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Odkrywaj</p>
               <h2 className="mt-1 text-3xl font-extrabold tracking-[-0.035em]">Atrakcje w pobliżu</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca i ceny bezpośrednio na mapie.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Porównuj miejsca, dostępność i ceny bezpośrednio na mapie.</p>
             </div>
           </div>
 
