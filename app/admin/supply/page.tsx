@@ -23,7 +23,24 @@ const statuses = [
   ["rejected", "Odrzucony"],
 ] as const
 
-const regions = ["Podkarpackie", "Małopolskie"] as const
+const regions = [
+  "Dolnośląskie",
+  "Kujawsko-Pomorskie",
+  "Lubelskie",
+  "Lubuskie",
+  "Łódzkie",
+  "Małopolskie",
+  "Mazowieckie",
+  "Opolskie",
+  "Podkarpackie",
+  "Podlaskie",
+  "Pomorskie",
+  "Śląskie",
+  "Świętokrzyskie",
+  "Warmińsko-Mazurskie",
+  "Wielkopolskie",
+  "Zachodniopomorskie",
+] as const
 
 export default async function SupplyPage({ searchParams }: { searchParams?: { q?: string; status?: string; region?: string; blad?: string } }) {
   const q = searchParams?.q?.trim() ?? ""
@@ -46,6 +63,9 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
           <Badge variant="secondary" className="mb-3">EnjoyHub Supply</Badge>
           <h1 className="text-3xl font-bold">Potencjalne atrakcje i partnerzy</h1>
           <p className="mt-2 max-w-3xl text-muted-foreground">Jedno miejsce do zbierania leadów, uzupełniania danych, kontaktu z właścicielami i przygotowania atrakcji do publikacji.</p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/admin/supply/campaigns"><Search className="mr-2 h-4 w-4" />Kampanie Discovery</Link>
+          </Button>
         </div>
 
         <form className="grid w-full gap-2 sm:grid-cols-[minmax(220px,1fr)_180px_180px_auto] xl:max-w-3xl" action="/admin/supply">
