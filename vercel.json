@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/ticketing-cleanup",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/review-invitations",
+      "schedule": "0 8 * * *"
     }
   ]
 }

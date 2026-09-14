@@ -59,6 +59,8 @@ export default async function AttractionPage({ params, searchParams }: Attractio
           rating,
           comment,
           created_at,
+          author_name,
+          verified_visit,
           users!reviews_guest_id_fkey (full_name)
         )
       `)
