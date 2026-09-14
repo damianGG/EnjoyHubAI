@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, CheckCircle2, Clock3, ShieldCheck, WalletCards, XCircle } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ShieldCheck, WalletCards, XCircle } from "lucide-react"
 
 import { submitOrganizerVerification } from "@/app/host/weryfikacja/actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -27,15 +27,29 @@ interface Organization {
   legal_name: string | null
   tax_id: string | null
   billing_email: string | null
+  legal_address: string | null
+  contact_phone: string | null
+  registry_name: string | null
+  registry_number: string | null
   verification_status: VerificationStatus
   payments_enabled: boolean
 }
 
 const statusMeta: Record<VerificationStatus, { label: string; description: string }> = {
-  not_started: { label: "Do uzupełnienia", description: "Atrakcje możesz przygotować już teraz. Dane firmy są potrzebne przed uruchomieniem płatności online." },
+  not_started: { label: "Do uzupełnienia", description: "Atrakcje możesz przygotować już teraz. Kompletne dane sprzedawcy są potrzebne przed uruchomieniem płatności online." },
   pending: { label: "Weryfikujemy", description: "Dane zostały przesłane. Do czasu akceptacji płatności online pozostają wyłączone." },
-  verified: { label: "Zweryfikowana", description: "Firma jest zweryfikowana. Płatności mogą zostać aktywowane dla tej organizacji." },
+  verified: { label: "Zweryfikowana", description: "Firma jest zweryfikowana. Dane sprzedawcy mogą być pokazane klientowi przed zakupem." },
   rejected: { label: "Wymaga poprawy", description: "Dane wymagają poprawy lub ponownego przesłania." },
+}
+
+function hasCompleteLegalData(organization: Organization) {
+  return Boolean(
+    organization.legal_name?.trim() &&
+    organization.tax_id?.trim() &&
+    organization.billing_email?.trim() &&
+    organization.legal_address?.trim() &&
+    organization.contact_phone?.trim(),
+  )
 }
 
 export default async function OrganizerVerificationPage({
@@ -66,7 +80,7 @@ export default async function OrganizerVerificationPage({
   const organizationIds = [...new Set(memberships.map((item) => item.organization_id))]
   const { data: organizationData, error: organizationError } = await supabase
     .from("organizations")
-    .select("id, name, legal_name, tax_id, billing_email, verification_status, payments_enabled")
+    .select("id, name, legal_name, tax_id, billing_email, legal_address, contact_phone, registry_name, registry_number, verification_status, payments_enabled")
     .in("id", organizationIds)
     .order("name")
 
@@ -90,9 +104,9 @@ export default async function OrganizerVerificationPage({
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
         <div className="max-w-3xl">
           <Badge variant="secondary">Weryfikacja organizatora</Badge>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Najpierw publikacja, potem płatności</h1>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Dane sprzedawcy widoczne przed płatnością</h1>
           <p className="mt-3 leading-7 text-muted-foreground">
-            Nie blokujemy dodawania atrakcji długim KYC. Dane prawne firmy są dostępne tylko dla właścicieli i administratorów oraz są wymagane przed przyjmowaniem płatności i wypłatami.
+            Klient przed zakupem zobaczy pełną nazwę firmy, NIP, adres oraz dane kontaktowe. Dane te są następnie zapisywane przy zamówieniu, dlatego muszą być aktualne i zgodne z danymi przedsiębiorcy.
           </p>
         </div>
 
@@ -107,13 +121,16 @@ export default async function OrganizerVerificationPage({
           <Alert variant="destructive" className="mt-6">
             <XCircle className="h-4 w-4" />
             <AlertTitle>Nie udało się wysłać danych</AlertTitle>
-            <AlertDescription>{query.blad === "dane" ? "Sprawdź pełną nazwę firmy, 10-cyfrowy NIP i adres e-mail." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription>
+            <AlertDescription>{query.blad === "dane" ? "Sprawdź nazwę firmy, 10-cyfrowy NIP, e-mail, adres oraz telefon kontaktowy." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="mt-8 grid gap-6">
           {organizations.map((organization) => {
             const meta = statusMeta[organization.verification_status]
+            const complete = hasCompleteLegalData(organization)
+            const verifiedAndComplete = organization.verification_status === "verified" && complete
+
             return (
               <Card key={organization.id} className="surface-3d">
                 <CardHeader>
@@ -124,36 +141,37 @@ export default async function OrganizerVerificationPage({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={organization.verification_status === "verified" ? "default" : "outline"}>{meta.label}</Badge>
-                      <Badge variant={organization.payments_enabled ? "default" : "secondary"}>{organization.payments_enabled ? "Płatności aktywne" : "Płatności wyłączone"}</Badge>
+                      <Badge variant={organization.payments_enabled && complete ? "default" : "secondary"}>{organization.payments_enabled && complete ? "Płatności aktywne" : "Płatności wyłączone"}</Badge>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  {organization.verification_status === "verified" ? (
+                <CardContent className="space-y-5">
+                  {organization.verification_status === "verified" && !complete ? (
+                    <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                      <AlertTitle>Uzupełnij nowe dane wymagane w checkoutcie</AlertTitle>
+                      <AlertDescription>Firma była wcześniej zweryfikowana, ale brakuje adresu lub telefonu. Do czasu uzupełnienia tych danych nowe płatności online będą zablokowane.</AlertDescription>
+                    </Alert>
+                  ) : null}
+
+                  {verifiedAndComplete ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Info icon={ShieldCheck} title="Firma zweryfikowana">Dane organizatora są zaakceptowane.</Info>
-                      <Info icon={WalletCards} title="Płatności">{organization.payments_enabled ? "Można przyjmować płatności online." : "Oczekuje na aktywację płatności."}</Info>
+                      <Info icon={ShieldCheck} title="Firma zweryfikowana">
+                        {organization.legal_name}<br />NIP {organization.tax_id}<br />{organization.legal_address}
+                      </Info>
+                      <Info icon={WalletCards} title="Płatności">
+                        {organization.payments_enabled ? "Dane sprzedawcy są kompletne i można przyjmować płatności online." : "Dane są kompletne; oczekuje na aktywację płatności."}
+                      </Info>
                     </div>
+                  ) : null}
+
+                  {verifiedAndComplete ? (
+                    <details className="rounded-xl border bg-muted/10 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold">Zmień dane firmy</summary>
+                      <p className="mt-2 text-xs text-muted-foreground">Zmiana danych uruchomi ponowną weryfikację i czasowo wyłączy płatności.</p>
+                      <div className="mt-5"><VerificationForm organization={organization} fallbackEmail={user.email ?? ""} submitLabel="Zapisz i wyślij ponownie" /></div>
+                    </details>
                   ) : (
-                    <form action={submitOrganizerVerification} className="grid gap-5 sm:grid-cols-2">
-                      <input type="hidden" name="organizationId" value={organization.id} />
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor={`legalName-${organization.id}`}>Pełna nazwa prawna</Label>
-                        <Input id={`legalName-${organization.id}`} name="legalName" defaultValue={organization.legal_name ?? ""} placeholder="Przykład sp. z o.o." required minLength={2} maxLength={240} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`taxId-${organization.id}`}>NIP</Label>
-                        <Input id={`taxId-${organization.id}`} name="taxId" defaultValue={organization.tax_id ?? ""} inputMode="numeric" placeholder="1234567890" required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`billingEmail-${organization.id}`}>E-mail rozliczeniowy</Label>
-                        <Input id={`billingEmail-${organization.id}`} name="billingEmail" type="email" defaultValue={organization.billing_email ?? user.email ?? ""} required />
-                      </div>
-                      <div className="sm:col-span-2 flex flex-col gap-3 rounded-xl bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm text-muted-foreground">Na tym etapie nie prosimy jeszcze o rachunek bankowy. Podłączymy go razem z operatorem płatności.</p>
-                        <Button type="submit" className="shrink-0">Wyślij do weryfikacji</Button>
-                      </div>
-                    </form>
+                    <VerificationForm organization={organization} fallbackEmail={user.email ?? ""} submitLabel={organization.verification_status === "pending" ? "Wyślij zaktualizowane dane" : "Wyślij do weryfikacji"} />
                   )}
                 </CardContent>
               </Card>
@@ -165,11 +183,51 @@ export default async function OrganizerVerificationPage({
   )
 }
 
+function VerificationForm({ organization, fallbackEmail, submitLabel }: { organization: Organization; fallbackEmail: string; submitLabel: string }) {
+  return (
+    <form action={submitOrganizerVerification} className="grid gap-5 sm:grid-cols-2">
+      <input type="hidden" name="organizationId" value={organization.id} />
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={`legalName-${organization.id}`}>Pełna nazwa prawna</Label>
+        <Input id={`legalName-${organization.id}`} name="legalName" defaultValue={organization.legal_name ?? ""} placeholder="Przykład sp. z o.o." required minLength={2} maxLength={240} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`taxId-${organization.id}`}>NIP</Label>
+        <Input id={`taxId-${organization.id}`} name="taxId" defaultValue={organization.tax_id ?? ""} inputMode="numeric" placeholder="1234567890" required />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`billingEmail-${organization.id}`}>E-mail kontaktowy / rozliczeniowy</Label>
+        <Input id={`billingEmail-${organization.id}`} name="billingEmail" type="email" defaultValue={organization.billing_email ?? fallbackEmail} required />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={`legalAddress-${organization.id}`}>Adres przedsiębiorcy</Label>
+        <Input id={`legalAddress-${organization.id}`} name="legalAddress" defaultValue={organization.legal_address ?? ""} placeholder="ul. Przykładowa 1, 00-001 Miasto" required minLength={8} maxLength={320} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`contactPhone-${organization.id}`}>Telefon kontaktowy</Label>
+        <Input id={`contactPhone-${organization.id}`} name="contactPhone" type="tel" defaultValue={organization.contact_phone ?? ""} placeholder="+48 500 000 000" required minLength={7} maxLength={40} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`registryName-${organization.id}`}>Rejestr <span className="text-muted-foreground">(opcjonalnie)</span></Label>
+        <Input id={`registryName-${organization.id}`} name="registryName" defaultValue={organization.registry_name ?? ""} placeholder="KRS lub CEIDG" maxLength={40} />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={`registryNumber-${organization.id}`}>Numer w rejestrze <span className="text-muted-foreground">(opcjonalnie)</span></Label>
+        <Input id={`registryNumber-${organization.id}`} name="registryNumber" defaultValue={organization.registry_number ?? ""} placeholder="np. 0000123456" maxLength={80} />
+      </div>
+      <div className="sm:col-span-2 flex flex-col gap-3 rounded-xl bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">Te dane będą pokazane kupującemu jako dane sprzedawcy usługi. Rachunek bankowy pozostaje obsługiwany osobno przez operatora płatności.</p>
+        <Button type="submit" className="shrink-0">{submitLabel}</Button>
+      </div>
+    </form>
+  )
+}
+
 function Info({ icon: Icon, title, children }: { icon: typeof ShieldCheck; title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
       <div className="flex items-center gap-2 font-medium"><Icon className="h-4 w-4 text-primary" />{title}</div>
-      <p className="mt-2 text-sm text-muted-foreground">{children}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{children}</p>
     </div>
   )
 }
