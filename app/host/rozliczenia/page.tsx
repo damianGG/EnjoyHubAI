@@ -44,6 +44,8 @@ interface PaymentAccount {
   organization_id: string
   provider_account_id: string
   details_submitted: boolean
+  charges_enabled: boolean
+  card_payments_enabled: boolean
   transfers_enabled: boolean
   payouts_enabled: boolean
   payout_schedule_manual: boolean
@@ -151,7 +153,7 @@ export default async function HostSettlementsPage({
   const [accountsResult, settlementsResult, payoutsResult] = await Promise.all([
     supabase
       .from("organization_payment_accounts")
-      .select("organization_id, provider_account_id, details_submitted, transfers_enabled, payouts_enabled, payout_schedule_manual, requirements_currently_due, disabled_reason")
+      .select("organization_id, provider_account_id, details_submitted, charges_enabled, card_payments_enabled, transfers_enabled, payouts_enabled, payout_schedule_manual, requirements_currently_due, disabled_reason")
       .in("organization_id", organizationIds),
     supabase
       .from("marketplace_settlements")
@@ -242,6 +244,8 @@ export default async function HostSettlementsPage({
             const available = liveAvailableByOrganization.get(organization.id) ?? 0
             const ready = Boolean(
               account?.details_submitted &&
+              account.charges_enabled &&
+              account.card_payments_enabled &&
               account.transfers_enabled &&
               account.payouts_enabled &&
               account.payout_schedule_manual,
