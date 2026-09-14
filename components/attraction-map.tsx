@@ -3,11 +3,17 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, X } from "lucide-react"
+import { CalendarDays, ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { generateAttractionSlug } from "@/lib/utils"
+
+type AvailableSlot = {
+  date: string
+  startTime: string
+  availableCapacity?: number
+}
 
 interface Attraction {
   id: string
@@ -30,6 +36,8 @@ interface Attraction {
   images?: string[]
   avgRating?: number
   reviewCount?: number
+  nextAvailableSlot?: AvailableSlot | null
+  priceFrom?: number | null
 }
 
 interface AttractionMapProps {
@@ -91,6 +99,32 @@ function hrefFor(attraction: Attraction) {
     title: attraction.title,
     id: attraction.id,
   })}`
+}
+
+function localIsoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function formatSlot(slot: AvailableSlot) {
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  if (slot.date === localIsoDate(today)) return `Dzisiaj · ${slot.startTime}`
+  if (slot.date === localIsoDate(tomorrow)) return `Jutro · ${slot.startTime}`
+
+  const [, month, day] = slot.date.split("-")
+  return `${day}.${month} · ${slot.startTime}`
+}
+
+function capacityText(capacity?: number) {
+  if (!capacity || capacity < 1) return null
+  if (capacity === 1) return "zostało 1 miejsce"
+  if (capacity >= 2 && capacity <= 4) return `zostały ${capacity} miejsca`
+  return `${capacity} miejsc dostępnych`
 }
 
 function escapeHtml(value: string) {
@@ -277,6 +311,12 @@ export default function AttractionMap({
   }, [attractions, popupAttraction])
 
   useEffect(() => {
+    if (!popupAttraction) return
+    const fresh = attractions.find((item) => item.id === popupAttraction.id)
+    if (fresh && fresh !== popupAttraction) setPopupAttraction(fresh)
+  }, [attractions, popupAttraction])
+
+  useEffect(() => {
     setPopupImageIndex(0)
     if (galleryRef.current) galleryRef.current.scrollLeft = 0
   }, [popupAttraction?.id])
@@ -303,6 +343,9 @@ export default function AttractionMap({
     const next = Math.round(el.scrollLeft / el.clientWidth)
     setPopupImageIndex(Math.max(0, Math.min(next, galleryImages.length - 1)))
   }
+
+  const popupCapacity = capacityText(popupAttraction?.nextAvailableSlot?.availableCapacity)
+  const popupPrice = popupAttraction ? popupAttraction.priceFrom ?? popupAttraction.price_per_night : 0
 
   return (
     <>
@@ -390,10 +433,17 @@ export default function AttractionMap({
                   )}
                 </div>
 
+                {popupAttraction.nextAvailableSlot && (
+                  <div className="mt-3 rounded-xl border border-primary/15 bg-[#fff7f2] px-3 py-2.5">
+                    <p className="flex items-center gap-1.5 text-xs font-bold text-[#b63b12]"><CalendarDays className="h-4 w-4" />{formatSlot(popupAttraction.nextAvailableSlot)}</p>
+                    {popupCapacity && <p className="mt-1 text-[11px] font-medium text-muted-foreground">{popupCapacity}</p>}
+                  </div>
+                )}
+
                 <div className="mt-3 flex items-end justify-between gap-3 border-t border-[#0b1220]/[0.05] pt-3">
                   <div>
                     <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</div>
-                    <span className="text-lg font-extrabold">{Math.round(popupAttraction.price_per_night)} zł</span>
+                    <span className="text-lg font-extrabold">{Math.round(popupPrice)} zł</span>
                     <span className="text-[11px] text-muted-foreground"> / os.</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -416,13 +466,18 @@ export default function AttractionMap({
           <div className="absolute bottom-4 left-1/2 z-[800] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
             <div className="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-[#0b1220]/[0.07]">
               <Link href={hrefFor(popupAttraction)} className="grid grid-cols-[105px_1fr]">
-                <div className="relative min-h-[126px] bg-muted">
+                <div className="relative min-h-[144px] bg-muted">
                   <Image src={galleryImages[0]} alt={popupAttraction.title} fill className="object-cover" sizes="140px" />
                 </div>
                 <div className="min-w-0 p-3.5 pr-10">
                   <h3 className="line-clamp-2 text-sm font-extrabold">{popupAttraction.title}</h3>
-                  <p className="mt-2 text-xs text-muted-foreground">{popupAttraction.city}</p>
-                  <p className="mt-4 text-base font-extrabold">od {Math.round(popupAttraction.price_per_night)} zł</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{popupAttraction.city}</p>
+                  {popupAttraction.nextAvailableSlot && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#b63b12]">
+                      <CalendarDays className="h-3.5 w-3.5" /> {formatSlot(popupAttraction.nextAvailableSlot)}
+                    </div>
+                  )}
+                  <p className="mt-3 text-base font-extrabold">od {Math.round(popupPrice)} zł</p>
                 </div>
               </Link>
             </div>
