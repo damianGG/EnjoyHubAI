@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 
 import { CheckoutForm } from "@/components/ticketing/checkout-form"
 import { Card, CardContent } from "@/components/ui/card"
+import { getCheckoutLegalContext } from "@/lib/legal/checkout"
 import { isTicketingCheckoutEnabled, isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
 import { formatSessionDate } from "@/lib/ticketing/format"
 import { getCheckoutSession } from "@/lib/ticketing/queries"
@@ -13,8 +14,11 @@ export const dynamic = "force-dynamic"
 export default async function CheckoutPage({ params }: { params: Promise<{ sessionId: string }> }) {
   if (!isTicketingCheckoutEnabled) notFound()
   const { sessionId } = await params
-  const session = await getCheckoutSession(sessionId)
-  if (!session || session.ticketTypes.length === 0) notFound()
+  const [session, legalContext] = await Promise.all([
+    getCheckoutSession(sessionId),
+    getCheckoutLegalContext(sessionId),
+  ])
+  if (!session || session.ticketTypes.length === 0 || !legalContext) notFound()
 
   return (
     <main className="min-h-screen bg-[#f7f8fa] pb-10">
@@ -57,7 +61,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Bilety i dane rezerwacji</h1>
             <p className="mt-2 text-sm text-muted-foreground">Wybierz liczbę biletów i podaj dane, na które wyślemy potwierdzenie.</p>
             <div className="mt-6">
-              <CheckoutForm session={session} />
+              <CheckoutForm session={session} legalContext={legalContext} />
             </div>
           </section>
 
