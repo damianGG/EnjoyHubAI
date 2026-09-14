@@ -15,6 +15,7 @@ const schema = z.object({
   contactPhone: z.string().trim().min(7).max(40),
   registryName: z.string().trim().max(40).optional(),
   registryNumber: z.string().trim().max(80).optional(),
+  certifyTrader: z.literal("on"),
 })
 
 export async function submitOrganizerVerification(formData: FormData) {
@@ -29,6 +30,7 @@ export async function submitOrganizerVerification(formData: FormData) {
     contactPhone: String(formData.get("contactPhone") ?? ""),
     registryName: String(formData.get("registryName") ?? ""),
     registryNumber: String(formData.get("registryNumber") ?? ""),
+    certifyTrader: String(formData.get("certifyTrader") ?? ""),
   })
 
   if (!parsed.success) redirect("/host/weryfikacja?blad=dane")
@@ -51,6 +53,15 @@ export async function submitOrganizerVerification(formData: FormData) {
   if (error) {
     console.error("Organizer verification submission failed", { code: error.code, message: error.message })
     redirect(error.code === "42501" ? "/host/weryfikacja?blad=uprawnienia" : "/host/weryfikacja?blad=zapis")
+  }
+
+  const { error: certificationError } = await supabase.rpc("organizer_certify_trader_information", {
+    p_organization_id: parsed.data.organizationId,
+  })
+
+  if (certificationError) {
+    console.error("Organizer trader certification failed", { code: certificationError.code, message: certificationError.message })
+    redirect(certificationError.code === "42501" ? "/host/weryfikacja?blad=uprawnienia" : "/host/weryfikacja?blad=zapis")
   }
 
   revalidatePath("/host")
