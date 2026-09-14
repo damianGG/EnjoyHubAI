@@ -5,6 +5,11 @@ import { z } from "zod"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe"
 import {
+  isStripeConnectEnabled,
+  stripeConnectMaxHoldDays,
+  stripeTransferGroup,
+} from "@/lib/stripe-connect"
+import {
   checkoutCookieMaxAgeSeconds,
   checkoutCookieName,
   isTicketingPaymentsEnabled,
@@ -81,6 +86,39 @@ export async function POST(
     )
   }
 
+  let connectOrganizationId: string | null = null
+  if (isStripeConnectEnabled) {
+    const { data: orderScope, error: orderScopeError } = await supabase
+      .from("orders")
+      .select("organization_id")
+      .eq("id", orderId)
+      .single()
+
+    if (orderScopeError || !orderScope) {
+      return paymentError("Nie udało się potwierdzić organizatora płatności.", 503)
+    }
+
+    const { data: connectedAccount, error: connectedAccountError } = await supabase
+      .from("organization_payment_accounts")
+      .select("transfers_enabled, payouts_enabled, payout_schedule_manual")
+      .eq("organization_id", orderScope.organization_id)
+      .maybeSingle()
+
+    if (
+      connectedAccountError ||
+      !connectedAccount?.transfers_enabled ||
+      !connectedAccount.payouts_enabled ||
+      !connectedAccount.payout_schedule_manual
+    ) {
+      return paymentError(
+        "Sprzedaż online czeka na dokończenie konfiguracji Stripe Connect przez organizatora.",
+        409,
+      )
+    }
+
+    connectOrganizationId = orderScope.organization_id
+  }
+
   const { data, error } = await supabase.rpc("ticketing_prepare_payment_checkout", {
     p_order_id: orderId,
     p_hold_token: checkoutCookie!.holdToken,
@@ -125,6 +163,29 @@ export async function POST(
     return paymentError("Zamówienie nie oczekuje już na płatność.")
   }
 
+  if (isStripeConnectEnabled) {
+    const { data: serviceItems, error: serviceItemsError } = await supabase
+      .from("order_items")
+      .select("sessions!inner(ends_at)")
+      .eq("order_id", orderId)
+
+    if (serviceItemsError || !serviceItems?.length) {
+      return paymentError("Nie udało się potwierdzić terminu realizacji usługi.", 503)
+    }
+
+    const serviceEndsAt = serviceItems
+      .map((item) => (item.sessions as unknown as { ends_at: string }).ends_at)
+      .sort()
+      .at(-1)
+    const latestAllowedAt = Date.now() + stripeConnectMaxHoldDays * 24 * 60 * 60 * 1000
+    if (!serviceEndsAt || new Date(serviceEndsAt).getTime() > latestAllowedAt) {
+      return paymentError(
+        `Płatność online można teraz otworzyć maksymalnie ${stripeConnectMaxHoldDays} dni przed realizacją.`,
+        409,
+      )
+    }
+  }
+
   const lineItems = order.items.map((item) => ({
     quantity: item.quantity,
     price_data: {
@@ -155,6 +216,7 @@ export async function POST(
   }
 
   const returnUrl = new URL(`/checkout/zamowienie/${orderId}`, request.url)
+  const transferGroup = connectOrganizationId ? stripeTransferGroup(orderId) : null
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     locale: "pl",
@@ -167,13 +229,16 @@ export async function POST(
     metadata: {
       order_id: orderId,
       payment_attempt_id: prepared.payment_attempt_id,
-      checkout_version: "1d",
+      checkout_version: "1d-connect",
+      ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
     },
     payment_intent_data: {
       metadata: {
         order_id: orderId,
         payment_attempt_id: prepared.payment_attempt_id,
+        ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
       },
+      ...(transferGroup ? { transfer_group: transferGroup } : {}),
     },
   }, {
     idempotencyKey: `enjoyhub-payment-${prepared.payment_attempt_id}`,
