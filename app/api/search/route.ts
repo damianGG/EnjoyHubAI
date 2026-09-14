@@ -25,14 +25,15 @@ interface SearchResult {
   minimum_age?: number | null
   maximum_age?: number | null
   cover_image_url: string | null
-  next_available_slot: { date: string; startTime: string } | null
+  next_available_slot: { date: string; startTime: string; availableCapacity: number } | null
   price_from: number | null
 }
 
 type SearchItem = SearchResult & { hasAvailability?: boolean }
 
-// Maximum valid age for filtering
 const MAX_VALID_AGE = 150
+const NOW_WINDOW_HOURS = 4
+const MAX_DISCOVERY_RANGE_DAYS = 31
 
 function isValidIsoDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -48,14 +49,18 @@ function isValidIsoDate(value: string) {
     && parsed.getUTCDate() === day
 }
 
-// Enable caching for this route - revalidate every 60 seconds
+function dayDifference(start: string, end: string) {
+  const startMs = Date.parse(`${start}T00:00:00Z`)
+  const endMs = Date.parse(`${end}T00:00:00Z`)
+  return Math.round((endMs - startMs) / 86_400_000)
+}
+
 export const revalidate = 60
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    
-    // Parse query parameters
+
     const q = searchParams.get("q") || ""
     const bbox = searchParams.get("bbox") || ""
     const categoriesParam = searchParams.get("categories") || ""
@@ -71,38 +76,59 @@ export async function GET(request: Request) {
     const childAge = searchParams.get("child_age")
     const ageMinParam = searchParams.get("age_min")
     const ageMaxParam = searchParams.get("age_max")
-    const dateParam = searchParams.get("date") || "" // New date parameter
-    
+    const dateParam = searchParams.get("date") || ""
+    const dateFromParam = searchParams.get("date_from") || ""
+    const dateToParam = searchParams.get("date_to") || ""
+    const whenParam = searchParams.get("when") || ""
+    const parsedMaxPrice = Number.parseFloat(searchParams.get("max_price") || "")
+    const maxPrice = Number.isFinite(parsedMaxPrice) && parsedMaxPrice >= 0
+      ? Math.min(parsedMaxPrice, 100_000)
+      : null
+
+    const requestedDate = isValidIsoDate(dateParam) ? dateParam : null
+    const requestedDateFrom = isValidIsoDate(dateFromParam) ? dateFromParam : null
+    const requestedDateTo = isValidIsoDate(dateToParam) ? dateToParam : null
+
+    let requestedRangeStart: string | null = requestedDate
+    let requestedRangeEnd: string | null = requestedDate
+
+    if (!requestedDate && requestedDateFrom && requestedDateTo) {
+      const rangeDays = dayDifference(requestedDateFrom, requestedDateTo)
+      if (rangeDays >= 0 && rangeDays <= MAX_DISCOVERY_RANGE_DAYS) {
+        requestedRangeStart = requestedDateFrom
+        requestedRangeEnd = requestedDateTo
+      }
+    }
+
+    const wantsNow = whenParam === "now" && requestedRangeStart !== null
+    const hasAvailabilityWindow = requestedRangeStart !== null && requestedRangeEnd !== null
+
     const supabase = createClient()
-    
-    // Get category IDs and subcategory IDs if filtering by categories/subcategories
+
     let categoryIds: string[] | null = null
     let subcategoryIds: string[] | null = null
     if (categoriesParam) {
       const categoryArray = categoriesParam.split(",").map((c) => c.trim())
-      
-      // Check categories table
+
       const { data: categoryData } = await supabase
         .from("categories")
         .select("id")
         .in("slug", categoryArray)
-      
+
       if (categoryData && categoryData.length > 0) {
         categoryIds = categoryData.map((c) => c.id)
       }
-      
-      // Check subcategories table
+
       const { data: subcategoryData } = await supabase
         .from("subcategories")
         .select("id")
         .in("slug", categoryArray)
-      
+
       if (subcategoryData && subcategoryData.length > 0) {
         subcategoryIds = subcategoryData.map((c) => c.id)
       }
     }
-    
-    // Start building query
+
     let query = supabase
       .from("properties")
       .select(
@@ -142,10 +168,8 @@ export async function GET(request: Request) {
         { count: "exact" }
       )
       .eq("is_active", true)
-    
-    // Filter by search query (ilike on title)
+
     if (q) {
-      // Normalize to alphanumeric characters/spaces to avoid query syntax issues or injection patterns.
       const safeQuery = q
         .replace(/[^\p{L}\p{N}\s]/gu, " ")
         .replace(/\s+/g, " ")
@@ -157,17 +181,13 @@ export async function GET(request: Request) {
         )
       }
     }
-    
-    // Filter by categories or subcategories
+
     if (subcategoryIds && subcategoryIds.length > 0) {
-      // If subcategories are specified, filter by subcategory_id
       query = query.in("subcategory_id", subcategoryIds)
     } else if (categoryIds && categoryIds.length > 0) {
-      // If only categories are specified, filter by category_id
       query = query.in("category_id", categoryIds)
     }
-    
-    // Filter by bounding box (bbox format: "w,s,e,n")
+
     if (bbox) {
       const [west, south, east, north] = bbox.split(",").map(parseFloat)
       if (!isNaN(west) && !isNaN(south) && !isNaN(east) && !isNaN(north)) {
@@ -178,8 +198,7 @@ export async function GET(request: Request) {
           .lte("latitude", north)
       }
     }
-    
-    // Apply sorting
+
     switch (sort) {
       case "price_asc":
         query = query.order("price_per_night", { ascending: true })
@@ -191,51 +210,46 @@ export async function GET(request: Request) {
         query = query.order("created_at", { ascending: false })
         break
       case "rating":
-        // Rating will be computed from reviews after fetch
         break
       case "relevance":
       default:
-        // Default to newest for now (relevance would need pg_trgm in future)
         query = query.order("created_at", { ascending: false })
         break
     }
-    
-    // Apply pagination
+
     const from = (page - 1) * per
     const to = from + per - 1
     query = query.range(from, to)
-    
+
     const { data, error, count } = await query
-    
+
     if (error) {
       console.error("Search error:", error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    
-    // Transform data to match expected format
+
     let items: SearchItem[] = (data || []).map((property: any) => {
       const ratings = property.reviews?.map((r: any) => r.rating) || []
-      const avgRating = ratings.length > 0 
+      const avgRating = ratings.length > 0
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 0
-      
-      // Extract minimum_age and maximum_age from object_field_values
+
       const minimumAgeField = property.object_field_values?.find(
-        (fv: any) => fv.category_fields?.field_name === 'minimum_age'
+        (fv: any) => fv.category_fields?.field_name === "minimum_age"
       )
       const maximumAgeField = property.object_field_values?.find(
-        (fv: any) => fv.category_fields?.field_name === 'maximum_age'
+        (fv: any) => fv.category_fields?.field_name === "maximum_age"
       )
-      
+
       const minimumAge = minimumAgeField?.value ? parseInt(minimumAgeField.value, 10) : null
       const maximumAge = maximumAgeField?.value ? parseInt(maximumAgeField.value, 10) : null
-      
+
       return {
         id: property.id,
         title: property.title,
         city: property.city,
         country: property.country,
-        region: property.city,  // region column doesn't exist, use city instead
+        region: property.city,
         latitude: property.latitude,
         longitude: property.longitude,
         price_per_night: property.price_per_night,
@@ -253,10 +267,11 @@ export async function GET(request: Request) {
         minimum_age: minimumAge,
         maximum_age: maximumAge,
         cover_image_url: property.images && property.images.length > 0 ? property.images[0] : null,
+        next_available_slot: null,
+        price_from: null,
       }
     })
-    
-    // Filter by child_age if provided
+
     const parseAge = (value: string | null) => {
       if (!value) return null
       const parsed = parseInt(value, 10)
@@ -272,7 +287,6 @@ export async function GET(request: Request) {
     }
 
     if (minAge !== null || maxAge !== null) {
-      // Keep properties that overlap with the requested age range.
       const requestedMinAge = minAge ?? 0
       const requestedMaxAge = maxAge ?? MAX_VALID_AGE
       items = items.filter((item) => {
@@ -284,73 +298,100 @@ export async function GET(request: Request) {
       const childAgeNum = parseInt(childAge, 10)
       if (!Number.isNaN(childAgeNum) && childAgeNum > 0 && childAgeNum < MAX_VALID_AGE) {
         items = items.filter((item) => {
-          // If no minimum_age is set, don't filter based on minimum
           const meetsMinimum = item.minimum_age === null || childAgeNum >= item.minimum_age
-          
-          // If no maximum_age is set, treat it as Infinity (no upper limit)
           const meetsMaximum = item.maximum_age === null || childAgeNum <= item.maximum_age
-          
           return meetsMinimum && meetsMaximum
         })
       }
     }
-    
-    // Sort by rating if requested (after computing avg_rating)
+
     if (sort === "rating") {
       items.sort((a: SearchResult, b: SearchResult) => b.avg_rating - a.avg_rating)
     }
-    
-    // Read marketplace availability exclusively from canonical ticketing
-    // sessions. One bounded RPC per result includes live atomic holds.
-    const today = new Date()
-    const dateStart = today.toISOString().split('T')[0]
-    const futureDate = new Date(today)
+
+    const now = new Date()
+    const dateStart = now.toISOString().split("T")[0]
+    const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + 90)
-    const dateEnd = futureDate.toISOString().split('T')[0]
-    const requestedDate = isValidIsoDate(dateParam) ? dateParam : null
-    const requestedDateOutsideMainRange = requestedDate !== null
-      && (requestedDate < dateStart || requestedDate > dateEnd)
+    const dateEnd = futureDate.toISOString().split("T")[0]
+
+    const requestedRangeOutsideMainRange = hasAvailabilityWindow
+      && requestedRangeStart !== null
+      && requestedRangeEnd !== null
+      && (requestedRangeStart < dateStart || requestedRangeEnd > dateEnd)
+
+    const nowDeadlineMs = now.getTime() + NOW_WINDOW_HOURS * 60 * 60 * 1000
 
     const ticketingResults = await Promise.all(
       items.map(async (item) => {
-        const [sessions, requestedDateSessions] = await Promise.all([
+        const [sessions, requestedRangeSessions] = await Promise.all([
           listMarketplacePropertySessions(item.id, dateStart, dateEnd),
-          requestedDateOutsideMainRange && requestedDate
-            ? listMarketplacePropertySessions(item.id, requestedDate, requestedDate)
+          requestedRangeOutsideMainRange && requestedRangeStart && requestedRangeEnd
+            ? listMarketplacePropertySessions(item.id, requestedRangeStart, requestedRangeEnd)
             : Promise.resolve([]),
         ])
-        const hasRequestedDate = requestedDate === null
-          || sessions.some((session) => session.localDate === requestedDate)
-          || requestedDateSessions.length > 0
-        const nextSession = sessions[0] ?? null
-        const priceFrom = sessions.length > 0
-          ? Math.min(...sessions.map((session) => session.priceFrom))
+
+        const allSessions = requestedRangeSessions.length > 0
+          ? [...sessions, ...requestedRangeSessions].filter(
+              (session, index, array) => array.findIndex((candidate) => candidate.id === session.id) === index,
+            ).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+          : sessions
+
+        let relevantSessions = allSessions
+        if (hasAvailabilityWindow && requestedRangeStart && requestedRangeEnd) {
+          relevantSessions = relevantSessions.filter(
+            (session) => session.localDate >= requestedRangeStart && session.localDate <= requestedRangeEnd,
+          )
+        }
+
+        if (wantsNow) {
+          relevantSessions = relevantSessions.filter((session) => {
+            const startsAtMs = Date.parse(session.startsAt)
+            return Number.isFinite(startsAtMs) && startsAtMs <= nowDeadlineMs
+          })
+        }
+
+        const availabilityFiltered = hasAvailabilityWindow || wantsNow
+        const hasRequestedAvailability = !availabilityFiltered || relevantSessions.length > 0
+        const candidateSessions = availabilityFiltered ? relevantSessions : sessions
+        const nextSession = candidateSessions[0] ?? null
+        const priceFrom = candidateSessions.length > 0
+          ? Math.min(...candidateSessions.map((session) => session.priceFrom))
           : null
 
         return {
           ...item,
-          hasAvailability: hasRequestedDate,
+          hasAvailability: hasRequestedAvailability,
           next_available_slot: nextSession
-            ? { date: nextSession.localDate, startTime: nextSession.localStartTime }
+            ? {
+                date: nextSession.localDate,
+                startTime: nextSession.localStartTime,
+                availableCapacity: nextSession.availableCapacity,
+              }
             : null,
           price_from: priceFrom,
         }
       })
     )
-    const itemsWithSlots = requestedDate
-      ? ticketingResults.filter((item) => item.hasAvailability)
-      : ticketingResults
-    
+
+    const itemsWithSlots = ticketingResults.filter((item) => {
+      if ((hasAvailabilityWindow || wantsNow) && !item.hasAvailability) return false
+      if (maxPrice !== null) {
+        const effectivePrice = item.price_from ?? item.price_per_night
+        if (effectivePrice > maxPrice) return false
+      }
+      return true
+    })
+
     const response = NextResponse.json({
       items: itemsWithSlots,
-      total: count || 0,
+      total: hasAvailabilityWindow || wantsNow || maxPrice !== null ? itemsWithSlots.length : count || 0,
       page,
       per,
     })
-    
-    // Add cache headers for better performance
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
-    
+
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120")
+
     return response
   } catch (error) {
     console.error("Search error:", error)
