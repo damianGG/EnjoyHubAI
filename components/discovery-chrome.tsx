@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react"
 import { TopNav } from "@/components/top-nav"
 import { BottomNav } from "@/components/bottom-nav"
 import { CategoryBar } from "@/components/category-bar"
+import { QuickDiscoveryFilters } from "@/components/quick-discovery-filters"
 
 const SearchDialog = dynamic(
   () => import("@/components/search-dialog").then((mod) => ({ default: mod.SearchDialog })),
@@ -20,6 +21,7 @@ export function DiscoveryChrome({ children }: { children: ReactNode }) {
       <div className="sticky top-0 z-[1200] isolate shrink-0 bg-background">
         <TopNav onSearchClick={() => setSearchOpen(true)} />
         <CategoryBar useNavigation />
+        <QuickDiscoveryFilters />
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <div className="min-h-0 flex-1 md:block">{children}</div>
