@@ -32,6 +32,20 @@ export interface OrderConfirmationItem {
   endsAt: string
 }
 
+export interface OrderConfirmationSeller {
+  legalName: string
+  taxId: string
+  legalAddress: string
+  email: string
+  phone: string
+  registry?: string | null
+}
+
+export interface OrderConfirmationCancellation {
+  title: string
+  summary: string
+}
+
 export interface OrderConfirmationTemplateInput {
   orderNumber: string
   customerName: string
@@ -43,6 +57,12 @@ export interface OrderConfirmationTemplateInput {
   items: OrderConfirmationItem[]
   tickets: OrderConfirmationTicket[]
   bookingsUrl: string
+  seller?: OrderConfirmationSeller | null
+  cancellation?: OrderConfirmationCancellation | null
+  termsVersion?: string | null
+  cancellationVersion?: string | null
+  termsUrl?: string | null
+  cancellationUrl?: string | null
 }
 
 export function renderTeamInvitationEmail(input: TeamInvitationTemplateInput): RenderedEmail {
@@ -116,6 +136,42 @@ export function renderOrderConfirmationEmail(input: OrderConfirmationTemplateInp
     </tr>
   `).join("")
 
+  const sellerSection = input.seller ? `
+    <div style="margin:0 0 8px;color:${BRAND_NAVY};font-size:16px;font-weight:800;">Sprzedawca usługi</div>
+    ${infoTable([
+      ["Firma", escapeHtml(input.seller.legalName)],
+      ["NIP", escapeHtml(input.seller.taxId)],
+      ["Adres", escapeHtml(input.seller.legalAddress)],
+      ["E-mail", escapeHtml(input.seller.email)],
+      ["Telefon", escapeHtml(input.seller.phone)],
+      ...(input.seller.registry ? [["Rejestr", escapeHtml(input.seller.registry)] as [string, string]] : []),
+    ])}
+  ` : ""
+
+  const cancellationSection = input.cancellation ? `
+    <div style="margin:0 0 8px;color:${BRAND_NAVY};font-size:16px;font-weight:800;">Anulowanie i zwroty</div>
+    <div style="margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#F7F9FB;color:${BRAND_MUTED};font-size:12px;line-height:19px;">
+      <strong style="color:${BRAND_NAVY};">${escapeHtml(input.cancellation.title)}</strong><br>
+      ${escapeHtml(input.cancellation.summary)}
+    </div>
+    ${input.cancellationUrl ? `<p style="margin:0 0 20px;font-size:12px;"><a href="${escapeAttribute(input.cancellationUrl)}" style="color:${BRAND_ORANGE};font-weight:700;text-decoration:none;">Zobacz ogólne zasady anulowania →</a></p>` : ""}
+  ` : ""
+
+  const versions = [
+    input.termsVersion ? `Regulamin ${escapeHtml(input.termsVersion)}` : null,
+    input.cancellationVersion ? `zasady anulowania ${escapeHtml(input.cancellationVersion)}` : null,
+  ].filter(Boolean).join(" · ")
+
+  const legalSection = versions || input.termsUrl ? `
+    <div style="margin:0 0 8px;color:${BRAND_NAVY};font-size:16px;font-weight:800;">Warunki zaakceptowane przy zakupie</div>
+    <div style="margin:0 0 22px;padding:14px 16px;border:1px solid #E8EDF1;border-radius:12px;color:${BRAND_MUTED};font-size:12px;line-height:19px;">
+      ${versions ? `${versions}<br>` : ""}
+      ${input.termsUrl ? `<a href="${escapeAttribute(input.termsUrl)}" style="color:${BRAND_ORANGE};font-weight:700;text-decoration:none;">Regulamin EnjoyHub</a>` : ""}
+      ${input.termsUrl && input.cancellationUrl ? " · " : ""}
+      ${input.cancellationUrl ? `<a href="${escapeAttribute(input.cancellationUrl)}" style="color:${BRAND_ORANGE};font-weight:700;text-decoration:none;">Zasady anulowania</a>` : ""}
+    </div>
+  ` : ""
+
   const body = `
     ${hero("✓", "Rezerwacja potwierdzona!", "Twoje bilety są gotowe do użycia.")}
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;border:1px solid #E8EDF1;border-radius:14px;background:#FFFFFF;">
@@ -134,6 +190,9 @@ export function renderOrderConfirmationEmail(input: OrderConfirmationTemplateInp
     </table>
     <div style="margin:0 0 8px;color:${BRAND_NAVY};font-size:16px;font-weight:800;">Szczegóły zakupu</div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:22px;">${itemRows}</table>
+    ${sellerSection}
+    ${cancellationSection}
+    ${legalSection}
     ${input.tickets.length ? `<div style="margin:0 0 10px;color:${BRAND_NAVY};font-size:16px;font-weight:800;">Twoje bilety</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:22px;">${ticketRows}</table>` : ""}
     ${button("Otwórz moje bilety", escapeAttribute(input.bookingsUrl))}
     ${notice("Przy wejściu pokaż kod QR biletu na ekranie telefonu. Każdy bilet można wykorzystać tylko raz.")}
@@ -141,6 +200,16 @@ export function renderOrderConfirmationEmail(input: OrderConfirmationTemplateInp
 
   const ticketText = input.tickets.map((ticket) => `Bilet #${ticket.sequenceNumber} (${ticket.ticketTypeName}): ${ticket.url}`).join("\n")
   const itemsText = input.items.map((item) => `${item.productName} — ${item.ticketTypeName} × ${item.quantity}`).join("\n")
+  const sellerText = input.seller ? [
+    "Sprzedawca usługi:",
+    input.seller.legalName,
+    `NIP: ${input.seller.taxId}`,
+    `Adres: ${input.seller.legalAddress}`,
+    `E-mail: ${input.seller.email}`,
+    `Telefon: ${input.seller.phone}`,
+    input.seller.registry ? `Rejestr: ${input.seller.registry}` : null,
+  ].filter(Boolean).join("\n") : null
+  const cancellationText = input.cancellation ? `Anulowanie i zwroty: ${input.cancellation.title}\n${input.cancellation.summary}` : null
 
   return {
     subject: `Rezerwacja potwierdzona — zamówienie #${input.orderNumber}`,
@@ -155,6 +224,15 @@ export function renderOrderConfirmationEmail(input: OrderConfirmationTemplateInp
       `Razem: ${formatMoney(input.totalAmount, input.currency)}`,
       "",
       itemsText,
+      "",
+      sellerText,
+      sellerText ? "" : null,
+      cancellationText,
+      cancellationText ? "" : null,
+      input.termsVersion ? `Regulamin zaakceptowany przy zakupie: ${input.termsVersion}` : null,
+      input.cancellationVersion ? `Wersja zasad anulowania: ${input.cancellationVersion}` : null,
+      input.termsUrl ? `Regulamin: ${input.termsUrl}` : null,
+      input.cancellationUrl ? `Zasady anulowania: ${input.cancellationUrl}` : null,
       "",
       ticketText,
       "",
