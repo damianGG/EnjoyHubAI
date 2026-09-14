@@ -11,6 +11,11 @@ const schema = z.object({
   legalName: z.string().trim().min(2).max(240),
   taxId: z.string().transform((value) => value.replace(/[^0-9]/g, "")).pipe(z.string().length(10)),
   billingEmail: z.string().trim().email().max(254),
+  legalAddress: z.string().trim().min(8).max(320),
+  contactPhone: z.string().trim().min(7).max(40),
+  registryName: z.string().trim().max(40).optional(),
+  registryNumber: z.string().trim().max(80).optional(),
+  certifyTrader: z.literal("on"),
 })
 
 export async function submitOrganizerVerification(formData: FormData) {
@@ -21,6 +26,11 @@ export async function submitOrganizerVerification(formData: FormData) {
     legalName: String(formData.get("legalName") ?? ""),
     taxId: String(formData.get("taxId") ?? ""),
     billingEmail: String(formData.get("billingEmail") ?? ""),
+    legalAddress: String(formData.get("legalAddress") ?? ""),
+    contactPhone: String(formData.get("contactPhone") ?? ""),
+    registryName: String(formData.get("registryName") ?? ""),
+    registryNumber: String(formData.get("registryNumber") ?? ""),
+    certifyTrader: String(formData.get("certifyTrader") ?? ""),
   })
 
   if (!parsed.success) redirect("/host/weryfikacja?blad=dane")
@@ -34,6 +44,10 @@ export async function submitOrganizerVerification(formData: FormData) {
     p_legal_name: parsed.data.legalName,
     p_tax_id: parsed.data.taxId,
     p_billing_email: parsed.data.billingEmail,
+    p_legal_address: parsed.data.legalAddress,
+    p_contact_phone: parsed.data.contactPhone,
+    p_registry_name: parsed.data.registryName || null,
+    p_registry_number: parsed.data.registryNumber || null,
   })
 
   if (error) {
@@ -41,7 +55,17 @@ export async function submitOrganizerVerification(formData: FormData) {
     redirect(error.code === "42501" ? "/host/weryfikacja?blad=uprawnienia" : "/host/weryfikacja?blad=zapis")
   }
 
+  const { error: certificationError } = await supabase.rpc("organizer_certify_trader_information", {
+    p_organization_id: parsed.data.organizationId,
+  })
+
+  if (certificationError) {
+    console.error("Organizer trader certification failed", { code: certificationError.code, message: certificationError.message })
+    redirect(certificationError.code === "42501" ? "/host/weryfikacja?blad=uprawnienia" : "/host/weryfikacja?blad=zapis")
+  }
+
   revalidatePath("/host")
   revalidatePath("/host/weryfikacja")
+  revalidatePath("/checkout")
   redirect("/host/weryfikacja?status=wyslane")
 }

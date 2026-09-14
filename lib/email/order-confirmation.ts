@@ -4,6 +4,24 @@ import { sendTransactionalEmail, type EmailSendResult } from "./client"
 import { getEmailSiteUrl } from "./site-url"
 import { renderOrderConfirmationEmail } from "./templates"
 
+type SellerSnapshot = {
+  legal_name?: string
+  tax_id?: string
+  email?: string
+  legal_address?: string
+  contact_phone?: string
+  registry_name?: string | null
+  registry_number?: string | null
+}
+
+type CancellationSnapshot = {
+  title?: string
+  shortSummary?: string
+  short_summary?: string
+  fullText?: string
+  full_text?: string
+}
+
 type OrderRow = {
   id: string
   order_number: number | string
@@ -14,6 +32,10 @@ type OrderRow = {
   payment_status: string
   currency: string
   total_amount: number | string
+  marketplace_terms_version: string | null
+  cancellation_policy_version: string | null
+  seller_snapshot: SellerSnapshot | null
+  cancellation_policy_snapshot: CancellationSnapshot | null
 }
 
 type VenueRow = {
@@ -48,7 +70,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
   const supabase = createAdminClient()
   const { data: orderData, error: orderError } = await supabase
     .from("orders")
-    .select("id, order_number, venue_id, customer_name, customer_email, status, payment_status, currency, total_amount")
+    .select("id, order_number, venue_id, customer_name, customer_email, status, payment_status, currency, total_amount, marketplace_terms_version, cancellation_policy_version, seller_snapshot, cancellation_policy_snapshot")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -56,7 +78,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
     return { sent: false, reason: "provider_error", error: orderError?.message || "Order not found for email" }
   }
 
-  const order = orderData as OrderRow
+  const order = orderData as unknown as OrderRow
   if (order.status !== "confirmed" || order.payment_status !== "paid") {
     return { sent: false, reason: "provider_error", error: "Order is not confirmed and paid" }
   }
@@ -96,6 +118,9 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
   const sessionById = new Map(sessions.map((session) => [session.id, session]))
   const itemById = new Map(items.map((item) => [item.id, item]))
   const siteUrl = getEmailSiteUrl()
+  const seller = order.seller_snapshot
+  const cancellation = order.cancellation_policy_snapshot
+  const cancellationSummary = cancellation?.shortSummary || cancellation?.short_summary || cancellation?.fullText || cancellation?.full_text || null
 
   const rendered = renderOrderConfirmationEmail({
     orderNumber: String(order.order_number),
@@ -123,6 +148,24 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
       url: `${siteUrl}/bilet/${encodeURIComponent(ticket.ticket_code)}`,
     })),
     bookingsUrl: `${siteUrl}/dashboard/bookings`,
+    seller: seller?.legal_name ? {
+      legalName: seller.legal_name,
+      taxId: seller.tax_id ?? "",
+      legalAddress: seller.legal_address ?? "",
+      email: seller.email ?? "",
+      phone: seller.contact_phone ?? "",
+      registry: seller.registry_name && seller.registry_number
+        ? `${seller.registry_name} ${seller.registry_number}`
+        : null,
+    } : null,
+    cancellation: cancellation?.title || cancellationSummary ? {
+      title: cancellation?.title ?? "Zasady anulowania",
+      summary: cancellationSummary ?? "Zasady anulowania zostały zapisane przy zamówieniu.",
+    } : null,
+    termsVersion: order.marketplace_terms_version,
+    cancellationVersion: order.cancellation_policy_version,
+    termsUrl: `${siteUrl}/regulamin`,
+    cancellationUrl: `${siteUrl}/zasady-anulowania`,
   })
 
   return sendTransactionalEmail({

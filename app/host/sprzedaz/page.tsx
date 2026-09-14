@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, ScanLine, Settings2, TicketCheck, WalletCards } from "lucide-react"
+import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, RotateCcw, ScanLine, Settings2, TicketCheck, WalletCards } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -109,9 +109,14 @@ export default async function HostTicketingSalesPage() {
         <div className="space-y-4">
           <p>Panel zamówień czeka na aktywację płatności. Oferty i terminy mogą być przygotowane wcześniej.</p>
           {canManageSales && (
-            <Button asChild>
-              <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Otwórz konfigurator sprzedaży</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild variant="outline">
+                <Link href="/host/sprzedaz/zasady-anulowania"><RotateCcw className="h-4 w-4" /> Zasady anulowania</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Otwórz konfigurator sprzedaży</Link>
+              </Button>
+            </div>
           )}
         </div>
       </CenteredMessage>
@@ -195,6 +200,9 @@ export default async function HostTicketingSalesPage() {
             )}
             {canManageSales && (
               <>
+                <Button asChild variant="outline">
+                  <Link href="/host/sprzedaz/zasady-anulowania"><RotateCcw className="h-4 w-4" /> Zasady anulowania</Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link href="/host/sprzedaz/widget"><MonitorSmartphone className="h-4 w-4" /> Widget na stronę</Link>
                 </Button>

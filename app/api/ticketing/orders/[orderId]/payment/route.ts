@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import { isMarketplaceLegalContactConfigured } from "@/lib/legal/marketplace"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe"
 import {
@@ -53,6 +54,13 @@ export async function POST(
     return paymentError("Płatności nie mają jeszcze pełnej konfiguracji.", 503)
   }
 
+  if (!isMarketplaceLegalContactConfigured) {
+    return paymentError(
+      "Operator EnjoyHub musi uzupełnić publiczny e-mail i telefon kontaktowy przed uruchomieniem płatności.",
+      503,
+    )
+  }
+
   if (!isSameOriginRequest(request)) {
     return paymentError("Niedozwolone źródło żądania.", 403)
   }
@@ -69,6 +77,30 @@ export async function POST(
   }
 
   const supabase = createAdminClient()
+  const { data: legalOrder, error: legalOrderError } = await supabase
+    .from("orders")
+    .select("marketplace_terms_version, cancellation_policy_version, seller_snapshot, cancellation_policy_snapshot, platform_snapshot")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (legalOrderError) {
+    console.error("Order legal acceptance check failed", legalOrderError)
+    return paymentError("Nie udało się potwierdzić warunków prawnych zamówienia.", 503)
+  }
+
+  if (
+    !legalOrder?.marketplace_terms_version ||
+    !legalOrder.cancellation_policy_version ||
+    !legalOrder.seller_snapshot ||
+    !legalOrder.cancellation_policy_snapshot ||
+    !legalOrder.platform_snapshot
+  ) {
+    return paymentError(
+      "Zamówienie nie ma utrwalonych warunków zakupu. Wybierz bilety ponownie.",
+      409,
+    )
+  }
+
   const { data: paymentAllowed, error: paymentAccessError } = await supabase.rpc(
     "ticketing_order_payment_allowed",
     { p_order_id: orderId },
@@ -81,7 +113,7 @@ export async function POST(
 
   if (!paymentAllowed) {
     return paymentError(
-      "Sprzedaż online dla tej atrakcji nie jest jeszcze aktywna. Organizator musi zakończyć weryfikację firmy.",
+      "Sprzedaż online dla tej atrakcji nie jest jeszcze aktywna. Organizator musi zakończyć weryfikację firmy i danych kontaktowych.",
       409,
     )
   }
@@ -234,13 +266,17 @@ export async function POST(
     metadata: {
       order_id: orderId,
       payment_attempt_id: prepared.payment_attempt_id,
-      checkout_version: "1e-connect",
+      checkout_version: "1f-legal",
+      terms_version: legalOrder.marketplace_terms_version,
+      cancellation_version: legalOrder.cancellation_policy_version,
       ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
     },
     payment_intent_data: {
       metadata: {
         order_id: orderId,
         payment_attempt_id: prepared.payment_attempt_id,
+        terms_version: legalOrder.marketplace_terms_version,
+        cancellation_version: legalOrder.cancellation_policy_version,
         ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
       },
       ...(transferGroup ? { transfer_group: transferGroup } : {}),
