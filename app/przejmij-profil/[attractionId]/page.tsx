@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, CheckCircle2, ShieldCheck, Store } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ShieldCheck, Store, TrendingUp, UsersRound } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { submitProfileClaimAction } from "@/app/przejmij-profil/[attractionId]/actions"
@@ -10,6 +10,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
+
+type ClaimProfileContext = {
+  attractionId: string
+  name?: string
+  city?: string
+  organizationName?: string
+  claimable?: boolean
+  claimStatus?: string
+  demandPeople30d?: number
+  demandRequests30d?: number
+  requestedSeats30d?: number
+  estimatedValue30d?: number
+  demandTotal?: number
+  nextRequestedDate?: string | null
+}
 
 export default async function ClaimProfilePage({ params, searchParams }: {
   params: Promise<{ attractionId: string }>
@@ -24,7 +39,10 @@ export default async function ClaimProfilePage({ params, searchParams }: {
   ])
 
   if (error || !data) notFound()
-  const profile = data as { attractionId: string; name?: string; city?: string; organizationName?: string; claimable?: boolean; claimStatus?: string }
+  const profile = data as ClaimProfileContext
+  const demandPeople30d = Number(profile.demandPeople30d ?? 0)
+  const requestedSeats30d = Number(profile.requestedSeats30d ?? 0)
+  const estimatedValue30d = Number(profile.estimatedValue30d ?? 0)
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-10">
@@ -42,6 +60,23 @@ export default async function ClaimProfilePage({ params, searchParams }: {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {demandPeople30d > 0 && (
+              <div className="rounded-2xl border border-[#ff5a1f]/25 bg-[#fff7f2] p-5">
+                <p className="flex items-center gap-2 font-semibold text-[#b63b12]"><TrendingUp className="h-5 w-5" />Klienci już pytają o ten obiekt</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  W ostatnich 30 dniach użytkownicy EnjoyHub zgłosili chęć rezerwacji tej atrakcji. Po przejęciu profilu możesz uruchomić terminy i zamienić to zainteresowanie w sprzedaż.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <DemandMetric value={String(demandPeople30d)} label="zainteresowanych" />
+                  <DemandMetric value={String(requestedSeats30d)} label="miejsc łącznie" />
+                  <DemandMetric value={estimatedValue30d > 0 ? `${Math.round(estimatedValue30d)} zł` : "—"} label="szac. popyt" />
+                </div>
+                {profile.nextRequestedDate && (
+                  <p className="mt-4 flex items-center gap-2 text-sm font-medium"><UsersRound className="h-4 w-4" />Najbliższy poszukiwany termin: {new Date(`${profile.nextRequestedDate}T12:00:00`).toLocaleDateString("pl-PL")}</p>
+                )}
+              </div>
+            )}
+
             {query.wyslano ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
                 <p className="flex items-center gap-2 font-semibold"><CheckCircle2 className="h-5 w-5" />Wniosek został wysłany</p>
@@ -91,5 +126,14 @@ export default async function ClaimProfilePage({ params, searchParams }: {
         </Card>
       </div>
     </main>
+  )
+}
+
+function DemandMetric({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl bg-white p-3 shadow-sm">
+      <p className="text-xl font-bold">{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
+    </div>
   )
 }
