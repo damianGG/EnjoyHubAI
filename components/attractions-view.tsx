@@ -4,13 +4,19 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { List, Loader2, Map, MapPin, SearchX, Sparkles, Star, Users } from "lucide-react"
+import { CalendarDays, List, Loader2, Map, MapPin, SearchX, Sparkles, Star, Users } from "lucide-react"
 
 import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
 import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { generateAttractionSlug } from "@/lib/utils"
+
+type AvailableSlot = {
+  date: string
+  startTime: string
+  availableCapacity?: number
+}
 
 interface Attraction {
   id: string
@@ -35,6 +41,8 @@ interface Attraction {
   avgRating?: number
   reviewCount?: number
   amenities?: string[]
+  nextAvailableSlot?: AvailableSlot | null
+  priceFrom?: number | null
 }
 
 interface SearchApiItem {
@@ -55,6 +63,8 @@ interface SearchApiItem {
   subcategory_image_url?: string | null
   avg_rating?: number
   review_count?: number
+  next_available_slot?: AvailableSlot | null
+  price_from?: number | null
 }
 
 interface AttractionsViewProps {
@@ -75,8 +85,36 @@ function normalizeSlug(value?: string | null) {
   return (value ?? "").trim().toLowerCase().replaceAll("_", "-")
 }
 
+function localIsoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function formatSlot(slot: AvailableSlot) {
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  if (slot.date === localIsoDate(today)) return `Dzisiaj · ${slot.startTime}`
+  if (slot.date === localIsoDate(tomorrow)) return `Jutro · ${slot.startTime}`
+
+  const [, month, day] = slot.date.split("-")
+  return `${day}.${month} · ${slot.startTime}`
+}
+
+function capacityLabel(capacity?: number) {
+  if (!capacity || capacity < 1) return null
+  if (capacity === 1) return "zostało 1 miejsce"
+  if (capacity >= 2 && capacity <= 4) return `zostały ${capacity} miejsca`
+  return `${capacity} miejsc dostępnych`
+}
+
 function AttractionListItem({ attraction, selected, onSelect }: { attraction: Attraction; selected: boolean; onSelect: () => void }) {
   const image = attraction.images?.find(Boolean) || "/placeholder.jpg"
+  const capacity = capacityLabel(attraction.nextAvailableSlot?.availableCapacity)
+  const effectivePrice = attraction.priceFrom ?? attraction.price_per_night
 
   return (
     <article
@@ -116,10 +154,17 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
                 <Badge variant="outline" className="rounded-full border-[#0b1220]/[0.07] px-2 py-0.5 text-[10px] font-medium"><Users className="mr-1 h-3 w-3" />do {attraction.max_guests} osób</Badge>
               )}
             </div>
+
+            {attraction.nextAvailableSlot && (
+              <div className="rounded-xl border border-primary/15 bg-[#fff7f2] px-2.5 py-2 text-[11px]">
+                <p className="flex items-center gap-1.5 font-bold text-[#b63b12]"><CalendarDays className="h-3.5 w-3.5" />{formatSlot(attraction.nextAvailableSlot)}</p>
+                {capacity && <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">{capacity}</p>}
+              </div>
+            )}
           </div>
 
           <div className="mt-3 flex items-end justify-between gap-2 border-t border-[#0b1220]/[0.05] pt-3">
-            <div><span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span><span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.price_per_night)} zł</span><span className="text-[11px] text-muted-foreground"> / os.</span></div>
+            <div><span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span><span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(effectivePrice)} zł</span><span className="text-[11px] text-muted-foreground"> / os.</span></div>
             {attraction.reviewCount ? <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span> : null}
           </div>
         </div>
@@ -137,7 +182,7 @@ function EmptyList({ searched }: { searched: boolean }) {
       <h2 className="text-lg font-bold tracking-[-0.025em]">{searched ? "Nie znaleźliśmy takich atrakcji" : "Mapa jest gotowa do odkrywania"}</h2>
       <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
         {searched
-          ? "Zmień kategorię, lokalizację albo liczbę osób i spróbuj ponownie."
+          ? "Zmień termin, kategorię, lokalizację albo liczbę osób i spróbuj ponownie."
           : "W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy."}
       </p>
     </div>
@@ -175,9 +220,22 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   const urlGuestsRaw = Number.parseInt(searchParams.get("guests") || "1", 10)
   const urlGuests = Number.isFinite(urlGuestsRaw) && urlGuestsRaw > 0 ? urlGuestsRaw : 1
   const dateFilter = searchParams.get("date") || ""
+  const dateFromFilter = searchParams.get("date_from") || ""
+  const dateToFilter = searchParams.get("date_to") || ""
+  const whenFilter = searchParams.get("when") || ""
   const ageMinFilter = searchParams.get("age_min") || ""
   const ageMaxFilter = searchParams.get("age_max") || ""
-  const hasSearchCriteria = selectedCategorySlugs.length > 0 || Boolean(urlLocation) || urlGuests > 1 || Boolean(dateFilter) || Boolean(ageMinFilter) || Boolean(ageMaxFilter)
+  const maxPriceFilter = searchParams.get("max_price") || ""
+  const hasSearchCriteria = selectedCategorySlugs.length > 0
+    || Boolean(urlLocation)
+    || urlGuests > 1
+    || Boolean(dateFilter)
+    || Boolean(dateFromFilter)
+    || Boolean(dateToFilter)
+    || Boolean(whenFilter)
+    || Boolean(ageMinFilter)
+    || Boolean(ageMaxFilter)
+    || Boolean(maxPriceFilter)
 
   const attractionById = useMemo(() => new globalThis.Map(attractions.map((attraction) => [attraction.id, attraction])), [attractions])
 
@@ -214,10 +272,18 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       location: searchParams.get("q") || "",
       guests: searchParams.get("guests") || "1",
     }))
-  }, [urlSearchString])
+  }, [urlSearchString, searchParams])
 
   useEffect(() => {
-    const needsAvailabilitySearch = Boolean(dateFilter || ageMinFilter || ageMaxFilter)
+    const needsAvailabilitySearch = Boolean(
+      dateFilter
+      || dateFromFilter
+      || dateToFilter
+      || whenFilter
+      || ageMinFilter
+      || ageMaxFilter
+      || maxPriceFilter,
+    )
 
     if (!needsAvailabilitySearch) {
       setRemoteAttractions(null)
@@ -227,7 +293,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
     const controller = new AbortController()
     const params = new URLSearchParams()
-    const keys = ["categories", "q", "date", "age_min", "age_max", "sort"]
+    const keys = ["categories", "q", "date", "date_from", "date_to", "when", "age_min", "age_max", "max_price", "sort"]
     keys.forEach((key) => {
       const value = searchParams.get(key)
       if (value) params.set(key, value)
@@ -271,6 +337,8 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
             avgRating: item.avg_rating ?? base?.avgRating,
             reviewCount: item.review_count ?? base?.reviewCount,
             amenities: base?.amenities ?? [],
+            nextAvailableSlot: item.next_available_slot ?? null,
+            priceFrom: item.price_from ?? null,
           } satisfies Attraction
         })
         setRemoteAttractions(mapped)
@@ -285,7 +353,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       })
 
     return () => controller.abort()
-  }, [dateFilter, ageMinFilter, ageMaxFilter, urlSearchString, attractionById])
+  }, [dateFilter, dateFromFilter, dateToFilter, whenFilter, ageMinFilter, ageMaxFilter, maxPriceFilter, urlSearchString, attractionById, searchParams])
 
   const searchBaseAttractions = remoteAttractions ?? urlFilteredAttractions
 
@@ -303,8 +371,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
       if (Number.parseInt(filters.guests, 10) > attraction.max_guests) return false
 
+      const effectivePrice = attraction.priceFrom ?? attraction.price_per_night
       const priceFilterIsActive = filters.priceRange[0] > 0 || filters.priceRange[1] < 500
-      if (priceFilterIsActive && (attraction.price_per_night < filters.priceRange[0] || attraction.price_per_night > filters.priceRange[1])) return false
+      if (priceFilterIsActive && (effectivePrice < filters.priceRange[0] || effectivePrice > filters.priceRange[1])) return false
 
       if (filters.attractionTypes.length > 0 && !filters.attractionTypes.includes(attraction.property_type)) return false
 
@@ -317,9 +386,11 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     })
 
     return result.sort((a, b) => {
+      const aPrice = a.priceFrom ?? a.price_per_night
+      const bPrice = b.priceFrom ?? b.price_per_night
       switch (filters.sortBy) {
-        case "price_low": return a.price_per_night - b.price_per_night
-        case "price_high": return b.price_per_night - a.price_per_night
+        case "price_low": return aPrice - bPrice
+        case "price_high": return bPrice - aPrice
         case "rating": return (b.avgRating ?? 0) - (a.avgRating ?? 0)
         case "reviews": return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
         default: return 0
@@ -337,7 +408,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     <div className="space-y-3 px-3 pb-6 md:px-0 md:pb-0">
       {availabilityLoading && (
         <div className="flex items-center gap-2 rounded-2xl bg-secondary/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję dostępność…
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Sprawdzam realne wolne terminy…
         </div>
       )}
       {filteredAttractions.map((attraction) => (
@@ -362,6 +433,11 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       <div className={mobileImmersive ? "h-full min-h-0 lg:hidden" : "lg:hidden"}>
         {mobileMode === "map" ? (
           <div className={mobileImmersive ? "relative h-full min-h-0 overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_12px_30px_rgba(11,18,32,0.07)]"}>
+            {availabilityLoading && (
+              <div className="absolute left-1/2 top-3 z-[760] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Sprawdzam terminy…
+              </div>
+            )}
             <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
