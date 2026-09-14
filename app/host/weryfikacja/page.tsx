@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { organizerVerificationRoles, type OrganizerRole } from "@/lib/organizer/access"
@@ -31,6 +32,7 @@ interface Organization {
   contact_phone: string | null
   registry_name: string | null
   registry_number: string | null
+  trader_self_certified_at: string | null
   verification_status: VerificationStatus
   payments_enabled: boolean
 }
@@ -48,7 +50,8 @@ function hasCompleteLegalData(organization: Organization) {
     organization.tax_id?.trim() &&
     organization.billing_email?.trim() &&
     organization.legal_address?.trim() &&
-    organization.contact_phone?.trim(),
+    organization.contact_phone?.trim() &&
+    organization.trader_self_certified_at,
   )
 }
 
@@ -80,7 +83,7 @@ export default async function OrganizerVerificationPage({
   const organizationIds = [...new Set(memberships.map((item) => item.organization_id))]
   const { data: organizationData, error: organizationError } = await supabase
     .from("organizations")
-    .select("id, name, legal_name, tax_id, billing_email, legal_address, contact_phone, registry_name, registry_number, verification_status, payments_enabled")
+    .select("id, name, legal_name, tax_id, billing_email, legal_address, contact_phone, registry_name, registry_number, trader_self_certified_at, verification_status, payments_enabled")
     .in("id", organizationIds)
     .order("name")
 
@@ -114,14 +117,14 @@ export default async function OrganizerVerificationPage({
           <Alert className="mt-6 border-emerald-200 bg-emerald-50 text-emerald-950">
             <CheckCircle2 className="h-4 w-4" />
             <AlertTitle>Dane zostały wysłane</AlertTitle>
-            <AlertDescription>Status organizacji zmienił się na „Weryfikujemy”.</AlertDescription>
+            <AlertDescription>Status organizacji zmienił się na „Weryfikujemy”. Potwierdzenie prawdziwości danych sprzedawcy zostało zapisane.</AlertDescription>
           </Alert>
         ) : null}
         {query.blad ? (
           <Alert variant="destructive" className="mt-6">
             <XCircle className="h-4 w-4" />
             <AlertTitle>Nie udało się wysłać danych</AlertTitle>
-            <AlertDescription>{query.blad === "dane" ? "Sprawdź nazwę firmy, 10-cyfrowy NIP, e-mail, adres oraz telefon kontaktowy." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription>
+            <AlertDescription>{query.blad === "dane" ? "Sprawdź nazwę firmy, 10-cyfrowy NIP, e-mail, adres, telefon oraz zaznacz potwierdzenie prawdziwości danych." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -149,7 +152,7 @@ export default async function OrganizerVerificationPage({
                   {organization.verification_status === "verified" && !complete ? (
                     <Alert className="border-amber-200 bg-amber-50 text-amber-950">
                       <AlertTitle>Uzupełnij nowe dane wymagane w checkoutcie</AlertTitle>
-                      <AlertDescription>Firma była wcześniej zweryfikowana, ale brakuje adresu lub telefonu. Do czasu uzupełnienia tych danych nowe płatności online będą zablokowane.</AlertDescription>
+                      <AlertDescription>Firma była wcześniej zweryfikowana, ale brakuje adresu, telefonu lub potwierdzenia prawdziwości danych. Do czasu uzupełnienia nowych informacji płatności online będą zablokowane.</AlertDescription>
                     </Alert>
                   ) : null}
 
@@ -215,6 +218,10 @@ function VerificationForm({ organization, fallbackEmail, submitLabel }: { organi
         <Label htmlFor={`registryNumber-${organization.id}`}>Numer w rejestrze <span className="text-muted-foreground">(opcjonalnie)</span></Label>
         <Input id={`registryNumber-${organization.id}`} name="registryNumber" defaultValue={organization.registry_number ?? ""} placeholder="np. 0000123456" maxLength={80} />
       </div>
+      <label htmlFor={`certifyTrader-${organization.id}`} className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-xl border bg-muted/20 p-4">
+        <Checkbox id={`certifyTrader-${organization.id}`} name="certifyTrader" required className="mt-0.5" />
+        <span className="text-sm leading-6">Potwierdzam, że podane dane przedsiębiorcy są prawdziwe, kompletne i aktualne oraz że organizacja jest uprawniona do oferowania wskazanych usług w EnjoyHub.</span>
+      </label>
       <div className="sm:col-span-2 flex flex-col gap-3 rounded-xl bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">Te dane będą pokazane kupującemu jako dane sprzedawcy usługi. Rachunek bankowy pozostaje obsługiwany osobno przez operatora płatności.</p>
         <Button type="submit" className="shrink-0">{submitLabel}</Button>
