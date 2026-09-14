@@ -5,6 +5,7 @@ import type Stripe from "stripe"
 import { z } from "zod"
 
 import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
+import { syncMarketplaceRefundFromStripe } from "@/lib/marketplace/refunds"
 import { recordMarketplaceSettlement } from "@/lib/marketplace/settlements"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import {
@@ -29,7 +30,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 })
   }
 
-  // Signature verification requires the exact raw payload. Do not call json().
   const rawBody = await request.text()
   const payloadHash = createHash("sha256").update(rawBody).digest("hex")
 
@@ -57,6 +57,11 @@ export async function POST(request: Request) {
       case "checkout.session.async_payment_failed":
         return await handleClosedCheckout(event, payloadHash, "failed")
 
+      case "refund.created":
+      case "refund.updated":
+      case "refund.failed":
+        return await handleRefundEvent(event)
+
       default:
         return NextResponse.json({ received: true, handled: false })
     }
@@ -66,7 +71,6 @@ export async function POST(request: Request) {
       eventType: event.type,
       error,
     })
-    // A 5xx response makes Stripe retry transient database or network failures.
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
   }
 }
@@ -77,8 +81,6 @@ async function handleSuccessfulCheckout(
 ) {
   const session = event.data.object
 
-  // Some asynchronous methods emit completed before funds are available. Only
-  // paid sessions may convert inventory and issue admission tickets.
   if (session.payment_status !== "paid") {
     return NextResponse.json({ received: true, handled: false, waitingForPayment: true })
   }
@@ -146,9 +148,6 @@ async function handleSuccessfulCheckout(
     orderId = attempt.order_id
   }
 
-  // Connect uses separate charges and transfers. The customer charge remains on
-  // EnjoyHub until the service has ended; this ledger row is what the release
-  // cron later turns into a transfer to the organizer's connected account.
   if (fulfilled && isStripeConnectEnabled && orderId) {
     if (!paymentIntentId) throw new Error("Paid Stripe Checkout has no PaymentIntent")
     const paymentIntent = await getStripeClient().paymentIntents.retrieve(
@@ -167,10 +166,6 @@ async function handleSuccessfulCheckout(
     })
   }
 
-  // E-mail delivery is deliberately non-transactional. The Stripe webhook must
-  // never roll back or repeatedly re-fulfill a paid order because the mail
-  // provider is temporarily unavailable. Provider-event idempotency prevents a
-  // retry from sending the same confirmation twice.
   if (fulfilled && !result.event_was_duplicate && orderId) {
     const emailResult = await sendOrderConfirmationEmail(orderId)
     if (!emailResult.sent) {
@@ -212,6 +207,12 @@ async function handleClosedCheckout(
   }
 
   return NextResponse.json({ received: true, handled: true })
+}
+
+async function handleRefundEvent(event: Stripe.Event) {
+  const refund = event.data.object as Stripe.Refund
+  const result = await syncMarketplaceRefundFromStripe(refund)
+  return NextResponse.json({ received: true, ...result })
 }
 
 function getExpandableId(
