@@ -5,12 +5,14 @@ import type Stripe from "stripe"
 import { z } from "zod"
 
 import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
+import { recordMarketplaceSettlement } from "@/lib/marketplace/settlements"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import {
   getStripeClient,
   isStripeConfigured,
   isStripeWebhookConfigured,
 } from "@/lib/stripe"
+import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -130,11 +132,8 @@ async function handleSuccessfulCheckout(
     })
   }
 
-  // E-mail delivery is deliberately non-transactional. The Stripe webhook must
-  // never roll back or repeatedly re-fulfill a paid order because the mail
-  // provider is temporarily unavailable. Provider-event idempotency prevents a
-  // retry from sending the same confirmation twice.
-  if (fulfilled && !result.event_was_duplicate) {
+  let orderId: string | null = null
+  if (fulfilled) {
     const { data: attempt, error: attemptError } = await supabase
       .from("payment_attempts")
       .select("order_id")
@@ -142,19 +141,44 @@ async function handleSuccessfulCheckout(
       .maybeSingle()
 
     if (attemptError || !attempt?.order_id) {
-      console.error("Could not resolve order for confirmation email", {
-        paymentAttemptId: attemptId,
-        error: attemptError?.message,
+      throw new Error(attemptError?.message ?? "Could not resolve paid order")
+    }
+    orderId = attempt.order_id
+  }
+
+  // Connect uses separate charges and transfers. The customer charge remains on
+  // EnjoyHub until the service has ended; this ledger row is what the release
+  // cron later turns into a transfer to the organizer's connected account.
+  if (fulfilled && isStripeConnectEnabled && orderId) {
+    if (!paymentIntentId) throw new Error("Paid Stripe Checkout has no PaymentIntent")
+    const paymentIntent = await getStripeClient().paymentIntents.retrieve(
+      paymentIntentId,
+      { expand: ["latest_charge"] },
+    )
+    const chargeId = getExpandableId(paymentIntent.latest_charge)
+    if (!chargeId) throw new Error("Paid Stripe PaymentIntent has no settled charge")
+
+    await recordMarketplaceSettlement({
+      orderId,
+      paymentAttemptId: attemptId,
+      providerChargeId: chargeId,
+      grossAmountMinor: session.amount_total,
+      currency: session.currency,
+    })
+  }
+
+  // E-mail delivery is deliberately non-transactional. The Stripe webhook must
+  // never roll back or repeatedly re-fulfill a paid order because the mail
+  // provider is temporarily unavailable. Provider-event idempotency prevents a
+  // retry from sending the same confirmation twice.
+  if (fulfilled && !result.event_was_duplicate && orderId) {
+    const emailResult = await sendOrderConfirmationEmail(orderId)
+    if (!emailResult.sent) {
+      console.error("Paid order confirmation email failed", {
+        orderId,
+        reason: emailResult.reason,
+        error: emailResult.error,
       })
-    } else {
-      const emailResult = await sendOrderConfirmationEmail(attempt.order_id)
-      if (!emailResult.sent) {
-        console.error("Paid order confirmation email failed", {
-          orderId: attempt.order_id,
-          reason: emailResult.reason,
-          error: emailResult.error,
-        })
-      }
     }
   }
 
@@ -191,7 +215,7 @@ async function handleClosedCheckout(
 }
 
 function getExpandableId(
-  value: string | Stripe.PaymentIntent | null,
+  value: string | { id: string } | null,
 ) {
   if (typeof value === "string") return value
   return value?.id ?? ""
