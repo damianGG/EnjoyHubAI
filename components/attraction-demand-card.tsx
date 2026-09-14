@@ -42,6 +42,11 @@ export function AttractionDemandCard({ attractionId, slug, success, error }: Att
 
         {!success && (
           <form action={action} className="space-y-3">
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor={`company-website-${attractionId}`}>Strona firmy</label>
+              <input id={`company-website-${attractionId}`} name="company_website" type="text" tabIndex={-1} autoComplete="off" />
+            </div>
+
             <label className="block space-y-1.5 text-sm">
               <span className="flex items-center gap-2 font-medium"><CalendarDays className="h-4 w-4" />Kiedy chcesz przyjechać?</span>
               <Input name="desired_date" type="date" required />
