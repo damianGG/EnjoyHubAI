@@ -8,6 +8,10 @@ export const isStripeWebhookConfigured =
   typeof process.env.STRIPE_WEBHOOK_SECRET === "string" &&
   process.env.STRIPE_WEBHOOK_SECRET.startsWith("whsec_")
 
+export const isStripeConnectWebhookConfigured =
+  typeof process.env.STRIPE_CONNECT_WEBHOOK_SECRET === "string" &&
+  process.env.STRIPE_CONNECT_WEBHOOK_SECRET.startsWith("whsec_")
+
 let stripeClient: Stripe | null = null
 
 export function getStripeClient() {
@@ -20,7 +24,7 @@ export function getStripeClient() {
     typescript: true,
     appInfo: {
       name: "EnjoyHub",
-      version: "1d",
+      version: "1e-connect",
     },
   })
 
