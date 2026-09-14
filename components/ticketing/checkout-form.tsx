@@ -2,8 +2,9 @@
 
 import { useMemo, useRef, useState } from "react"
 import type { FormEvent } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Loader2, Minus, Plus, ShieldCheck, Ticket, UserRound } from "lucide-react"
+import { ArrowRight, Building2, Loader2, Minus, Plus, RotateCcw, ShieldCheck, Ticket, UserRound } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -15,11 +16,37 @@ import { Separator } from "@/components/ui/separator"
 import { formatMoney } from "@/lib/ticketing/format"
 import type { CheckoutOrderResult, TicketingCheckoutSession } from "@/lib/ticketing/types"
 
-interface CheckoutFormProps {
-  session: TicketingCheckoutSession
+interface CheckoutLegalContext {
+  termsVersion: string
+  cancellationPolicyVersion: string
+  seller: {
+    legal_name: string
+    tax_id: string
+    email: string
+    legal_address: string
+    contact_phone: string
+    registry_name: string | null
+    registry_number: string | null
+  }
+  cancellationPolicy: {
+    title: string
+    shortSummary: string
+    statutoryWithdrawalNotice: string
+  }
+  platform: {
+    legal_name: string
+    responsibility: string
+  }
+  platformContactConfigured: boolean
+  sellerVerified: boolean
 }
 
-export function CheckoutForm({ session }: CheckoutFormProps) {
+interface CheckoutFormProps {
+  session: TicketingCheckoutSession
+  legalContext: CheckoutLegalContext
+}
+
+export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
   const router = useRouter()
   const checkoutKey = useRef<string | null>(null)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
@@ -74,7 +101,7 @@ export function CheckoutForm({ session }: CheckoutFormProps) {
     }
 
     if (!termsAccepted) {
-      setError("Zaakceptuj regulamin, aby przejść do płatności.")
+      setError("Zaakceptuj regulamin i zasady anulowania, aby przejść do płatności.")
       return
     }
 
@@ -93,6 +120,8 @@ export function CheckoutForm({ session }: CheckoutFormProps) {
           customerEmail: formData.get("customerEmail"),
           customerPhone: formData.get("customerPhone") || null,
           termsAccepted,
+          termsVersion: legalContext.termsVersion,
+          cancellationPolicyVersion: legalContext.cancellationPolicyVersion,
           items: selected.map(({ ticket, quantity }) => ({ ticketTypeId: ticket.id, quantity })),
         }),
       })
@@ -144,27 +173,11 @@ export function CheckoutForm({ session }: CheckoutFormProps) {
                     <p className="mt-2 font-bold text-[#0b1220]">{formatMoney(ticket.priceAmount, ticket.currency)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 rounded-full border bg-muted/30 p-1" aria-label={`Liczba biletów: ${ticket.name}`}>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => changeQuantity(ticket.id, -1)}
-                      disabled={quantity === 0 || isSubmitting}
-                      className="h-9 w-9 rounded-full bg-white shadow-sm"
-                      aria-label={`Usuń bilet ${ticket.name}`}
-                    >
+                    <Button type="button" variant="ghost" size="icon" onClick={() => changeQuantity(ticket.id, -1)} disabled={quantity === 0 || isSubmitting} className="h-9 w-9 rounded-full bg-white shadow-sm" aria-label={`Usuń bilet ${ticket.name}`}>
                       <Minus className="h-4 w-4" />
                     </Button>
                     <span className="w-7 text-center text-base font-bold" aria-live="polite">{quantity}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => changeQuantity(ticket.id, 1)}
-                      disabled={!canAdd || isSubmitting}
-                      className="h-9 w-9 rounded-full bg-[#ff5a1f] text-white shadow-sm hover:bg-[#e94f18] hover:text-white"
-                      aria-label={`Dodaj bilet ${ticket.name}`}
-                    >
+                    <Button type="button" variant="ghost" size="icon" onClick={() => changeQuantity(ticket.id, 1)} disabled={!canAdd || isSubmitting} className="h-9 w-9 rounded-full bg-[#ff5a1f] text-white shadow-sm hover:bg-[#e94f18] hover:text-white" aria-label={`Dodaj bilet ${ticket.name}`}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -200,17 +213,56 @@ export function CheckoutForm({ session }: CheckoutFormProps) {
               <Input id="customerPhone" name="customerPhone" type="tel" autoComplete="tel" maxLength={40} className="h-12 rounded-xl" />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <label htmlFor="termsAccepted" className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border bg-muted/20 p-4">
-            <Checkbox
-              id="termsAccepted"
-              checked={termsAccepted}
-              onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-              className="mt-0.5"
-              required
-            />
-            <span className="text-sm leading-relaxed">Akceptuję regulamin sprzedaży i zasady anulowania tej oferty.</span>
+      <Card className="rounded-3xl border-0 bg-white shadow-sm ring-1 ring-black/5">
+        <CardContent className="space-y-4 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><Building2 className="h-5 w-5" /></span>
+            <div>
+              <p className="font-bold">Kto sprzedaje usługę</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Sprzedawcą i wykonawcą atrakcji jest organizator poniżej. EnjoyHub prowadzi marketplace i obsługuje proces rezerwacji oraz płatności.</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border bg-muted/20 p-4 text-sm leading-6">
+            <p className="font-semibold">{legalContext.seller.legal_name}</p>
+            <p className="mt-1 text-muted-foreground">NIP {legalContext.seller.tax_id}{legalContext.seller.registry_name && legalContext.seller.registry_number ? ` · ${legalContext.seller.registry_name} ${legalContext.seller.registry_number}` : ""}</p>
+            <p className="text-muted-foreground">{legalContext.seller.legal_address}</p>
+            <p className="text-muted-foreground">{legalContext.seller.email} · {legalContext.seller.contact_phone}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-3xl border-0 bg-white shadow-sm ring-1 ring-black/5">
+        <CardContent className="space-y-4 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><RotateCcw className="h-5 w-5" /></span>
+            <div>
+              <p className="font-bold">{legalContext.cancellationPolicy.title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{legalContext.cancellationPolicy.shortSummary}</p>
+            </div>
+          </div>
+          <p className="rounded-2xl bg-amber-50 p-4 text-xs leading-relaxed text-amber-900">{legalContext.cancellationPolicy.statutoryWithdrawalNotice}</p>
+          <Link href="/zasady-anulowania" target="_blank" className="inline-flex text-sm font-semibold text-primary hover:underline">Pełne zasady anulowania i zwrotów ↗</Link>
+        </CardContent>
+      </Card>
+
+      {!legalContext.platformContactConfigured && (
+        <Alert>
+          <AlertDescription>Konfiguracja danych kontaktowych operatora EnjoyHub nie jest jeszcze zakończona. System nie dopuści do uruchomienia rzeczywistej płatności, dopóki dane nie zostaną uzupełnione.</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="rounded-3xl border-0 bg-white shadow-sm ring-1 ring-black/5">
+        <CardContent className="p-5">
+          <label htmlFor="termsAccepted" className="flex cursor-pointer items-start gap-3 rounded-2xl border bg-muted/20 p-4">
+            <Checkbox id="termsAccepted" checked={termsAccepted} onCheckedChange={(checked) => setTermsAccepted(checked === true)} className="mt-0.5" required />
+            <span className="text-sm leading-relaxed">
+              Akceptuję <Link href="/regulamin" target="_blank" className="font-semibold text-primary underline" onClick={(event) => event.stopPropagation()}>Regulamin EnjoyHub</Link> oraz <Link href="/zasady-anulowania" target="_blank" className="font-semibold text-primary underline" onClick={(event) => event.stopPropagation()}>zasady anulowania i zwrotów</Link> obowiązujące dla tej rezerwacji. Rozumiem, że sprzedawcą usługi jest wskazany wyżej organizator.
+            </span>
           </label>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Regulamin: {legalContext.termsVersion} · Zasady anulowania: {legalContext.cancellationPolicyVersion}. Wersje zaakceptowane przy zakupie zostaną zapisane przy zamówieniu.</p>
         </CardContent>
       </Card>
 
@@ -230,22 +282,17 @@ export function CheckoutForm({ session }: CheckoutFormProps) {
             <p className="text-xs text-muted-foreground">Razem</p>
             <p className="text-2xl font-black">{formatMoney(totalAmount, currency)}</p>
           </div>
-          <Button
-            type="submit"
-            size="lg"
-            disabled={isSubmitting || capacityUnits === 0}
-            className="h-12 flex-1 rounded-xl bg-[#ff5a1f] font-semibold text-white hover:bg-[#e94f18] sm:max-w-xs"
-          >
+          <Button type="submit" size="lg" disabled={isSubmitting || capacityUnits === 0} className="h-12 flex-1 rounded-xl bg-[#ff5a1f] font-semibold text-white hover:bg-[#e94f18] sm:max-w-xs">
             {isSubmitting ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Rezerwuję…</>
             ) : (
-              <>Przejdź do płatności<ArrowRight className="ml-2 h-4 w-4" /></>
+              <>Kupuję i płacę<ArrowRight className="ml-2 h-4 w-4" /></>
             )}
           </Button>
         </div>
         <div className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-          Po kliknięciu miejsca zostaną bezpiecznie zablokowane na 15 minut, a następnie przejdziesz do płatności.
+          Kliknięcie „Kupuję i płacę” oznacza złożenie zamówienia z obowiązkiem zapłaty. Miejsca zostaną zablokowane na 15 minut, a następnie przejdziesz do operatora płatności.
         </div>
       </div>
     </form>
