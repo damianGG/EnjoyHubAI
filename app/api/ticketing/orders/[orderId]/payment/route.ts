@@ -87,6 +87,7 @@ export async function POST(
   }
 
   let connectOrganizationId: string | null = null
+  let connectAccountId: string | null = null
   if (isStripeConnectEnabled) {
     const { data: orderScope, error: orderScopeError } = await supabase
       .from("orders")
@@ -100,13 +101,16 @@ export async function POST(
 
     const { data: connectedAccount, error: connectedAccountError } = await supabase
       .from("organization_payment_accounts")
-      .select("transfers_enabled, payouts_enabled, payout_schedule_manual")
+      .select("provider_account_id, charges_enabled, card_payments_enabled, transfers_enabled, payouts_enabled, payout_schedule_manual")
       .eq("organization_id", orderScope.organization_id)
       .maybeSingle()
 
     if (
       connectedAccountError ||
-      !connectedAccount?.transfers_enabled ||
+      !connectedAccount?.provider_account_id ||
+      !connectedAccount.charges_enabled ||
+      !connectedAccount.card_payments_enabled ||
+      !connectedAccount.transfers_enabled ||
       !connectedAccount.payouts_enabled ||
       !connectedAccount.payout_schedule_manual
     ) {
@@ -117,6 +121,7 @@ export async function POST(
     }
 
     connectOrganizationId = orderScope.organization_id
+    connectAccountId = connectedAccount.provider_account_id
   }
 
   const { data, error } = await supabase.rpc("ticketing_prepare_payment_checkout", {
@@ -229,7 +234,7 @@ export async function POST(
     metadata: {
       order_id: orderId,
       payment_attempt_id: prepared.payment_attempt_id,
-      checkout_version: "1d-connect",
+      checkout_version: "1e-connect",
       ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
     },
     payment_intent_data: {
@@ -239,6 +244,7 @@ export async function POST(
         ...(connectOrganizationId ? { organization_id: connectOrganizationId } : {}),
       },
       ...(transferGroup ? { transfer_group: transferGroup } : {}),
+      ...(connectAccountId ? { on_behalf_of: connectAccountId } : {}),
     },
   }, {
     idempotencyKey: `enjoyhub-payment-${prepared.payment_attempt_id}`,
