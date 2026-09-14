@@ -18,6 +18,8 @@ export interface StripeConnectAccountState {
   organizationId: string
   accountId: string
   detailsSubmitted: boolean
+  chargesEnabled: boolean
+  cardPaymentsEnabled: boolean
   transfersEnabled: boolean
   payoutsEnabled: boolean
   payoutScheduleManual: boolean
@@ -80,12 +82,19 @@ export async function syncStripeConnectAccount(
     }
   }
 
-  const transfersEnabled = account.capabilities?.transfers === "active"
   const detailsSubmitted = account.details_submitted === true
+  const chargesEnabled = account.charges_enabled === true
+  const cardPaymentsEnabled = account.capabilities?.card_payments === "active"
+  const transfersEnabled = account.capabilities?.transfers === "active"
   const payoutsEnabled = account.payouts_enabled === true
   const requirementsCurrentlyDue = account.requirements?.currently_due ?? []
   const disabledReason = account.requirements?.disabled_reason ?? null
-  const ready = detailsSubmitted && transfersEnabled && payoutsEnabled && payoutScheduleManual
+  const ready = detailsSubmitted &&
+    chargesEnabled &&
+    cardPaymentsEnabled &&
+    transfersEnabled &&
+    payoutsEnabled &&
+    payoutScheduleManual
 
   const supabase = createAdminClient()
   const syncedAt = new Date().toISOString()
@@ -96,6 +105,8 @@ export async function syncStripeConnectAccount(
       provider: "stripe",
       provider_account_id: accountId,
       details_submitted: detailsSubmitted,
+      charges_enabled: chargesEnabled,
+      card_payments_enabled: cardPaymentsEnabled,
       transfers_enabled: transfersEnabled,
       payouts_enabled: payoutsEnabled,
       payout_schedule_manual: payoutScheduleManual,
@@ -134,6 +145,8 @@ export async function syncStripeConnectAccount(
     organizationId,
     accountId,
     detailsSubmitted,
+    chargesEnabled,
+    cardPaymentsEnabled,
     transfersEnabled,
     payoutsEnabled,
     payoutScheduleManual,
