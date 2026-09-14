@@ -118,6 +118,33 @@ export async function startStripeConnectOnboarding(formData: FormData) {
     if (saveError) throw new Error(`Could not persist Stripe connected account: ${saveError.message}`)
   }
 
+  // Also repairs an older test account that might have been created before the
+  // marketplace started treating the organizer as the settlement merchant.
+  await stripe.accounts.update(accountId, {
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+  })
+
+  // BLIK and P24 are valuable in Poland, but Stripe requires the corresponding
+  // capabilities to be enabled for the platform as well. Never let an optional
+  // local method prevent the core card + transfer onboarding from working.
+  try {
+    await stripe.accounts.update(accountId, {
+      capabilities: {
+        blik_payments: { requested: true },
+        p24_payments: { requested: true },
+      },
+    })
+  } catch (error) {
+    console.warn("Optional Polish Stripe payment capabilities are not available yet", {
+      organizationId,
+      accountId,
+      error,
+    })
+  }
+
   try {
     await setStripeConnectManualPayoutSchedule(accountId)
   } catch (error) {
