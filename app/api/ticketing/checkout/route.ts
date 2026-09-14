@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import { getCheckoutLegalContext } from "@/lib/legal/checkout"
+import {
+  CANCELLATION_POLICY_VERSION,
+  MARKETPLACE_TERMS_VERSION,
+} from "@/lib/legal/marketplace"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -24,6 +29,8 @@ const checkoutSchema = z.object({
   customerEmail: z.string().trim().email().max(254),
   customerPhone: z.string().trim().max(40).optional().nullable(),
   termsAccepted: z.literal(true),
+  termsVersion: z.literal(MARKETPLACE_TERMS_VERSION),
+  cancellationPolicyVersion: z.literal(CANCELLATION_POLICY_VERSION),
   items: z.array(z.object({
     ticketTypeId: z.string().uuid(),
     quantity: z.number().int().positive().max(100),
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
   const parsed = checkoutSchema.safeParse(rawBody)
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Sprawdź wybrane bilety i dane kupującego." },
+      { error: "Sprawdź wybrane bilety i zaakceptowane warunki zakupu." },
       { status: 400 },
     )
   }
@@ -127,6 +134,24 @@ export async function POST(request: Request) {
   const input = parsed.data
 
   try {
+    const legalContext = await getCheckoutLegalContext(input.sessionId)
+    if (!legalContext) {
+      return NextResponse.json(
+        { error: "Sprzedaż online czeka na uzupełnienie danych prawnych organizatora." },
+        { status: 409 },
+      )
+    }
+
+    if (
+      legalContext.termsVersion !== input.termsVersion ||
+      legalContext.cancellationPolicyVersion !== input.cancellationPolicyVersion
+    ) {
+      return NextResponse.json(
+        { error: "Warunki zakupu zostały zaktualizowane. Odśwież stronę i zapoznaj się z nimi ponownie." },
+        { status: 409 },
+      )
+    }
+
     const ip = getRequestIp(request)
     const normalizedEmail = input.customerEmail.toLowerCase()
     const [ipLimit, emailLimit] = await Promise.all([
@@ -172,7 +197,7 @@ export async function POST(request: Request) {
       p_source: "enjoyhub_marketplace",
       p_hold_minutes: checkoutHoldMinutes,
       p_terms_accepted: input.termsAccepted,
-      p_metadata: { checkout_version: "1c" },
+      p_metadata: { checkout_version: "1f-legal" },
     })
 
     if (error || !data?.[0]) {
@@ -187,6 +212,31 @@ export async function POST(request: Request) {
       created_total_amount: number | string
       created_currency: string
       available_capacity_units: number
+    }
+
+    const { error: legalAcceptanceError } = await supabase.rpc(
+      "ticketing_attach_legal_acceptance",
+      {
+        p_order_id: order.created_order_id,
+        p_hold_token: order.created_hold_token,
+        p_marketplace_terms_version: input.termsVersion,
+        p_cancellation_policy_version: input.cancellationPolicyVersion,
+        p_seller_snapshot: legalContext.seller,
+        p_cancellation_policy_snapshot: legalContext.cancellationPolicy,
+        p_platform_snapshot: legalContext.platform,
+      },
+    )
+
+    if (legalAcceptanceError) {
+      console.error("Ticketing legal acceptance persistence failed", {
+        orderId: order.created_order_id,
+        code: legalAcceptanceError.code,
+        message: legalAcceptanceError.message,
+      })
+      return NextResponse.json(
+        { error: "Nie udało się bezpiecznie zapisać zaakceptowanych warunków. Spróbuj ponownie." },
+        { status: 503 },
+      )
     }
 
     const response = NextResponse.json({
