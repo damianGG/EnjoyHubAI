@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, ArrowRight, Banknote, Clock3, ReceiptText, ScanLine, Settings2, TicketCheck } from "lucide-react"
+import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, ScanLine, Settings2, TicketCheck } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -186,9 +186,14 @@ export default async function HostTicketingSalesPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {canManageSales && (
-              <Button asChild variant="outline">
-                <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Oferty i terminy</Link>
-              </Button>
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/host/sprzedaz/widget"><MonitorSmartphone className="h-4 w-4" /> Widget na stronę</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/host/sprzedaz/konfiguracja"><Settings2 className="h-4 w-4" /> Oferty i terminy</Link>
+                </Button>
+              </>
             )}
             {canScanTickets && (
               <Button asChild>
