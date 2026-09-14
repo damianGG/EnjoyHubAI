@@ -5,8 +5,6 @@
 -- connected account uses a manual payout schedule, so a bank payout only starts
 -- when an authorized organizer requests it from EnjoyHub.
 
-begin;
-
 alter table public.organizations
   add column if not exists platform_fee_bps integer not null default 1000
     check (platform_fee_bps between 0 and 5000);
@@ -16,6 +14,8 @@ create table if not exists public.organization_payment_accounts (
   provider text not null default 'stripe' check (provider = 'stripe'),
   provider_account_id text not null unique check (char_length(provider_account_id) >= 8),
   details_submitted boolean not null default false,
+  charges_enabled boolean not null default false,
+  card_payments_enabled boolean not null default false,
   transfers_enabled boolean not null default false,
   payouts_enabled boolean not null default false,
   payout_schedule_manual boolean not null default false,
@@ -82,7 +82,10 @@ create table if not exists public.marketplace_payouts (
   failure_code text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check ((status = 'creating' and provider_payout_id is null) or status = 'requires_review' or provider_payout_id is not null)
+  check (
+    provider_payout_id is not null
+    or status in ('creating','failed','requires_review')
+  )
 );
 
 create index if not exists marketplace_payouts_org_created_idx
@@ -406,5 +409,3 @@ comment on table public.marketplace_settlements is
   'One immutable commercial split per paid order; organizer funds become transferable only after service_ends_at.';
 comment on table public.marketplace_payouts is
   'Organizer-requested bank payouts created on the connected Stripe account.';
-
-commit;
