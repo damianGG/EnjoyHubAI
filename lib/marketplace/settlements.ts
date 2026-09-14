@@ -96,8 +96,6 @@ export async function recordMarketplaceSettlement(input: SettlementInput) {
     .single()
 
   if (error) {
-    // A concurrent webhook retry can win the insert. Re-read and validate on the
-    // next Stripe retry instead of ever creating a second settlement.
     if (error.code === "23505") return recordMarketplaceSettlement(input)
     throw new Error(error.message)
   }
@@ -116,7 +114,7 @@ export async function releaseEligibleMarketplaceSettlements(
   const supabase = createAdminClient()
   const baseQuery = supabase
     .from("marketplace_settlements")
-    .select("id, order_id, organization_id, provider_charge_id, transfer_group, organizer_amount_minor, currency")
+    .select("id, order_id, organization_id, provider_charge_id, transfer_group, organizer_amount_minor, organizer_refunded_before_transfer_minor, refunded_amount_minor, gross_amount_minor, currency")
     .eq("status", "pending_service")
     .lte("eligible_at", new Date().toISOString())
   const scopedQuery = organizationId
@@ -149,9 +147,26 @@ export async function releaseEligibleMarketplaceSettlements(
       continue
     }
 
+    const transferAmountMinor = Math.max(
+      Number(settlement.organizer_amount_minor) - Number(settlement.organizer_refunded_before_transfer_minor),
+      0,
+    )
+
+    if (transferAmountMinor <= 0) {
+      if (Number(settlement.refunded_amount_minor) >= Number(settlement.gross_amount_minor)) {
+        await supabase
+          .from("marketplace_settlements")
+          .update({ status: "refunded" })
+          .eq("id", settlement.id)
+          .eq("status", "pending_service")
+      }
+      skipped += 1
+      continue
+    }
+
     try {
       const transfer = await stripe.transfers.create({
-        amount: Number(settlement.organizer_amount_minor),
+        amount: transferAmountMinor,
         currency: settlement.currency.toLowerCase(),
         destination: account.provider_account_id,
         source_transaction: settlement.provider_charge_id,
@@ -169,6 +184,7 @@ export async function releaseEligibleMarketplaceSettlements(
         .from("marketplace_settlements")
         .update({
           provider_transfer_id: transfer.id,
+          transferred_amount_minor: transferAmountMinor,
           transferred_at: new Date().toISOString(),
           status: "transferred",
         })
