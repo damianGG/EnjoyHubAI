@@ -11,6 +11,10 @@ const schema = z.object({
   legalName: z.string().trim().min(2).max(240),
   taxId: z.string().transform((value) => value.replace(/[^0-9]/g, "")).pipe(z.string().length(10)),
   billingEmail: z.string().trim().email().max(254),
+  legalAddress: z.string().trim().min(8).max(320),
+  contactPhone: z.string().trim().min(7).max(40),
+  registryName: z.string().trim().max(40).optional(),
+  registryNumber: z.string().trim().max(80).optional(),
 })
 
 export async function submitOrganizerVerification(formData: FormData) {
@@ -21,6 +25,10 @@ export async function submitOrganizerVerification(formData: FormData) {
     legalName: String(formData.get("legalName") ?? ""),
     taxId: String(formData.get("taxId") ?? ""),
     billingEmail: String(formData.get("billingEmail") ?? ""),
+    legalAddress: String(formData.get("legalAddress") ?? ""),
+    contactPhone: String(formData.get("contactPhone") ?? ""),
+    registryName: String(formData.get("registryName") ?? ""),
+    registryNumber: String(formData.get("registryNumber") ?? ""),
   })
 
   if (!parsed.success) redirect("/host/weryfikacja?blad=dane")
@@ -34,6 +42,10 @@ export async function submitOrganizerVerification(formData: FormData) {
     p_legal_name: parsed.data.legalName,
     p_tax_id: parsed.data.taxId,
     p_billing_email: parsed.data.billingEmail,
+    p_legal_address: parsed.data.legalAddress,
+    p_contact_phone: parsed.data.contactPhone,
+    p_registry_name: parsed.data.registryName || null,
+    p_registry_number: parsed.data.registryNumber || null,
   })
 
   if (error) {
@@ -43,5 +55,6 @@ export async function submitOrganizerVerification(formData: FormData) {
 
   revalidatePath("/host")
   revalidatePath("/host/weryfikacja")
+  revalidatePath("/checkout")
   redirect("/host/weryfikacja?status=wyslane")
 }
