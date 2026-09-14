@@ -1,12 +1,13 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ArrowLeft, CalendarClock, CheckCircle2, CircleDollarSign, Clock3, Mail, Phone, ScanLine, Ticket, UserRound, XCircle } from "lucide-react"
+import { ArrowLeft, CalendarClock, CheckCircle2, CircleDollarSign, Mail, Phone, ScanLine, Ticket, UserRound, XCircle } from "lucide-react"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { OrganizerRefundCard } from "@/components/ticketing/organizer-refund-card"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { formatMoney, formatSessionDate } from "@/lib/ticketing/format"
 
@@ -71,10 +72,16 @@ interface OrderLifecycle {
   paymentAttempts: LifecyclePaymentAttempt[]
 }
 
-export default async function OrganizerOrderPage({ params }: { params: Promise<{ orderId: string }> }) {
+export default async function OrganizerOrderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orderId: string }>
+  searchParams: Promise<{ status?: string; blad?: string }>
+}) {
   if (!isSupabaseConfigured) redirect("/host/sprzedaz")
 
-  const { orderId } = await params
+  const [{ orderId }, feedback] = await Promise.all([params, searchParams])
   if (!z.string().uuid().safeParse(orderId).success) notFound()
 
   const supabase = createClient()
@@ -220,6 +227,15 @@ export default async function OrganizerOrderPage({ params }: { params: Promise<{
                 )}
               </CardContent>
             </Card>
+
+            <OrganizerRefundCard
+              orderId={order.id}
+              paymentStatus={order.paymentStatus}
+              orderTotal={Number(order.totalAmount)}
+              currency={order.currency}
+              timezone={order.venue.timezone}
+              feedback={feedback}
+            />
           </div>
 
           <aside className="space-y-6">
@@ -236,7 +252,7 @@ export default async function OrganizerOrderPage({ params }: { params: Promise<{
               <CardHeader><CardTitle className="text-lg">Oś zamówienia</CardTitle></CardHeader>
               <CardContent className="space-y-4 text-sm">
                 <TimelineItem label="Utworzone" value={formatDateTime(order.createdAt, order.venue.timezone)} done />
-                <TimelineItem label="Płatność" value={paymentLabel(order.paymentStatus)} done={order.paymentStatus === "paid"} />
+                <TimelineItem label="Płatność" value={paymentLabel(order.paymentStatus)} done={["paid", "partially_refunded", "refunded"].includes(order.paymentStatus)} />
                 <TimelineItem label="Potwierdzone" value={order.confirmedAt ? formatDateTime(order.confirmedAt, order.venue.timezone) : "Jeszcze nie"} done={Boolean(order.confirmedAt)} />
                 <TimelineItem label="Wejście" value={usedTickets > 0 ? `${usedTickets}/${lifecycle.tickets.length} biletów wykorzystanych` : "Brak wykorzystanych biletów"} done={usedTickets > 0} />
               </CardContent>
@@ -272,6 +288,8 @@ function TicketStatusBadge({ status }: { status: LifecycleTicket["status"] }) {
 
 function OrderStatusBadge({ status, paymentStatus, requiresReview }: { status: string; paymentStatus: string; requiresReview: boolean }) {
   if (requiresReview) return <Badge variant="destructive">Wymaga sprawdzenia</Badge>
+  if (paymentStatus === "refunded" || status === "refunded") return <Badge variant="outline">Zwrócono w całości</Badge>
+  if (paymentStatus === "partially_refunded" || status === "partially_refunded") return <Badge variant="secondary">Częściowy zwrot</Badge>
   if (status === "confirmed" && paymentStatus === "paid") return <Badge className="bg-emerald-600">Opłacone i potwierdzone</Badge>
   if (status === "awaiting_payment") return <Badge variant="secondary">Oczekuje na płatność</Badge>
   if (status === "expired") return <Badge variant="outline">Wygasło</Badge>
