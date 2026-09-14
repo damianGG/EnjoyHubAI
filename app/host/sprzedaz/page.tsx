@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, ScanLine, Settings2, TicketCheck } from "lucide-react"
+import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, ScanLine, Settings2, TicketCheck, WalletCards } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,9 +9,11 @@ import {
   organizerManagementRoles,
   organizerSalesRoles,
   organizerScannerRoles,
+  organizerVerificationRoles,
   type OrganizerRole,
 } from "@/lib/organizer/access"
 import { isSupabaseConfigured, createClient } from "@/lib/supabase/server"
+import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 import { isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
 import { formatMoney, formatSessionDate } from "@/lib/ticketing/format"
 
@@ -97,6 +99,7 @@ export default async function HostTicketingSalesPage() {
   }
 
   const canManageSales = salesMemberships.some((membership) => organizerManagementRoles.includes(membership.role as (typeof organizerManagementRoles)[number]))
+  const canManageFinances = typedMemberships.some((membership) => organizerVerificationRoles.includes(membership.role as (typeof organizerVerificationRoles)[number]))
   const canScanTickets = typedMemberships.some((membership) => organizerScannerRoles.includes(membership.role as (typeof organizerScannerRoles)[number]))
   const organizationIds = [...new Set(salesMemberships.map((membership) => membership.organization_id))]
 
@@ -185,6 +188,11 @@ export default async function HostTicketingSalesPage() {
             <p className="mt-2 text-muted-foreground">Od płatności po wejście gościa — każde zamówienie ma pełną historię biletu.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {canManageFinances && isStripeConnectEnabled && (
+              <Button asChild variant="outline">
+                <Link href="/host/rozliczenia"><WalletCards className="h-4 w-4" /> Rozliczenia</Link>
+              </Button>
+            )}
             {canManageSales && (
               <>
                 <Button asChild variant="outline">
