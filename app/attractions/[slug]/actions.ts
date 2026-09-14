@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key)
@@ -15,12 +15,19 @@ export async function submitAttractionInterestAction(slug: string, attractionId:
   const email = text(formData, "email")
   const desiredDate = text(formData, "desired_date")
   const partySize = Number(text(formData, "party_size"))
+  const honeypot = text(formData, "company_website")
+
+  // Bots commonly fill hidden fields. Behave like a successful submission so the
+  // form cannot be used to probe the anti-spam rule.
+  if (honeypot) {
+    redirect(`${returnTo}?zainteresowanie=1#booking`)
+  }
 
   if (!email || !desiredDate || !Number.isInteger(partySize) || partySize < 1 || partySize > 50) {
     redirect(`${returnTo}?blad_zainteresowania=1#booking`)
   }
 
-  const supabase = createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.rpc("marketplace_register_attraction_interest", {
     p_attraction_id: attractionId,
     p_email: email,
@@ -29,6 +36,10 @@ export async function submitAttractionInterestAction(slug: string, attractionId:
   })
 
   if (error) {
+    console.error("[demand] Failed to register attraction interest", {
+      attractionId,
+      code: error.code,
+    })
     redirect(`${returnTo}?blad_zainteresowania=1#booking`)
   }
 
