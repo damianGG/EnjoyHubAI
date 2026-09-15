@@ -68,7 +68,7 @@ export async function listMarketplaceDiscoveryAttractions(limit = 50) {
 
   const safeLimit = Math.max(1, Math.min(limit, 50))
   const supabase = createAdminClient()
-  const { data, error } = await supabase.rpc("marketplace_search_attractions_v4", {
+  const { data, error } = await supabase.rpc("marketplace_search_attractions_v5", {
     p_query: null,
     p_category_slugs: null,
     p_type_slugs: null,
@@ -86,6 +86,8 @@ export async function listMarketplaceDiscoveryAttractions(limit = 50) {
     p_require_availability: false,
     p_min_price: null,
     p_max_price: null,
+    p_supply_filters: {},
+    p_product_filters: {},
     p_sort: "relevance",
     p_limit: safeLimit,
     p_offset: 0,
