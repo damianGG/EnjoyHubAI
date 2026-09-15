@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -9,7 +9,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { MapPin, Search, SlidersHorizontal, Users, X } from "lucide-react"
+import { Loader2, MapPin, Search, SlidersHorizontal, Users, X } from "lucide-react"
+
+export type DynamicFilterCondition = {
+  eq?: string | boolean | number
+  min?: number
+  max?: number
+}
+
+export type DynamicFilterDefinition = {
+  scope: "supply" | "product"
+  key: string
+  label: string
+  valueType: "text" | "number" | "boolean" | "select" | "textarea"
+  options: string[]
+  unit: string | null
+  sortOrder: number
+}
 
 export interface FilterState {
   location?: string
@@ -21,6 +37,7 @@ export interface FilterState {
   attractionTypes: string[]
   amenities: string[]
   sortBy: string
+  dynamicFilters: Record<string, DynamicFilterCondition>
 }
 
 interface AttractionFiltersProps {
@@ -28,6 +45,9 @@ interface AttractionFiltersProps {
   onFiltersChange: (filters: FilterState) => void
   onSearch: () => void
   totalResults: number
+  dynamicCategoryName?: string | null
+  dynamicDefinitions?: DynamicFilterDefinition[]
+  dynamicDefinitionsLoading?: boolean
 }
 
 const AMENITIES = [
@@ -70,11 +90,50 @@ const SORT_OPTIONS = [
   { value: "reviews", label: "Najwięcej opinii" },
 ]
 
-export default function AttractionFilters({ filters, onFiltersChange, onSearch, totalResults }: AttractionFiltersProps) {
+function dynamicFilterId(definition: Pick<DynamicFilterDefinition, "scope" | "key">) {
+  return `${definition.scope}:${definition.key}`
+}
+
+function hasCondition(condition?: DynamicFilterCondition) {
+  return condition?.eq !== undefined || condition?.min !== undefined || condition?.max !== undefined
+}
+
+function optionLabel(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+export default function AttractionFilters({
+  filters,
+  onFiltersChange,
+  onSearch,
+  totalResults,
+  dynamicCategoryName = null,
+  dynamicDefinitions = [],
+  dynamicDefinitionsLoading = false,
+}: AttractionFiltersProps) {
   const [showFilters, setShowFilters] = useState(false)
+
+  const supplyDefinitions = useMemo(
+    () => dynamicDefinitions.filter((definition) => definition.scope === "supply"),
+    [dynamicDefinitions],
+  )
+  const productDefinitions = useMemo(
+    () => dynamicDefinitions.filter((definition) => definition.scope === "product"),
+    [dynamicDefinitions],
+  )
 
   const updateFilter = (key: keyof FilterState, value: unknown) => {
     onFiltersChange({ ...filters, [key]: value })
+  }
+
+  const updateDynamicCondition = (definition: DynamicFilterDefinition, condition?: DynamicFilterCondition) => {
+    const id = dynamicFilterId(definition)
+    const next = { ...filters.dynamicFilters }
+    if (!condition || !hasCondition(condition)) delete next[id]
+    else next[id] = condition
+    updateFilter("dynamicFilters", next)
   }
 
   const toggleAmenity = (amenity: string) => {
@@ -97,6 +156,7 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
       attractionTypes: [],
       amenities: [],
       sortBy: "newest",
+      dynamicFilters: {},
     })
   }
 
@@ -105,7 +165,101 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
     filters.priceRange[0] > 0 || filters.priceRange[1] < 500,
     Boolean(filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)),
     filters.amenities.length > 0,
+    Object.values(filters.dynamicFilters).some(hasCondition),
   ].filter(Boolean).length
+
+  const renderDynamicControl = (definition: DynamicFilterDefinition) => {
+    const id = dynamicFilterId(definition)
+    const condition = filters.dynamicFilters[id]
+
+    if (definition.valueType === "boolean") {
+      return (
+        <label key={id} className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm hover:bg-muted/50">
+          <Checkbox
+            checked={condition?.eq === true}
+            onCheckedChange={(checked) => updateDynamicCondition(definition, checked === true ? { eq: true } : undefined)}
+          />
+          <span className="font-medium">{definition.label}</span>
+        </label>
+      )
+    }
+
+    if (definition.valueType === "select") {
+      const value = typeof condition?.eq === "string" ? condition.eq : "__any__"
+      return (
+        <div key={id} className="space-y-2 rounded-xl border p-3">
+          <Label>{definition.label}</Label>
+          <Select
+            value={value}
+            onValueChange={(nextValue) => updateDynamicCondition(
+              definition,
+              nextValue === "__any__" ? undefined : { eq: nextValue },
+            )}
+          >
+            <SelectTrigger className="h-10 rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__any__">Dowolne</SelectItem>
+              {definition.options.map((option) => (
+                <SelectItem key={option} value={option}>{optionLabel(option)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    }
+
+    if (definition.valueType === "number") {
+      return (
+        <div key={id} className="space-y-2 rounded-xl border p-3">
+          <Label>{definition.label}{definition.unit ? ` (${definition.unit})` : ""}</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              value={condition?.min ?? ""}
+              onChange={(event) => {
+                const min = event.target.value === "" ? undefined : Number(event.target.value)
+                updateDynamicCondition(definition, {
+                  ...condition,
+                  min: Number.isFinite(min) ? min : undefined,
+                })
+              }}
+              placeholder="Od"
+              className="h-10 rounded-xl"
+            />
+            <Input
+              type="number"
+              value={condition?.max ?? ""}
+              onChange={(event) => {
+                const max = event.target.value === "" ? undefined : Number(event.target.value)
+                updateDynamicCondition(definition, {
+                  ...condition,
+                  max: Number.isFinite(max) ? max : undefined,
+                })
+              }}
+              placeholder="Do"
+              className="h-10 rounded-xl"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div key={id} className="space-y-2 rounded-xl border p-3">
+        <Label>{definition.label}</Label>
+        <Input
+          value={typeof condition?.eq === "string" ? condition.eq : ""}
+          onChange={(event) => updateDynamicCondition(
+            definition,
+            event.target.value.trim() ? { eq: event.target.value } : undefined,
+          )}
+          className="h-10 rounded-xl"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -148,7 +302,7 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
               )}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl">
+          <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>Dopasuj atrakcje</DialogTitle>
             </DialogHeader>
@@ -183,6 +337,47 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
                   step={1}
                 />
               </div>
+
+              {dynamicCategoryName && (
+                <section className="space-y-4 rounded-2xl border border-primary/15 bg-secondary/35 p-4">
+                  <div>
+                    <Label className="text-base">Filtry dla: {dynamicCategoryName}</Label>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Te pola są pobierane z konfiguracji kategorii. Zmiana kategorii automatycznie zmienia dostępne filtry.
+                    </p>
+                  </div>
+
+                  {dynamicDefinitionsLoading ? (
+                    <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" /> Ładuję filtry kategorii…
+                    </div>
+                  ) : dynamicDefinitions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ta kategoria nie ma jeszcze dodatkowych filtrów.</p>
+                  ) : (
+                    <div className="space-y-5">
+                      {supplyDefinitions.length > 0 && (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-primary">Obiekt</p>
+                            <p className="text-xs text-muted-foreground">Cechy miejsca niezależne od konkretnego pakietu.</p>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2">{supplyDefinitions.map(renderDynamicControl)}</div>
+                        </div>
+                      )}
+
+                      {productDefinitions.length > 0 && (
+                        <div className="space-y-3 border-t border-primary/10 pt-4">
+                          <div>
+                            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-primary">Pakiet / oferta</p>
+                            <p className="text-xs text-muted-foreground">Parametry konkretnej oferty dostępnej do zakupu.</p>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2">{productDefinitions.map(renderDynamicControl)}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
 
               <div className="space-y-3">
                 <div>
