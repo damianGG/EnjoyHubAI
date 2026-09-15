@@ -68,10 +68,10 @@ export async function listMarketplaceDiscoveryAttractions(limit = 50) {
 
   const safeLimit = Math.max(1, Math.min(limit, 50))
   const supabase = createAdminClient()
-  const { data, error } = await supabase.rpc("marketplace_search_attractions_v3", {
+  const { data, error } = await supabase.rpc("marketplace_search_attractions_v4", {
     p_query: null,
     p_category_slugs: null,
-    p_property_types: null,
+    p_type_slugs: null,
     p_amenities: null,
     p_guests: null,
     p_west: null,
@@ -104,14 +104,14 @@ export async function listMarketplaceDiscoveryAttractions(limit = 50) {
     region: item.region,
     latitude: item.latitude,
     longitude: item.longitude,
-    property_type: item.property_type || item.category_slug || "attraction",
+    property_type: item.property_type || item.subcategory_slug || item.category_slug || "attraction",
     category_slug: item.category_slug ?? null,
     category_icon: item.category_icon ?? null,
     category_image_url: item.category_image_url ?? null,
     subcategory_slug: item.subcategory_slug ?? null,
     subcategory_icon: item.subcategory_icon ?? null,
     subcategory_image_url: item.subcategory_image_url ?? null,
-    max_guests: item.max_guests ?? 1,
+    max_guests: item.max_guests ?? 0,
     amenities: item.amenities ?? [],
     images: item.images ?? [],
     avgRating: item.avg_rating ?? 0,
