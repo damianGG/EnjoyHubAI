@@ -91,6 +91,10 @@ function parseCsv(value: string | null, limit = 50) {
     .slice(0, limit)
 }
 
+function normalizeSlug(value: string) {
+  return value.trim().toLowerCase().replaceAll("_", "-")
+}
+
 function parseBoundingBox(value: string) {
   if (!value) return null
   const coordinates = value.split(",").map((part) => Number.parseFloat(part))
@@ -121,9 +125,8 @@ export async function GET(request: Request) {
 
     const safeQuery = sanitizeQuery(searchParams.get("q") || "")
     const boundingBox = parseBoundingBox(searchParams.get("bbox") || "")
-    const categorySlugs = parseCsv(searchParams.get("categories"))
-      .map((slug) => slug.toLowerCase())
-    const propertyTypes = parseCsv(searchParams.get("types"))
+    const categorySlugs = parseCsv(searchParams.get("categories")).map(normalizeSlug)
+    const typeSlugs = parseCsv(searchParams.get("types")).map(normalizeSlug)
     const amenities = parseCsv(searchParams.get("amenities"))
     const guests = parsePositiveInteger(searchParams.get("guests"), 1_000)
 
@@ -187,10 +190,10 @@ export async function GET(request: Request) {
       : null
 
     const supabase = createAdminClient()
-    const { data, error } = await supabase.rpc("marketplace_search_attractions_v3", {
+    const { data, error } = await supabase.rpc("marketplace_search_attractions_v4", {
       p_query: safeQuery || null,
       p_category_slugs: categorySlugs.length > 0 ? categorySlugs : null,
-      p_property_types: propertyTypes.length > 0 ? propertyTypes : null,
+      p_type_slugs: typeSlugs.length > 0 ? typeSlugs : null,
       p_amenities: amenities.length > 0 ? amenities : null,
       p_guests: guests,
       p_west: boundingBox?.west ?? null,
