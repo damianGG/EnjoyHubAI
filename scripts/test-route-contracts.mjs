@@ -33,6 +33,7 @@ const requiredRoutes = [
   "app/host/sprzedaz/page.tsx",
   "app/host/sprzedaz/konfiguracja/page.tsx",
   "app/host/sprzedaz/konfiguracja/actions.ts",
+  "app/api/search/filter-definitions/route.ts",
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
   "components/ticketing/clear-organizer-onboarding-draft.tsx",
@@ -45,6 +46,8 @@ const requiredRoutes = [
   "supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql",
   "supabase/migrations/20260915003000_marketplace_search_v2.sql",
   "supabase/migrations/20260915094500_marketplace_search_v3.sql",
+  "supabase/migrations/20260915100500_marketplace_search_v4.sql",
+  "supabase/migrations/20260915105000_marketplace_dynamic_category_filters.sql",
   "supabase/tests/database/007_ticketing_organizer_onboarding_smoke.sql",
 ]
 
@@ -116,25 +119,39 @@ assert.doesNotMatch(legacyOffer, /BookingWidget|\/api\/bookings/)
 
 const marketplaceSearch = await source("app/api/search/route.ts")
 assert.match(marketplaceSearch, /createAdminClient/)
-assert.match(marketplaceSearch, /marketplace_search_attractions_v3/)
+assert.match(marketplaceSearch, /marketplace_search_attractions_v5/)
 assert.match(marketplaceSearch, /p_guests: guests/)
 assert.match(marketplaceSearch, /p_min_price: minPrice/)
-assert.match(marketplaceSearch, /p_property_types:/)
+assert.match(marketplaceSearch, /p_type_slugs:/)
 assert.match(marketplaceSearch, /p_amenities:/)
+assert.match(marketplaceSearch, /p_supply_filters: dynamicFilters\.supply/)
+assert.match(marketplaceSearch, /p_product_filters: dynamicFilters\.product/)
+assert.match(marketplaceSearch, /categorySlugs\.length !== 1/)
+assert.match(marketplaceSearch, /MAX_DYNAMIC_FILTER_PAYLOAD_LENGTH/)
 assert.match(marketplaceSearch, /Math\.min\(parsedPer, 50\)/)
 assert.doesNotMatch(marketplaceSearch, /listMarketplacePropertySessions/)
 assert.doesNotMatch(marketplaceSearch, /Promise\.all\(\s*items\.map/)
 assert.doesNotMatch(marketplaceSearch, /\.from\("properties"\)/)
 assert.doesNotMatch(marketplaceSearch, /price_per_night/)
 
-const marketplaceSearchMigration = await source("supabase/migrations/20260915094500_marketplace_search_v3.sql")
+const filterDefinitionsRoute = await source("app/api/search/filter-definitions/route.ts")
+assert.match(filterDefinitionsRoute, /supply_attribute_definitions/)
+assert.match(filterDefinitionsRoute, /product_attribute_definitions/)
+assert.match(filterDefinitionsRoute, /\.eq\("filterable", true\)/)
+assert.match(filterDefinitionsRoute, /scope: "supply" \| "product"/)
+
+const marketplaceSearchMigration = await source("supabase/migrations/20260915105000_marketplace_dynamic_category_filters.sql")
 const marketplaceSearchSql = marketplaceSearchMigration.replace(/^--.*$/gm, "")
-assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v3/)
+assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v5/)
+assert.match(marketplaceSearchMigration, /marketplace_filter_value_matches/)
 assert.match(marketplaceSearchMigration, /security invoker/)
 assert.match(marketplaceSearchMigration, /grant execute[\s\S]*to service_role/)
+assert.match(marketplaceSearchMigration, /p_supply_filters/)
+assert.match(marketplaceSearchMigration, /p_product_filters/)
+assert.match(marketplaceSearchMigration, /definition\.filterable = true/)
+assert.match(marketplaceSearchMigration, /attribute\.verification_status in \('verified', 'owner_confirmed'\)/)
+assert.match(marketplaceSearchMigration, /product\.restrictions/)
 assert.match(marketplaceSearchMigration, /p_guests/)
-assert.match(marketplaceSearchMigration, /p_property_types/)
-assert.match(marketplaceSearchMigration, /p_amenities/)
 assert.match(marketplaceSearchMigration, /p_min_price/)
 assert.match(marketplaceSearchMigration, /row_number\(\) over/)
 assert.match(marketplaceSearchMigration, /p_require_availability/)
@@ -142,7 +159,9 @@ assert.match(marketplaceSearchMigration, /session\.price_from is not null/)
 assert.doesNotMatch(marketplaceSearchSql, /price_per_night/)
 
 const discoveryLoader = await source("lib/marketplace/discovery.ts")
-assert.match(discoveryLoader, /marketplace_search_attractions_v3/)
+assert.match(discoveryLoader, /marketplace_search_attractions_v5/)
+assert.match(discoveryLoader, /p_supply_filters: \{\}/)
+assert.match(discoveryLoader, /p_product_filters: \{\}/)
 assert.match(discoveryLoader, /p_sort: "relevance"/)
 assert.doesNotMatch(discoveryLoader, /\.from\("properties"\)/)
 assert.doesNotMatch(discoveryLoader, /price_per_night/)
@@ -156,12 +175,23 @@ for (const file of ["app/page.tsx", "app/attractions/page.tsx"]) {
 
 const attractionsView = await source("components/attractions-view.tsx")
 assert.match(attractionsView, /\/api\/search\?\$\{params\.toString\(\)\}/)
+assert.match(attractionsView, /\/api\/search\/filter-definitions\?category=/)
 assert.match(attractionsView, /useUrlState/)
 assert.match(attractionsView, /min_price:/)
 assert.match(attractionsView, /types:/)
 assert.match(attractionsView, /amenities:/)
+assert.match(attractionsView, /attrs: serializeDynamicFilters/)
+assert.match(attractionsView, /selectedDynamicCategory/)
 assert.doesNotMatch(attractionsView, /onSearch=\{\(\) => undefined\}/)
 assert.doesNotMatch(attractionsView, /price_per_night/)
+
+const attractionFilters = await source("components/attraction-filters.tsx")
+assert.match(attractionFilters, /dynamicDefinitions/)
+assert.match(attractionFilters, /Filtry dla:/)
+assert.match(attractionFilters, /Pakiet \/ oferta/)
+assert.match(attractionFilters, /definition\.valueType === "boolean"/)
+assert.match(attractionFilters, /definition\.valueType === "select"/)
+assert.match(attractionFilters, /definition\.valueType === "number"/)
 
 const attractionMap = await source("components/attraction-map.tsx")
 assert.match(attractionMap, /Sprawdź ofertę/)
