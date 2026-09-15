@@ -97,7 +97,8 @@ export interface Property {
   country: string;
   latitude?: number;
   longitude?: number;
-  price_per_night: number;
+  price_from?: number | null;
+  has_online_sales?: boolean;
   max_guests: number;
   bedrooms: number;
   bathrooms: number;
