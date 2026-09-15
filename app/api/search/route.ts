@@ -9,7 +9,9 @@ interface SearchResult {
   country: string
   latitude: number
   longitude: number
-  price_per_night: number
+  property_type: string
+  max_guests: number
+  amenities?: string[]
   category_slug: string | null
   category_name: string | null
   category_icon: string | null
@@ -27,6 +29,7 @@ interface SearchResult {
   cover_image_url: string | null
   next_available_slot: { date: string; startTime: string; availableCapacity: number } | null
   price_from: number | null
+  has_online_sales: boolean
 }
 
 type SearchPayload = {
@@ -37,7 +40,7 @@ type SearchPayload = {
 const MAX_VALID_AGE = 150
 const NOW_WINDOW_HOURS = 4
 const MAX_DISCOVERY_RANGE_DAYS = 31
-const ALLOWED_SORTS = new Set(["relevance", "price_asc", "price_desc", "newest", "rating"])
+const ALLOWED_SORTS = new Set(["relevance", "price_asc", "price_desc", "newest", "rating", "reviews"])
 
 function isValidIsoDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -66,6 +69,28 @@ function parseAge(value: string | null) {
   return parsed
 }
 
+function parsePositiveInteger(value: string | null, max: number) {
+  if (!value) return null
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed) || parsed < 1) return null
+  return Math.min(parsed, max)
+}
+
+function parseMoney(value: string | null) {
+  if (!value) return null
+  const parsed = Number.parseFloat(value)
+  if (!Number.isFinite(parsed) || parsed < 0) return null
+  return Math.min(parsed, 100_000)
+}
+
+function parseCsv(value: string | null, limit = 50) {
+  return (value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, limit)
+}
+
 function parseBoundingBox(value: string) {
   if (!value) return null
   const coordinates = value.split(",").map((part) => Number.parseFloat(part))
@@ -83,7 +108,7 @@ function parseBoundingBox(value: string) {
 
 function sanitizeQuery(value: string) {
   return value
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -96,11 +121,11 @@ export async function GET(request: Request) {
 
     const safeQuery = sanitizeQuery(searchParams.get("q") || "")
     const boundingBox = parseBoundingBox(searchParams.get("bbox") || "")
-    const categorySlugs = (searchParams.get("categories") || "")
-      .split(",")
-      .map((slug) => slug.trim().toLowerCase())
-      .filter(Boolean)
-      .slice(0, 50)
+    const categorySlugs = parseCsv(searchParams.get("categories"))
+      .map((slug) => slug.toLowerCase())
+    const propertyTypes = parseCsv(searchParams.get("types"))
+    const amenities = parseCsv(searchParams.get("amenities"))
+    const guests = parsePositiveInteger(searchParams.get("guests"), 1_000)
 
     const requestedSort = searchParams.get("sort") || "relevance"
     const sort = ALLOWED_SORTS.has(requestedSort) ? requestedSort : "relevance"
@@ -114,10 +139,11 @@ export async function GET(request: Request) {
       ? Math.min(parsedPer, 50)
       : 20
 
-    const parsedMaxPrice = Number.parseFloat(searchParams.get("max_price") || "")
-    const maxPrice = Number.isFinite(parsedMaxPrice) && parsedMaxPrice >= 0
-      ? Math.min(parsedMaxPrice, 100_000)
-      : null
+    let minPrice = parseMoney(searchParams.get("min_price"))
+    let maxPrice = parseMoney(searchParams.get("max_price"))
+    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+      [minPrice, maxPrice] = [maxPrice, minPrice]
+    }
 
     let minAge = parseAge(searchParams.get("age_min"))
     let maxAge = parseAge(searchParams.get("age_max"))
@@ -161,9 +187,12 @@ export async function GET(request: Request) {
       : null
 
     const supabase = createAdminClient()
-    const { data, error } = await supabase.rpc("marketplace_search_attractions_v2", {
+    const { data, error } = await supabase.rpc("marketplace_search_attractions_v3", {
       p_query: safeQuery || null,
       p_category_slugs: categorySlugs.length > 0 ? categorySlugs : null,
+      p_property_types: propertyTypes.length > 0 ? propertyTypes : null,
+      p_amenities: amenities.length > 0 ? amenities : null,
+      p_guests: guests,
       p_west: boundingBox?.west ?? null,
       p_south: boundingBox?.south ?? null,
       p_east: boundingBox?.east ?? null,
@@ -174,6 +203,7 @@ export async function GET(request: Request) {
       p_end_date: requestedRangeEnd,
       p_now_deadline: nowDeadline,
       p_require_availability: hasAvailabilityWindow || wantsNow,
+      p_min_price: minPrice,
       p_max_price: maxPrice,
       p_sort: sort,
       p_limit: per,
