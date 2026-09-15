@@ -10,6 +10,7 @@ import AttractionFilters, { type FilterState } from "@/components/attraction-fil
 import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useUrlState } from "@/lib/search/url-state"
 import { generateAttractionSlug } from "@/lib/utils"
 
 type AvailableSlot = {
@@ -26,7 +27,6 @@ interface Attraction {
   region?: string
   latitude?: number
   longitude?: number
-  price_per_night: number
   property_type: string
   category_slug?: string | null
   category_icon?: string | null
@@ -35,14 +35,13 @@ interface Attraction {
   subcategory_icon?: string | null
   subcategory_image_url?: string | null
   max_guests: number
-  bedrooms: number
-  bathrooms: number
   images?: string[]
   avgRating?: number
   reviewCount?: number
   amenities?: string[]
   nextAvailableSlot?: AvailableSlot | null
   priceFrom?: number | null
+  hasOnlineSales?: boolean
 }
 
 interface SearchApiItem {
@@ -53,7 +52,9 @@ interface SearchApiItem {
   region?: string
   latitude?: number
   longitude?: number
-  price_per_night: number
+  property_type: string
+  max_guests: number
+  amenities?: string[]
   images?: string[]
   category_slug?: string | null
   category_icon?: string | null
@@ -65,12 +66,31 @@ interface SearchApiItem {
   review_count?: number
   next_available_slot?: AvailableSlot | null
   price_from?: number | null
+  has_online_sales?: boolean
 }
 
 interface AttractionsViewProps {
   attractions: Attraction[]
   mobileImmersive?: boolean
 }
+
+const SEARCH_KEYS = [
+  "categories",
+  "q",
+  "date",
+  "date_from",
+  "date_to",
+  "when",
+  "guests",
+  "age_min",
+  "age_max",
+  "min_price",
+  "max_price",
+  "types",
+  "amenities",
+  "sort",
+  "bbox",
+]
 
 function attractionHref(attraction: Attraction) {
   return `/attractions/${generateAttractionSlug({
@@ -79,10 +99,6 @@ function attractionHref(attraction: Attraction) {
     title: attraction.title,
     id: attraction.id,
   })}`
-}
-
-function normalizeSlug(value?: string | null) {
-  return (value ?? "").trim().toLowerCase().replaceAll("_", "-")
 }
 
 function localIsoDate(date: Date) {
@@ -111,10 +127,80 @@ function capacityLabel(capacity?: number) {
   return `${capacity} miejsc dostępnych`
 }
 
+function parseBoundedNumber(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value || "", 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.max(min, Math.min(max, parsed))
+}
+
+function csvParam(value: string | null) {
+  return (value || "").split(",").map((item) => item.trim()).filter(Boolean)
+}
+
+function uiSortFromApi(value: string | null) {
+  switch (value) {
+    case "price_asc": return "price_low"
+    case "price_desc": return "price_high"
+    case "rating": return "rating"
+    case "reviews": return "reviews"
+    default: return "newest"
+  }
+}
+
+function apiSortFromUi(value: string) {
+  switch (value) {
+    case "price_low": return "price_asc"
+    case "price_high": return "price_desc"
+    case "rating": return "rating"
+    case "reviews": return "reviews"
+    default: return "relevance"
+  }
+}
+
+function mapSearchItem(item: SearchApiItem): Attraction {
+  return {
+    id: item.id,
+    title: item.title,
+    city: item.city,
+    country: item.country,
+    region: item.region,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    property_type: item.property_type || item.category_slug || "attraction",
+    category_slug: item.category_slug ?? null,
+    category_icon: item.category_icon ?? null,
+    category_image_url: item.category_image_url ?? null,
+    subcategory_slug: item.subcategory_slug ?? null,
+    subcategory_icon: item.subcategory_icon ?? null,
+    subcategory_image_url: item.subcategory_image_url ?? null,
+    max_guests: item.max_guests ?? 1,
+    images: item.images ?? [],
+    avgRating: item.avg_rating ?? 0,
+    reviewCount: item.review_count ?? 0,
+    amenities: item.amenities ?? [],
+    nextAvailableSlot: item.next_available_slot ?? null,
+    priceFrom: item.price_from ?? null,
+    hasOnlineSales: Boolean(item.has_online_sales),
+  }
+}
+
+function PriceSummary({ attraction }: { attraction: Attraction }) {
+  if (typeof attraction.priceFrom === "number" && Number.isFinite(attraction.priceFrom)) {
+    return (
+      <div>
+        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span>
+        <span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(attraction.priceFrom)} zł</span>
+        <span className="text-[11px] text-muted-foreground"> / os.</span>
+      </div>
+    )
+  }
+
+  return <span className="text-xs font-bold text-primary">Sprawdź ofertę</span>
+}
+
 function AttractionListItem({ attraction, selected, onSelect }: { attraction: Attraction; selected: boolean; onSelect: () => void }) {
   const image = attraction.images?.find(Boolean) || "/placeholder.jpg"
   const capacity = capacityLabel(attraction.nextAvailableSlot?.availableCapacity)
-  const effectivePrice = attraction.priceFrom ?? attraction.price_per_night
 
   return (
     <article
@@ -145,7 +231,7 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
 
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="truncate">{attraction.city}{attraction.region ? `, ${attraction.region}` : ""}</span>
+              <span className="truncate">{attraction.city}{attraction.region && attraction.region !== attraction.city ? `, ${attraction.region}` : ""}</span>
             </p>
 
             <div className="flex flex-wrap gap-1.5">
@@ -164,7 +250,7 @@ function AttractionListItem({ attraction, selected, onSelect }: { attraction: At
           </div>
 
           <div className="mt-3 flex items-end justify-between gap-2 border-t border-[#0b1220]/[0.05] pt-3">
-            <div><span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od </span><span className="text-lg font-extrabold tracking-[-0.03em]">{Math.round(effectivePrice)} zł</span><span className="text-[11px] text-muted-foreground"> / os.</span></div>
+            <PriceSummary attraction={attraction} />
             {attraction.reviewCount ? <span className="text-[11px] text-muted-foreground">{attraction.reviewCount} opinii</span> : null}
           </div>
         </div>
@@ -192,117 +278,73 @@ function EmptyList({ searched }: { searched: boolean }) {
 export default function AttractionsView({ attractions, mobileImmersive = false }: AttractionsViewProps) {
   const searchParams = useSearchParams()
   const urlSearchString = searchParams.toString()
+  const urlState = useUrlState()
   const [mobileMode, setMobileMode] = useState<"map" | "list">("map")
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
   const [remoteAttractions, setRemoteAttractions] = useState<Attraction[] | null>(null)
-  const [availabilityLoading, setAvailabilityLoading] = useState(false)
-  const [filters, setFilters] = useState<FilterState>({
+  const [remoteTotal, setRemoteTotal] = useState<number | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [filters, setFilters] = useState<FilterState>(() => ({
     location: searchParams.get("q") || "",
     checkIn: "",
     checkOut: "",
     guests: searchParams.get("guests") || "1",
-    priceRange: [0, 500],
-    ageRange: [0, 18],
-    attractionTypes: [],
-    amenities: [],
-    sortBy: "newest",
-  })
+    priceRange: [
+      parseBoundedNumber(searchParams.get("min_price"), 0, 0, 500),
+      parseBoundedNumber(searchParams.get("max_price"), 500, 0, 500),
+    ],
+    ageRange: [
+      parseBoundedNumber(searchParams.get("age_min"), 0, 0, 18),
+      parseBoundedNumber(searchParams.get("age_max"), 18, 0, 18),
+    ],
+    attractionTypes: csvParam(searchParams.get("types")),
+    amenities: csvParam(searchParams.get("amenities")),
+    sortBy: uiSortFromApi(searchParams.get("sort")),
+  }))
 
-  const selectedCategorySlugs = useMemo(
-    () => (searchParams.get("categories") || "")
-      .split(",")
-      .map(normalizeSlug)
-      .filter(Boolean),
-    [urlSearchString],
+  const hasSearchCriteria = useMemo(
+    () => SEARCH_KEYS.some((key) => Boolean(searchParams.get(key))),
+    [urlSearchString, searchParams],
   )
 
-  const urlLocation = (searchParams.get("q") || "").trim().toLowerCase()
-  const urlGuestsRaw = Number.parseInt(searchParams.get("guests") || "1", 10)
-  const urlGuests = Number.isFinite(urlGuestsRaw) && urlGuestsRaw > 0 ? urlGuestsRaw : 1
-  const dateFilter = searchParams.get("date") || ""
-  const dateFromFilter = searchParams.get("date_from") || ""
-  const dateToFilter = searchParams.get("date_to") || ""
-  const whenFilter = searchParams.get("when") || ""
-  const ageMinFilter = searchParams.get("age_min") || ""
-  const ageMaxFilter = searchParams.get("age_max") || ""
-  const maxPriceFilter = searchParams.get("max_price") || ""
-  const hasSearchCriteria = selectedCategorySlugs.length > 0
-    || Boolean(urlLocation)
-    || urlGuests > 1
-    || Boolean(dateFilter)
-    || Boolean(dateFromFilter)
-    || Boolean(dateToFilter)
-    || Boolean(whenFilter)
-    || Boolean(ageMinFilter)
-    || Boolean(ageMaxFilter)
-    || Boolean(maxPriceFilter)
-
-  const attractionById = useMemo(() => new globalThis.Map(attractions.map((attraction) => [attraction.id, attraction])), [attractions])
-
-  const urlFilteredAttractions = useMemo(() => {
-    if (!Array.isArray(attractions)) return []
-
-    return attractions.filter((attraction) => {
-      if (!attraction?.title || !attraction.city || !attraction.country) return false
-
-      if (selectedCategorySlugs.length > 0) {
-        const attractionSlugs = new Set([
-          normalizeSlug(attraction.category_slug),
-          normalizeSlug(attraction.subcategory_slug),
-          normalizeSlug(attraction.property_type),
-        ].filter(Boolean))
-
-        if (!selectedCategorySlugs.some((slug) => attractionSlugs.has(slug))) return false
-      }
-
-      if (urlLocation) {
-        const haystack = `${attraction.title} ${attraction.city} ${attraction.region ?? ""} ${attraction.country}`.toLowerCase()
-        if (!haystack.includes(urlLocation)) return false
-      }
-
-      if (urlGuests > (attraction.max_guests || Number.MAX_SAFE_INTEGER)) return false
-
-      return true
-    })
-  }, [attractions, selectedCategorySlugs, urlLocation, urlGuests])
-
   useEffect(() => {
-    setFilters((current) => ({
-      ...current,
+    setFilters({
       location: searchParams.get("q") || "",
+      checkIn: "",
+      checkOut: "",
       guests: searchParams.get("guests") || "1",
-    }))
+      priceRange: [
+        parseBoundedNumber(searchParams.get("min_price"), 0, 0, 500),
+        parseBoundedNumber(searchParams.get("max_price"), 500, 0, 500),
+      ],
+      ageRange: [
+        parseBoundedNumber(searchParams.get("age_min"), 0, 0, 18),
+        parseBoundedNumber(searchParams.get("age_max"), 18, 0, 18),
+      ],
+      attractionTypes: csvParam(searchParams.get("types")),
+      amenities: csvParam(searchParams.get("amenities")),
+      sortBy: uiSortFromApi(searchParams.get("sort")),
+    })
   }, [urlSearchString, searchParams])
 
   useEffect(() => {
-    const needsAvailabilitySearch = Boolean(
-      dateFilter
-      || dateFromFilter
-      || dateToFilter
-      || whenFilter
-      || ageMinFilter
-      || ageMaxFilter
-      || maxPriceFilter,
-    )
-
-    if (!needsAvailabilitySearch) {
+    if (!hasSearchCriteria) {
       setRemoteAttractions(null)
-      setAvailabilityLoading(false)
+      setRemoteTotal(null)
+      setSearchLoading(false)
       return
     }
 
     const controller = new AbortController()
     const params = new URLSearchParams()
-    const keys = ["categories", "q", "date", "date_from", "date_to", "when", "age_min", "age_max", "max_price", "sort"]
-    keys.forEach((key) => {
+    SEARCH_KEYS.forEach((key) => {
       const value = searchParams.get(key)
       if (value) params.set(key, value)
     })
     params.set("page", "1")
     params.set("per", "50")
 
-    setAvailabilityLoading(true)
-    setRemoteAttractions(null)
+    setSearchLoading(true)
 
     void fetch(`/api/search?${params.toString()}`, { signal: controller.signal })
       .then(async (response) => {
@@ -311,92 +353,48 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       })
       .then((payload) => {
         const items = Array.isArray(payload?.items) ? payload.items as SearchApiItem[] : []
-        const mapped = items.map((item) => {
-          const base = attractionById.get(item.id)
-          return {
-            ...base,
-            id: item.id,
-            title: item.title,
-            city: item.city,
-            country: item.country,
-            region: item.region ?? base?.region,
-            latitude: item.latitude,
-            longitude: item.longitude,
-            price_per_night: item.price_per_night,
-            property_type: base?.property_type ?? item.category_slug ?? "attraction",
-            category_slug: item.category_slug ?? base?.category_slug ?? null,
-            category_icon: item.category_icon ?? base?.category_icon ?? null,
-            category_image_url: item.category_image_url ?? base?.category_image_url ?? null,
-            subcategory_slug: item.subcategory_slug ?? base?.subcategory_slug ?? null,
-            subcategory_icon: item.subcategory_icon ?? base?.subcategory_icon ?? null,
-            subcategory_image_url: item.subcategory_image_url ?? base?.subcategory_image_url ?? null,
-            max_guests: base?.max_guests ?? 999,
-            bedrooms: base?.bedrooms ?? 0,
-            bathrooms: base?.bathrooms ?? 0,
-            images: item.images ?? base?.images ?? [],
-            avgRating: item.avg_rating ?? base?.avgRating,
-            reviewCount: item.review_count ?? base?.reviewCount,
-            amenities: base?.amenities ?? [],
-            nextAvailableSlot: item.next_available_slot ?? null,
-            priceFrom: item.price_from ?? null,
-          } satisfies Attraction
-        })
-        setRemoteAttractions(mapped)
+        setRemoteAttractions(items.map(mapSearchItem))
+        setRemoteTotal(Number.isFinite(Number(payload?.total)) ? Number(payload.total) : items.length)
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return
-        console.error("[search] Failed to refresh availability filters", error)
-        setRemoteAttractions(null)
+        console.error("[search] Failed to refresh marketplace results", error)
       })
       .finally(() => {
-        if (!controller.signal.aborted) setAvailabilityLoading(false)
+        if (!controller.signal.aborted) setSearchLoading(false)
       })
 
     return () => controller.abort()
-  }, [dateFilter, dateFromFilter, dateToFilter, whenFilter, ageMinFilter, ageMaxFilter, maxPriceFilter, urlSearchString, attractionById, searchParams])
+  }, [hasSearchCriteria, urlSearchString, searchParams])
 
-  const searchBaseAttractions = remoteAttractions ?? urlFilteredAttractions
+  const applyFilters = (next: FilterState) => {
+    const ageRange = next.ageRange ?? [0, 18]
+    const apiSort = apiSortFromUi(next.sortBy)
 
-  const filteredAttractions = useMemo(() => {
-    if (!Array.isArray(searchBaseAttractions)) return []
-
-    const result = searchBaseAttractions.filter((attraction) => {
-      if (!attraction?.title || !attraction.city || !attraction.country) return false
-
-      if (filters.location?.trim()) {
-        const query = filters.location.trim().toLowerCase()
-        const haystack = `${attraction.title} ${attraction.city} ${attraction.region ?? ""} ${attraction.country}`.toLowerCase()
-        if (!haystack.includes(query)) return false
-      }
-
-      if (Number.parseInt(filters.guests, 10) > attraction.max_guests) return false
-
-      const effectivePrice = attraction.priceFrom ?? attraction.price_per_night
-      const priceFilterIsActive = filters.priceRange[0] > 0 || filters.priceRange[1] < 500
-      if (priceFilterIsActive && (effectivePrice < filters.priceRange[0] || effectivePrice > filters.priceRange[1])) return false
-
-      if (filters.attractionTypes.length > 0 && !filters.attractionTypes.includes(attraction.property_type)) return false
-
-      if (filters.amenities.length > 0) {
-        const amenities = attraction.amenities ?? []
-        if (!filters.amenities.every((amenity) => amenities.includes(amenity))) return false
-      }
-
-      return true
+    urlState.setMany({
+      page: 1,
+      q: next.location?.trim() || null,
+      guests: next.guests !== "1" ? next.guests : null,
+      min_price: next.priceRange[0] > 0 ? next.priceRange[0] : null,
+      max_price: next.priceRange[1] < 500 ? next.priceRange[1] : null,
+      age_min: ageRange[0] > 0 ? ageRange[0] : null,
+      age_max: ageRange[1] < 18 ? ageRange[1] : null,
+      types: next.attractionTypes.length ? next.attractionTypes.join(",") : null,
+      amenities: next.amenities.length ? next.amenities.join(",") : null,
+      sort: apiSort !== "relevance" ? apiSort : null,
     })
+  }
 
-    return result.sort((a, b) => {
-      const aPrice = a.priceFrom ?? a.price_per_night
-      const bPrice = b.priceFrom ?? b.price_per_night
-      switch (filters.sortBy) {
-        case "price_low": return aPrice - bPrice
-        case "price_high": return bPrice - aPrice
-        case "rating": return (b.avgRating ?? 0) - (a.avgRating ?? 0)
-        case "reviews": return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
-        default: return 0
-      }
-    })
-  }, [searchBaseAttractions, filters])
+  const handleFiltersChange = (next: FilterState) => {
+    const sortChanged = next.sortBy !== filters.sortBy
+    setFilters(next)
+    if (sortChanged) applyFilters(next)
+  }
+
+  const filteredAttractions = (remoteAttractions ?? attractions).filter(
+    (attraction) => Boolean(attraction?.title && attraction?.city && attraction?.country),
+  )
+  const totalResults = remoteTotal ?? filteredAttractions.length
 
   useEffect(() => {
     if (selectedAttraction && !filteredAttractions.some((attraction) => attraction.id === selectedAttraction)) {
@@ -406,21 +404,31 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
   const list = filteredAttractions.length > 0 ? (
     <div className="space-y-3 px-3 pb-6 md:px-0 md:pb-0">
-      {availabilityLoading && (
+      {searchLoading && (
         <div className="flex items-center gap-2 rounded-2xl bg-secondary/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Sprawdzam realne wolne terminy…
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję wyniki…
         </div>
       )}
       {filteredAttractions.map((attraction) => (
         <AttractionListItem key={attraction.id} attraction={attraction} selected={selectedAttraction === attraction.id} onSelect={() => setSelectedAttraction(attraction.id)} />
       ))}
+      {totalResults > filteredAttractions.length && (
+        <p className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">
+          Pokazujemy pierwsze {filteredAttractions.length} z {totalResults} najlepiej dopasowanych atrakcji.
+        </p>
+      )}
     </div>
   ) : <div className="px-3 md:px-0"><EmptyList searched={hasSearchCriteria} /></div>
 
   return (
     <div className={mobileImmersive ? "h-full min-h-0 md:h-auto md:space-y-4" : "space-y-4"}>
       <div className={mobileImmersive ? "hidden lg:block" : "hidden md:block"}>
-        <AttractionFilters filters={filters} onFiltersChange={setFilters} onSearch={() => undefined} totalResults={filteredAttractions.length} />
+        <AttractionFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onSearch={() => applyFilters(filters)}
+          totalResults={totalResults}
+        />
       </div>
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
@@ -433,9 +441,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       <div className={mobileImmersive ? "h-full min-h-0 lg:hidden" : "lg:hidden"}>
         {mobileMode === "map" ? (
           <div className={mobileImmersive ? "relative h-full min-h-0 overflow-hidden bg-muted" : "relative h-[calc(100dvh-16.5rem)] min-h-[500px] overflow-hidden rounded-[26px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_12px_30px_rgba(11,18,32,0.07)]"}>
-            {availabilityLoading && (
+            {searchLoading && (
               <div className="absolute left-1/2 top-3 z-[760] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white/95 px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Sprawdzam terminy…
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję wyniki…
               </div>
             )}
             <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
@@ -450,7 +458,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
             className="h-12 rounded-full bg-[#0b1220] px-5 font-bold text-white shadow-[0_12px_28px_rgba(11,18,32,0.24)] hover:bg-[#111827]"
           >
             {mobileMode === "map" ? <List className="mr-2 h-4 w-4" /> : <Map className="mr-2 h-4 w-4" />}
-            {mobileMode === "map" ? `Pokaż listę${filteredAttractions.length ? ` (${filteredAttractions.length})` : ""}` : "Pokaż mapę"}
+            {mobileMode === "map" ? `Pokaż listę${totalResults ? ` (${totalResults})` : ""}` : "Pokaż mapę"}
           </Button>
         </div>
       </div>
