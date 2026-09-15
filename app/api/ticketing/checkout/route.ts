@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import {
+  applyAnalyticsCookies,
+  enrichAnalyticsEvent,
+  readAnalyticsRequestContext,
+} from "@/lib/analytics/server"
 import { getCheckoutLegalContext } from "@/lib/legal/checkout"
 import {
   CANCELLATION_POLICY_VERSION,
@@ -132,6 +137,7 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data
+  const analyticsContext = readAnalyticsRequestContext(request)
 
   try {
     const legalContext = await getCheckoutLegalContext(input.sessionId)
@@ -239,6 +245,13 @@ export async function POST(request: Request) {
       )
     }
 
+    await enrichAnalyticsEvent(`order_created:${order.created_order_id}`, {
+      ...analyticsContext,
+      userId: user?.id ?? null,
+      referrer: request.headers.get("referer"),
+      path: "/api/ticketing/checkout",
+    })
+
     const response = NextResponse.json({
       orderId: order.created_order_id,
       orderNumber: order.created_order_number,
@@ -257,6 +270,7 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: checkoutCookieMaxAgeSeconds,
     })
+    applyAnalyticsCookies(response, analyticsContext)
 
     return response
   } catch (error) {

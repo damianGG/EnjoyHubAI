@@ -1,5 +1,12 @@
+import { randomUUID } from "node:crypto"
+
 import { NextResponse } from "next/server"
 
+import {
+  applyAnalyticsCookies,
+  readAnalyticsRequestContext,
+  recordAnalyticsEvent,
+} from "@/lib/analytics/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 interface SearchResult {
@@ -182,11 +189,17 @@ function sanitizeQuery(value: string) {
     .trim()
 }
 
-export const revalidate = 60
+function safeCampaignText(value: string | null, max: number) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed.slice(0, max) : null
+}
+
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
+    const requestUrl = new URL(request.url)
+    const { searchParams } = requestUrl
 
     const safeQuery = sanitizeQuery(searchParams.get("q") || "")
     const boundingBox = parseBoundingBox(searchParams.get("bbox") || "")
@@ -289,9 +302,56 @@ export async function GET(request: Request) {
     const payload = (data ?? {}) as SearchPayload
     const items = Array.isArray(payload.items) ? payload.items : []
     const total = Number.isFinite(Number(payload.total)) ? Number(payload.total) : 0
+    const analyticsContext = readAnalyticsRequestContext(request)
+    const searchId = randomUUID()
+    const source = safeCampaignText(searchParams.get("utm_source"), 120) || analyticsContext.source
+    const medium = safeCampaignText(searchParams.get("utm_medium"), 120) || analyticsContext.medium
+    const campaign = safeCampaignText(searchParams.get("utm_campaign"), 160) || analyticsContext.campaign
 
-    const response = NextResponse.json({ items, total, page, per })
-    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120")
+    await recordAnalyticsEvent({
+      eventName: "search_performed",
+      anonymousId: analyticsContext.anonymousId,
+      analyticsSessionId: analyticsContext.analyticsSessionId,
+      searchId,
+      source,
+      medium,
+      campaign,
+      referrer: request.headers.get("referer"),
+      path: `${requestUrl.pathname}${requestUrl.search}`,
+      properties: {
+        query: safeQuery,
+        categories: categorySlugs,
+        guests,
+        date: requestedDate,
+        dateFrom: requestedRangeStart,
+        dateTo: requestedRangeEnd,
+        when: wantsNow ? "now" : null,
+        minPrice,
+        maxPrice,
+        minAge,
+        maxAge,
+        sort,
+        page,
+        resultCount: total,
+        returnedCount: items.length,
+        supplyFilterCount: Object.keys(dynamicFilters.supply).length,
+        productFilterCount: Object.keys(dynamicFilters.product).length,
+      },
+      searchResults: items.slice(0, 50).map((item, index) => ({
+        attractionId: item.id,
+        position: (page - 1) * per + index + 1,
+      })),
+    })
+
+    const response = NextResponse.json({ items, total, page, per, searchId })
+    applyAnalyticsCookies(response, {
+      ...analyticsContext,
+      searchId,
+      source,
+      medium,
+      campaign,
+    }, { searchMaxAgeSeconds: 30 * 60 })
+    response.headers.set("Cache-Control", "private, no-store")
 
     return response
   } catch (error) {

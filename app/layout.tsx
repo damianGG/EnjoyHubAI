@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 // Temporarily disabled Google Fonts due to network restrictions in build environment
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AnalyticsPageTracker } from '@/components/analytics/page-tracker'
 import './globals.css'
 
 // const geist = Geist({ 
@@ -64,6 +65,7 @@ export default function RootLayout({
         className="font-sans antialiased min-h-screen bg-background"
       >
         {children}
+        <AnalyticsPageTracker />
         <Analytics />
       </body>
     </html>
