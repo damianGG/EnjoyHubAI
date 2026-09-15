@@ -6,7 +6,11 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { CalendarDays, List, Loader2, Map, MapPin, SearchX, Sparkles, Star, Users } from "lucide-react"
 
-import AttractionFilters, { type FilterState } from "@/components/attraction-filters"
+import AttractionFilters, {
+  type DynamicFilterCondition,
+  type DynamicFilterDefinition,
+  type FilterState,
+} from "@/components/attraction-filters"
 import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,6 +73,16 @@ interface SearchApiItem {
   has_online_sales?: boolean
 }
 
+interface DynamicFilterDefinitionsPayload {
+  category?: {
+    slug: string
+    name: string
+    kind: "category" | "subcategory"
+    parentSlug: string | null
+  } | null
+  definitions?: DynamicFilterDefinition[]
+}
+
 interface AttractionsViewProps {
   attractions: Attraction[]
   mobileImmersive?: boolean
@@ -88,6 +102,7 @@ const SEARCH_KEYS = [
   "max_price",
   "types",
   "amenities",
+  "attrs",
   "sort",
   "bbox",
 ]
@@ -135,6 +150,76 @@ function parseBoundedNumber(value: string | null, fallback: number, min: number,
 
 function csvParam(value: string | null) {
   return (value || "").split(",").map((item) => item.trim()).filter(Boolean)
+}
+
+function normalizeSlug(value?: string | null) {
+  return (value || "").trim().toLowerCase().replaceAll("_", "-")
+}
+
+function selectedDynamicCategory(value: string | null) {
+  const selected = csvParam(value).map(normalizeSlug).filter(Boolean)
+  return selected.length === 1 ? selected[0] : null
+}
+
+function isDynamicCondition(value: unknown): value is DynamicFilterCondition {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false
+  const condition = value as Record<string, unknown>
+  return (
+    typeof condition.eq === "string"
+    || typeof condition.eq === "number"
+    || typeof condition.eq === "boolean"
+    || typeof condition.min === "number"
+    || typeof condition.max === "number"
+  )
+}
+
+function parseDynamicFilterState(value: string | null, categorySlug: string | null) {
+  if (!value || !categorySlug) return {} as Record<string, DynamicFilterCondition>
+
+  try {
+    const parsed = JSON.parse(value) as {
+      category?: unknown
+      supply?: unknown
+      product?: unknown
+    }
+    if (normalizeSlug(typeof parsed.category === "string" ? parsed.category : null) !== categorySlug) return {}
+
+    const flattened: Record<string, DynamicFilterCondition> = {}
+    for (const scope of ["supply", "product"] as const) {
+      const source = parsed[scope]
+      if (!source || typeof source !== "object" || Array.isArray(source)) continue
+      for (const [key, condition] of Object.entries(source)) {
+        if (!/^[a-z0-9_]{2,80}$/.test(key) || !isDynamicCondition(condition)) continue
+        flattened[`${scope}:${key}`] = condition
+      }
+    }
+    return flattened
+  } catch {
+    return {}
+  }
+}
+
+function serializeDynamicFilters(
+  categorySlug: string | null,
+  values: Record<string, DynamicFilterCondition>,
+) {
+  if (!categorySlug) return null
+
+  const supply: Record<string, DynamicFilterCondition> = {}
+  const product: Record<string, DynamicFilterCondition> = {}
+
+  for (const [id, condition] of Object.entries(values)) {
+    const separator = id.indexOf(":")
+    if (separator <= 0) continue
+    const scope = id.slice(0, separator)
+    const key = id.slice(separator + 1)
+    if (!/^[a-z0-9_]{2,80}$/.test(key)) continue
+    if (scope === "supply") supply[key] = condition
+    if (scope === "product") product[key] = condition
+  }
+
+  if (Object.keys(supply).length === 0 && Object.keys(product).length === 0) return null
+  return JSON.stringify({ category: categorySlug, supply, product })
 }
 
 function uiSortFromApi(value: string | null) {
@@ -279,28 +364,39 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   const searchParams = useSearchParams()
   const urlSearchString = searchParams.toString()
   const urlState = useUrlState()
+  const dynamicCategorySlug = useMemo(
+    () => selectedDynamicCategory(searchParams.get("categories")),
+    [urlSearchString, searchParams],
+  )
   const [mobileMode, setMobileMode] = useState<"map" | "list">("map")
   const [selectedAttraction, setSelectedAttraction] = useState<string | null>(null)
   const [remoteAttractions, setRemoteAttractions] = useState<Attraction[] | null>(null)
   const [remoteTotal, setRemoteTotal] = useState<number | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [filters, setFilters] = useState<FilterState>(() => ({
-    location: searchParams.get("q") || "",
-    checkIn: "",
-    checkOut: "",
-    guests: searchParams.get("guests") || "1",
-    priceRange: [
-      parseBoundedNumber(searchParams.get("min_price"), 0, 0, 500),
-      parseBoundedNumber(searchParams.get("max_price"), 500, 0, 500),
-    ],
-    ageRange: [
-      parseBoundedNumber(searchParams.get("age_min"), 0, 0, 18),
-      parseBoundedNumber(searchParams.get("age_max"), 18, 0, 18),
-    ],
-    attractionTypes: csvParam(searchParams.get("types")),
-    amenities: csvParam(searchParams.get("amenities")),
-    sortBy: uiSortFromApi(searchParams.get("sort")),
-  }))
+  const [dynamicDefinitions, setDynamicDefinitions] = useState<DynamicFilterDefinition[]>([])
+  const [dynamicCategoryName, setDynamicCategoryName] = useState<string | null>(null)
+  const [dynamicDefinitionsLoading, setDynamicDefinitionsLoading] = useState(false)
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const initialDynamicCategory = selectedDynamicCategory(searchParams.get("categories"))
+    return {
+      location: searchParams.get("q") || "",
+      checkIn: "",
+      checkOut: "",
+      guests: searchParams.get("guests") || "1",
+      priceRange: [
+        parseBoundedNumber(searchParams.get("min_price"), 0, 0, 500),
+        parseBoundedNumber(searchParams.get("max_price"), 500, 0, 500),
+      ],
+      ageRange: [
+        parseBoundedNumber(searchParams.get("age_min"), 0, 0, 18),
+        parseBoundedNumber(searchParams.get("age_max"), 18, 0, 18),
+      ],
+      attractionTypes: csvParam(searchParams.get("types")),
+      amenities: csvParam(searchParams.get("amenities")),
+      sortBy: uiSortFromApi(searchParams.get("sort")),
+      dynamicFilters: parseDynamicFilterState(searchParams.get("attrs"), initialDynamicCategory),
+    }
+  })
 
   const hasSearchCriteria = useMemo(
     () => SEARCH_KEYS.some((key) => Boolean(searchParams.get(key))),
@@ -324,8 +420,45 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       attractionTypes: csvParam(searchParams.get("types")),
       amenities: csvParam(searchParams.get("amenities")),
       sortBy: uiSortFromApi(searchParams.get("sort")),
+      dynamicFilters: parseDynamicFilterState(searchParams.get("attrs"), dynamicCategorySlug),
     })
-  }, [urlSearchString, searchParams])
+  }, [dynamicCategorySlug, urlSearchString, searchParams])
+
+  useEffect(() => {
+    if (!dynamicCategorySlug) {
+      setDynamicDefinitions([])
+      setDynamicCategoryName(null)
+      setDynamicDefinitionsLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    setDynamicDefinitionsLoading(true)
+    setDynamicDefinitions([])
+
+    void fetch(`/api/search/filter-definitions?category=${encodeURIComponent(dynamicCategorySlug)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Filter definitions failed: ${response.status}`)
+        return response.json() as Promise<DynamicFilterDefinitionsPayload>
+      })
+      .then((payload) => {
+        setDynamicCategoryName(payload.category?.name || dynamicCategorySlug)
+        setDynamicDefinitions(Array.isArray(payload.definitions) ? payload.definitions : [])
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return
+        console.error("[search] Failed to load category filters", error)
+        setDynamicDefinitions([])
+        setDynamicCategoryName(dynamicCategorySlug)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDynamicDefinitionsLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [dynamicCategorySlug])
 
   useEffect(() => {
     if (!hasSearchCriteria) {
@@ -381,6 +514,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       age_max: ageRange[1] < 18 ? ageRange[1] : null,
       types: next.attractionTypes.length ? next.attractionTypes.join(",") : null,
       amenities: next.amenities.length ? next.amenities.join(",") : null,
+      attrs: serializeDynamicFilters(dynamicCategorySlug, next.dynamicFilters),
       sort: apiSort !== "relevance" ? apiSort : null,
     })
   }
@@ -428,6 +562,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
           onFiltersChange={handleFiltersChange}
           onSearch={() => applyFilters(filters)}
           totalResults={totalResults}
+          dynamicCategoryName={dynamicCategoryName}
+          dynamicDefinitions={dynamicDefinitions}
+          dynamicDefinitionsLoading={dynamicDefinitionsLoading}
         />
       </div>
 
