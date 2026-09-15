@@ -23,7 +23,6 @@ interface Attraction {
   region?: string
   latitude?: number
   longitude?: number
-  price_per_night: number
   property_type: string
   category_slug?: string | null
   category_icon?: string | null
@@ -32,12 +31,17 @@ interface Attraction {
   subcategory_icon?: string | null
   subcategory_image_url?: string | null
   max_guests: number
-  bedrooms: number
-  bathrooms: number
   images?: string[]
   avgRating?: number
   reviewCount?: number
   amenities?: string[]
+  nextAvailableSlot?: {
+    date: string
+    startTime: string
+    availableCapacity?: number
+  } | null
+  priceFrom?: number | null
+  hasOnlineSales?: boolean
 }
 
 const heroCategories = [
