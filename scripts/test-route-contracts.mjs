@@ -42,6 +42,7 @@ const requiredRoutes = [
   "lib/ticketing/marketplace.ts",
   "supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql",
   "supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql",
+  "supabase/migrations/20260915003000_marketplace_search_v2.sql",
   "supabase/tests/database/007_ticketing_organizer_onboarding_smoke.sql",
 ]
 
@@ -112,9 +113,20 @@ assert.match(legacyOffer, /permanentRedirect\(`\/attractions\/\$\{offer\.place_i
 assert.doesNotMatch(legacyOffer, /BookingWidget|\/api\/bookings/)
 
 const marketplaceSearch = await source("app/api/search/route.ts")
-assert.match(marketplaceSearch, /listMarketplacePropertySessions/)
+assert.match(marketplaceSearch, /createAdminClient/)
+assert.match(marketplaceSearch, /marketplace_search_attractions_v2/)
 assert.match(marketplaceSearch, /Math\.min\(parsedPer, 50\)/)
-assert.doesNotMatch(marketplaceSearch, /getNextAvailableSlot|getAvailabilityForPropertyOnDate/)
+assert.doesNotMatch(marketplaceSearch, /listMarketplacePropertySessions/)
+assert.doesNotMatch(marketplaceSearch, /Promise\.all\(\s*items\.map/)
+assert.doesNotMatch(marketplaceSearch, /\.from\("properties"\)/)
+
+const marketplaceSearchMigration = await source("supabase/migrations/20260915003000_marketplace_search_v2.sql")
+assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v2/)
+assert.match(marketplaceSearchMigration, /security invoker/)
+assert.match(marketplaceSearchMigration, /grant execute[\s\S]*to service_role/)
+assert.match(marketplaceSearchMigration, /row_number\(\) over/)
+assert.match(marketplaceSearchMigration, /p_require_availability/)
+assert.match(marketplaceSearchMigration, /coalesce\(session\.price_from, property\.price_per_night\)/)
 
 const nextConfig = await source("next.config.mjs")
 assert.match(nextConfig, /source: '\/properties\/:id'/)
