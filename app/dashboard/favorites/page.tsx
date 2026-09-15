@@ -32,7 +32,6 @@ export default async function FavoritesPage() {
         title,
         city,
         country,
-        price_per_night,
         images,
         rating,
         property_type
@@ -71,10 +70,10 @@ export default async function FavoritesPage() {
               <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Brak ulubionych</h3>
               <p className="text-muted-foreground mb-6">
-                Zacznij przeglądać oferty i zapisuj swoje ulubione dla łatwego dostępu
+                Zacznij przeglądać atrakcje i zapisuj ulubione dla łatwego dostępu
               </p>
-              <Link href="/">
-                <Button>Przeglądaj oferty</Button>
+              <Link href="/attractions">
+                <Button>Przeglądaj atrakcje</Button>
               </Link>
             </CardContent>
           </Card>
@@ -110,11 +109,8 @@ export default async function FavoritesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold">{favorite.properties.price_per_night} zł</span>
-                      <span className="text-muted-foreground"> / noc</span>
-                    </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-primary">Sprawdź aktualną ofertę</span>
                     <Link href={`/attractions/${favorite.properties.id}`}>
                       <Button size="sm">Zobacz szczegóły</Button>
                     </Link>
