@@ -40,9 +40,11 @@ const requiredRoutes = [
   "components/ticketing/sales-setup-form.tsx",
   "lib/auth/return-to.ts",
   "lib/ticketing/marketplace.ts",
+  "lib/marketplace/discovery.ts",
   "supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql",
   "supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql",
   "supabase/migrations/20260915003000_marketplace_search_v2.sql",
+  "supabase/migrations/20260915094500_marketplace_search_v3.sql",
   "supabase/tests/database/007_ticketing_organizer_onboarding_smoke.sql",
 ]
 
@@ -114,19 +116,55 @@ assert.doesNotMatch(legacyOffer, /BookingWidget|\/api\/bookings/)
 
 const marketplaceSearch = await source("app/api/search/route.ts")
 assert.match(marketplaceSearch, /createAdminClient/)
-assert.match(marketplaceSearch, /marketplace_search_attractions_v2/)
+assert.match(marketplaceSearch, /marketplace_search_attractions_v3/)
+assert.match(marketplaceSearch, /p_guests: guests/)
+assert.match(marketplaceSearch, /p_min_price: minPrice/)
+assert.match(marketplaceSearch, /p_property_types:/)
+assert.match(marketplaceSearch, /p_amenities:/)
 assert.match(marketplaceSearch, /Math\.min\(parsedPer, 50\)/)
 assert.doesNotMatch(marketplaceSearch, /listMarketplacePropertySessions/)
 assert.doesNotMatch(marketplaceSearch, /Promise\.all\(\s*items\.map/)
 assert.doesNotMatch(marketplaceSearch, /\.from\("properties"\)/)
+assert.doesNotMatch(marketplaceSearch, /price_per_night/)
 
-const marketplaceSearchMigration = await source("supabase/migrations/20260915003000_marketplace_search_v2.sql")
-assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v2/)
+const marketplaceSearchMigration = await source("supabase/migrations/20260915094500_marketplace_search_v3.sql")
+assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v3/)
 assert.match(marketplaceSearchMigration, /security invoker/)
 assert.match(marketplaceSearchMigration, /grant execute[\s\S]*to service_role/)
+assert.match(marketplaceSearchMigration, /p_guests/)
+assert.match(marketplaceSearchMigration, /p_property_types/)
+assert.match(marketplaceSearchMigration, /p_amenities/)
+assert.match(marketplaceSearchMigration, /p_min_price/)
 assert.match(marketplaceSearchMigration, /row_number\(\) over/)
 assert.match(marketplaceSearchMigration, /p_require_availability/)
-assert.match(marketplaceSearchMigration, /coalesce\(session\.price_from, property\.price_per_night\)/)
+assert.match(marketplaceSearchMigration, /session\.price_from is not null/)
+assert.doesNotMatch(marketplaceSearchMigration, /price_per_night/)
+
+const discoveryLoader = await source("lib/marketplace/discovery.ts")
+assert.match(discoveryLoader, /marketplace_search_attractions_v3/)
+assert.match(discoveryLoader, /p_sort: "relevance"/)
+assert.doesNotMatch(discoveryLoader, /\.from\("properties"\)/)
+assert.doesNotMatch(discoveryLoader, /price_per_night/)
+
+for (const file of ["app/page.tsx", "app/attractions/page.tsx"]) {
+  const discoveryPage = await source(file)
+  assert.match(discoveryPage, /listMarketplaceDiscoveryAttractions/)
+  assert.doesNotMatch(discoveryPage, /\.from\("properties"\)/)
+  assert.doesNotMatch(discoveryPage, /price_per_night/)
+}
+
+const attractionsView = await source("components/attractions-view.tsx")
+assert.match(attractionsView, /\/api\/search\?\$\{params\.toString\(\)\}/)
+assert.match(attractionsView, /useUrlState/)
+assert.match(attractionsView, /min_price:/)
+assert.match(attractionsView, /types:/)
+assert.match(attractionsView, /amenities:/)
+assert.doesNotMatch(attractionsView, /onSearch=\{\(\) => undefined\}/)
+assert.doesNotMatch(attractionsView, /price_per_night/)
+
+const attractionMap = await source("components/attraction-map.tsx")
+assert.match(attractionMap, /Sprawdź ofertę/)
+assert.doesNotMatch(attractionMap, /price_per_night/)
 
 const nextConfig = await source("next.config.mjs")
 assert.match(nextConfig, /source: '\/properties\/:id'/)
