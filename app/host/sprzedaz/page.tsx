@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, ArrowRight, Banknote, Clock3, MonitorSmartphone, ReceiptText, RotateCcw, ScanLine, Settings2, TicketCheck, WalletCards } from "lucide-react"
+import { ArrowLeft, ArrowRight, Banknote, BarChart3, Clock3, MonitorSmartphone, ReceiptText, RotateCcw, ScanLine, Settings2, TicketCheck, WalletCards } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -111,6 +111,9 @@ export default async function HostTicketingSalesPage() {
           {canManageSales && (
             <div className="flex flex-wrap justify-center gap-2">
               <Button asChild variant="outline">
+                <Link href="/host/analityka"><BarChart3 className="h-4 w-4" /> Analityka</Link>
+              </Button>
+              <Button asChild variant="outline">
                 <Link href="/host/sprzedaz/zasady-anulowania"><RotateCcw className="h-4 w-4" /> Zasady anulowania</Link>
               </Button>
               <Button asChild>
@@ -193,6 +196,9 @@ export default async function HostTicketingSalesPage() {
             <p className="mt-2 text-muted-foreground">Od płatności po wejście gościa — każde zamówienie ma pełną historię biletu.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/host/analityka"><BarChart3 className="h-4 w-4" /> Analityka</Link>
+            </Button>
             {canManageFinances && isStripeConnectEnabled && (
               <Button asChild variant="outline">
                 <Link href="/host/rozliczenia"><WalletCards className="h-4 w-4" /> Rozliczenia</Link>
@@ -232,9 +238,7 @@ export default async function HostTicketingSalesPage() {
           <CardHeader><CardTitle>Ostatnie zamówienia</CardTitle></CardHeader>
           <CardContent>
             {orders.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                Zamówienia pojawią się tutaj po pierwszym checkoutcie.
-              </div>
+              <div className="py-12 text-center text-muted-foreground">Zamówienia pojawią się tutaj po pierwszym checkoutcie.</div>
             ) : (
               <div className="divide-y">
                 {orders.map((order) => {
@@ -247,25 +251,13 @@ export default async function HostTicketingSalesPage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium">{firstItem?.product_name ?? order.venues.name}</p>
                         <p className="truncate text-sm text-muted-foreground">{order.customer_name} · {order.customer_email}</p>
-                        {firstItem && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {formatSessionDate(firstItem.sessions.starts_at, order.venues.timezone)}
-                          </p>
-                        )}
+                        {firstItem && <p className="mt-1 text-xs text-muted-foreground">{formatSessionDate(firstItem.sessions.starts_at, order.venues.timezone)}</p>}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {orderTickets.length > 0 ? `${usedCount}/${orderTickets.length} użytych` : "Brak biletów"}
-                      </div>
-                      <StatusBadge
-                        status={order.status}
-                        paymentStatus={order.payment_status}
-                        requiresReview={order.payment_attempts.some((attempt) => attempt.status === "requires_review")}
-                      />
+                      <div className="text-xs text-muted-foreground">{orderTickets.length > 0 ? `${usedCount}/${orderTickets.length} użytych` : "Brak biletów"}</div>
+                      <StatusBadge status={order.status} paymentStatus={order.payment_status} requiresReview={order.payment_attempts.some((attempt) => attempt.status === "requires_review")} />
                       <div className="flex items-center justify-between gap-3 lg:justify-end">
                         <span className="font-semibold">{formatMoney(Number(order.total_amount), order.currency)}</span>
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/host/sprzedaz/zamowienie/${order.id}`}>Szczegóły <ArrowRight className="h-4 w-4" /></Link>
-                        </Button>
+                        <Button asChild variant="ghost" size="sm"><Link href={`/host/sprzedaz/zamowienie/${order.id}`}>Szczegóły <ArrowRight className="h-4 w-4" /></Link></Button>
                       </div>
                     </div>
                   )
@@ -280,15 +272,7 @@ export default async function HostTicketingSalesPage() {
 }
 
 function MetricCard({ icon: Icon, label, value }: { icon: typeof Banknote; label: string; value: string }) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{label}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent><div className="text-2xl font-bold">{value}</div></CardContent>
-    </Card>
-  )
+  return <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">{label}</CardTitle><Icon className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{value}</div></CardContent></Card>
 }
 
 function StatusBadge({ status, paymentStatus, requiresReview }: { status: string; paymentStatus: string; requiresReview: boolean }) {
@@ -301,11 +285,5 @@ function StatusBadge({ status, paymentStatus, requiresReview }: { status: string
 }
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <Card className="max-w-xl">
-        <CardContent className="p-8 text-center text-muted-foreground">{children}</CardContent>
-      </Card>
-    </main>
-  )
+  return <main className="flex min-h-screen items-center justify-center px-4"><Card className="max-w-xl"><CardContent className="p-8 text-center text-muted-foreground">{children}</CardContent></Card></main>
 }

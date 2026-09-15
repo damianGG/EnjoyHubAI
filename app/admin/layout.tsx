@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Building2, ClipboardList, FolderTree, ListTree, Search, Shield, ShieldCheck, Users } from "lucide-react"
+import { BarChart3, Building2, ClipboardList, FolderTree, ListTree, Search, Shield, ShieldCheck, Users } from "lucide-react"
 
 import { clearSupportContextAction } from "@/app/admin/actions"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             EnjoyHub Admin
           </Link>
           <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
+            <AdminNav href="/admin/analityka" icon={BarChart3}>Analityka</AdminNav>
             <AdminNav href="/admin/organizacje" icon={Building2}>Organizacje</AdminNav>
             {canSupply && <AdminNav href="/admin/supply" icon={Search}>Supply</AdminNav>}
             {canSupport && <AdminNav href="/admin/uzytkownicy" icon={Users}>Użytkownicy</AdminNav>}

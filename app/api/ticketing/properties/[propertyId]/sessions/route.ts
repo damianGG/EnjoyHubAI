@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
 
+import {
+  applyAnalyticsCookies,
+  readAnalyticsRequestContext,
+  recordAnalyticsEvent,
+} from "@/lib/analytics/server"
 import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
 import { listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
 
@@ -56,7 +61,24 @@ export async function GET(
     parsedStart.data,
     parsedEnd.data,
   )
+  const analyticsContext = readAnalyticsRequestContext(request)
+  await recordAnalyticsEvent({
+    eventName: "availability_viewed",
+    anonymousId: analyticsContext.anonymousId,
+    analyticsSessionId: analyticsContext.analyticsSessionId,
+    searchId: analyticsContext.searchId,
+    attractionId: parsedParams.data.propertyId,
+    source: analyticsContext.source,
+    medium: analyticsContext.medium,
+    campaign: analyticsContext.campaign,
+    referrer: request.headers.get("referer"),
+    path: requestUrl.pathname,
+    properties: { availableSessionCount: sessions.length },
+    dedupeKey: `availability_viewed:${parsedParams.data.propertyId}:${analyticsContext.analyticsSessionId || analyticsContext.anonymousId}`,
+  })
+
   const response = NextResponse.json({ sessions })
+  applyAnalyticsCookies(response, analyticsContext)
   response.headers.set("Cache-Control", "private, no-store")
   return response
 }
