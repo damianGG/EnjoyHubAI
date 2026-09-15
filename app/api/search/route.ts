@@ -37,9 +37,23 @@ type SearchPayload = {
   total?: number
 }
 
+type DynamicCondition = {
+  eq?: string | boolean | number
+  min?: number
+  max?: number
+}
+
+type DynamicFilterPayload = {
+  category?: string
+  supply?: Record<string, DynamicCondition>
+  product?: Record<string, DynamicCondition>
+}
+
 const MAX_VALID_AGE = 150
 const NOW_WINDOW_HOURS = 4
 const MAX_DISCOVERY_RANGE_DAYS = 31
+const MAX_DYNAMIC_FILTERS_PER_SCOPE = 40
+const MAX_DYNAMIC_FILTER_PAYLOAD_LENGTH = 8_000
 const ALLOWED_SORTS = new Set(["relevance", "price_asc", "price_desc", "newest", "rating", "reviews"])
 
 function isValidIsoDate(value: string) {
@@ -95,6 +109,57 @@ function normalizeSlug(value: string) {
   return value.trim().toLowerCase().replaceAll("_", "-")
 }
 
+function sanitizeDynamicScope(value: unknown): Record<string, DynamicCondition> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+
+  const result: Record<string, DynamicCondition> = {}
+  for (const [key, rawCondition] of Object.entries(value).slice(0, MAX_DYNAMIC_FILTERS_PER_SCOPE)) {
+    if (!/^[a-z0-9_]{2,80}$/.test(key)) continue
+    if (!rawCondition || typeof rawCondition !== "object" || Array.isArray(rawCondition)) continue
+
+    const condition = rawCondition as Record<string, unknown>
+    const next: DynamicCondition = {}
+
+    if (typeof condition.eq === "boolean") next.eq = condition.eq
+    if (typeof condition.eq === "string" && condition.eq.length <= 160) next.eq = condition.eq
+    if (typeof condition.eq === "number" && Number.isFinite(condition.eq)) next.eq = condition.eq
+
+    if (typeof condition.min === "number" && Number.isFinite(condition.min)) {
+      next.min = Math.max(-1_000_000_000, Math.min(1_000_000_000, condition.min))
+    }
+    if (typeof condition.max === "number" && Number.isFinite(condition.max)) {
+      next.max = Math.max(-1_000_000_000, Math.min(1_000_000_000, condition.max))
+    }
+
+    if (next.min !== undefined && next.max !== undefined && next.min > next.max) {
+      ;[next.min, next.max] = [next.max, next.min]
+    }
+
+    if (next.eq !== undefined || next.min !== undefined || next.max !== undefined) result[key] = next
+  }
+
+  return result
+}
+
+function parseDynamicFilters(value: string | null, categorySlugs: string[]) {
+  if (!value || value.length > MAX_DYNAMIC_FILTER_PAYLOAD_LENGTH || categorySlugs.length !== 1) {
+    return { supply: {}, product: {} }
+  }
+
+  try {
+    const parsed = JSON.parse(value) as DynamicFilterPayload
+    if (!parsed || typeof parsed !== "object") return { supply: {}, product: {} }
+    if (normalizeSlug(String(parsed.category || "")) !== categorySlugs[0]) return { supply: {}, product: {} }
+
+    return {
+      supply: sanitizeDynamicScope(parsed.supply),
+      product: sanitizeDynamicScope(parsed.product),
+    }
+  } catch {
+    return { supply: {}, product: {} }
+  }
+}
+
 function parseBoundingBox(value: string) {
   if (!value) return null
   const coordinates = value.split(",").map((part) => Number.parseFloat(part))
@@ -129,6 +194,7 @@ export async function GET(request: Request) {
     const typeSlugs = parseCsv(searchParams.get("types")).map(normalizeSlug)
     const amenities = parseCsv(searchParams.get("amenities"))
     const guests = parsePositiveInteger(searchParams.get("guests"), 1_000)
+    const dynamicFilters = parseDynamicFilters(searchParams.get("attrs"), categorySlugs)
 
     const requestedSort = searchParams.get("sort") || "relevance"
     const sort = ALLOWED_SORTS.has(requestedSort) ? requestedSort : "relevance"
@@ -190,7 +256,7 @@ export async function GET(request: Request) {
       : null
 
     const supabase = createAdminClient()
-    const { data, error } = await supabase.rpc("marketplace_search_attractions_v4", {
+    const { data, error } = await supabase.rpc("marketplace_search_attractions_v5", {
       p_query: safeQuery || null,
       p_category_slugs: categorySlugs.length > 0 ? categorySlugs : null,
       p_type_slugs: typeSlugs.length > 0 ? typeSlugs : null,
@@ -208,6 +274,8 @@ export async function GET(request: Request) {
       p_require_availability: hasAvailabilityWindow || wantsNow,
       p_min_price: minPrice,
       p_max_price: maxPrice,
+      p_supply_filters: dynamicFilters.supply,
+      p_product_filters: dynamicFilters.product,
       p_sort: sort,
       p_limit: per,
       p_offset: (page - 1) * per,
