@@ -12,9 +12,18 @@ const MARKETPLACE_SEARCH_KEYS = new Set([
   "categories",
   "q",
   "date",
+  "date_from",
+  "date_to",
+  "when",
   "guests",
   "age_min",
   "age_max",
+  "min_price",
+  "max_price",
+  "types",
+  "amenities",
+  "attrs",
+  "sort",
 ])
 
 export function useUrlState() {
@@ -26,8 +35,7 @@ export function useUrlState() {
   const get = useCallback(
     (key: string): string | null => {
       return searchParams.get(key)
-    },
-    [searchParams]
+    }, [searchParams]
   )
 
   const setMany = useCallback(

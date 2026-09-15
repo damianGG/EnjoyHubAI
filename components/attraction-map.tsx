@@ -22,7 +22,6 @@ interface Attraction {
   country: string
   latitude?: number
   longitude?: number
-  price_per_night: number
   property_type: string
   category_slug?: string | null
   category_icon?: string | null
@@ -31,8 +30,6 @@ interface Attraction {
   subcategory_icon?: string | null
   subcategory_image_url?: string | null
   max_guests: number
-  bedrooms: number
-  bathrooms: number
   images?: string[]
   avgRating?: number
   reviewCount?: number
@@ -345,7 +342,9 @@ export default function AttractionMap({
   }
 
   const popupCapacity = capacityText(popupAttraction?.nextAvailableSlot?.availableCapacity)
-  const popupPrice = popupAttraction ? popupAttraction.priceFrom ?? popupAttraction.price_per_night : 0
+  const popupPrice = typeof popupAttraction?.priceFrom === "number" && Number.isFinite(popupAttraction.priceFrom)
+    ? popupAttraction.priceFrom
+    : null
 
   return (
     <>
@@ -442,9 +441,15 @@ export default function AttractionMap({
 
                 <div className="mt-3 flex items-end justify-between gap-3 border-t border-[#0b1220]/[0.05] pt-3">
                   <div>
-                    <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</div>
-                    <span className="text-lg font-extrabold">{Math.round(popupPrice)} zł</span>
-                    <span className="text-[11px] text-muted-foreground"> / os.</span>
+                    {popupPrice !== null ? (
+                      <>
+                        <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">od</div>
+                        <span className="text-lg font-extrabold">{Math.round(popupPrice)} zł</span>
+                        <span className="text-[11px] text-muted-foreground"> / os.</span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-primary">Sprawdź ofertę</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {popupAttraction.max_guests > 0 && (
@@ -477,7 +482,11 @@ export default function AttractionMap({
                       <CalendarDays className="h-3.5 w-3.5" /> {formatSlot(popupAttraction.nextAvailableSlot)}
                     </div>
                   )}
-                  <p className="mt-3 text-base font-extrabold">od {Math.round(popupPrice)} zł</p>
+                  {popupPrice !== null ? (
+                    <p className="mt-3 text-base font-extrabold">od {Math.round(popupPrice)} zł</p>
+                  ) : (
+                    <p className="mt-3 text-xs font-bold text-primary">Sprawdź ofertę</p>
+                  )}
                 </div>
               </Link>
             </div>
