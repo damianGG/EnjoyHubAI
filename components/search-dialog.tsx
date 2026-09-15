@@ -4,13 +4,14 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { ArrowLeft, CalendarDays, MapPin, Minus, Plus, Search, Sparkles, Users } from "lucide-react"
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { BrandLogo } from "@/components/brand-logo"
+import { CityAutocomplete } from "@/components/city-autocomplete"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { BrandLogo } from "@/components/brand-logo"
-import { useUrlState } from "@/lib/search/url-state"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
+import { useUrlState } from "@/lib/search/url-state"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
@@ -204,15 +205,13 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><MapPin className="h-3.5 w-3.5" /></span>
                 <h3 className="text-sm font-extrabold tracking-[-0.02em]">Gdzie?</h3>
               </div>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-                <Input
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  placeholder="Miasto, okolica lub nazwa atrakcji"
-                  className="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
-                />
-              </div>
+              <CityAutocomplete
+                value={location}
+                onValueChange={setLocation}
+                placeholder="Miasto lub miejscowość, np. Rzeszów"
+                inputClassName="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white text-sm shadow-sm focus-visible:ring-primary/25"
+              />
+              <p className="text-xs text-muted-foreground">Podpowiadamy miasta i miejscowości z geokodowania, także zanim pojawi się tam pierwsza atrakcja EnjoyHub.</p>
             </section>
 
             <section className="grid gap-3 sm:grid-cols-2">
