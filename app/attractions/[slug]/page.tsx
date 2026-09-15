@@ -25,7 +25,7 @@ import { TopNav } from "@/components/top-nav"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { getMarketplaceTicketingVenue } from "@/lib/ticketing/marketplace"
+import { getMarketplaceTicketingVenue, listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
 
 export const revalidate = 120
@@ -33,6 +33,10 @@ export const revalidate = 120
 interface AttractionPageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ zainteresowanie?: string; blad_zainteresowania?: string }>
+}
+
+function isoDate(date: Date) {
+  return date.toISOString().slice(0, 10)
 }
 
 export default async function AttractionPage({ params, searchParams }: AttractionPageProps) {
@@ -47,8 +51,11 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   const supabase = createClient()
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const id = extractIdFromSlug(slug)
+  const today = new Date()
+  const sessionRangeEnd = new Date(today)
+  sessionRangeEnd.setUTCDate(sessionRangeEnd.getUTCDate() + 90)
 
-  const [attractionResult, ticketingVenue, claimResult] = await Promise.all([
+  const [attractionResult, ticketingVenue, marketplaceSessions, claimResult] = await Promise.all([
     supabase
       .from("properties")
       .select(`
@@ -68,6 +75,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
       .eq("is_active", true)
       .single(),
     getMarketplaceTicketingVenue(id),
+    listMarketplacePropertySessions(id, isoDate(today), isoDate(sessionRangeEnd)),
     supabase.rpc("profile_claim_get", { p_attraction_id: id }),
   ])
 
@@ -89,6 +97,11 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     : 0
   const roundedRating = Math.round(avgRating * 10) / 10
   const locationLabel = [attraction.address, attraction.city].filter(Boolean).join(", ")
+  const livePrices = marketplaceSessions
+    .map((session) => session.priceFrom)
+    .filter((price) => Number.isFinite(price) && price >= 0)
+  const priceFrom = livePrices.length > 0 ? Math.min(...livePrices) : null
+  const nextSession = marketplaceSessions[0] ?? null
 
   const mapAttraction = {
     id: attraction.id,
@@ -97,14 +110,19 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     country: attraction.country,
     latitude: attraction.latitude,
     longitude: attraction.longitude,
-    price_per_night: attraction.price_per_night,
+    priceFrom,
     property_type: attraction.property_type,
     max_guests: attraction.max_guests,
-    bedrooms: attraction.bedrooms,
-    bathrooms: attraction.bathrooms,
     images: attraction.images,
     avgRating: roundedRating,
     reviewCount: ratings.length,
+    nextAvailableSlot: nextSession
+      ? {
+          date: nextSession.localDate,
+          startTime: nextSession.localStartTime,
+          availableCapacity: nextSession.availableCapacity,
+        }
+      : null,
   }
 
   return (
@@ -236,7 +254,10 @@ export default async function AttractionPage({ params, searchParams }: Attractio
       {ticketingVenue && (
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-white/95 p-3 shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
-            <div><p className="text-xs text-muted-foreground">Cena od</p><p className="text-lg font-bold">{Math.round(attraction.price_per_night)} zł</p></div>
+            <div>
+              <p className="text-xs text-muted-foreground">{priceFrom !== null ? "Cena od" : "Cena"}</p>
+              <p className="text-lg font-bold">{priceFrom !== null ? `${Math.round(priceFrom)} zł` : "Sprawdź termin"}</p>
+            </div>
             <Button asChild className="h-12 flex-1 rounded-xl bg-[#ff5a1f] text-base font-semibold text-white hover:bg-[#e94f18]"><a href="#booking">Sprawdź terminy</a></Button>
           </div>
         </div>
