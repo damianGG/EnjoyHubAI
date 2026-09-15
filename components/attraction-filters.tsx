@@ -30,32 +30,6 @@ interface AttractionFiltersProps {
   totalResults: number
 }
 
-const ATTRACTION_TYPES = [
-  "gaming_center",
-  "escape_room",
-  "bowling",
-  "cinema",
-  "restaurant",
-  "playground",
-  "sports_center",
-  "art_studio",
-  "music_venue",
-  "adventure_park",
-]
-
-const TYPE_LABELS: Record<string, string> = {
-  gaming_center: "Centrum rozrywki",
-  escape_room: "Escape room",
-  bowling: "Kręgle",
-  cinema: "Kino",
-  restaurant: "Gastronomia",
-  playground: "Plac zabaw",
-  sports_center: "Sport",
-  art_studio: "Warsztaty",
-  music_venue: "Muzyka",
-  adventure_park: "Park przygody",
-}
-
 const AMENITIES = [
   "Parking",
   "WiFi",
@@ -103,15 +77,6 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
     onFiltersChange({ ...filters, [key]: value })
   }
 
-  const toggleAttractionType = (type: string) => {
-    updateFilter(
-      "attractionTypes",
-      filters.attractionTypes.includes(type)
-        ? filters.attractionTypes.filter((item) => item !== type)
-        : [...filters.attractionTypes, type],
-    )
-  }
-
   const toggleAmenity = (amenity: string) => {
     updateFilter(
       "amenities",
@@ -139,7 +104,6 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
     filters.guests !== "1",
     filters.priceRange[0] > 0 || filters.priceRange[1] < 500,
     Boolean(filters.ageRange && (filters.ageRange[0] > 0 || filters.ageRange[1] < 18)),
-    filters.attractionTypes.length > 0,
     filters.amenities.length > 0,
   ].filter(Boolean).length
 
@@ -221,19 +185,10 @@ export default function AttractionFilters({ filters, onFiltersChange, onSearch, 
               </div>
 
               <div className="space-y-3">
-                <Label>Typ atrakcji</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {ATTRACTION_TYPES.map((type) => (
-                    <label key={type} className="flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm hover:bg-muted/50">
-                      <Checkbox checked={filters.attractionTypes.includes(type)} onCheckedChange={() => toggleAttractionType(type)} />
-                      <span>{TYPE_LABELS[type] ?? type}</span>
-                    </label>
-                  ))}
+                <div>
+                  <Label>Udogodnienia</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">Rodzaj atrakcji wybierasz z głównych kategorii nad wynikami.</p>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Udogodnienia</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {AMENITIES.map((amenity) => (
                     <label key={amenity} className="flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm hover:bg-muted/50">
