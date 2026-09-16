@@ -11,6 +11,10 @@ type MonitoringContext = {
 function normalizeError(error: unknown) {
   if (error instanceof Error) return error
   if (typeof error === "string") return new Error(error)
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === "string" && message.trim()) return new Error(message)
+  }
   return new Error("Unknown server error")
 }
 
