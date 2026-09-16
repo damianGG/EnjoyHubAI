@@ -2,15 +2,20 @@ import "server-only"
 
 import { cache } from "react"
 
-import type { PublicAttractionSeoRecord } from "@/lib/seo/attraction"
+import {
+  getAttractionCanonicalUrl,
+  type PublicAttractionSeoRecord,
+} from "@/lib/seo/attraction"
 import {
   findSeoCatalogCity,
   getSeoLanding,
+  getSeoLandingCatalog,
   getSeoLandingPath,
   isSeoCategoryIndexable,
   isSeoCityIndexable,
   type SeoLandingAttraction,
 } from "@/lib/seo/landings"
+import { getPublicSiteUrl } from "@/lib/site-url"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { slugify } from "@/lib/utils"
 
@@ -111,14 +116,13 @@ export const getAttractionInternalLinking = cache(async (
 ): Promise<SeoAttractionInternalLinking> => {
   if (!isSupabaseAdminConfigured || !attraction.id || !attraction.city) return EMPTY_LINKING
 
-  const [taxonomy, catalogModule] = await Promise.all([
+  const [taxonomy, catalog] = await Promise.all([
     getPropertyTaxonomy(attraction.id),
-    import("@/lib/seo/landings"),
+    getSeoLandingCatalog(),
   ])
 
   if (!taxonomy || taxonomy.seoExcluded) return EMPTY_LINKING
 
-  const catalog = await catalogModule.getSeoLandingCatalog()
   const catalogCity = findSeoCatalogCity(catalog, attraction.city)
   if (!catalogCity || !isSeoCityIndexable(catalogCity)) {
     return {
@@ -193,3 +197,35 @@ export const getAttractionInternalLinking = cache(async (
     relatedSections,
   }
 })
+
+export function applyAttractionInternalBreadcrumbs(
+  jsonLd: unknown,
+  attraction: Pick<PublicAttractionSeoRecord, "id" | "title" | "city" | "property_type">,
+  linking: SeoAttractionInternalLinking,
+) {
+  if (!jsonLd || typeof jsonLd !== "object") return jsonLd
+
+  const graph = (jsonLd as { "@graph"?: Array<Record<string, unknown>> })["@graph"]
+  if (!Array.isArray(graph)) return jsonLd
+
+  const breadcrumb = graph.find((node) => node["@type"] === "BreadcrumbList")
+  if (!breadcrumb) return jsonLd
+
+  const siteUrl = getPublicSiteUrl()
+  const canonicalUrl = getAttractionCanonicalUrl(attraction)
+  const trail = [
+    { name: "EnjoyHub", url: siteUrl },
+    { name: "Atrakcje", url: `${siteUrl}/attractions` },
+    ...linking.breadcrumbs.map((item) => ({ name: item.name, url: `${siteUrl}${item.path}` })),
+    { name: attraction.title, url: canonicalUrl },
+  ]
+
+  breadcrumb.itemListElement = trail.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: item.url,
+  }))
+
+  return jsonLd
+}
