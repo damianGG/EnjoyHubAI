@@ -1,6 +1,12 @@
 import type { MetadataRoute } from "next"
 import { createClient } from "@supabase/supabase-js"
 
+import {
+  getSeoLandingCatalog,
+  getSeoLandingPath,
+  isSeoCategoryIndexable,
+  isSeoCityIndexable,
+} from "@/lib/seo/landings"
 import { getPublicSiteUrl } from "@/lib/site-url"
 import { generateAttractionSlug } from "@/lib/utils"
 
@@ -77,7 +83,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    const attractions = await listAllPublicAttractions()
+    const [attractions, catalog] = await Promise.all([
+      listAllPublicAttractions(),
+      getSeoLandingCatalog(),
+    ])
+
     const attractionRoutes: MetadataRoute.Sitemap = attractions
       .filter((attraction) => attraction.id && attraction.title && attraction.city)
       .map((attraction) => {
@@ -96,9 +106,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       })
 
-    return [...staticRoutes, ...attractionRoutes]
+    const localLandingRoutes: MetadataRoute.Sitemap = catalog.flatMap((city) => {
+      if (!isSeoCityIndexable(city)) return []
+
+      const cityRoute: MetadataRoute.Sitemap[number] = {
+        url: `${siteUrl}${getSeoLandingPath(city.slug)}`,
+        changeFrequency: "daily",
+        priority: 0.85,
+      }
+
+      const categoryRoutes: MetadataRoute.Sitemap = city.categories
+        .filter(isSeoCategoryIndexable)
+        .map((category) => ({
+          url: `${siteUrl}${getSeoLandingPath(city.slug, category.slug)}`,
+          changeFrequency: "daily" as const,
+          priority: 0.82,
+        }))
+
+      return [cityRoute, ...categoryRoutes]
+    })
+
+    return [...staticRoutes, ...localLandingRoutes, ...attractionRoutes]
   } catch (error) {
-    console.error("[seo:sitemap] Failed to load public attractions", error)
+    console.error("[seo:sitemap] Failed to load public SEO routes", error)
     return staticRoutes
   }
 }
