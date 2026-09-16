@@ -2,12 +2,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AttractionsView from "@/components/attractions-view"
 import { DiscoveryChrome } from "@/components/discovery-chrome"
-import { listMarketplaceDiscoveryAttractions } from "@/lib/marketplace/discovery"
+import { listMarketplaceDiscoveryAttractions, type MarketplaceDiscoveryAttraction } from "@/lib/marketplace/discovery"
 
 export const revalidate = 60
 
 export default async function AttractionsPage() {
-  let data = []
+  let data: MarketplaceDiscoveryAttraction[] = []
   let errorMessage: string | null = null
 
   try {
