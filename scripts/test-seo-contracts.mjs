@@ -22,9 +22,15 @@ for (const file of [
   "app/attractions/[slug]/page.tsx",
   "app/atrakcje/[city]/page.tsx",
   "app/atrakcje/[city]/[category]/page.tsx",
+  "app/admin/seo/page.tsx",
+  "app/admin/seo/actions.ts",
   "components/seo/marketplace-landing.tsx",
   "lib/seo/attraction.ts",
   "lib/seo/landings.ts",
+  "lib/seo/indexnow.ts",
+  "lib/seo/quality.ts",
+  "lib/seo/site-entity.ts",
+  "public/db13ebf9007a99a14b35f8d474700d02.txt",
   "supabase/migrations/20260916155824_programmatic_local_seo.sql",
   "supabase/migrations/20260916160949_programmatic_local_seo_quality_gate.sql",
 ]) {
@@ -42,6 +48,7 @@ assert.match(robots, /"\/checkout"/)
 const sitemap = await source("app/sitemap.ts")
 assert.match(sitemap, /PAGE_SIZE = 1000/)
 assert.match(sitemap, /\.eq\("is_active", true\)/)
+assert.match(sitemap, /\.eq\("seo_excluded", false\)/)
 assert.match(sitemap, /updated_at/)
 assert.match(sitemap, /generateAttractionSlug/)
 assert.match(sitemap, /for \(let from = 0; ; from \+= PAGE_SIZE\)/)
@@ -127,8 +134,55 @@ assert.match(qualityMigration, /seo_eligible_count/)
 assert.match(qualityMigration, /security invoker/i)
 assert.match(qualityMigration, /grant execute on function public\.marketplace_seo_catalog_v1\(\) to service_role/i)
 
+const siteEntity = await source("lib/seo/site-entity.ts")
+assert.match(siteEntity, /"@type": "Organization"/)
+assert.match(siteEntity, /"@type": "WebSite"/)
+assert.match(siteEntity, /EnjoyHub\.app/)
+assert.match(siteEntity, /enjoyhub-icon\.svg/)
+const homepage = await source("app/page.tsx")
+assert.match(homepage, /buildSiteEntityJsonLd/)
+assert.match(homepage, /application\/ld\+json/)
+
+const indexNow = await source("lib/seo/indexnow.ts")
+assert.match(indexNow, /https:\/\/api\.indexnow\.org\/indexnow/)
+assert.match(indexNow, /MAX_BATCH_SIZE = 10_000/)
+assert.match(indexNow, /keyLocation/)
+assert.match(indexNow, /submitIndexNowUrls/)
+assert.match(indexNow, /submitIndexNowForAttractionId/)
+assert.match(indexNow, /submitIndexNowSeoSnapshot/)
+assert.match(indexNow, /\.eq\("seo_excluded", false\)/)
+const indexNowKey = (await source("public/db13ebf9007a99a14b35f8d474700d02.txt")).trim()
+assert.equal(indexNowKey, "db13ebf9007a99a14b35f8d474700d02")
+assert.match(indexNow, new RegExp(indexNowKey))
+
+const quality = await source("lib/seo/quality.ts")
+for (const requirement of ["title", "description", "address", "category", "image", "gps"]) {
+  assert.match(quality, new RegExp(`"${requirement}"`))
+}
+assert.match(quality, /getSeoQualityDashboard/)
+assert.match(quality, /seoExcluded/)
+assert.match(quality, /SEO_LOCAL_THRESHOLDS/)
+
+const adminSeo = await source("app/admin/seo/page.tsx")
+assert.match(adminSeo, /Kontrola jakości SEO/)
+assert.match(adminSeo, /IndexNow/)
+assert.match(adminSeo, /setSeoExcludedAction/)
+assert.match(adminSeo, /submitSeoSnapshotToIndexNowAction/)
+const adminSeoActions = await source("app/admin/seo/actions.ts")
+assert.match(adminSeoActions, /seo_excluded/)
+assert.match(adminSeoActions, /submitIndexNowForAttractionId/)
+assert.match(adminSeoActions, /submitIndexNowSeoSnapshot/)
+
+const supplyActions = await source("app/admin/supply/actions.ts")
+assert.match(supplyActions, /submitIndexNowForAttractionId/)
+const onboardingComplete = await source("app/host/onboarding/gotowe/page.tsx")
+assert.match(onboardingComplete, /submitIndexNowForAttractionId/)
+
 const middleware = await source("middleware.ts")
 assert.match(middleware, /X-Robots-Tag/)
 assert.match(middleware, /noindex, nofollow, noarchive/)
+assert.match(middleware, /seo_excluded/)
+assert.match(middleware, /noindex, follow, noarchive/)
+assert.match(middleware, /CRAWLER_USER_AGENT/)
 
 console.log("SEO contracts: OK")
