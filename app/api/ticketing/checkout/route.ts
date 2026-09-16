@@ -11,6 +11,7 @@ import {
   CANCELLATION_POLICY_VERSION,
   MARKETPLACE_TERMS_VERSION,
 } from "@/lib/legal/marketplace"
+import { reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -26,6 +27,8 @@ import {
 } from "@/lib/ticketing/security"
 
 export const runtime = "nodejs"
+
+const route = "/api/ticketing/checkout"
 
 const checkoutSchema = z.object({
   checkoutKey: z.string().uuid(),
@@ -106,6 +109,8 @@ function checkoutErrorResponse(message: string) {
 }
 
 export async function POST(request: Request) {
+  const requestId = request.headers.get("x-vercel-id")
+
   if (!isTicketingCheckoutEnabled) {
     return NextResponse.json({ error: "Checkout jest wyłączony." }, { status: 404 })
   }
@@ -207,7 +212,18 @@ export async function POST(request: Request) {
     })
 
     if (error || !data?.[0]) {
-      return checkoutErrorResponse(error?.message ?? "Unknown checkout error")
+      const message = error?.message ?? "Unknown checkout error"
+      const response = checkoutErrorResponse(message)
+      if (response.status >= 500) {
+        reportServerError(error ?? new Error(message), {
+          area: "checkout",
+          operation: "create_order_hold",
+          route,
+          requestId,
+          extras: { sessionId: input.sessionId },
+        })
+      }
+      return response
     }
 
     const order = data[0] as {
@@ -234,10 +250,15 @@ export async function POST(request: Request) {
     )
 
     if (legalAcceptanceError) {
-      console.error("Ticketing legal acceptance persistence failed", {
-        orderId: order.created_order_id,
-        code: legalAcceptanceError.code,
-        message: legalAcceptanceError.message,
+      reportServerError(legalAcceptanceError, {
+        area: "checkout",
+        operation: "persist_legal_acceptance",
+        route,
+        requestId,
+        extras: {
+          orderId: order.created_order_id,
+          errorCode: legalAcceptanceError.code,
+        },
       })
       return NextResponse.json(
         { error: "Nie udało się bezpiecznie zapisać zaakceptowanych warunków. Spróbuj ponownie." },
@@ -249,7 +270,7 @@ export async function POST(request: Request) {
       ...analyticsContext,
       userId: user?.id ?? null,
       referrer: request.headers.get("referer"),
-      path: "/api/ticketing/checkout",
+      path: route,
     })
 
     const response = NextResponse.json({
@@ -274,7 +295,13 @@ export async function POST(request: Request) {
 
     return response
   } catch (error) {
-    console.error("Ticketing checkout error", error)
+    reportServerError(error, {
+      area: "checkout",
+      operation: "checkout_request",
+      route,
+      requestId,
+      extras: { sessionId: input.sessionId },
+    })
     return NextResponse.json(
       { error: "Checkout nie jest jeszcze poprawnie skonfigurowany." },
       { status: 503 },

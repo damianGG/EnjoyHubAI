@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs/config"
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -43,21 +45,26 @@ const nextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
-    // Enable image formats for better performance
     formats: ['image/avif', 'image/webp'],
-    // Set device sizes for responsive images
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    // Set image sizes for responsive images
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  // Optimize runtime chunks for better caching
   experimental: {
     optimizePackageImports: ['leaflet', 'lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-select'],
   },
-  // Add compression
   compress: true,
-  // Enable React strict mode for better development experience
   reactStrictMode: true,
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  widenClientFileUpload: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+})

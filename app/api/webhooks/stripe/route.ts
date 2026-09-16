@@ -7,6 +7,7 @@ import { z } from "zod"
 import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
 import { syncMarketplaceRefundFromStripe } from "@/lib/marketplace/refunds"
 import { recordMarketplaceSettlement } from "@/lib/marketplace/settlements"
+import { reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import {
   getStripeClient,
@@ -19,8 +20,11 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 const uuidSchema = z.string().uuid()
+const route = "/api/webhooks/stripe"
 
 export async function POST(request: Request) {
+  const requestId = request.headers.get("x-vercel-id")
+
   if (!isSupabaseAdminConfigured || !isStripeConfigured || !isStripeWebhookConfigured) {
     return NextResponse.json({ error: "Webhook is not configured" }, { status: 503 })
   }
@@ -40,8 +44,7 @@ export async function POST(request: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!,
     )
-  } catch (error) {
-    console.warn("Rejected Stripe webhook signature", error)
+  } catch {
     return NextResponse.json({ error: "Invalid Stripe signature" }, { status: 400 })
   }
 
@@ -66,10 +69,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, handled: false })
     }
   } catch (error) {
-    console.error("Stripe webhook processing error", {
-      eventId: event.id,
-      eventType: event.type,
-      error,
+    reportServerError(error, {
+      area: "payments",
+      operation: "stripe_webhook_processing",
+      route,
+      requestId,
+      extras: {
+        stripeEventId: event.id,
+        stripeEventType: event.type,
+        stripeLivemode: event.livemode,
+      },
     })
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
   }
@@ -127,10 +136,17 @@ async function handleSuccessfulCheckout(
     result.current_payment_status === "paid"
 
   if (!fulfilled) {
-    console.error("Paid Stripe Checkout requires manual inventory review", {
-      eventId: event.id,
-      checkoutSessionId: session.id,
-      paymentAttemptId: attemptId,
+    reportServerError(new Error("Paid Stripe Checkout requires manual inventory review"), {
+      area: "payments",
+      operation: "paid_checkout_not_fulfilled",
+      route,
+      extras: {
+        stripeEventId: event.id,
+        checkoutSessionId: session.id,
+        paymentAttemptId: attemptId,
+        orderStatus: result.current_order_status,
+        paymentStatus: result.current_payment_status,
+      },
     })
   }
 
@@ -169,18 +185,25 @@ async function handleSuccessfulCheckout(
   if (fulfilled && !result.event_was_duplicate && orderId) {
     const emailResult = await sendOrderConfirmationEmail(orderId)
     if (!emailResult.queued) {
-      console.error("Paid order confirmation email could not be queued", {
-        orderId,
-        reason: emailResult.reason,
-        error: emailResult.error,
+      reportServerError(new Error(emailResult.error ?? "Paid order confirmation email could not be queued"), {
+        area: "email",
+        operation: "paid_order_confirmation_queue",
+        route,
+        extras: {
+          orderId,
+          reason: emailResult.reason ?? null,
+        },
       })
     } else if (!emailResult.sent) {
-      console.warn("Paid order confirmation email queued for retry", {
+      console.warn(JSON.stringify({
+        level: "warning",
+        message: "Paid order confirmation email queued for retry",
+        area: "email",
+        operation: "paid_order_confirmation_retry",
         orderId,
-        outboxId: emailResult.outboxId,
-        status: emailResult.status,
-        error: emailResult.error,
-      })
+        outboxId: emailResult.outboxId ?? null,
+        status: emailResult.status ?? null,
+      }))
     }
   }
 
