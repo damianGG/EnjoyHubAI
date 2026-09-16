@@ -273,13 +273,13 @@ const organizerLanding = await source("app/dla-organizatorow/page.tsx")
 assert.match(organizerLanding, /href="\/host\/start"/)
 assert.match(organizerLanding, /Mam własny system/)
 
-for (const navigation of [
-  await source("components/top-nav.tsx"),
-  await source("components/bottom-nav.tsx"),
-]) {
+const topNavigation = await source("components/top-nav.tsx")
+const bottomNavigation = await source("components/bottom-nav.tsx")
+for (const navigation of [topNavigation, bottomNavigation]) {
   assert.match(navigation, /href="\/dla-organizatorow"/)
-  assert.match(navigation, /Zostań gospodarzem/)
 }
+assert.match(topNavigation, /Zostań gospodarzem/)
+assert.match(bottomNavigation, /Dodaj miejsce/)
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
