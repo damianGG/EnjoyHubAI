@@ -21,27 +21,50 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
       - name: Lint
+        id: lint
+        continue-on-error: true
         run: npm run lint
 
       - name: Typecheck
+        id: typecheck
+        continue-on-error: true
         run: npm run typecheck
 
       - name: Contract tests
+        id: contracts
+        continue-on-error: true
         run: npm run test:contracts
 
       - name: Production build
+        id: build
+        continue-on-error: true
         run: npm run build
         env:
           CI: true
+
+      - name: Enforce quality gate
+        if: always()
+        env:
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          CONTRACTS_OUTCOME: ${{ steps.contracts.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          printf 'lint=%s\ntypecheck=%s\ncontracts=%s\nbuild=%s\n' \
+            "$LINT_OUTCOME" "$TYPECHECK_OUTCOME" "$CONTRACTS_OUTCOME" "$BUILD_OUTCOME"
+          test "$LINT_OUTCOME" = success
+          test "$TYPECHECK_OUTCOME" = success
+          test "$CONTRACTS_OUTCOME" = success
+          test "$BUILD_OUTCOME" = success
