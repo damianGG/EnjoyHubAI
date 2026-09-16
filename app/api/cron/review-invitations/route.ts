@@ -36,55 +36,64 @@ export async function GET(request: Request) {
   }
 
   const invitations = (data ?? []) as ReviewInvitationDelivery[]
+  let queued = 0
   let sent = 0
   let failed = 0
 
   for (const invitation of invitations) {
     const result = await sendReviewInvitationEmail({
+      invitationId: invitation.invitation_id,
       token: invitation.invitation_token,
       recipientEmail: invitation.recipient_email,
       recipientName: invitation.recipient_name,
+      propertyId: invitation.property_id,
       propertyTitle: invitation.property_title,
     })
 
-    if (!result.sent) {
-      failed += 1
-      console.error("Review invitation email failed", {
-        invitationId: invitation.invitation_id,
-        reason: result.reason,
-        error: result.error,
-      })
+    if (result.sent) {
+      sent += 1
+      const { error: updateError } = await supabase
+        .from("review_invitations")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          provider_message_id: result.providerMessageId ?? result.id ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", invitation.invitation_id)
+        .neq("status", "expired")
+
+      if (updateError) {
+        failed += 1
+        console.error("Review invitation delivery state repair failed", {
+          invitationId: invitation.invitation_id,
+          message: updateError.message,
+        })
+      }
       continue
     }
 
-    const { error: updateError } = await supabase
-      .from("review_invitations")
-      .update({
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        provider_message_id: result.id ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", invitation.invitation_id)
-      .eq("status", "pending")
-
-    if (updateError) {
-      failed += 1
-      console.error("Review invitation delivery state update failed", {
-        invitationId: invitation.invitation_id,
-        message: updateError.message,
-      })
+    if (result.queued && result.status !== "failed") {
+      queued += 1
       continue
     }
 
-    sent += 1
+    failed += 1
+    console.error("Review invitation could not be queued", {
+      invitationId: invitation.invitation_id,
+      outboxId: result.outboxId,
+      status: result.status,
+      reason: result.reason,
+      error: result.error,
+    })
   }
 
   return NextResponse.json({
     ok: failed === 0,
     prepared: invitations.length,
+    queued,
     sent,
     failed,
     finishedAt: new Date().toISOString(),
-  }, { status: failed > 0 && sent === 0 ? 503 : 200 })
+  }, { status: failed > 0 && queued === 0 && sent === 0 ? 503 : 200 })
 }
