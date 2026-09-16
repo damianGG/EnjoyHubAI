@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { submitIndexNowForAttractionId } from "@/lib/seo/indexnow"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { isTicketingCheckoutEnabled, isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
 
@@ -53,6 +54,9 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
   const readiness = readinessData as OrganizationReadiness | null
   const organizerPaymentsReady = readiness?.verification_status === "verified" && readiness.payments_enabled === true
   const publicSalesReady = isTicketingCheckoutEnabled && isTicketingPaymentsEnabled && organizerPaymentsReady
+
+  // Best-effort discovery notification after a successfully created organizer attraction.
+  await submitIndexNowForAttractionId(attraction.id)
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-emerald-50 via-background to-background px-4 py-10 sm:py-16">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { requirePlatformStaff } from "@/lib/platform-admin/access"
+import { submitIndexNowForAttractionId } from "@/lib/seo/indexnow"
 
 const supplyRoles = ["platform_superadmin", "platform_support", "platform_content"] as const
 const claimReviewRoles = ["platform_superadmin", "platform_support"] as const
@@ -99,10 +100,17 @@ export async function publishSupplyLeadAction(leadId: string, _formData: FormDat
     redirect(`/admin/supply/${leadId}?blad=publish`)
   }
 
+  const published = data as { attractionId?: string }
   revalidatePath("/admin/supply")
   revalidatePath(`/admin/supply/${leadId}`)
   revalidatePath(`/admin/supply/${leadId}/podglad`)
   revalidatePath("/attractions")
+  revalidatePath("/sitemap.xml")
+
+  if (published.attractionId) {
+    await submitIndexNowForAttractionId(published.attractionId)
+  }
+
   redirect(`/admin/supply/${leadId}?opublikowano=1`)
 }
 
