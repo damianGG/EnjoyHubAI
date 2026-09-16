@@ -18,7 +18,7 @@ export interface QueueTransactionalEmailInput extends TransactionalEmail {
 }
 
 export interface EmailQueueResult extends EmailSendResult {
-  queued: boolean
+  queued?: boolean
   outboxId?: string
   status?: "pending" | "processing" | "sent" | "failed"
   providerMessageId?: string
