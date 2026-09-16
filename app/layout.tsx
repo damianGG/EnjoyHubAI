@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AnalyticsPageTracker } from '@/components/analytics/page-tracker'
+import { getPublicSiteUrl } from '@/lib/site-url'
 import './globals.css'
 
 // const geist = Geist({ 
@@ -17,12 +18,41 @@ import './globals.css'
 //   fallback: ['monospace']
 // })
 
+const siteUrl = getPublicSiteUrl()
+const defaultTitle = 'EnjoyHub – atrakcje i bilety'
+const defaultDescription = 'Znajdź atrakcje, sprawdź dostępne terminy i zarezerwuj miejsce online.'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: 'EnjoyHub',
   title: {
-    default: 'EnjoyHub – atrakcje i bilety',
+    default: defaultTitle,
     template: '%s | EnjoyHub',
   },
-  description: 'Znajdź atrakcje, sprawdź dostępne terminy i zarezerwuj miejsce online.',
+  description: defaultDescription,
+  openGraph: {
+    type: 'website',
+    locale: 'pl_PL',
+    siteName: 'EnjoyHub',
+    title: defaultTitle,
+    description: defaultDescription,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: defaultTitle,
+    description: defaultDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   icons: {
     icon: '/enjoyhub-icon.svg',
     shortcut: '/enjoyhub-icon.svg',
