@@ -21,6 +21,7 @@ import AttractionMap from "@/components/attraction-map"
 import { BottomNav } from "@/components/bottom-nav"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
+import { RelatedAttractions } from "@/components/seo/related-attractions"
 import { MarketplaceCalendar } from "@/components/ticketing/marketplace-calendar"
 import { TopNav } from "@/components/top-nav"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +37,10 @@ import {
   getPublicAttractionSeoRecord,
   serializeJsonLd,
 } from "@/lib/seo/attraction"
+import {
+  applyAttractionInternalBreadcrumbs,
+  getAttractionInternalLinking,
+} from "@/lib/seo/internal-linking"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { getMarketplaceTicketingVenue, listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
@@ -133,7 +138,10 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   if (`/attractions/${slug}` !== canonicalPath) permanentRedirect(canonicalPath)
 
   const supabase = createClient()
-  const { data: claimData } = await supabase.rpc("profile_claim_get", { p_attraction_id: id })
+  const [{ data: claimData }, seoLinking] = await Promise.all([
+    supabase.rpc("profile_claim_get", { p_attraction_id: id }),
+    getAttractionInternalLinking(attraction),
+  ])
   const claimContext = claimData as { claimable?: boolean } | null
   const venueContact = attraction.venueContact
   const { ratingValue: roundedRating, reviewCount } = getAttractionAverageRating(attraction)
@@ -147,12 +155,16 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   const bookingTarget = ticketingVenue
     ? `${canonicalUrl}#booking`
     : venueContact?.external_booking_url || null
-  const jsonLd = buildAttractionJsonLd({
+  const jsonLd = applyAttractionInternalBreadcrumbs(
+    buildAttractionJsonLd({
+      attraction,
+      priceFrom,
+      hasAvailability: marketplaceSessions.length > 0,
+      bookingUrl: bookingTarget,
+    }),
     attraction,
-    priceFrom,
-    hasAvailability: marketplaceSessions.length > 0,
-    bookingUrl: bookingTarget,
-  })
+    seoLinking,
+  )
 
   const mapAttraction = {
     id: attraction.id,
@@ -176,6 +188,10 @@ export default async function AttractionPage({ params, searchParams }: Attractio
       : null,
   }
 
+  const categoryLabel = seoLinking.category?.name
+    || seoLinking.categoryLabel
+    || String(attraction.property_type || "atrakcja").replaceAll("_", " ")
+
   return (
     <div className="min-h-screen bg-background pb-36 md:pb-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
@@ -197,6 +213,18 @@ export default async function AttractionPage({ params, searchParams }: Attractio
             <Link href="/" className="shrink-0 hover:text-foreground">EnjoyHub</Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <Link href="/attractions" className="shrink-0 hover:text-foreground">Atrakcje</Link>
+            {seoLinking.city ? (
+              <>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <Link href={seoLinking.city.path} className="shrink-0 hover:text-foreground">{seoLinking.city.name}</Link>
+              </>
+            ) : null}
+            {seoLinking.category ? (
+              <>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <Link href={seoLinking.category.path} className="shrink-0 hover:text-foreground">{seoLinking.category.name}</Link>
+              </>
+            ) : null}
             <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate text-foreground" aria-current="page">{attraction.title}</span>
           </nav>
@@ -225,7 +253,13 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="rounded-full px-3 py-1.5">{String(attraction.property_type || "atrakcja").replaceAll("_", " ")}</Badge>
+                  {seoLinking.category ? (
+                    <Link href={seoLinking.category.path} aria-label={`${seoLinking.category.name} w ${seoLinking.city?.name || attraction.city}`}>
+                      <Badge variant="secondary" className="rounded-full px-3 py-1.5 transition hover:bg-secondary/70">{categoryLabel}</Badge>
+                    </Link>
+                  ) : (
+                    <Badge variant="secondary" className="rounded-full px-3 py-1.5">{categoryLabel}</Badge>
+                  )}
                   {(attraction.max_guests || 0) > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
                   {ticketingVenue && <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800"><Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online</Badge>}
                 </div>
@@ -306,6 +340,8 @@ export default async function AttractionPage({ params, searchParams }: Attractio
               )}
             </div>
           </div>
+
+          <RelatedAttractions sections={seoLinking.relatedSections} />
         </div>
       </div>
 
