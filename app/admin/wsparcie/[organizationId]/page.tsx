@@ -11,8 +11,9 @@ import { formatMoney } from "@/lib/ticketing/format"
 
 export const dynamic = "force-dynamic"
 
-export default async function SupportModePage({ params }: { params: { organizationId: string } }) {
-  const next = `/admin/wsparcie/${params.organizationId}`
+export default async function SupportModePage({ params }: { params: Promise<{ organizationId: string }> }) {
+  const { organizationId } = await params
+  const next = `/admin/wsparcie/${organizationId}`
   const { supabase, user } = await requirePlatformStaff(["platform_superadmin", "platform_support"], next)
   const { data: context } = await supabase
     .from("platform_support_context")
@@ -20,9 +21,9 @@ export default async function SupportModePage({ params }: { params: { organizati
     .eq("user_id", user.id)
     .maybeSingle()
 
-  if (context?.organization_id !== params.organizationId) redirect(`/admin/organizacje/${params.organizationId}`)
+  if (context?.organization_id !== organizationId) redirect(`/admin/organizacje/${organizationId}`)
 
-  const { data, error } = await supabase.rpc("platform_admin_get_organization", { p_organization_id: params.organizationId })
+  const { data, error } = await supabase.rpc("platform_admin_get_organization", { p_organization_id: organizationId })
   if (error || !data) notFound()
 
   const payload = data as any
