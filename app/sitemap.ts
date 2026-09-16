@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next"
-import { createClient } from "@supabase/supabase-js"
 
 import {
   getSeoLandingCatalog,
@@ -8,6 +7,7 @@ import {
   isSeoCityIndexable,
 } from "@/lib/seo/landings"
 import { getPublicSiteUrl } from "@/lib/site-url"
+import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { generateAttractionSlug } from "@/lib/utils"
 
 export const revalidate = 900
@@ -21,34 +21,22 @@ type SitemapAttraction = {
   property_type: string | null
   updated_at: string | null
   seo_excluded: boolean | null
-}
-
-function createPublicSeoClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-
-  if (!url || !anonKey) return null
-
-  return createClient(url, anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
+  is_test_data: boolean | null
 }
 
 async function listAllPublicAttractions(): Promise<SitemapAttraction[]> {
-  const supabase = createPublicSeoClient()
-  if (!supabase) return []
+  if (!isSupabaseAdminConfigured) return []
 
+  const supabase = createAdminClient()
   const attractions: SitemapAttraction[] = []
 
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,city,property_type,updated_at,seo_excluded")
+      .select("id,title,city,property_type,updated_at,seo_excluded,is_test_data")
       .eq("is_active", true)
       .eq("seo_excluded", false)
+      .eq("is_test_data", false)
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
