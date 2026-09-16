@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 
-import { isTransactionalEmailConfigured } from "@/lib/email/client"
 import { sendDemandAvailabilityEmail } from "@/lib/email/demand-availability"
 import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
@@ -51,16 +50,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Supabase is not configured" }, { status: 503 })
   }
 
-  // Do not tell a customer that booking is available until the complete paid
-  // checkout path is intentionally enabled in this environment.
   if (!isTicketingPaymentsEnabled) {
-    return NextResponse.json({ ok: true, skipped: "payments_disabled", prepared: 0, sent: 0 })
-  }
-
-  // Check this before claiming queue work so missing mail credentials do not
-  // churn delivery attempts or leases.
-  if (!isTransactionalEmailConfigured()) {
-    return NextResponse.json({ error: "Transactional email is not configured" }, { status: 503 })
+    return NextResponse.json({ ok: true, skipped: "payments_disabled", prepared: 0, queued: 0, sent: 0 })
   }
 
   const supabase = createAdminClient()
@@ -98,6 +89,7 @@ export async function GET(request: Request) {
     }
   }
 
+  let queued = 0
   let sent = 0
   let failed = 0
   let deferred = 0
@@ -121,6 +113,8 @@ export async function GET(request: Request) {
     }
 
     const result = await sendDemandAvailabilityEmail({
+      notificationId: delivery.notification_id,
+      demandRequestId: delivery.demand_request_id,
       recipientEmail: delivery.recipient_email,
       attractionId: delivery.attraction_id,
       attractionTitle: delivery.attraction_title,
@@ -128,42 +122,62 @@ export async function GET(request: Request) {
       partySize: Number(delivery.party_size),
     })
 
-    const { error: completionError } = await supabase.rpc("marketplace_complete_demand_notification", {
-      p_notification_id: delivery.notification_id,
-      p_success: result.sent,
-      p_provider_message_id: result.id ?? null,
-      p_error: result.sent ? null : result.error ?? result.reason ?? "Unknown e-mail delivery error",
-    })
-
-    if (completionError) {
-      failed += 1
-      console.error("Demand notification state update failed", {
-        notificationId: delivery.notification_id,
-        sentByProvider: result.sent,
-        message: completionError.message,
+    if (result.sent) {
+      const { error: completionError } = await supabase.rpc("marketplace_complete_demand_notification", {
+        p_notification_id: delivery.notification_id,
+        p_success: true,
+        p_provider_message_id: result.providerMessageId ?? result.id ?? null,
+        p_error: null,
       })
+      if (completionError) {
+        failed += 1
+        console.error("Demand notification sent-state repair failed", {
+          notificationId: delivery.notification_id,
+          message: completionError.message,
+        })
+      } else {
+        sent += 1
+      }
       continue
     }
 
-    if (result.sent) {
-      sent += 1
-    } else {
-      failed += 1
-      console.error("Demand availability email failed", {
+    if (result.queued && result.status !== "failed") {
+      queued += 1
+      continue
+    }
+
+    const { error: completionError } = await supabase.rpc("marketplace_complete_demand_notification", {
+      p_notification_id: delivery.notification_id,
+      p_success: false,
+      p_provider_message_id: null,
+      p_error: result.error ?? result.reason ?? "Could not queue demand notification email",
+    })
+
+    if (completionError) {
+      console.error("Demand notification failure-state update failed", {
         notificationId: delivery.notification_id,
-        demandRequestId: delivery.demand_request_id,
-        reason: result.reason,
-        error: result.error,
+        message: completionError.message,
       })
     }
+
+    failed += 1
+    console.error("Demand availability email could not be queued", {
+      notificationId: delivery.notification_id,
+      demandRequestId: delivery.demand_request_id,
+      outboxId: result.outboxId,
+      status: result.status,
+      reason: result.reason,
+      error: result.error,
+    })
   }
 
   return NextResponse.json({
     ok: failed === 0,
     prepared: deliveries.length,
+    queued,
     sent,
     deferred,
     failed,
     finishedAt: new Date().toISOString(),
-  }, { status: failed > 0 && sent === 0 ? 503 : 200 })
+  }, { status: failed > 0 && queued === 0 && sent === 0 ? 503 : 200 })
 }
