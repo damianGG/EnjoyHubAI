@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 
 import { HomeDiscovery } from "@/components/home-discovery"
-import { listMarketplaceDiscoveryAttractions } from "@/lib/marketplace/discovery"
+import { listMarketplaceDiscoveryAttractions, type MarketplaceDiscoveryAttraction } from "@/lib/marketplace/discovery"
+import { buildSiteEntityJsonLd, serializeSiteEntityJsonLd } from "@/lib/seo/site-entity"
 
 export const revalidate = 60
 
@@ -19,11 +20,23 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
+  const siteEntityJsonLd = buildSiteEntityJsonLd()
+  let attractions: MarketplaceDiscoveryAttraction[] = []
+
   try {
-    const { items } = await listMarketplaceDiscoveryAttractions(50)
-    return <HomeDiscovery attractions={items} />
+    const result = await listMarketplaceDiscoveryAttractions(50)
+    attractions = result.items
   } catch (error) {
     console.error("[home] Failed to load marketplace discovery", error)
-    return <HomeDiscovery attractions={[]} />
   }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeSiteEntityJsonLd(siteEntityJsonLd) }}
+      />
+      <HomeDiscovery attractions={attractions} />
+    </>
+  )
 }
