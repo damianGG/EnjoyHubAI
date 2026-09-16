@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
     return createPassThroughResponse(request, requestId)
   }
 
-  let supabaseResponse = createPassThroughResponse(request, requestId)
+  const supabaseResponse = createPassThroughResponse(request, requestId)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
