@@ -25,6 +25,7 @@ export function MarketplaceSeoLanding({
   const title = landing.category
     ? `${landing.category.name}: ${landing.location.name}`
     : `Atrakcje: ${landing.location.name}`
+  const indexableCategories = catalogCity.categories.filter(isSeoCategoryIndexable)
 
   return (
     <div className="min-h-screen bg-[#fffdf9] pb-24 md:pb-10">
@@ -98,23 +99,22 @@ export function MarketplaceSeoLanding({
           </div>
         </section>
 
-        {!landing.category && catalogCity.categories.length > 0 ? (
+        {!landing.category && indexableCategories.length > 0 ? (
           <section className="py-8">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black tracking-[-0.03em] text-[#0b1220]">Kategorie w {landing.location.name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Strony rozwijają się automatycznie wraz z ofertą w mieście.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Pokazujemy tylko kategorie z wystarczającą liczbą kompletnych profili.</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {catalogCity.categories.map((category) => (
+              {indexableCategories.map((category) => (
                 <Link
                   key={category.slug}
                   href={getSeoLandingPath(catalogCity.slug, category.slug)}
                   className="rounded-full border bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                 >
                   {category.name} <span className="ml-1 text-muted-foreground">({category.activeCount})</span>
-                  {isSeoCategoryIndexable(category) ? <span className="sr-only"> – strona indeksowalna</span> : null}
                 </Link>
               ))}
             </div>
