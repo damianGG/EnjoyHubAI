@@ -167,6 +167,16 @@ function truncateAtWord(value: string, maxLength: number) {
   return `${candidate.slice(0, lastSpace > maxLength * 0.65 ? lastSpace : maxLength).trim()}…`
 }
 
+function publicHttpUrl(value?: string | null) {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 export function getAttractionMetaDescription(attraction: Pick<PublicAttractionSeoRecord, "title" | "city" | "description">) {
   const prefix = `${attraction.title}${attraction.city ? ` w ${attraction.city}` : ""}. `
   const description = compactText(attraction.description)
@@ -177,6 +187,13 @@ export function getAttractionMetaDescription(attraction: Pick<PublicAttractionSe
     `${prefix}Sprawdź informacje, lokalizację, opinie, dostępne terminy i możliwość rezerwacji online w EnjoyHub.`,
     160,
   )
+}
+
+export function getAttractionSocialImages(attraction: Pick<PublicAttractionSeoRecord, "images">) {
+  return (attraction.images ?? [])
+    .map((image) => publicHttpUrl(image))
+    .filter((image): image is string => Boolean(image))
+    .slice(0, 4)
 }
 
 function validCoordinate(value: unknown, min: number, max: number) {
@@ -195,11 +212,14 @@ export function buildAttractionJsonLd({
   attraction,
   priceFrom,
   hasAvailability,
+  bookingUrl,
 }: {
   attraction: PublicAttractionSeoRecord
   priceFrom: number | null
   hasAvailability: boolean
+  bookingUrl?: string | null
 }) {
+  const siteUrl = getPublicSiteUrl()
   const canonicalUrl = getAttractionCanonicalUrl(attraction)
   const description = getAttractionMetaDescription(attraction)
   const { ratingValue, reviewCount } = getAttractionAverageRating(attraction)
@@ -207,8 +227,10 @@ export function buildAttractionJsonLd({
   const longitude = validCoordinate(attraction.longitude, -180, 180)
   const phone = attraction.venueContact?.contact_phone || attraction.users?.phone || undefined
   const email = attraction.venueContact?.contact_email || attraction.users?.email || undefined
-  const operatorWebsite = attraction.venueContact?.website_url || undefined
+  const operatorWebsite = publicHttpUrl(attraction.venueContact?.website_url)
+  const safeBookingUrl = publicHttpUrl(bookingUrl)
   const reviews = visibleReviews(attraction)
+  const images = getAttractionSocialImages(attraction)
 
   const place: Record<string, unknown> = {
     "@type": ["TouristAttraction", "LocalBusiness"],
@@ -216,7 +238,8 @@ export function buildAttractionJsonLd({
     name: attraction.title,
     description,
     url: canonicalUrl,
-    image: (attraction.images ?? []).filter(Boolean),
+    identifier: attraction.id,
+    ...(images.length > 0 ? { image: images } : {}),
     address: {
       "@type": "PostalAddress",
       ...(attraction.address ? { streetAddress: attraction.address } : {}),
@@ -268,23 +291,26 @@ export function buildAttractionJsonLd({
   if (priceFrom !== null && Number.isFinite(priceFrom) && priceFrom >= 0) {
     place.makesOffer = {
       "@type": "Offer",
-      url: `${canonicalUrl}#booking`,
+      url: safeBookingUrl || `${canonicalUrl}#booking`,
       priceCurrency: "PLN",
       price: Math.round(priceFrom * 100) / 100,
       availability: hasAvailability ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     }
   }
 
-  place.potentialAction = {
-    "@type": "ReserveAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${canonicalUrl}#booking`,
-    },
-    result: {
-      "@type": "Reservation",
-      name: `Rezerwacja: ${attraction.title}`,
-    },
+  const reservationTarget = safeBookingUrl || (priceFrom !== null ? `${canonicalUrl}#booking` : null)
+  if (reservationTarget) {
+    place.potentialAction = {
+      "@type": "ReserveAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: reservationTarget,
+      },
+      result: {
+        "@type": "Reservation",
+        name: `Rezerwacja: ${attraction.title}`,
+      },
+    }
   }
 
   return {
@@ -309,13 +335,13 @@ export function buildAttractionJsonLd({
             "@type": "ListItem",
             position: 1,
             name: "EnjoyHub",
-            item: getPublicSiteUrl(),
+            item: siteUrl,
           },
           {
             "@type": "ListItem",
             position: 2,
             name: "Atrakcje",
-            item: `${getPublicSiteUrl()}/attractions`,
+            item: `${siteUrl}/attractions`,
           },
           {
             "@type": "ListItem",
@@ -327,4 +353,8 @@ export function buildAttractionJsonLd({
       },
     ],
   }
+}
+
+export function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c")
 }
