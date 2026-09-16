@@ -57,18 +57,20 @@ export function CategoryBar({
         return
       }
 
+      const typedCategories = categoriesData as Category[]
       const { data: subcategoriesData, error: subcategoriesError } = await s
         .from("subcategories")
         .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
         .order("name")
 
       if (!subcategoriesError && subcategoriesData) {
-        setCategories(categoriesData.map((cat) => ({
+        const typedSubcategories = subcategoriesData as NonNullable<Category["subcategories"]>
+        setCategories(typedCategories.map((cat) => ({
           ...cat,
-          subcategories: subcategoriesData.filter((sub) => sub.parent_category_id === cat.id),
+          subcategories: typedSubcategories.filter((sub) => sub.parent_category_id === cat.id),
         })))
       } else {
-        setCategories(categoriesData)
+        setCategories(typedCategories)
       }
 
       setLoading(false)
