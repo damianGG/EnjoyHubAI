@@ -16,7 +16,8 @@ const roles: PlatformStaffRole[] = [
   "platform_finance",
 ]
 
-export default async function PlatformStaffPage({ searchParams }: { searchParams?: { ok?: string; blad?: string } }) {
+export default async function PlatformStaffPage({ searchParams }: { searchParams?: Promise<{ ok?: string; blad?: string }> }) {
+  const query = searchParams ? await searchParams : {}
   const { supabase, user } = await requirePlatformStaff(["platform_superadmin"], "/admin/administratorzy")
   const { data, error } = await supabase.rpc("platform_admin_list_staff")
   const staff = (data ?? []) as any[]
@@ -31,8 +32,8 @@ export default async function PlatformStaffPage({ searchParams }: { searchParams
         </p>
       </div>
 
-      {searchParams?.ok && <p className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">Uprawnienia administratora zostały zapisane.</p>}
-      {searchParams?.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się zapisać zmiany. Nie można odebrać sobie jedynego dostępu super administratora, a wskazane konto musi istnieć.</p>}
+      {query.ok && <p className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">Uprawnienia administratora zostały zapisane.</p>}
+      {query.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się zapisać zmiany. Nie można odebrać sobie jedynego dostępu super administratora, a wskazane konto musi istnieć.</p>}
       {error && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się pobrać listy administratorów.</p>}
 
       <Card className="mb-8">
