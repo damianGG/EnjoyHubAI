@@ -1,9 +1,10 @@
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
+import type { Metadata } from "next"
 import Link from "next/link"
+import { notFound, permanentRedirect } from "next/navigation"
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronRight,
   Heart,
   MapPin,
   Share2,
@@ -25,6 +26,17 @@ import { TopNav } from "@/components/top-nav"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  buildAttractionJsonLd,
+  getAttractionAverageRating,
+  getAttractionCanonicalPath,
+  getAttractionCanonicalUrl,
+  getAttractionMetaDescription,
+  getAttractionSocialImages,
+  getPublicAttractionSeoRecord,
+  serializeJsonLd,
+} from "@/lib/seo/attraction"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { getMarketplaceTicketingVenue, listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
 
@@ -39,6 +51,61 @@ function isoDate(date: Date) {
   return date.toISOString().slice(0, 10)
 }
 
+export async function generateMetadata({ params }: Pick<AttractionPageProps, "params">): Promise<Metadata> {
+  const { slug } = await params
+  const attraction = await getPublicAttractionSeoRecord(extractIdFromSlug(slug))
+
+  if (!attraction) {
+    return {
+      title: "Atrakcja",
+      description: "Ta atrakcja nie jest obecnie dostępna w publicznym katalogu EnjoyHub.",
+      robots: { index: false, follow: false },
+    }
+  }
+
+  const canonicalUrl = getAttractionCanonicalUrl(attraction)
+  const description = getAttractionMetaDescription(attraction)
+  const pageTitle = `${attraction.title}${attraction.city ? ` – ${attraction.city}` : ""}`
+  const socialImages = getAttractionSocialImages(attraction)
+
+  return {
+    title: pageTitle,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      type: "website",
+      locale: "pl_PL",
+      siteName: "EnjoyHub",
+      url: canonicalUrl,
+      title: pageTitle,
+      description,
+      images: socialImages.map((url) => ({
+        url,
+        alt: `${attraction.title}${attraction.city ? ` – ${attraction.city}` : ""}`,
+      })),
+    },
+    twitter: {
+      card: socialImages.length > 0 ? "summary_large_image" : "summary",
+      title: pageTitle,
+      description,
+      ...(socialImages.length > 0 ? { images: [socialImages[0]] } : {}),
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+  }
+}
+
 export default async function AttractionPage({ params, searchParams }: AttractionPageProps) {
   if (!isSupabaseConfigured) {
     return (
@@ -48,74 +115,58 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     )
   }
 
-  const supabase = createClient()
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const id = extractIdFromSlug(slug)
   const today = new Date()
   const sessionRangeEnd = new Date(today)
   sessionRangeEnd.setUTCDate(sessionRangeEnd.getUTCDate() + 90)
 
-  const [attractionResult, ticketingVenue, marketplaceSessions, claimResult] = await Promise.all([
-    supabase
-      .from("properties")
-      .select(`
-        *,
-        users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
-        reviews (
-          id,
-          rating,
-          comment,
-          created_at,
-          author_name,
-          verified_visit,
-          users!reviews_guest_id_fkey (full_name)
-        )
-      `)
-      .eq("id", id)
-      .eq("is_active", true)
-      .single(),
+  const [attraction, ticketingVenue, marketplaceSessions] = await Promise.all([
+    getPublicAttractionSeoRecord(id),
     getMarketplaceTicketingVenue(id),
     listMarketplacePropertySessions(id, isoDate(today), isoDate(sessionRangeEnd)),
-    supabase.rpc("profile_claim_get", { p_attraction_id: id }),
   ])
 
-  const attraction = attractionResult.data
   if (!attraction) notFound()
 
-  const { data: venueContact } = attraction.venue_id
-    ? await supabase
-        .from("venues")
-        .select("contact_phone,contact_email,website_url,external_booking_url")
-        .eq("id", attraction.venue_id)
-        .maybeSingle()
-    : { data: null }
+  const canonicalPath = getAttractionCanonicalPath(attraction)
+  if (`/attractions/${slug}` !== canonicalPath) permanentRedirect(canonicalPath)
 
-  const claimContext = claimResult.data as { claimable?: boolean } | null
-  const ratings = attraction.reviews?.map((review: any) => review.rating) || []
-  const avgRating = ratings.length > 0
-    ? ratings.reduce((sum: number, rating: number) => sum + rating, 0) / ratings.length
-    : 0
-  const roundedRating = Math.round(avgRating * 10) / 10
+  const supabase = createClient()
+  const { data: claimData } = await supabase.rpc("profile_claim_get", { p_attraction_id: id })
+  const claimContext = claimData as { claimable?: boolean } | null
+  const venueContact = attraction.venueContact
+  const { ratingValue: roundedRating, reviewCount } = getAttractionAverageRating(attraction)
   const locationLabel = [attraction.address, attraction.city].filter(Boolean).join(", ")
   const livePrices = marketplaceSessions
     .map((session) => session.priceFrom)
     .filter((price) => Number.isFinite(price) && price >= 0)
   const priceFrom = livePrices.length > 0 ? Math.min(...livePrices) : null
   const nextSession = marketplaceSessions[0] ?? null
+  const canonicalUrl = getAttractionCanonicalUrl(attraction)
+  const bookingTarget = ticketingVenue
+    ? `${canonicalUrl}#booking`
+    : venueContact?.external_booking_url || null
+  const jsonLd = buildAttractionJsonLd({
+    attraction,
+    priceFrom,
+    hasAvailability: marketplaceSessions.length > 0,
+    bookingUrl: bookingTarget,
+  })
 
   const mapAttraction = {
     id: attraction.id,
     title: attraction.title,
     city: attraction.city,
-    country: attraction.country,
-    latitude: attraction.latitude,
-    longitude: attraction.longitude,
+    country: attraction.country || "Polska",
+    latitude: attraction.latitude ?? undefined,
+    longitude: attraction.longitude ?? undefined,
     priceFrom,
-    property_type: attraction.property_type,
-    max_guests: attraction.max_guests,
-    images: attraction.images,
+    property_type: attraction.property_type || "attraction",
+    max_guests: attraction.max_guests || 0,
+    images: attraction.images || [],
     avgRating: roundedRating,
-    reviewCount: ratings.length,
+    reviewCount,
     nextAvailableSlot: nextSession
       ? {
           date: nextSession.localDate,
@@ -127,6 +178,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
 
   return (
     <div className="min-h-screen bg-background pb-36 md:pb-0">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="hidden md:block"><TopNav /></div>
 
       <div className="pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-4 pt-4 md:hidden">
@@ -139,10 +191,16 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-6">
-        <div className="hidden items-center justify-between pb-4 md:flex">
-          <Link href="/attractions" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Powrót do mapy</Link>
-          <div className="flex gap-2">
+      <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-5">
+        <div className="hidden items-center justify-between gap-5 pb-4 md:flex">
+          <nav aria-label="Okruszki" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+            <Link href="/" className="shrink-0 hover:text-foreground">EnjoyHub</Link>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <Link href="/attractions" className="shrink-0 hover:text-foreground">Atrakcje</Link>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate text-foreground" aria-current="page">{attraction.title}</span>
+          </nav>
+          <div className="flex shrink-0 gap-2">
             <Button variant="outline" size="sm"><Heart className="mr-2 h-4 w-4" />Zapisz</Button>
             <Button variant="outline" size="sm"><Share2 className="mr-2 h-4 w-4" />Udostępnij</Button>
           </div>
@@ -158,8 +216,8 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                   <div>
                     <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{attraction.title}</h1>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                      {avgRating > 0 && (
-                        <span className="flex items-center gap-1 font-semibold"><Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />{roundedRating}<span className="font-normal text-muted-foreground">({ratings.length} opinii)</span></span>
+                      {roundedRating > 0 && (
+                        <span className="flex items-center gap-1 font-semibold"><Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />{roundedRating}<span className="font-normal text-muted-foreground">({reviewCount} opinii)</span></span>
                       )}
                       <a href="#location" className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"><MapPin className="h-4 w-4" />{locationLabel || attraction.city}</a>
                     </div>
@@ -167,8 +225,8 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="rounded-full px-3 py-1.5">{String(attraction.property_type).replaceAll("_", " ")}</Badge>
-                  {attraction.max_guests > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
+                  <Badge variant="secondary" className="rounded-full px-3 py-1.5">{String(attraction.property_type || "atrakcja").replaceAll("_", " ")}</Badge>
+                  {(attraction.max_guests || 0) > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
                   {ticketingVenue && <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800"><Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online</Badge>}
                 </div>
               </header>
@@ -184,11 +242,11 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                 <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><ShieldCheck className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Bezpieczna rezerwacja</p></div>
               </section>
 
-              {attraction.amenities?.length > 0 && (
+              {(attraction.amenities?.length || 0) > 0 && (
                 <section className="space-y-4 border-b pb-7">
                   <h2 className="text-xl font-bold">Na miejscu</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {attraction.amenities.slice(0, 9).map((amenity: string) => <div key={amenity} className="rounded-xl border px-3 py-3 text-sm">{amenity}</div>)}
+                    {(attraction.amenities || []).slice(0, 9).map((amenity) => <div key={amenity} className="rounded-xl border px-3 py-3 text-sm">{amenity}</div>)}
                   </div>
                 </section>
               )}
@@ -209,14 +267,14 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                       />
                     )}
                     <PropertyContactInfo
-                      phone={venueContact?.contact_phone || attraction.users?.phone}
-                      email={venueContact?.contact_email || attraction.users?.email}
-                      address={attraction.address}
-                      city={attraction.city}
-                      country={attraction.country}
-                      openingHours={attraction.opening_hours}
-                      websiteUrl={venueContact?.website_url}
-                      bookingUrl={venueContact?.external_booking_url}
+                      phone={venueContact?.contact_phone || attraction.users?.phone || undefined}
+                      email={venueContact?.contact_email || attraction.users?.email || undefined}
+                      address={attraction.address || undefined}
+                      city={attraction.city || undefined}
+                      country={attraction.country || undefined}
+                      openingHours={attraction.opening_hours || undefined}
+                      websiteUrl={venueContact?.website_url || undefined}
+                      bookingUrl={venueContact?.external_booking_url || undefined}
                     />
                   </>
                 )}
