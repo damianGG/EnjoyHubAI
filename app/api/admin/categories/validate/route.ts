@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server"
 
 import { getPlatformContentApiClient } from "@/lib/platform-admin/api-access"
+import type { CategoryField } from "@/lib/types/dynamic-fields"
 import { REQUIRED_CATEGORY_FIELDS, validateCategoryFields } from "@/lib/validation/category-fields"
+
+type CategoryRow = {
+  id: string
+  name: string
+  slug: string
+}
 
 export async function GET() {
   try {
@@ -14,8 +21,10 @@ export async function GET() {
     const { data: allFields, error: fieldsError } = await supabase.from("category_fields").select("*").order("field_order")
     if (fieldsError) return NextResponse.json({ error: fieldsError.message }, { status: 400 })
 
-    const categoriesStatus = categories?.map((category) => {
-      const categoryFields = allFields?.filter((field) => field.category_id === category.id) || []
+    const typedCategories = (categories ?? []) as CategoryRow[]
+    const typedFields = (allFields ?? []) as CategoryField[]
+    const categoriesStatus = typedCategories.map((category) => {
+      const categoryFields = typedFields.filter((field) => field.category_id === category.id)
       const validation = validateCategoryFields(categoryFields)
       return {
         category_id: category.id,
@@ -26,10 +35,10 @@ export async function GET() {
       }
     })
 
-    const invalidCategories = categoriesStatus?.filter((category) => !category.is_valid) || []
+    const invalidCategories = categoriesStatus.filter((category) => !category.is_valid)
     return NextResponse.json({
-      total_categories: categories?.length || 0,
-      valid_categories: categoriesStatus?.filter((category) => category.is_valid).length || 0,
+      total_categories: typedCategories.length,
+      valid_categories: categoriesStatus.filter((category) => category.is_valid).length,
       invalid_categories: invalidCategories.length,
       categories_with_issues: invalidCategories,
     })
@@ -49,14 +58,16 @@ export async function POST() {
     const { data: allFields, error: fieldsError } = await supabase.from("category_fields").select("*")
     if (fieldsError) return NextResponse.json({ error: fieldsError.message }, { status: 400 })
 
+    const typedCategories = (categories ?? []) as Array<{ id: string }>
+    const typedFields = (allFields ?? []) as CategoryField[]
     let fixedCount = 0
     const fieldsToCreate: Record<string, unknown>[] = []
 
-    for (const category of categories || []) {
-      const categoryFields = allFields?.filter((field) => field.category_id === category.id) || []
+    for (const category of typedCategories) {
+      const categoryFields = typedFields.filter((field) => field.category_id === category.id)
       const existingFieldNames = new Set(categoryFields.map((field) => field.field_name))
       const maxOrder = categoryFields.length > 0
-        ? categoryFields.reduce((max, field) => Math.max(max, field.field_order), -1)
+        ? categoryFields.reduce((max: number, field) => Math.max(max, field.field_order), -1)
         : -1
 
       for (const [index, requiredField] of REQUIRED_CATEGORY_FIELDS.entries()) {
