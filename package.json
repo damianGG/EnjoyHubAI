@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "start": "next start",
     "test:routes": "node scripts/test-route-contracts.mjs",
+    "test:monitoring": "node scripts/monitoring-contracts.mjs",
     "test:ticketing-db": "node scripts/test-ticketing-database.mjs",
     "test:ticketing-concurrency": "node scripts/test-ticketing-concurrency.mjs"
   },
