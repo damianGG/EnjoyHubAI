@@ -9,8 +9,9 @@ import { requirePlatformStaff } from "@/lib/platform-admin/access"
 
 export const dynamic = "force-dynamic"
 
-export default async function AdminUsersPage({ searchParams }: { searchParams?: { q?: string } }) {
-  const q = searchParams?.q?.trim() ?? ""
+export default async function AdminUsersPage({ searchParams }: { searchParams?: Promise<{ q?: string }> }) {
+  const query = searchParams ? await searchParams : {}
+  const q = query.q?.trim() ?? ""
   const { supabase } = await requirePlatformStaff(["platform_superadmin", "platform_support"], "/admin/uzytkownicy")
   const { data, error } = await supabase.rpc("platform_admin_list_users", { p_search: q || null, p_limit: 250 })
   const users = (data ?? []) as any[]
