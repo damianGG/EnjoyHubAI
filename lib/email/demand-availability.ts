@@ -1,7 +1,9 @@
-import { sendTransactionalEmail, type EmailSendResult } from "./client"
+import { queueTransactionalEmail, type EmailQueueResult } from "./outbox"
 import { getEmailSiteUrl } from "./site-url"
 
 export interface DemandAvailabilityEmailInput {
+  notificationId: string
+  demandRequestId: string
   recipientEmail: string
   attractionId: string
   attractionTitle: string
@@ -11,7 +13,7 @@ export interface DemandAvailabilityEmailInput {
 
 export async function sendDemandAvailabilityEmail(
   input: DemandAvailabilityEmailInput,
-): Promise<EmailSendResult> {
+): Promise<EmailQueueResult> {
   const siteUrl = getEmailSiteUrl()
   const bookingUrl = `${siteUrl}/attractions/${encodeURIComponent(input.attractionId)}#booking`
   const dateLabel = formatDate(input.desiredDate)
@@ -61,7 +63,17 @@ export async function sendDemandAvailabilityEmail(
     "To jednorazowe powiadomienie dotyczące Twojego zgłoszenia w EnjoyHub. Nie zapisaliśmy Cię do newslettera.",
   ].join("\n")
 
-  return sendTransactionalEmail({
+  return queueTransactionalEmail({
+    emailType: "demand_availability",
+    sourceType: "demand_notification",
+    sourceId: input.notificationId,
+    dedupeKey: `demand-notification:${input.notificationId}`,
+    metadata: {
+      demandRequestId: input.demandRequestId,
+      attractionId: input.attractionId,
+      desiredDate: input.desiredDate,
+      partySize: input.partySize,
+    },
     to: input.recipientEmail,
     subject: `Są miejsca: ${input.attractionTitle} — ${dateLabel}`,
     html,
@@ -70,7 +82,7 @@ export async function sendDemandAvailabilityEmail(
       { name: "type", value: "demand-available" },
       { name: "attraction", value: input.attractionId.slice(0, 36) },
     ],
-  })
+  }, { attemptImmediately: false })
 }
 
 function formatDate(value: string) {

@@ -168,10 +168,17 @@ async function handleSuccessfulCheckout(
 
   if (fulfilled && !result.event_was_duplicate && orderId) {
     const emailResult = await sendOrderConfirmationEmail(orderId)
-    if (!emailResult.sent) {
-      console.error("Paid order confirmation email failed", {
+    if (!emailResult.queued) {
+      console.error("Paid order confirmation email could not be queued", {
         orderId,
         reason: emailResult.reason,
+        error: emailResult.error,
+      })
+    } else if (!emailResult.sent) {
+      console.warn("Paid order confirmation email queued for retry", {
+        orderId,
+        outboxId: emailResult.outboxId,
+        status: emailResult.status,
         error: emailResult.error,
       })
     }

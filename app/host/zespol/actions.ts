@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
-import { sendTransactionalEmail } from "@/lib/email/client"
+import { queueTransactionalEmail } from "@/lib/email/outbox"
 import { getEmailSiteUrl } from "@/lib/email/site-url"
 import { renderTeamInvitationEmail } from "@/lib/email/templates"
 import { organizerRoleLabels, type OrganizerRole } from "@/lib/organizer/access"
@@ -87,7 +87,12 @@ export async function createTeamInvitation(
       inviteUrl: `${getEmailSiteUrl()}${invitationPath}`,
       expiresAt: invitation.expires_at,
     })
-    const result = await sendTransactionalEmail({
+    const result = await queueTransactionalEmail({
+      emailType: "team_invitation",
+      sourceType: "team_invitation",
+      sourceId: invitation.invitation_token,
+      dedupeKey: `team-invitation:${invitation.invitation_token}`,
+      metadata: { organizationId: parsed.data.organizationId, role: parsed.data.role },
       to: parsed.data.email,
       subject: rendered.subject,
       html: rendered.html,
@@ -96,10 +101,15 @@ export async function createTeamInvitation(
     })
     emailSent = result.sent
     if (!result.sent) {
-      emailWarning = result.reason === "not_configured"
-        ? "Zaproszenie jest ważne, ale automatyczna wysyłka e-mail nie jest jeszcze skonfigurowana. Skopiuj link poniżej."
-        : "Zaproszenie jest ważne, ale wiadomości nie udało się teraz dostarczyć. Skopiuj link poniżej."
-      console.error("Team invitation email failed", { reason: result.reason, error: result.error })
+      emailWarning = result.queued
+        ? "Zaproszenie jest ważne, a wiadomość została dodana do kolejki. EnjoyHub ponowi wysyłkę automatycznie, jeśli dostawca poczty jest chwilowo niedostępny."
+        : "Zaproszenie jest ważne, ale nie udało się dodać wiadomości do kolejki. Skopiuj link poniżej."
+      console.error("Team invitation email was not sent immediately", {
+        queued: result.queued,
+        outboxId: result.outboxId,
+        reason: result.reason,
+        error: result.error,
+      })
     }
   } else {
     emailWarning = "Zaproszenie jest ważne, ale nie udało się przygotować wiadomości e-mail. Skopiuj link poniżej."

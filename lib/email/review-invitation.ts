@@ -1,14 +1,16 @@
-import { sendTransactionalEmail, type EmailSendResult } from "@/lib/email/client"
+import { queueTransactionalEmail, type EmailQueueResult } from "@/lib/email/outbox"
 import { getEmailSiteUrl } from "@/lib/email/site-url"
 
 type ReviewInvitationEmailInput = {
+  invitationId: string
   token: string
   recipientEmail: string
   recipientName?: string | null
+  propertyId: string
   propertyTitle: string
 }
 
-export async function sendReviewInvitationEmail(input: ReviewInvitationEmailInput): Promise<EmailSendResult> {
+export async function sendReviewInvitationEmail(input: ReviewInvitationEmailInput): Promise<EmailQueueResult> {
   const siteUrl = getEmailSiteUrl()
   const reviewUrl = `${siteUrl}/opinia/${encodeURIComponent(input.token)}`
   const firstName = input.recipientName?.trim().split(/\s+/)[0]
@@ -42,13 +44,18 @@ export async function sendReviewInvitationEmail(input: ReviewInvitationEmailInpu
 
   const text = `${greeting}\n\nTwój bilet do ${input.propertyTitle} został wykorzystany. Napisz krótką opinię i pomóż innym wybrać dobrą atrakcję.\n\nDodaj opinię: ${reviewUrl}\n\nOpinia będzie oznaczona jako „Zweryfikowana wizyta”. Link jest indywidualny.`
 
-  return sendTransactionalEmail({
+  return queueTransactionalEmail({
+    emailType: "review_invitation",
+    sourceType: "review_invitation",
+    sourceId: input.invitationId,
+    dedupeKey: `review-invitation:${input.invitationId}`,
+    metadata: { propertyId: input.propertyId },
     to: input.recipientEmail,
     subject,
     html,
     text,
     tags: [{ name: "type", value: "verified-review-invitation" }],
-  })
+  }, { attemptImmediately: false })
 }
 
 function escapeHtml(value: string) {
