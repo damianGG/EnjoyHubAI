@@ -1,8 +1,35 @@
 import { updateSession } from "@/lib/supabase/middleware"
 import type { NextRequest } from "next/server"
 
+const NOINDEX_PREFIXES = [
+  "/admin",
+  "/api",
+  "/auth",
+  "/bilet",
+  "/checkout",
+  "/dashboard",
+  "/host",
+  "/opinia",
+  "/przejmij-profil",
+  "/widget",
+  "/login",
+  "/register",
+  "/reset-password",
+  "/forgot-password",
+]
+
+function shouldNoIndex(pathname: string) {
+  return NOINDEX_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  const response = await updateSession(request)
+
+  if (shouldNoIndex(request.nextUrl.pathname)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive")
+  }
+
+  return response
 }
 
 export const config = {
