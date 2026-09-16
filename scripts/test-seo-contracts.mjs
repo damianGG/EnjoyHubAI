@@ -24,8 +24,11 @@ for (const file of [
   "app/atrakcje/[city]/[category]/page.tsx",
   "app/admin/seo/page.tsx",
   "app/admin/seo/actions.ts",
+  "components/attractions-view.tsx",
   "components/seo/marketplace-landing.tsx",
+  "components/seo/related-attractions.tsx",
   "lib/seo/attraction.ts",
+  "lib/seo/internal-linking.ts",
   "lib/seo/landings.ts",
   "lib/seo/indexnow.ts",
   "lib/seo/quality.ts",
@@ -84,8 +87,35 @@ assert.match(attractionPage, /max-image-preview/)
 assert.match(attractionPage, /permanentRedirect\(canonicalPath\)/)
 assert.match(attractionPage, /application\/ld\+json/)
 assert.match(attractionPage, /buildAttractionJsonLd/)
+assert.match(attractionPage, /getAttractionInternalLinking/)
+assert.match(attractionPage, /applyAttractionInternalBreadcrumbs/)
+assert.match(attractionPage, /seoLinking\.city\.path/)
+assert.match(attractionPage, /seoLinking\.category\.path/)
+assert.match(attractionPage, /<RelatedAttractions sections=\{seoLinking\.relatedSections\}/)
 assert.match(attractionPage, /aria-label="Okruszki"/)
 assert.doesNotMatch(attractionPage, /\.from\("properties"\)/)
+
+const discoveryView = await source("components/attractions-view.tsx")
+assert.match(discoveryView, /function attractionHref\(attraction: Attraction\)/)
+assert.match(discoveryView, /generateAttractionSlug/)
+assert.match(discoveryView, /<Link href=\{attractionHref\(attraction\)\}/)
+
+const internalLinking = await source("lib/seo/internal-linking.ts")
+assert.match(internalLinking, /getAttractionInternalLinking/)
+assert.match(internalLinking, /getSeoLandingCatalog/)
+assert.match(internalLinking, /isSeoCityIndexable/)
+assert.match(internalLinking, /isSeoCategoryIndexable/)
+assert.match(internalLinking, /getSeoLanding\(catalogCity\.slug\)/)
+assert.match(internalLinking, /\.eq\("seo_excluded", false\)/)
+assert.match(internalLinking, /categoryItems\.length >= 2/)
+assert.match(internalLinking, /cityItems\.length >= 2/)
+assert.match(internalLinking, /applyAttractionInternalBreadcrumbs/)
+assert.match(internalLinking, /node\["@type"\] === "BreadcrumbList"/)
+
+const relatedAttractions = await source("components/seo/related-attractions.tsx")
+assert.match(relatedAttractions, /getSeoAttractionPath/)
+assert.match(relatedAttractions, /Zobacz wszystkie/)
+assert.match(relatedAttractions, /section\.items\.map/)
 
 const landingSeo = await source("lib/seo/landings.ts")
 assert.match(landingSeo, /SEO_CITY_MIN_OBJECTS = 3/)
@@ -100,6 +130,10 @@ assert.match(landingSeo, /getSeoLandingPath/)
 assert.match(landingSeo, /CollectionPage/)
 assert.match(landingSeo, /ItemList/)
 assert.match(landingSeo, /BreadcrumbList/)
+
+const marketplaceLanding = await source("components/seo/marketplace-landing.tsx")
+assert.match(marketplaceLanding, /indexableCategories = catalogCity\.categories\.filter\(isSeoCategoryIndexable\)/)
+assert.match(marketplaceLanding, /indexableCategories\.map/)
 
 const cityLandingPage = await source("app/atrakcje/[city]/page.tsx")
 assert.match(cityLandingPage, /export async function generateMetadata/)
