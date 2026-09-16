@@ -11,7 +11,8 @@
     "test:routes": "node scripts/test-route-contracts.mjs",
     "test:monitoring": "node scripts/monitoring-contracts.mjs",
     "test:seo": "node scripts/test-seo-contracts.mjs",
-    "test:contracts": "npm run test:routes && npm run test:monitoring && npm run test:seo",
+    "test:supply": "node scripts/test-supply-contracts.mjs",
+    "test:contracts": "npm run test:routes && npm run test:monitoring && npm run test:seo && npm run test:supply",
     "test:ticketing-db": "node scripts/test-ticketing-database.mjs",
     "test:ticketing-concurrency": "node scripts/test-ticketing-concurrency.mjs",
     "ci": "npm run lint && npm run typecheck && npm run test:contracts && npm run build"
