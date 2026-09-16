@@ -13,6 +13,7 @@ export type SeoCatalogCategory = {
   slug: string
   name: string
   activeCount: number
+  seoEligibleCount: number
 }
 
 export type SeoCatalogCity = {
@@ -20,6 +21,7 @@ export type SeoCatalogCity = {
   name: string
   country: string
   activeCount: number
+  seoEligibleCount: number
   categories: SeoCatalogCategory[]
 }
 
@@ -62,10 +64,12 @@ type CatalogRpc = {
     name?: string
     country?: string
     active_count?: number
+    seo_eligible_count?: number
     categories?: Array<{
       slug?: string
       name?: string
       active_count?: number
+      seo_eligible_count?: number
     }>
   }>
 }
@@ -138,6 +142,7 @@ export const getSeoLandingCatalog = cache(async (): Promise<SeoCatalogCity[]> =>
         name,
         country: city.country?.trim() || "Polska",
         activeCount: finiteNumber(city.active_count),
+        seoEligibleCount: finiteNumber(city.seo_eligible_count),
         categories: (city.categories ?? [])
           .map((category): SeoCatalogCategory | null => {
             const categorySlug = slugify(category.slug ?? "")
@@ -147,6 +152,7 @@ export const getSeoLandingCatalog = cache(async (): Promise<SeoCatalogCity[]> =>
               slug: categorySlug,
               name: categoryName,
               activeCount: finiteNumber(category.active_count),
+              seoEligibleCount: finiteNumber(category.seo_eligible_count),
             }
           })
           .filter((category): category is SeoCatalogCategory => Boolean(category)),
@@ -231,12 +237,12 @@ export function findSeoCatalogCity(catalog: SeoCatalogCity[], cityInput: string)
   return catalog.find((city) => city.slug === citySlug) ?? null
 }
 
-export function isSeoCityIndexable(city: Pick<SeoCatalogCity, "activeCount">) {
-  return city.activeCount >= SEO_CITY_MIN_OBJECTS
+export function isSeoCityIndexable(city: Pick<SeoCatalogCity, "seoEligibleCount">) {
+  return city.seoEligibleCount >= SEO_CITY_MIN_OBJECTS
 }
 
-export function isSeoCategoryIndexable(category: Pick<SeoCatalogCategory, "activeCount">) {
-  return category.activeCount >= SEO_CITY_CATEGORY_MIN_OBJECTS
+export function isSeoCategoryIndexable(category: Pick<SeoCatalogCategory, "seoEligibleCount">) {
+  return category.seoEligibleCount >= SEO_CITY_CATEGORY_MIN_OBJECTS
 }
 
 export function getSeoLandingPath(citySlug: string, categorySlug?: string | null) {

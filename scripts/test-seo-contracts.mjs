@@ -26,6 +26,7 @@ for (const file of [
   "lib/seo/attraction.ts",
   "lib/seo/landings.ts",
   "supabase/migrations/20260916155824_programmatic_local_seo.sql",
+  "supabase/migrations/20260916160949_programmatic_local_seo_quality_gate.sql",
 ]) {
   assert.equal(await fileExists(file), true, `Brakuje fundamentu SEO: ${file}`)
 }
@@ -82,6 +83,10 @@ assert.doesNotMatch(attractionPage, /\.from\("properties"\)/)
 const landingSeo = await source("lib/seo/landings.ts")
 assert.match(landingSeo, /SEO_CITY_MIN_OBJECTS = 3/)
 assert.match(landingSeo, /SEO_CITY_CATEGORY_MIN_OBJECTS = 2/)
+assert.match(landingSeo, /seoEligibleCount/)
+assert.match(landingSeo, /seo_eligible_count/)
+assert.match(landingSeo, /city\.seoEligibleCount >= SEO_CITY_MIN_OBJECTS/)
+assert.match(landingSeo, /category\.seoEligibleCount >= SEO_CITY_CATEGORY_MIN_OBJECTS/)
 assert.match(landingSeo, /marketplace_seo_catalog_v1/)
 assert.match(landingSeo, /marketplace_seo_landing_v1/)
 assert.match(landingSeo, /getSeoLandingPath/)
@@ -113,6 +118,14 @@ assert.match(localMigration, /marketplace_seo_landing_v1/)
 assert.match(localMigration, /security invoker/i)
 assert.match(localMigration, /grant execute on function public\.marketplace_seo_catalog_v1\(\) to service_role/i)
 assert.match(localMigration, /grant execute on function public\.marketplace_seo_landing_v1\(text, text, integer, integer\) to service_role/i)
+
+const qualityMigration = await source("supabase/migrations/20260916160949_programmatic_local_seo_quality_gate.sql")
+assert.match(qualityMigration, /seo_excluded boolean not null default false/i)
+assert.match(qualityMigration, /length\(btrim\(coalesce\(p\.description, ''\)\)\) >= 50/)
+assert.match(qualityMigration, /cardinality\(coalesce\(p\.images, array\[\]::text\[\]\)\) >= 1/)
+assert.match(qualityMigration, /seo_eligible_count/)
+assert.match(qualityMigration, /security invoker/i)
+assert.match(qualityMigration, /grant execute on function public\.marketplace_seo_catalog_v1\(\) to service_role/i)
 
 const middleware = await source("middleware.ts")
 assert.match(middleware, /X-Robots-Tag/)
