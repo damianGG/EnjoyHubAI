@@ -26,8 +26,9 @@ const nextConfig = {
       },
     ]
   },
-  typescript: {
-    ignoreBuildErrors: true,
+  eslint: {
+    // Lint runs as a dedicated CI step. This avoids running ESLint twice during builds.
+    ignoreDuringBuilds: true,
   },
   images: {
     unoptimized: true,
