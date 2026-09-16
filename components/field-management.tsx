@@ -18,8 +18,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Edit, Trash2, Loader2, Lock } from "lucide-react"
 import { toast } from "sonner"
-import type { Category, CategoryField, FieldType } from "@/lib/types/dynamic-fields"
+import type { Category, CategoryField, FieldType, ValidationRules } from "@/lib/types/dynamic-fields"
 import { isRequiredCategoryField } from "@/lib/validation/category-fields"
+
+type FieldFormData = {
+  field_name: string
+  field_label: string
+  field_type: FieldType
+  field_order: number
+  is_required: boolean
+  placeholder: string
+  help_text: string
+  options: string[]
+  validation_rules: ValidationRules
+}
 
 export default function FieldManagementClient() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -28,21 +40,16 @@ export default function FieldManagementClient() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingField, setEditingField] = useState<CategoryField | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FieldFormData>({
     field_name: "",
     field_label: "",
-    field_type: "text" as FieldType,
+    field_type: "text",
     field_order: 0,
     is_required: false,
     placeholder: "",
     help_text: "",
-    options: [] as string[],
-    validation_rules: {
-      min: undefined as number | undefined,
-      max: undefined as number | undefined,
-      minLength: undefined as number | undefined,
-      maxLength: undefined as number | undefined,
-    },
+    options: [],
+    validation_rules: {},
   })
   const [saving, setSaving] = useState(false)
   const [optionsInput, setOptionsInput] = useState("")
@@ -145,8 +152,6 @@ export default function FieldManagementClient() {
     try {
       const url = "/api/admin/fields"
       const method = editingField ? "PATCH" : "POST"
-
-      // Parse options from textarea
       const options = formData.field_type === "select" ? optionsInput.split("\n").filter((o) => o.trim()) : []
 
       const body = editingField
@@ -223,7 +228,6 @@ export default function FieldManagementClient() {
         </div>
       </div>
 
-      {/* Category Selector */}
       <div className="mb-6">
         <Label>Wybierz kategorię</Label>
         <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
@@ -240,7 +244,6 @@ export default function FieldManagementClient() {
         </Select>
       </div>
 
-      {/* Fields List */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">
@@ -307,7 +310,6 @@ export default function FieldManagementClient() {
         )}
       </div>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>

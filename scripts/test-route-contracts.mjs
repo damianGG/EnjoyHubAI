@@ -239,7 +239,9 @@ assert.doesNotMatch(metadata, /v0 App|Created with v0|v0\.app/)
 const hostSales = await source("app/host/sprzedaz/page.tsx")
 assert.match(hostSales, /\/host\/sprzedaz\/konfiguracja/)
 assert.match(hostSales, /\.select\("organization_id, role"\)/)
-assert.match(hostSales, /Konto kasjera nie ma dostępu/)
+assert.match(hostSales, /organizerSalesRoles/)
+assert.match(hostSales, /Obsługa wejścia nie ma dostępu/)
+assert.match(hostSales, /\/host\/skaner/)
 
 const hostPanel = await source("app/host/page.tsx")
 assert.match(hostPanel, /\.from\("organization_memberships"\)/)
@@ -271,13 +273,13 @@ const organizerLanding = await source("app/dla-organizatorow/page.tsx")
 assert.match(organizerLanding, /href="\/host\/start"/)
 assert.match(organizerLanding, /Mam własny system/)
 
-for (const navigation of [
-  await source("components/top-nav.tsx"),
-  await source("components/bottom-nav.tsx"),
-]) {
+const topNavigation = await source("components/top-nav.tsx")
+const bottomNavigation = await source("components/bottom-nav.tsx")
+for (const navigation of [topNavigation, bottomNavigation]) {
   assert.match(navigation, /href="\/dla-organizatorow"/)
-  assert.match(navigation, /Zostań gospodarzem/)
 }
+assert.match(topNavigation, /Zostań gospodarzem/)
+assert.match(bottomNavigation, /Dodaj miejsce/)
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)

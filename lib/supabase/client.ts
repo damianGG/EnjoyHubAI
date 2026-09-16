@@ -1,4 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr"
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+type BrowserSupabaseClient = SupabaseClient
 
 // Check if we're in the browser
 const isBrowser = typeof window !== "undefined"
@@ -10,7 +13,7 @@ export const isSupabaseConfigured = () => {
   if (!isBrowser) {
     return true
   }
-  
+
   // On the client, check if the env vars were properly injected at build time
   return (
     typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
@@ -20,21 +23,11 @@ export const isSupabaseConfigured = () => {
   )
 }
 
-// Create a dummy client when Supabase is not configured (for build time)
-const createDummyClient = () => {
-  const createPromiseChain = (result: any) => {
-    const promise = Promise.resolve(result)
-    return {
-      then: (fn: any) => createPromiseChain(fn(result)),
-      catch: (fn: any) => createPromiseChain(result),
-      finally: (fn: any) => {
-        fn()
-        return createPromiseChain(result)
-      },
-    }
-  }
-
-  return {
+// Create a dummy client when Supabase is not configured (for build time).
+// It deliberately exposes the same public type as the real browser client so
+// client components never lose TypeScript inference just because a fallback exists.
+const createDummyClient = (): BrowserSupabaseClient => {
+  const dummy = {
     auth: {
       getUser: () => Promise.resolve({ data: { user: null }, error: null }),
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
@@ -45,16 +38,18 @@ const createDummyClient = () => {
     },
     from: () => ({
       select: () => ({
-        order: () => createPromiseChain({ data: [], error: null }),
+        order: () => Promise.resolve({ data: [], error: null }),
       }),
     }),
   }
+
+  return dummy as unknown as BrowserSupabaseClient
 }
 
 // Clear old auth-helpers storage keys that are incompatible with @supabase/ssr
 const clearLegacyAuthStorage = () => {
   if (!isBrowser) return
-  
+
   try {
     // Clear old supabase auth keys from localStorage that use the old format
     const keysToRemove: string[] = []
@@ -75,7 +70,7 @@ const clearLegacyAuthStorage = () => {
 
 // Create a new instance of the Supabase client for Client Components
 // This should be called inside useEffect or event handlers to ensure it runs on the client
-export function createClient() {
+export function createClient(): BrowserSupabaseClient {
   // Clear legacy storage on first load
   if (isBrowser) {
     clearLegacyAuthStorage()
@@ -91,13 +86,13 @@ export function createClient() {
       )
     } catch (error) {
       console.warn("Failed to create Supabase client:", error)
-      return createDummyClient() as any
+      return createDummyClient()
     }
   }
-  
+
   // During SSR, return dummy client
   console.warn("Supabase client should only be created in the browser. Using dummy client.")
-  return createDummyClient() as any
+  return createDummyClient()
 }
 
 // Legacy export - prefer using createClient() inside useEffect

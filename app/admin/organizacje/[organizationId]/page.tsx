@@ -24,13 +24,15 @@ export default async function OrganizationAdminPage({
   params,
   searchParams,
 }: {
-  params: { organizationId: string }
-  searchParams?: { ok?: string; blad?: string }
+  params: Promise<{ organizationId: string }>
+  searchParams?: Promise<{ ok?: string; blad?: string }>
 }) {
-  const next = `/admin/organizacje/${params.organizationId}`
+  const { organizationId } = await params
+  const query = searchParams ? await searchParams : {}
+  const next = `/admin/organizacje/${organizationId}`
   const { supabase, role } = await requirePlatformStaff(undefined, next)
   const { data, error } = await supabase.rpc("platform_admin_get_organization", {
-    p_organization_id: params.organizationId,
+    p_organization_id: organizationId,
   })
   if (error || !data) notFound()
 
@@ -78,8 +80,8 @@ export default async function OrganizationAdminPage({
         )}
       </div>
 
-      {searchParams?.ok && <p className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">Zmiana została zapisana.</p>}
-      {searchParams?.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się wykonać operacji. Sprawdź dane i uprawnienia.</p>}
+      {query.ok && <p className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">Zmiana została zapisana.</p>}
+      {query.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się wykonać operacji. Sprawdź dane i uprawnienia.</p>}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Metric label="Członkowie" value={canSupport ? members.length : "—"} />

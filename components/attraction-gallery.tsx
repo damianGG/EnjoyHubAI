@@ -36,6 +36,20 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
     })
   }, [dialogApi])
 
+  // Scroll carousel when dialog opens and carousel is ready
+  useEffect(() => {
+    if (isDialogOpen && api) {
+      api.scrollTo(currentImage)
+    }
+  }, [isDialogOpen, api, currentImage])
+
+  // Scroll dialog carousel when it becomes ready
+  useEffect(() => {
+    if (isCarouselView && dialogApi) {
+      dialogApi.scrollTo(currentImage)
+    }
+  }, [isCarouselView, dialogApi, currentImage])
+
   if (!Array.isArray(images) || images.length === 0) {
     return (
       <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
@@ -84,20 +98,6 @@ export default function AttractionGallery({ images, title }: AttractionGalleryPr
   const toggleView = () => {
     setIsCarouselView(!isCarouselView)
   }
-
-  // Scroll carousel when dialog opens and carousel is ready
-  useEffect(() => {
-    if (isDialogOpen && api) {
-      api.scrollTo(currentImage)
-    }
-  }, [isDialogOpen, api, currentImage])
-
-  // Scroll dialog carousel when it becomes ready
-  useEffect(() => {
-    if (isCarouselView && dialogApi) {
-      dialogApi.scrollTo(currentImage)
-    }
-  }, [isCarouselView, dialogApi, currentImage])
 
   return (
     <div className="space-y-4">

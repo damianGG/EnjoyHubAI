@@ -11,9 +11,10 @@ export const dynamic = "force-dynamic"
 
 const supplyRoles = ["platform_superadmin", "platform_support", "platform_content"] as const
 
-export default async function SupplyPreviewPage({ params }: { params: { leadId: string } }) {
-  const { supabase } = await requirePlatformStaff(supplyRoles, `/admin/supply/${params.leadId}/podglad`)
-  const { data, error } = await supabase.rpc("platform_supply_get_lead", { p_lead_id: params.leadId })
+export default async function SupplyPreviewPage({ params }: { params: Promise<{ leadId: string }> }) {
+  const { leadId } = await params
+  const { supabase } = await requirePlatformStaff(supplyRoles, `/admin/supply/${leadId}/podglad`)
+  const { data, error } = await supabase.rpc("platform_supply_get_lead", { p_lead_id: leadId })
   if (error || !data) notFound()
   const lead = data as any
   const images = (lead.images ?? []) as any[]

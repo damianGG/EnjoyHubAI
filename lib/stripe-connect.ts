@@ -62,7 +62,7 @@ export async function syncStripeConnectAccount(
   const stripe = getStripeClient()
   let account = asStripeAccount(await stripe.accounts.retrieve(accountId))
 
-  let balanceSettings = await stripe.balanceSettings.retrieve({ stripeAccount: accountId })
+  let balanceSettings = await stripe.balanceSettings.retrieve({}, { stripeAccount: accountId })
   let payoutScheduleManual = balanceSettings.payments?.payouts?.schedule?.interval === "manual"
 
   // EnjoyHub controls the bank payout moment. If the account is already usable
@@ -70,7 +70,7 @@ export async function syncStripeConnectAccount(
   if (!payoutScheduleManual) {
     try {
       await setStripeConnectManualPayoutSchedule(accountId)
-      balanceSettings = await stripe.balanceSettings.retrieve({ stripeAccount: accountId })
+      balanceSettings = await stripe.balanceSettings.retrieve({}, { stripeAccount: accountId })
       payoutScheduleManual = balanceSettings.payments?.payouts?.schedule?.interval === "manual"
       account = asStripeAccount(await stripe.accounts.retrieve(accountId))
     } catch (error) {
