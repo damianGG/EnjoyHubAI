@@ -43,11 +43,11 @@ const requiredRoutes = [
   "lib/ticketing/marketplace.ts",
   "lib/marketplace/discovery.ts",
   "supabase/migrations/20260816160000_ticketing_marketplace_bridge.sql",
-  "supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql",
-  "supabase/migrations/20260915003000_marketplace_search_v2.sql",
-  "supabase/migrations/20260915094500_marketplace_search_v3.sql",
-  "supabase/migrations/20260915100500_marketplace_search_v4.sql",
-  "supabase/migrations/20260915105000_marketplace_dynamic_category_filters.sql",
+  "supabase/migrations/20260909204804_ticketing_organizer_onboarding.sql",
+  "supabase/migrations/20260915003746_marketplace_search_v2.sql",
+  "supabase/migrations/20260915074703_marketplace_search_v3.sql",
+  "supabase/migrations/20260915080344_marketplace_search_v4.sql",
+  "supabase/migrations/20260915084851_marketplace_dynamic_category_filters.sql",
   "supabase/tests/database/007_ticketing_organizer_onboarding_smoke.sql",
 ]
 
@@ -140,7 +140,7 @@ assert.match(filterDefinitionsRoute, /product_attribute_definitions/)
 assert.match(filterDefinitionsRoute, /\.eq\("filterable", true\)/)
 assert.match(filterDefinitionsRoute, /scope: "supply" \| "product"/)
 
-const marketplaceSearchMigration = await source("supabase/migrations/20260915105000_marketplace_dynamic_category_filters.sql")
+const marketplaceSearchMigration = await source("supabase/migrations/20260915084851_marketplace_dynamic_category_filters.sql")
 const marketplaceSearchSql = marketplaceSearchMigration.replace(/^--.*$/gm, "")
 assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v5/)
 assert.match(marketplaceSearchMigration, /marketplace_filter_value_matches/)
@@ -284,7 +284,7 @@ assert.match(bottomNavigation, /Dodaj miejsce/)
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
 
-const organizerOnboardingMigration = await source("supabase/migrations/20260819180000_ticketing_organizer_onboarding.sql")
+const organizerOnboardingMigration = await source("supabase/migrations/20260909204804_ticketing_organizer_onboarding.sql")
 assert.match(organizerOnboardingMigration, /ticketing_create_sales_setup/)
 assert.match(organizerOnboardingMigration, /ticketing_link_venue_property/)
 assert.match(organizerOnboardingMigration, /insert into public\.properties/)
