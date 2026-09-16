@@ -11,7 +11,7 @@ interface Review {
   author_name?: string | null
   verified_visit?: boolean | null
   users?: {
-    full_name: string
+    full_name?: string | null
   } | null
 }
 
