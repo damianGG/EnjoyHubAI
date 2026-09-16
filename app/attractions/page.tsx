@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
 import AttractionsView from "@/components/attractions-view"
@@ -5,6 +6,19 @@ import { DiscoveryChrome } from "@/components/discovery-chrome"
 import { listMarketplaceDiscoveryAttractions, type MarketplaceDiscoveryAttraction } from "@/lib/marketplace/discovery"
 
 export const revalidate = 60
+
+export const metadata: Metadata = {
+  title: "Atrakcje w Polsce – terminy, ceny i bilety",
+  description: "Znajdź atrakcje w Polsce, porównaj miejsca, ceny i dostępne terminy oraz zarezerwuj bilety online.",
+  alternates: {
+    canonical: "/attractions",
+  },
+  openGraph: {
+    url: "/attractions",
+    title: "Atrakcje w Polsce – terminy, ceny i bilety | EnjoyHub",
+    description: "Znajdź atrakcje w Polsce, porównaj miejsca, ceny i dostępne terminy oraz zarezerwuj bilety online.",
+  },
+}
 
 export default async function AttractionsPage() {
   let data: MarketplaceDiscoveryAttraction[] = []
