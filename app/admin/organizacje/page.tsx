@@ -11,8 +11,9 @@ import { formatMoney } from "@/lib/ticketing/format"
 
 export const dynamic = "force-dynamic"
 
-export default async function OrganizationsPage({ searchParams }: { searchParams?: { q?: string; blad?: string } }) {
-  const q = searchParams?.q?.trim() ?? ""
+export default async function OrganizationsPage({ searchParams }: { searchParams?: Promise<{ q?: string; blad?: string }> }) {
+  const query = searchParams ? await searchParams : {}
+  const q = query.q?.trim() ?? ""
   const { supabase, role } = await requirePlatformStaff(undefined, "/admin/organizacje")
   const { data, error } = await supabase.rpc("platform_admin_list_organizations", {
     p_search: q || null,
@@ -41,7 +42,7 @@ export default async function OrganizationsPage({ searchParams }: { searchParams
       </div>
 
       {error && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się pobrać organizacji.</p>}
-      {searchParams?.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się wykonać operacji. Sprawdź dane i uprawnienia.</p>}
+      {query.blad && <p className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się wykonać operacji. Sprawdź dane i uprawnienia.</p>}
 
       {canCreate && (
         <Card className="mb-8">
