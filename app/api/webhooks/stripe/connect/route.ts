@@ -3,6 +3,7 @@ import type Stripe from "stripe"
 import { z } from "zod"
 
 import { applyMarketplacePayoutEvent } from "@/lib/marketplace/settlements"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import {
   getStripeClient,
@@ -15,9 +16,18 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 const uuidSchema = z.string().uuid()
+const route = "/api/webhooks/stripe/connect"
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request) ?? request.headers.get("x-vercel-id")
+
   if (!isSupabaseAdminConfigured || !isStripeConfigured || !isStripeConnectWebhookConfigured) {
+    reportServerError(new Error("Stripe Connect webhook is not configured"), {
+      area: "payments",
+      operation: "stripe_connect_webhook_configuration",
+      route,
+      requestId,
+    })
     return NextResponse.json({ error: "Connect webhook is not configured" }, { status: 503 })
   }
 
@@ -32,8 +42,8 @@ export async function POST(request: Request) {
       signature,
       process.env.STRIPE_CONNECT_WEBHOOK_SECRET!,
     )
-  } catch (error) {
-    console.warn("Rejected Stripe Connect webhook signature", error)
+  } catch {
+    // Invalid signatures are expected internet noise and should not create Sentry incidents.
     return NextResponse.json({ error: "Invalid Stripe signature" }, { status: 400 })
   }
 
@@ -51,11 +61,17 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, handled: false })
     }
   } catch (error) {
-    console.error("Stripe Connect webhook processing error", {
-      eventId: event.id,
-      eventType: event.type,
-      connectedAccount: event.account,
-      error,
+    reportServerError(error, {
+      area: "payments",
+      operation: "stripe_connect_webhook_processing",
+      route,
+      requestId,
+      extras: {
+        stripeEventId: event.id,
+        stripeEventType: event.type,
+        connectedAccount: typeof event.account === "string" ? event.account : null,
+        stripeLivemode: event.livemode,
+      },
     })
     return NextResponse.json({ error: "Connect webhook processing failed" }, { status: 500 })
   }
@@ -64,11 +80,13 @@ export async function POST(request: Request) {
 async function handleAccountUpdated(event: Stripe.AccountUpdatedEvent) {
   const account = event.data.object
   const supabase = createAdminClient()
-  const { data: stored } = await supabase
+  const { data: stored, error: lookupError } = await supabase
     .from("organization_payment_accounts")
     .select("organization_id")
     .eq("provider_account_id", account.id)
     .maybeSingle()
+
+  if (lookupError) throw lookupError
 
   const metadataOrganizationId = account.metadata?.organization_id
   const organizationId = stored?.organization_id ??
@@ -77,7 +95,13 @@ async function handleAccountUpdated(event: Stripe.AccountUpdatedEvent) {
       : null)
 
   if (!organizationId) {
-    console.warn("Ignoring Stripe account update without EnjoyHub organization", { accountId: account.id })
+    console.warn(JSON.stringify({
+      level: "warning",
+      message: "Ignoring Stripe account update without EnjoyHub organization",
+      area: "payments",
+      operation: "stripe_connect_account_unmapped",
+      accountId: account.id,
+    }))
     return NextResponse.json({ received: true, handled: false })
   }
 
@@ -108,6 +132,19 @@ async function handlePayoutEvent(event: Stripe.Event) {
     status === "paid" ? new Date(event.created * 1000).toISOString() : null,
     payout.failure_code ?? null,
   )
+
+  if (status === "failed") {
+    reportServerError(new Error("EnjoyHub organizer payout failed"), {
+      area: "payments",
+      operation: "organizer_payout_failed",
+      route,
+      extras: {
+        payoutId: payout.id,
+        marketplacePayoutId: payout.metadata.enjoyhub_payout_id,
+        failureCode: payout.failure_code ?? null,
+      },
+    })
+  }
 
   return NextResponse.json({ received: true, handled: true })
 }
