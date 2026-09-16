@@ -17,13 +17,34 @@ function isExpectedMissingSession(error: unknown) {
   )
 }
 
+function getOrCreateRequestId(request: NextRequest) {
+  const candidate = request.headers.get("x-request-id")?.trim()
+  if (candidate && /^[A-Za-z0-9._:-]{1,128}$/.test(candidate)) return candidate
+  return crypto.randomUUID()
+}
+
+function createPassThroughResponse(request: NextRequest, requestId: string) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-request-id", requestId)
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set("x-request-id", requestId)
+  return response
+}
+
+function attachRequestId<T extends NextResponse>(response: T, requestId: string) {
+  response.headers.set("x-request-id", requestId)
+  return response
+}
+
 export async function updateSession(request: NextRequest) {
+  const requestId = getOrCreateRequestId(request)
+
   // If Supabase is not configured, just continue without auth
   if (!isSupabaseConfigured) {
-    return NextResponse.next({ request })
+    return createPassThroughResponse(request, requestId)
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = createPassThroughResponse(request, requestId)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,13 +82,16 @@ export async function updateSession(request: NextRequest) {
 
     if (error) {
       console.error("[v0] Password recovery token verification error:", error)
-      return NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url))
+      return attachRequestId(
+        NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url)),
+        requestId,
+      )
     }
 
     const cleanUrl = request.nextUrl.clone()
     cleanUrl.searchParams.delete("token_hash")
     cleanUrl.searchParams.delete("type")
-    const redirectResponse = NextResponse.redirect(cleanUrl)
+    const redirectResponse = attachRequestId(NextResponse.redirect(cleanUrl), requestId)
 
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie)
@@ -81,12 +105,15 @@ export async function updateSession(request: NextRequest) {
 
     if (error) {
       console.error("[v0] Password recovery callback error:", error)
-      return NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url))
+      return attachRequestId(
+        NextResponse.redirect(new URL("/auth/forgot-password?error=invalid-link", request.url)),
+        requestId,
+      )
     }
 
     const cleanUrl = request.nextUrl.clone()
     cleanUrl.searchParams.delete("code")
-    const redirectResponse = NextResponse.redirect(cleanUrl)
+    const redirectResponse = attachRequestId(NextResponse.redirect(cleanUrl), requestId)
 
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie)
@@ -139,7 +166,7 @@ export async function updateSession(request: NextRequest) {
       "returnTo",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
     )
-    return NextResponse.redirect(redirectUrl)
+    return attachRequestId(NextResponse.redirect(redirectUrl), requestId)
   }
 
   return supabaseResponse
