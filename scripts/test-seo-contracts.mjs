@@ -121,7 +121,7 @@ assert.match(localMigration, /grant execute on function public\.marketplace_seo_
 
 const qualityMigration = await source("supabase/migrations/20260916160949_programmatic_local_seo_quality_gate.sql")
 assert.match(qualityMigration, /seo_excluded boolean not null default false/i)
-assert.match(qualityMigration, /description, '\)\)\) >= 50/)
+assert.match(qualityMigration, /length\(btrim\(coalesce\(p\.description, ''\)\)\) >= 50/)
 assert.match(qualityMigration, /cardinality\(coalesce\(p\.images, array\[\]::text\[\]\)\) >= 1/)
 assert.match(qualityMigration, /seo_eligible_count/)
 assert.match(qualityMigration, /security invoker/i)
