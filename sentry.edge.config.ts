@@ -13,6 +13,12 @@ Sentry.init({
   sendDefaultPii: false,
   tracesSampleRate,
   beforeSend(event) {
+    const requestId = event.request?.headers?.["x-request-id"]
+      ?? event.request?.headers?.["x-vercel-id"]
+    if (requestId) {
+      event.tags = { ...event.tags, request_id: requestId.slice(0, 128) }
+    }
+
     if (event.user) {
       delete event.user.email
       delete event.user.ip_address
