@@ -27,13 +27,15 @@ const statuses = [
 ] as const
 
 export default async function SupplyLeadPage({ params, searchParams }: {
-  params: { leadId: string }
-  searchParams?: { zapisano?: string; blad?: string; opublikowano?: string; claim?: string }
+  params: Promise<{ leadId: string }>
+  searchParams?: Promise<{ zapisano?: string; blad?: string; opublikowano?: string; claim?: string }>
 }) {
-  const next = `/admin/supply/${params.leadId}`
+  const { leadId } = await params
+  const query = searchParams ? await searchParams : {}
+  const next = `/admin/supply/${leadId}`
   const { supabase, role } = await requirePlatformStaff(supplyRoles, next)
   const [{ data, error }, categoriesResult, subcategoriesResult] = await Promise.all([
-    supabase.rpc("platform_supply_get_lead", { p_lead_id: params.leadId }),
+    supabase.rpc("platform_supply_get_lead", { p_lead_id: leadId }),
     supabase.from("categories").select("id,name").order("name"),
     supabase.from("subcategories").select("id,parent_category_id,name").order("name"),
   ])
@@ -43,8 +45,8 @@ export default async function SupplyLeadPage({ params, searchParams }: {
   const categories = categoriesResult.data ?? []
   const subcategories = subcategoriesResult.data ?? []
   const claimRequests = (lead.claimRequests ?? []) as any[]
-  const action = updateSupplyLeadAction.bind(null, params.leadId)
-  const publishAction = publishSupplyLeadAction.bind(null, params.leadId)
+  const action = updateSupplyLeadAction.bind(null, leadId)
+  const publishAction = publishSupplyLeadAction.bind(null, leadId)
   const canReviewClaims = role === "platform_superadmin" || role === "platform_support"
   const canPublish = !lead.attraction_id && ["verified", "owner_approved"].includes(lead.status)
 
@@ -76,11 +78,11 @@ export default async function SupplyLeadPage({ params, searchParams }: {
         </div>
       </div>
 
-      {searchParams?.zapisano && <Notice>Zapisano zmiany.</Notice>}
-      {searchParams?.opublikowano && <Notice>Profil został opublikowany bez przypisywania właściciela. Może zostać przejęty przez zweryfikowanego operatora.</Notice>}
-      {searchParams?.claim === "approved" && <Notice>Wniosek został zaakceptowany. Użytkownik jest teraz właścicielem organizacji i może zarządzać profilem.</Notice>}
-      {searchParams?.claim === "rejected" && <Notice>Wniosek o przejęcie został odrzucony.</Notice>}
-      {searchParams?.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Operacja nie powiodła się. Przy publikacji profil musi być najpierw zweryfikowany i mieć uzupełnione miasto.</div>}
+      {query.zapisano && <Notice>Zapisano zmiany.</Notice>}
+      {query.opublikowano && <Notice>Profil został opublikowany bez przypisywania właściciela. Może zostać przejęty przez zweryfikowanego operatora.</Notice>}
+      {query.claim === "approved" && <Notice>Wniosek został zaakceptowany. Użytkownik jest teraz właścicielem organizacji i może zarządzać profilem.</Notice>}
+      {query.claim === "rejected" && <Notice>Wniosek o przejęcie został odrzucony.</Notice>}
+      {query.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Operacja nie powiodła się. Przy publikacji profil musi być najpierw zweryfikowany i mieć uzupełnione miasto.</div>}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="EnjoyHub Score" value={`${lead.score}/100`} note="priorytet pozyskania" />
@@ -118,11 +120,11 @@ export default async function SupplyLeadPage({ params, searchParams }: {
                   </div>
                   {canReviewClaims && claim.status === "pending" && (
                     <div className="grid min-w-[280px] gap-2">
-                      <form action={resolveSupplyClaimAction.bind(null, params.leadId, claim.id, "approved")} className="space-y-2">
+                      <form action={resolveSupplyClaimAction.bind(null, leadId, claim.id, "approved")} className="space-y-2">
                         <Input name="admin_note" placeholder="Notatka z weryfikacji (opcjonalnie)" />
                         <Button type="submit" className="w-full bg-emerald-600 text-white hover:bg-emerald-700"><CheckCircle2 className="mr-2 h-4 w-4" />Zatwierdź przejęcie</Button>
                       </form>
-                      <form action={resolveSupplyClaimAction.bind(null, params.leadId, claim.id, "rejected")}>
+                      <form action={resolveSupplyClaimAction.bind(null, leadId, claim.id, "rejected")}>
                         <input type="hidden" name="admin_note" value="Wniosek odrzucony przez administratora." />
                         <Button type="submit" variant="outline" className="w-full"><XCircle className="mr-2 h-4 w-4" />Odrzuć</Button>
                       </form>
