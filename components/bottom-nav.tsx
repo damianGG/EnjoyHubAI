@@ -7,7 +7,7 @@ import { Compass, Heart, Plus, User as UserIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import type { User } from "@supabase/supabase-js"
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,12 +43,12 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
+    supabase.auth.getUser().then(({ data: { user: currentUser } }: { data: { user: User | null } }) => {
+      setUser(currentUser)
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null)
     })
 
@@ -74,8 +74,8 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
     }
   }
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
-  const initials = displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  const displayName = String(user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User")
+  const initials = displayName.split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
   const isActive = (path: string) => pathname === path
 
   const itemClass = (active: boolean) =>
