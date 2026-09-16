@@ -1,6 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
-type BrowserSupabaseClient = ReturnType<typeof createBrowserClient>
+type BrowserSupabaseClient = SupabaseClient
 
 // Check if we're in the browser
 const isBrowser = typeof window !== "undefined"
@@ -26,10 +27,6 @@ export const isSupabaseConfigured = () => {
 // It deliberately exposes the same public type as the real browser client so
 // client components never lose TypeScript inference just because a fallback exists.
 const createDummyClient = (): BrowserSupabaseClient => {
-  const createPromiseChain = (result: unknown): unknown => {
-    return Promise.resolve(result)
-  }
-
   const dummy = {
     auth: {
       getUser: () => Promise.resolve({ data: { user: null }, error: null }),
@@ -41,7 +38,7 @@ const createDummyClient = (): BrowserSupabaseClient => {
     },
     from: () => ({
       select: () => ({
-        order: () => createPromiseChain({ data: [], error: null }),
+        order: () => Promise.resolve({ data: [], error: null }),
       }),
     }),
   }
