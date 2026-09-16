@@ -42,10 +42,11 @@ const regions = [
   "Zachodniopomorskie",
 ] as const
 
-export default async function SupplyPage({ searchParams }: { searchParams?: { q?: string; status?: string; region?: string; blad?: string } }) {
-  const q = searchParams?.q?.trim() ?? ""
-  const status = searchParams?.status?.trim() ?? ""
-  const region = searchParams?.region?.trim() ?? ""
+export default async function SupplyPage({ searchParams }: { searchParams?: Promise<{ q?: string; status?: string; region?: string; blad?: string }> }) {
+  const query = searchParams ? await searchParams : {}
+  const q = query.q?.trim() ?? ""
+  const status = query.status?.trim() ?? ""
+  const region = query.region?.trim() ?? ""
   const { supabase } = await requirePlatformStaff(supplyRoles, "/admin/supply")
 
   const { data, error } = await supabase.rpc("platform_supply_list_leads_with_demand", {
@@ -86,7 +87,7 @@ export default async function SupplyPage({ searchParams }: { searchParams?: { q?
       </div>
 
       {error && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się pobrać leadów Supply. Upewnij się, że najnowsza migracja bazy została wdrożona.</div>}
-      {searchParams?.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się utworzyć leada. Sprawdź wprowadzone dane.</div>}
+      {query.blad && <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Nie udało się utworzyć leada. Sprawdź wprowadzone dane.</div>}
 
       <Card className="mb-8">
         <CardHeader>
