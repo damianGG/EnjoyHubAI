@@ -66,7 +66,9 @@ function AttractionCard({
     }
     update()
     api.on("select", update)
-    return () => api.off("select", update)
+    return () => {
+      api.off("select", update)
+    }
   }, [api])
 
   let imageArray: string[] = []
