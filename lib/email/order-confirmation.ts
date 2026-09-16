@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 
-import { sendTransactionalEmail, type EmailSendResult } from "./client"
 import { getEmailSiteUrl } from "./site-url"
 import { renderOrderConfirmationEmail } from "./templates"
+import { queueTransactionalEmail, type EmailQueueResult } from "./outbox"
 
 type SellerSnapshot = {
   legal_name?: string
@@ -66,7 +66,7 @@ type TicketRow = {
   status: string
 }
 
-export async function sendOrderConfirmationEmail(orderId: string): Promise<EmailSendResult> {
+export async function sendOrderConfirmationEmail(orderId: string): Promise<EmailQueueResult> {
   const supabase = createAdminClient()
   const { data: orderData, error: orderError } = await supabase
     .from("orders")
@@ -168,7 +168,12 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
     cancellationUrl: `${siteUrl}/zasady-anulowania`,
   })
 
-  return sendTransactionalEmail({
+  return queueTransactionalEmail({
+    emailType: "order_confirmation",
+    sourceType: "order_confirmation",
+    sourceId: order.id,
+    dedupeKey: `order-confirmation:${order.id}`,
+    metadata: { orderNumber: String(order.order_number), venueId: order.venue_id },
     to: order.customer_email,
     subject: rendered.subject,
     html: rendered.html,
