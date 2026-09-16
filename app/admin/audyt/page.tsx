@@ -7,8 +7,9 @@ import { requirePlatformStaff } from "@/lib/platform-admin/access"
 
 export const dynamic = "force-dynamic"
 
-export default async function AdminAuditPage({ searchParams }: { searchParams?: { organizationId?: string } }) {
-  const organizationId = searchParams?.organizationId ?? null
+export default async function AdminAuditPage({ searchParams }: { searchParams?: Promise<{ organizationId?: string }> }) {
+  const query = searchParams ? await searchParams : {}
+  const organizationId = query.organizationId ?? null
   const { supabase } = await requirePlatformStaff([
     "platform_superadmin",
     "platform_support",
