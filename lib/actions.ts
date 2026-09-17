@@ -124,7 +124,7 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
   try {
     const supabase = await createSupabaseServerClient()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: emailStr,
       password: passwordStr,
     })
@@ -134,7 +134,6 @@ export async function signIn(prevState: any, formData: FormData): Promise<Action
       return { error: getSignInErrorMessage(error.code) }
     }
 
-    console.log("Sign in successful for user:", data?.user?.email)
     return { ok: true, message: "Zalogowano pomyślnie" }
   } catch (err) {
     console.error("Login error:", err)
