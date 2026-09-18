@@ -11,7 +11,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="mb-4 text-2xl font-bold">Połącz Supabase, aby rozpocząć</h1>
+        <h1 className="mb-4 text-2xl font-bold">Resetowanie hasła jest chwilowo niedostępne. Spróbuj ponownie za chwilę.</h1>
       </div>
     )
   }
