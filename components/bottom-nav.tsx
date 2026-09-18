@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthSheet } from "@/components/auth-sheet"
 import { Compass, Heart, Plus, User as UserIcon } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
 import {
@@ -34,6 +34,7 @@ interface BottomNavProps {
 export function BottomNav({ onSearchClick }: BottomNavProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
@@ -77,6 +78,9 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   const displayName = String(user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User")
   const initials = displayName.split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
   const isActive = (path: string) => pathname === path
+  const searchString = searchParams.toString()
+  const returnToPath = `${pathname}${searchString ? `?${searchString}` : ""}`
+  const discoveryActive = pathname === "/" || pathname.startsWith("/attractions")
 
   const itemClass = (active: boolean) =>
     `flex min-w-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold transition-all ${
@@ -88,12 +92,21 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(8px,env(safe-area-inset-bottom))] md:hidden">
         <div className="pointer-events-auto mx-auto max-w-md rounded-[26px] border border-[#0b1220]/[0.07] bg-white/95 px-2 py-1.5 shadow-[0_16px_42px_rgba(11,18,32,0.18)] backdrop-blur-xl">
           <div className="grid grid-cols-4 items-center gap-1">
-            <button onClick={onSearchClick} className={itemClass(isActive('/'))}>
-              <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/') ? 'bg-primary text-white shadow-[0_6px_14px_rgba(255,90,31,0.25)]' : 'bg-secondary'}`}>
-                <Compass className="h-4 w-4" />
-              </span>
-              Odkrywaj
-            </button>
+            {onSearchClick ? (
+              <button onClick={onSearchClick} className={itemClass(discoveryActive)}>
+                <span className={`grid h-8 w-8 place-items-center rounded-xl ${discoveryActive ? 'bg-primary text-white shadow-[0_6px_14px_rgba(255,90,31,0.25)]' : 'bg-secondary'}`}>
+                  <Compass className="h-4 w-4" />
+                </span>
+                Odkrywaj
+              </button>
+            ) : (
+              <Link href="/attractions" className={itemClass(discoveryActive)}>
+                <span className={`grid h-8 w-8 place-items-center rounded-xl ${discoveryActive ? 'bg-primary text-white shadow-[0_6px_14px_rgba(255,90,31,0.25)]' : 'bg-secondary'}`}>
+                  <Compass className="h-4 w-4" />
+                </span>
+                Odkrywaj
+              </Link>
+            )}
 
             <Link href="/dashboard/favorites" className={itemClass(isActive('/dashboard/favorites'))}>
               <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/dashboard/favorites') ? 'bg-primary text-white' : 'bg-secondary'}`}>
@@ -149,7 +162,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
         </div>
       </div>
 
-      <AuthSheet open={authSheetOpen} onOpenChange={setAuthSheetOpen} mode={authMode} onModeChange={setAuthMode} returnToPath="/host" />
+      <AuthSheet open={authSheetOpen} onOpenChange={setAuthSheetOpen} mode={authMode} onModeChange={setAuthMode} returnToPath={returnToPath} />
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
