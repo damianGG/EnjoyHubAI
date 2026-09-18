@@ -198,6 +198,12 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
     verifyOTPAction(formData)
   }
 
+  const handleResendOTP = (formData: FormData) => {
+    setOtp("")
+    formData.set("phone", phoneNumber)
+    sendOTPAction(formData)
+  }
+
   const content = (
     <>
       {step === "initial" ? (
@@ -388,6 +394,18 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
               </div>
             )}
 
+            {sendOTPState?.error && (
+              <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+                {sendOTPState.error}
+              </div>
+            )}
+
+            {sendOTPState?.message && !sendOTPState.error && (
+              <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded">
+                {sendOTPState.message}
+              </div>
+            )}
+
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
                 Wprowadź 6-cyfrowy kod wysłany na numer {phoneNumber}
@@ -415,14 +433,11 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
 
             <div className="text-center text-sm">
               <button
-                type="button"
-                onClick={() => {
-                  setStep("initial")
-                  setOtp("")
-                }}
+                type="submit"
+                formAction={handleResendOTP}
                 className="text-primary hover:underline"
               >
-                Nie otrzymałeś kodu? Wyślij ponownie
+                Nie otrzymałeś kodu? Wyślij nowy kod
               </button>
             </div>
           </form>
