@@ -190,6 +190,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
       : enteredDigits
     const phone = `${countryCode}${localNumber}`
     setPhoneNumber(phone)
+    setResentOTP(false)
     formData.set("phone", phone)
     sendOTPAction(formData)
   }
@@ -380,6 +381,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
               onClick={() => {
                 setStep("initial")
                 setOtp("")
+                setResentOTP(false)
               }}
               className="text-sm hover:underline"
             >
