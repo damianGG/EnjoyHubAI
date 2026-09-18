@@ -238,7 +238,7 @@ export default async function HostTicketingSalesPage() {
           <CardHeader><CardTitle>Ostatnie zamówienia</CardTitle></CardHeader>
           <CardContent>
             {orders.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">Zamówienia pojawią się tutaj po pierwszym checkoutcie.</div>
+              <div className="py-12 text-center text-muted-foreground">Pierwsze zamówienie pojawi się tutaj automatycznie po zakupie biletu przez klienta.</div>
             ) : (
               <div className="divide-y">
                 {orders.map((order) => {
