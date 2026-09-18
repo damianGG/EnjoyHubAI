@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TicketScannerPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby kontrolować bilety.</CenteredMessage>
+    return <CenteredMessage>Kontrola biletów jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
