@@ -115,7 +115,10 @@ export default async function DashboardPage() {
               <CardHeader><CardTitle>Ulubione</CardTitle></CardHeader>
               <CardContent>
                 {favorites.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Brak zapisanych atrakcji.</p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Nie masz jeszcze zapisanych atrakcji.</p>
+                    <Button asChild variant="outline" size="sm"><Link href="/attractions">Znajdź atrakcję</Link></Button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {favorites.slice(0, 2).map((favorite: any) => (
