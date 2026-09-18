@@ -112,7 +112,7 @@ const polishTimezone = "Europe/Warsaw"
 
 export default async function HostDashboard() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby otworzyć panel organizatora.</CenteredMessage>
+    return <CenteredMessage>Panel organizatora jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
