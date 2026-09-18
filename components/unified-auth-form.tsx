@@ -144,6 +144,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
   const [countryCode, setCountryCode] = useState("+48")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [otp, setOtp] = useState("")
+  const [resentOTP, setResentOTP] = useState(false)
   const [showEmailLogin, setShowEmailLogin] = useState(false)
   
   const [sendOTPState, sendOTPAction] = useActionState(sendPhoneOTP, null)
@@ -200,6 +201,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
 
   const handleResendOTP = (formData: FormData) => {
     setOtp("")
+    setResentOTP(true)
     formData.set("phone", phoneNumber)
     sendOTPAction(formData)
   }
@@ -388,7 +390,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
           <h2 className="text-2xl font-semibold">Potwierdź swój numer</h2>
           
           <form action={handleVerifyOTP} className="space-y-4">
-            {verifyOTPState?.error && (
+            {verifyOTPState?.error && !resentOTP && (
               <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
                 {verifyOTPState.error}
               </div>
@@ -414,7 +416,10 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
                 <InputOTP
                   maxLength={6}
                   value={otp}
-                  onChange={setOtp}
+                  onChange={(value) => {
+                    setOtp(value)
+                    setResentOTP(false)
+                  }}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
