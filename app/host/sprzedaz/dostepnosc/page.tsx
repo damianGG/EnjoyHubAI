@@ -153,9 +153,9 @@ export default async function AvailabilityPage({
 
         <Alert className="mt-6 max-w-3xl">
           <Info className="h-4 w-4" />
-          <AlertTitle>Terminy są tylko techniczną materializacją</AlertTitle>
+          <AlertTitle>Jak działa dostępność</AlertTitle>
           <AlertDescription>
-            Źródłem prawdy jest reguła tygodniowa. System codziennie przedłuża horyzont przyszłych terminów. Wyjątek przebudowuje tylko wybraną datę i nie zmienia stałej reguły.
+            Ustaw stały plan tygodnia, a EnjoyHub automatycznie utworzy przyszłe terminy. Wyjątkiem możesz zmienić tylko konkretny dzień, bez naruszania stałego planu.
           </AlertDescription>
         </Alert>
 
