@@ -129,7 +129,10 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
               <CardContent className="py-12 text-center">
                 <CalendarDays className="mx-auto mb-3 h-9 w-9 text-muted-foreground" />
                 <h3 className="font-semibold">Brak dostępnych terminów</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Organizator może zmienić regułę dostępności lub dodać kolejne terminy.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Na razie nie ma wolnych terminów dla tej oferty. Sprawdź inne atrakcje lub wróć później.</p>
+                <Button asChild variant="outline" className="mt-5">
+                  <Link href="/attractions">Przeglądaj inne atrakcje</Link>
+                </Button>
               </CardContent>
             </Card>
           ) : (
