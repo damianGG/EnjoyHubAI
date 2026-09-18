@@ -5,9 +5,7 @@ import {
   ArrowLeft,
   CalendarDays,
   ChevronRight,
-  Heart,
   MapPin,
-  Share2,
   ShieldCheck,
   Star,
   Store,
@@ -16,6 +14,7 @@ import {
 } from "lucide-react"
 
 import AttractionGallery from "@/components/attraction-gallery"
+import { AttractionPageActions } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
 import { BottomNav } from "@/components/bottom-nav"
