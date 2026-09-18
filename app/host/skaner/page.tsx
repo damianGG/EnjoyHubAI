@@ -24,7 +24,7 @@ export default async function TicketScannerPage() {
   if (!isTicketingPaymentsEnabled) {
     return (
       <CenteredMessage>
-        Kontrola wejścia jest wyłączona konfiguracją środowiska razem z obsługą płatności i biletów.
+        Kontrola wejścia nie jest jeszcze dostępna. Uruchom sprzedaż biletów, aby korzystać ze skanera.
       </CenteredMessage>
     )
   }
