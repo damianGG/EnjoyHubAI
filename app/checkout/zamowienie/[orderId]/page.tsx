@@ -48,7 +48,7 @@ export default async function CheckoutOrderPage({
             enjoy<span className="text-[#ff5a1f]">hub</span>
           </Link>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />Bezpieczny checkout
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />Bezpieczna rezerwacja
           </span>
         </div>
       </header>
