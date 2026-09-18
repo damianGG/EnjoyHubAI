@@ -40,7 +40,7 @@ export default async function AttractionsPage() {
       .slice(0, 12)
   } catch (error) {
     console.error("[attractions] Failed to load marketplace discovery", error)
-    errorMessage = "Nie udało się pobrać listy atrakcji w tym środowisku."
+    errorMessage = "Nie udało się pobrać listy atrakcji."
   }
 
   return (
