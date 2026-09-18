@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
   if (!isSupabaseConfigured) {
-    return <main className="flex min-h-screen items-center justify-center">Połącz Supabase, aby rozpocząć.</main>
+    return <main className="flex min-h-screen items-center justify-center">Panel konta jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</main>
   }
 
   const supabase = createClient()
