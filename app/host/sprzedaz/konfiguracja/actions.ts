@@ -124,7 +124,7 @@ export async function createSalesSetup(
   formData: FormData,
 ): Promise<SalesSetupActionState> {
   if (!isSupabaseConfigured) {
-    return { error: "Połącz Supabase, aby uruchomić sprzedaż." }
+    return { error: "Nie udało się uruchomić sprzedaży. Spróbuj ponownie za chwilę." }
   }
 
   const ticketNames = formData.getAll("ticketName").map(String)
