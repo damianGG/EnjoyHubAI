@@ -250,7 +250,7 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
 
       {!legalContext.platformContactConfigured && (
         <Alert>
-          <AlertDescription>Konfiguracja danych kontaktowych operatora EnjoyHub nie jest jeszcze zakończona. System nie dopuści do uruchomienia rzeczywistej płatności, dopóki dane nie zostaną uzupełnione.</AlertDescription>
+          <AlertDescription>Płatność online dla tej rezerwacji jest chwilowo niedostępna. Możesz wrócić do atrakcji i wybrać inny termin lub spróbować ponownie później.</AlertDescription>
         </Alert>
       )}
 
