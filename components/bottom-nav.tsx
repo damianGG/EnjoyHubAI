@@ -34,6 +34,7 @@ interface BottomNavProps {
 export function BottomNav({ onSearchClick }: BottomNavProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [authSheetOpen, setAuthSheetOpen] = useState(false)
@@ -77,6 +78,9 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
   const displayName = String(user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User")
   const initials = displayName.split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
   const isActive = (path: string) => pathname === path
+  const searchString = searchParams.toString()
+  const returnToPath = `${pathname}${searchString ? `?${searchString}` : ""}`
+  const discoveryActive = pathname === "/" || pathname.startsWith("/attractions")
 
   const itemClass = (active: boolean) =>
     `flex min-w-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold transition-all ${
