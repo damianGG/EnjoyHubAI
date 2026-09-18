@@ -24,7 +24,7 @@ export default async function TicketScannerPage() {
   if (!isTicketingPaymentsEnabled) {
     return (
       <CenteredMessage>
-        Kontrola wejścia nie jest jeszcze dostępna. Uruchom sprzedaż biletów, aby korzystać ze skanera.
+        Kontrola wejścia nie jest jeszcze dostępna. Skaner pojawi się po uruchomieniu sprzedaży biletów w EnjoyHub.
       </CenteredMessage>
     )
   }
