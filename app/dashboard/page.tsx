@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Ostatnie zamówienia</CardTitle>
-              <CardDescription>Zakupy wykonane w nowym checkoutcie EnjoyHub.</CardDescription>
+              <CardDescription>Twoje ostatnie zakupy i rezerwacje w EnjoyHub.</CardDescription>
             </CardHeader>
             <CardContent>
               {orders.length === 0 ? (
