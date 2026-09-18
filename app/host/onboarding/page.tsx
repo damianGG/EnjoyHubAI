@@ -24,7 +24,7 @@ interface RawCategory {
 
 export default async function OrganizerOnboardingPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby rozpocząć konfigurację.</CenteredMessage>
+    return <CenteredMessage>Kreator konfiguracji jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
