@@ -39,7 +39,7 @@ interface ProductRow {
 
 export default async function BookingWidgetInstallerPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby wygenerować widget rezerwacji.</CenteredMessage>
+    return <CenteredMessage>Generator widgetu jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
@@ -122,13 +122,13 @@ export default async function BookingWidgetInstallerPage() {
             Rezerwacje na Twojej stronie
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Wklejasz jeden fragment kodu na własnej stronie. Kalendarz, ceny i wolne miejsca są synchronizowane z EnjoyHub automatycznie, a klient przechodzi do tego samego checkoutu i płatności.
+            Wklejasz jeden fragment kodu na własnej stronie. Kalendarz, ceny i wolne miejsca są synchronizowane z EnjoyHub automatycznie, a klient przechodzi prosto do rezerwacji i płatności.
           </p>
         </div>
 
         {!isTicketingCheckoutEnabled && (
           <Alert className="mb-6">
-            <AlertTitle>Checkout jest obecnie wyłączony</AlertTitle>
+            <AlertTitle>Rezerwacje online nie są jeszcze aktywne</AlertTitle>
             <AlertDescription>
               Kod widgetu możesz już przygotować, ale klienci zaczną rezerwować dopiero po włączeniu sprzedaży biletowej.
             </AlertDescription>

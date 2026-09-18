@@ -78,7 +78,7 @@ export default async function HostSettlementsPage({
 }: {
   searchParams: Promise<{ stripe?: string; organization?: string; status?: string; blad?: string; kwota?: string }>
 }) {
-  if (!isSupabaseConfigured) return <CenteredMessage>Połącz Supabase, aby otworzyć rozliczenia.</CenteredMessage>
+  if (!isSupabaseConfigured) return <CenteredMessage>Rozliczenia są chwilowo niedostępne. Spróbuj ponownie za chwilę.</CenteredMessage>
 
   const query = await searchParams
   const supabase = createClient()

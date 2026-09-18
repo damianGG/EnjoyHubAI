@@ -267,7 +267,7 @@ export default async function TicketingConfigurationPage({
   }>
 }) {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby skonfigurować sprzedaż.</CenteredMessage>
+    return <CenteredMessage>Konfiguracja sprzedaży jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const [configuration, query] = await Promise.all([loadConfiguration(), searchParams])
@@ -294,7 +294,7 @@ export default async function TicketingConfigurationPage({
       <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <div className="mb-8 max-w-3xl">
           <Badge variant="secondary" className="mb-3">Konfiguracja sprzedaży</Badge>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Uruchom sprzedaż bez konfiguracji w Supabase</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Uruchom sprzedaż krok po kroku</h1>
           <p className="mt-3 text-muted-foreground">
             Jeden kreator tworzy obiekt, ofertę, cennik, harmonogram i pierwsze 90 dni terminów. Potem automat codziennie utrzymuje kalendarz sprzedaży.
           </p>
@@ -327,9 +327,9 @@ export default async function TicketingConfigurationPage({
         {query.powiazano && (
           <Alert className="mb-6 border-emerald-200 bg-emerald-50 text-emerald-950">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Atrakcja została połączona z ticketingiem</AlertTitle>
+            <AlertTitle>Atrakcja została połączona ze sprzedażą biletów</AlertTitle>
             <AlertDescription>
-              Publiczny kalendarz korzysta teraz z nowych sesji, atomowej dostępności i checkoutu biletowego.
+              Publiczny kalendarz korzysta teraz z aktualnych terminów i dostępności.
             </AlertDescription>
           </Alert>
         )}
@@ -352,9 +352,9 @@ export default async function TicketingConfigurationPage({
         {!isTicketingCheckoutEnabled && (
           <Alert className="mb-8">
             <Settings2 className="h-4 w-4" />
-            <AlertTitle>Konfiguracja może powstać przed startem płatności</AlertTitle>
+            <AlertTitle>Ofertę możesz przygotować przed uruchomieniem płatności</AlertTitle>
             <AlertDescription>
-              Publiczne linki pozostaną niewidoczne do ustawienia <code>TICKETING_CHECKOUT_ENABLED=true</code>. Możesz już przygotować całą ofertę i cennik.
+              Publiczne linki sprzedażowe są jeszcze wyłączone. Możesz już przygotować całą ofertę i cennik — linki pojawią się po uruchomieniu sprzedaży online.
             </AlertDescription>
           </Alert>
         )}
@@ -372,8 +372,8 @@ export default async function TicketingConfigurationPage({
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center px-6 py-12 text-center">
                 <Ticket className="mb-3 h-9 w-9 text-muted-foreground" />
-                <h3 className="font-semibold">Nie masz jeszcze oferty w nowym ticketingu</h3>
-                <p className="mt-2 max-w-lg text-sm text-muted-foreground">Wypełnij kreator poniżej. Nie będzie potrzebny ręczny seed ani fixture SQL.</p>
+                <h3 className="font-semibold">Nie masz jeszcze oferty biletowej</h3>
+                <p className="mt-2 max-w-lg text-sm text-muted-foreground">Wypełnij kreator poniżej — poprowadzimy Cię przez ofertę, bilety i dostępność.</p>
               </CardContent>
             </Card>
           ) : (

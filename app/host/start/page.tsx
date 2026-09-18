@@ -24,7 +24,7 @@ const preparationItems = [
 
 export default async function OrganizerStartPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby rozpocząć konfigurację organizatora.</CenteredMessage>
+    return <CenteredMessage>Konfiguracja organizatora jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()

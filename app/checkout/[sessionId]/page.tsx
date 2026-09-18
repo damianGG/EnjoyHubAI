@@ -86,7 +86,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
                 <div className="rounded-xl bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-800">
                   {isTicketingPaymentsEnabled
                     ? "Po zatwierdzeniu danych przejdziesz do płatności. Miejsca zostaną zablokowane na 15 minut."
-                    : "Płatności są obecnie wyłączone flagą środowiskową; możesz przetestować blokowanie miejsc."}
+                    : "Płatność online dla tej rezerwacji jest chwilowo niedostępna."}
                 </div>
               </CardContent>
             </Card>

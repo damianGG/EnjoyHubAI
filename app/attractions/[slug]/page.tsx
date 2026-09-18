@@ -114,7 +114,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <h1 className="text-2xl font-bold">Połącz Supabase, aby rozpocząć</h1>
+        <h1 className="text-2xl font-bold">Ta atrakcja jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</h1>
       </div>
     )
   }

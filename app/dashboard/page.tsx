@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
   if (!isSupabaseConfigured) {
-    return <main className="flex min-h-screen items-center justify-center">Połącz Supabase, aby rozpocząć.</main>
+    return <main className="flex min-h-screen items-center justify-center">Panel konta jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</main>
   }
 
   const supabase = createClient()
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Ostatnie zamówienia</CardTitle>
-              <CardDescription>Zakupy wykonane w nowym checkoutcie EnjoyHub.</CardDescription>
+              <CardDescription>Twoje ostatnie zakupy i rezerwacje w EnjoyHub.</CardDescription>
             </CardHeader>
             <CardContent>
               {orders.length === 0 ? (
@@ -115,7 +115,10 @@ export default async function DashboardPage() {
               <CardHeader><CardTitle>Ulubione</CardTitle></CardHeader>
               <CardContent>
                 {favorites.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Brak zapisanych atrakcji.</p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Nie masz jeszcze zapisanych atrakcji.</p>
+                    <Button asChild variant="outline" size="sm"><Link href="/attractions">Znajdź atrakcję</Link></Button>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {favorites.slice(0, 2).map((favorite: any) => (

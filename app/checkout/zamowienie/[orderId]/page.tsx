@@ -48,7 +48,7 @@ export default async function CheckoutOrderPage({
             enjoy<span className="text-[#ff5a1f]">hub</span>
           </Link>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />Bezpieczny checkout
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />Bezpieczna rezerwacja
           </span>
         </div>
       </header>
@@ -192,7 +192,7 @@ export default async function CheckoutOrderPage({
                       initialNow={Date.now()}
                       canRelease={order.paymentStatus !== "pending"}
                     />
-                    {!isTicketingPaymentsEnabled && <p className="text-center text-xs text-muted-foreground">Płatność online jest wyłączona flagą środowiskową.</p>}
+                    {!isTicketingPaymentsEnabled && <p className="text-center text-xs text-muted-foreground">Płatność online jest obecnie niedostępna.</p>}
                   </>
                 ) : (
                   <div className="space-y-4 text-center">

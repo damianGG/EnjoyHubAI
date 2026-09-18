@@ -350,11 +350,11 @@ function EmptyList({ searched }: { searched: boolean }) {
       <span className="mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-white text-primary shadow-[0_10px_25px_rgba(11,18,32,0.08)]">
         {searched ? <SearchX className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
       </span>
-      <h2 className="text-lg font-bold tracking-[-0.025em]">{searched ? "Nie znaleźliśmy takich atrakcji" : "Mapa jest gotowa do odkrywania"}</h2>
+      <h2 className="text-lg font-bold tracking-[-0.025em]">{searched ? "Nie znaleźliśmy takich atrakcji" : "Nie ma jeszcze atrakcji do wyświetlenia"}</h2>
       <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
         {searched
           ? "Zmień termin, kategorię, lokalizację albo liczbę osób i spróbuj ponownie."
-          : "W tym podglądzie nie ma jeszcze danych atrakcji. Interfejs, filtry i mapa działają niezależnie od zasilenia listy."}
+          : "Spróbuj zmienić lokalizację lub wróć później — nowe atrakcje będą pojawiać się tutaj automatycznie."}
       </p>
     </div>
   )

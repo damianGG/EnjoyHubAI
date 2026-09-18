@@ -25,9 +25,7 @@ export function DiscoveryChrome({ children }: { children: ReactNode }) {
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <div className="min-h-0 flex-1 md:block">{children}</div>
-      <div className="hidden md:block">
-        <BottomNav onSearchClick={() => setSearchOpen(true)} />
-      </div>
+      <BottomNav onSearchClick={() => setSearchOpen(true)} />
     </div>
   )
 }

@@ -9,7 +9,7 @@ export default async function FavoritesPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="text-2xl font-bold mb-4">Połącz Supabase, aby rozpocząć</h1>
+        <h1 className="text-2xl font-bold mb-4">Ulubione są chwilowo niedostępne. Spróbuj ponownie za chwilę.</h1>
       </div>
     )
   }

@@ -10,7 +10,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <h1 className="mb-4 text-2xl font-bold">Połącz Supabase, aby rozpocząć</h1>
+        <h1 className="mb-4 text-2xl font-bold">Zmiana hasła jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</h1>
       </div>
     )
   }

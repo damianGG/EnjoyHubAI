@@ -181,8 +181,13 @@ export function ScrollableCategoryNav({
             )
 
             return useNavigation ? (
-              <Link href={`/attractions?categories=${category.slug}`} key={category.id}>
-                <button onClick={() => onCategorySelect(category.slug)} className={className}>{content}</button>
+              <Link
+                href={`/attractions?categories=${category.slug}`}
+                key={category.id}
+                onClick={() => onCategorySelect(category.slug)}
+                className={className}
+              >
+                {content}
               </Link>
             ) : (
               <button key={category.id} onClick={() => handleCategoryClick(category.slug)} className={className}>{content}</button>

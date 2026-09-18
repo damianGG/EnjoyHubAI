@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TicketScannerPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby kontrolować bilety.</CenteredMessage>
+    return <CenteredMessage>Kontrola biletów jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
@@ -24,7 +24,7 @@ export default async function TicketScannerPage() {
   if (!isTicketingPaymentsEnabled) {
     return (
       <CenteredMessage>
-        Kontrola wejścia jest wyłączona konfiguracją środowiska razem z obsługą płatności i biletów.
+        Kontrola wejścia nie jest jeszcze dostępna. Skaner pojawi się po uruchomieniu sprzedaży biletów w EnjoyHub.
       </CenteredMessage>
     )
   }

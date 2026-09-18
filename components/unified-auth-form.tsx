@@ -144,6 +144,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
   const [countryCode, setCountryCode] = useState("+48")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [otp, setOtp] = useState("")
+  const [resentOTP, setResentOTP] = useState(false)
   const [showEmailLogin, setShowEmailLogin] = useState(false)
   
   const [sendOTPState, sendOTPAction] = useActionState(sendPhoneOTP, null)
@@ -189,6 +190,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
       : enteredDigits
     const phone = `${countryCode}${localNumber}`
     setPhoneNumber(phone)
+    setResentOTP(false)
     formData.set("phone", phone)
     sendOTPAction(formData)
   }
@@ -196,6 +198,13 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
   const handleVerifyOTP = (formData: FormData) => {
     formData.set("phone", phoneNumber)
     verifyOTPAction(formData)
+  }
+
+  const handleResendOTP = (formData: FormData) => {
+    setOtp("")
+    setResentOTP(true)
+    formData.set("phone", phoneNumber)
+    sendOTPAction(formData)
   }
 
   const content = (
@@ -372,6 +381,7 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
               onClick={() => {
                 setStep("initial")
                 setOtp("")
+                setResentOTP(false)
               }}
               className="text-sm hover:underline"
             >
@@ -382,9 +392,21 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
           <h2 className="text-2xl font-semibold">Potwierdź swój numer</h2>
           
           <form action={handleVerifyOTP} className="space-y-4">
-            {verifyOTPState?.error && (
+            {verifyOTPState?.error && !resentOTP && (
               <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
                 {verifyOTPState.error}
+              </div>
+            )}
+
+            {sendOTPState?.error && (
+              <div className="bg-destructive/10 border border-destructive/50 text-destructive px-4 py-3 rounded">
+                {sendOTPState.error}
+              </div>
+            )}
+
+            {sendOTPState?.message && !sendOTPState.error && (
+              <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded">
+                {sendOTPState.message}
               </div>
             )}
 
@@ -396,7 +418,10 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
                 <InputOTP
                   maxLength={6}
                   value={otp}
-                  onChange={setOtp}
+                  onChange={(value) => {
+                    setOtp(value)
+                    setResentOTP(false)
+                  }}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
@@ -415,14 +440,11 @@ export default function UnifiedAuthForm(props: UnifiedAuthFormProps = {}) {
 
             <div className="text-center text-sm">
               <button
-                type="button"
-                onClick={() => {
-                  setStep("initial")
-                  setOtp("")
-                }}
+                type="submit"
+                formAction={handleResendOTP}
                 className="text-primary hover:underline"
               >
-                Nie otrzymałeś kodu? Wyślij ponownie
+                Nie otrzymałeś kodu? Wyślij nowy kod
               </button>
             </div>
           </form>
