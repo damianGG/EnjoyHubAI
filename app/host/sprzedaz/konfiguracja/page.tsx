@@ -267,7 +267,7 @@ export default async function TicketingConfigurationPage({
   }>
 }) {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby skonfigurować sprzedaż.</CenteredMessage>
+    return <CenteredMessage>Konfiguracja sprzedaży jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const [configuration, query] = await Promise.all([loadConfiguration(), searchParams])
