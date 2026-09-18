@@ -79,7 +79,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
             </AlertDescription>
           </Alert>
         ) : !publicSalesReady ? (
-          <Alert className="mt-8 border-amber-200 bg-amber-50 text-amber-950"><Settings2 className="h-4 w-4" /><AlertTitle>Firma zweryfikowana</AlertTitle><AlertDescription>Płatności globalne EnjoyHub są jeszcze w trybie przygotowania. Możesz sprawdzić ofertę, cennik i dostępność.</AlertDescription></Alert>
+          <Alert className="mt-8 border-amber-200 bg-amber-50 text-amber-950"><Settings2 className="h-4 w-4" /><AlertTitle>Firma zweryfikowana</AlertTitle><AlertDescription>Sprzedaż online nie jest jeszcze dostępna. Możesz już sprawdzić ofertę, cennik i dostępność.</AlertDescription></Alert>
         ) : (
           <Alert className="mt-8 border-emerald-200 bg-emerald-50 text-emerald-950"><ShoppingCart className="h-4 w-4" /><AlertTitle>Sprzedaż online jest aktywna</AlertTitle><AlertDescription>Klienci mogą wybrać termin, rodzaj biletu, zapłacić i otrzymać bilet QR.</AlertDescription></Alert>
         )}
