@@ -122,7 +122,7 @@ function onboardingErrorMessage(error: { code?: string; message?: string } | nul
   const message = error?.message ?? ""
 
   if (error?.code === "PGRST202" || message.includes("ticketing_complete_organizer_onboarding")) {
-    return "Kreator organizatora nie jest jeszcze aktywny w Supabase. Administrator EnjoyHub musi uruchomić najnowszą migrację."
+    return "Kreator organizatora jest chwilowo niedostępny. Skontaktuj się z obsługą EnjoyHub lub spróbuj ponownie później."
   }
   if (error?.code === "23503" || message.toLowerCase().includes("category")) {
     return "Wybrana kategoria nie jest już dostępna. Odśwież stronę i wybierz ją ponownie."
