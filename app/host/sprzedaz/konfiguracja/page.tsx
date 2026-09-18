@@ -327,9 +327,9 @@ export default async function TicketingConfigurationPage({
         {query.powiazano && (
           <Alert className="mb-6 border-emerald-200 bg-emerald-50 text-emerald-950">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Atrakcja została połączona z ticketingiem</AlertTitle>
+            <AlertTitle>Atrakcja została połączona ze sprzedażą biletów</AlertTitle>
             <AlertDescription>
-              Publiczny kalendarz korzysta teraz z nowych sesji, atomowej dostępności i checkoutu biletowego.
+              Publiczny kalendarz korzysta teraz z aktualnych terminów i dostępności.
             </AlertDescription>
           </Alert>
         )}
@@ -354,7 +354,7 @@ export default async function TicketingConfigurationPage({
             <Settings2 className="h-4 w-4" />
             <AlertTitle>Ofertę możesz przygotować przed uruchomieniem płatności</AlertTitle>
             <AlertDescription>
-              Publiczne linki pozostaną niewidoczne do ustawienia <code>TICKETING_CHECKOUT_ENABLED=true</code>. Możesz już przygotować całą ofertę i cennik.
+              Publiczne linki sprzedażowe są jeszcze wyłączone. Możesz już przygotować całą ofertę i cennik — linki pojawią się po uruchomieniu sprzedaży online.
             </AlertDescription>
           </Alert>
         )}
