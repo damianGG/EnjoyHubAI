@@ -104,13 +104,13 @@ function setupErrorMessage(error: { code?: string; message?: string } | null) {
     error?.code === "PGRST202"
     || message.includes("ticketing_create_marketplace_sales_setup")
   ) {
-    return "Kreator wymaga migracji etapu 2B w Supabase. Po jej uruchomieniu formularz połączy marketplace z nowym ticketingiem."
+    return "Kreator sprzedaży jest chwilowo niedostępny. Skontaktuj się z obsługą EnjoyHub lub spróbuj ponownie później."
   }
   if (error?.code === "23505") {
     return "Taka oferta, obiekt lub powiązanie atrakcji już istnieje. Sprawdź wybraną atrakcję i spróbuj ponownie."
   }
   if (error?.code === "42501" || message.toLowerCase().includes("cannot configure")) {
-    return "Nie masz uprawnień właściciela, administratora ani managera dla wybranego obiektu."
+    return "Nie masz uprawnień do zarządzania sprzedażą dla wybranego obiektu."
   }
   if (error?.code === "22023") {
     return "Sprawdź godziny, pojemność i rodzaje biletów. Harmonogram musi tworzyć co najmniej jeden pełny termin."
