@@ -54,7 +54,7 @@ interface HostTicket {
 
 export default async function HostTicketingSalesPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby zobaczyć sprzedaż.</CenteredMessage>
+    return <CenteredMessage>Dane sprzedaży są chwilowo niedostępne. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
