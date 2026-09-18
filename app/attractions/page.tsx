@@ -51,8 +51,8 @@ export default async function AttractionsPage() {
             <CardContent className="flex items-start gap-3 py-4 text-sm">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div>
-                <p className="font-semibold">Podgląd nowego interfejsu jest aktywny</p>
-                <p className="mt-0.5 text-muted-foreground">{errorMessage} Połączenie danych można naprawić niezależnie od warstwy wizualnej.</p>
+                <p className="font-semibold">Nie udało się wczytać atrakcji</p>
+                <p className="mt-0.5 text-muted-foreground">{errorMessage} Spróbuj odświeżyć stronę za chwilę.</p>
               </div>
             </CardContent>
           </Card>
