@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function CustomerOrdersPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby wyświetlić bilety.</CenteredMessage>
+    return <CenteredMessage>Bilety są chwilowo niedostępne. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
