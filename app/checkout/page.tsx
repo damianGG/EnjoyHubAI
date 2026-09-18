@@ -3,6 +3,7 @@ import { CalendarDays, ChevronRight, MapPin, Ticket } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
 import { formatMoney, formatSessionDate } from "@/lib/ticketing/format"
@@ -18,7 +19,7 @@ export default async function CheckoutSessionsPage() {
     <main className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
       <div className="container mx-auto max-w-5xl px-4 py-10 sm:py-16">
         <div className="mb-10 max-w-2xl">
-          <Badge variant="secondary" className="mb-4">Nowa sprzedaż EnjoyHub</Badge>
+          <Badge variant="secondary" className="mb-4">Rezerwacja online</Badge>
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Wybierz termin atrakcji</h1>
           <p className="mt-4 text-muted-foreground">
             Dostępność jest liczona na żywo. Po wybraniu biletów zablokujemy miejsca na 15 minut.
@@ -31,8 +32,11 @@ export default async function CheckoutSessionsPage() {
               <Ticket className="mb-4 h-10 w-10 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Brak aktywnych terminów</h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Aktywne terminy pojawią się tutaj po uruchomieniu oferty przez właściciela obiektu.
+                Nie ma teraz terminów dostępnych do rezerwacji. Przejdź do listy atrakcji i wybierz inną propozycję.
               </p>
+              <Button asChild variant="outline" className="mt-5">
+                <Link href="/attractions">Przeglądaj atrakcje</Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
