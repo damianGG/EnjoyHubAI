@@ -172,9 +172,9 @@ export default async function AvailabilityPage({
             <AlertTitle>Nie udało się zmienić dostępności</AlertTitle>
             <AlertDescription>
               {query.blad === "rezerwacje"
-                ? "Dla tej daty istnieje już aktywność checkoutu lub rezerwacja. Dla bezpieczeństwa nie przebudowujemy automatycznie terminów powiązanych z zamówieniami."
+                ? "Dla tej daty istnieje już rezerwacja lub rozpoczęte zamówienie. Aby nie naruszyć istniejących rezerwacji, tych terminów nie można teraz automatycznie zmienić."
                 : query.blad === "uprawnienia"
-                  ? "Nie masz uprawnień owner/admin/manager do tej oferty."
+                  ? "Nie masz uprawnień do zarządzania tą ofertą. Poproś właściciela organizacji o odpowiedni dostęp."
                   : "Sprawdź datę, godziny i pojemność, a następnie spróbuj ponownie."}
             </AlertDescription>
           </Alert>
