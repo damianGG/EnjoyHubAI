@@ -138,11 +138,23 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   if (`/attractions/${slug}` !== canonicalPath) permanentRedirect(canonicalPath)
 
   const supabase = createClient()
-  const [{ data: claimData }, seoLinking] = await Promise.all([
+  const [{ data: claimData }, seoLinking, { data: { user } }] = await Promise.all([
     supabase.rpc("profile_claim_get", { p_attraction_id: id }),
     getAttractionInternalLinking(attraction),
+    supabase.auth.getUser(),
   ])
   const claimContext = claimData as { claimable?: boolean } | null
+
+  let initialFavorite = false
+  if (user) {
+    const { data: favorite } = await supabase
+      .from("favorites")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("property_id", attraction.id)
+      .maybeSingle()
+    initialFavorite = Boolean(favorite)
+  }
   const venueContact = attraction.venueContact
   const { ratingValue: roundedRating, reviewCount } = getAttractionAverageRating(attraction)
   const locationLabel = [attraction.address, attraction.city].filter(Boolean).join(", ")
@@ -201,10 +213,13 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         <Link href="/attractions" className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Powrót do mapy atrakcji">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Udostępnij"><Share2 className="h-5 w-5" /></Button>
-          <Button variant="ghost" size="icon" className="pointer-events-auto h-11 w-11 rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Dodaj do ulubionych"><Heart className="h-5 w-5" /></Button>
-        </div>
+        <AttractionPageActions
+          attractionId={attraction.id}
+          attractionTitle={attraction.title}
+          returnToPath={canonicalPath}
+          initialFavorite={initialFavorite}
+          compact
+        />
       </div>
 
       <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-5">
@@ -228,10 +243,12 @@ export default async function AttractionPage({ params, searchParams }: Attractio
             <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate text-foreground" aria-current="page">{attraction.title}</span>
           </nav>
-          <div className="flex shrink-0 gap-2">
-            <Button variant="outline" size="sm"><Heart className="mr-2 h-4 w-4" />Zapisz</Button>
-            <Button variant="outline" size="sm"><Share2 className="mr-2 h-4 w-4" />Udostępnij</Button>
-          </div>
+          <AttractionPageActions
+            attractionId={attraction.id}
+            attractionTitle={attraction.title}
+            returnToPath={canonicalPath}
+            initialFavorite={initialFavorite}
+          />
         </div>
 
         <AttractionGallery images={attraction.images || []} title={attraction.title} />
