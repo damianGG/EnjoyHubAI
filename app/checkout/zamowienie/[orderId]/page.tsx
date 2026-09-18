@@ -192,7 +192,7 @@ export default async function CheckoutOrderPage({
                       initialNow={Date.now()}
                       canRelease={order.paymentStatus !== "pending"}
                     />
-                    {!isTicketingPaymentsEnabled && <p className="text-center text-xs text-muted-foreground">Płatność online jest wyłączona flagą środowiskową.</p>}
+                    {!isTicketingPaymentsEnabled && <p className="text-center text-xs text-muted-foreground">Płatność online jest obecnie niedostępna.</p>}
                   </>
                 ) : (
                   <div className="space-y-4 text-center">
