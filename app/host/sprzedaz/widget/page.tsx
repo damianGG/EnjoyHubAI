@@ -39,7 +39,7 @@ interface ProductRow {
 
 export default async function BookingWidgetInstallerPage() {
   if (!isSupabaseConfigured) {
-    return <CenteredMessage>Połącz Supabase, aby wygenerować widget rezerwacji.</CenteredMessage>
+    return <CenteredMessage>Generator widgetu jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</CenteredMessage>
   }
 
   const supabase = createClient()
