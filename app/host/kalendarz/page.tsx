@@ -11,6 +11,7 @@ import {
   PlusCircle,
   Settings2,
   Users,
+  type LucideIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
