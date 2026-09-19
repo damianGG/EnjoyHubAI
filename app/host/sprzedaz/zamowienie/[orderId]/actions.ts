@@ -17,6 +17,100 @@ const refundSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 })
 
+const orderActionSchema = z.object({
+  orderId: z.string().uuid(),
+})
+
+const rescheduleSchema = z.object({
+  orderId: z.string().uuid(),
+  targetSessionId: z.string().uuid(),
+  reason: z.string().trim().max(500),
+})
+
+export async function markOrderPaidOnSite(formData: FormData) {
+  const parsed = orderActionSchema.safeParse({
+    orderId: String(formData.get("orderId") ?? ""),
+  })
+  if (!parsed.success) redirect("/host/sprzedaz")
+
+  const { orderId } = parsed.data
+  if (!isSupabaseConfigured) redirect(`/host/sprzedaz/zamowienie/${orderId}?blad=konfiguracja`)
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect(`/auth/login?next=/host/sprzedaz/zamowienie/${orderId}`)
+
+  const { error } = await supabase.rpc("ticketing_mark_on_site_payment_paid", {
+    p_order_id: orderId,
+  })
+
+  if (error) {
+    console.error("Could not mark on-site payment as paid", {
+      orderId,
+      userId: user.id,
+      code: error.code,
+      message: error.message,
+    })
+    const code = error.code === "42501" ? "uprawnienia" : "platnosc"
+    redirect(`/host/sprzedaz/zamowienie/${orderId}?blad=${code}`)
+  }
+
+  revalidatePath(`/host/sprzedaz/zamowienie/${orderId}`)
+  revalidatePath("/host/sprzedaz")
+  revalidatePath("/host")
+  redirect(`/host/sprzedaz/zamowienie/${orderId}?status=oplacona`)
+}
+
+export async function rescheduleOrganizerBooking(formData: FormData) {
+  const parsed = rescheduleSchema.safeParse({
+    orderId: String(formData.get("orderId") ?? ""),
+    targetSessionId: String(formData.get("targetSessionId") ?? ""),
+    reason: String(formData.get("reason") ?? ""),
+  })
+
+  if (!parsed.success) {
+    const fallbackOrderId = String(formData.get("orderId") ?? "")
+    redirect(`/host/sprzedaz/zamowienie/${fallbackOrderId}?blad=termin`)
+  }
+
+  const { orderId, targetSessionId, reason } = parsed.data
+  if (!isSupabaseConfigured) redirect(`/host/sprzedaz/zamowienie/${orderId}?blad=konfiguracja`)
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect(`/auth/login?next=/host/sprzedaz/zamowienie/${orderId}`)
+
+  const { error } = await supabase.rpc("ticketing_reschedule_organizer_booking", {
+    p_order_id: orderId,
+    p_to_session_id: targetSessionId,
+    p_reason: reason,
+  })
+
+  if (error) {
+    console.error("Organizer booking reschedule failed", {
+      orderId,
+      targetSessionId,
+      userId: user.id,
+      code: error.code,
+      message: error.message,
+    })
+    const message = error.message?.toLowerCase() ?? ""
+    const code = error.code === "42501"
+      ? "uprawnienia"
+      : message.includes("capacity")
+        ? "miejsca"
+        : "termin"
+    redirect(`/host/sprzedaz/zamowienie/${orderId}?blad=${code}`)
+  }
+
+  revalidatePath(`/host/sprzedaz/zamowienie/${orderId}`)
+  revalidatePath("/host/sprzedaz")
+  revalidatePath("/host/kalendarz")
+  revalidatePath("/host")
+  revalidatePath("/checkout")
+  redirect(`/host/sprzedaz/zamowienie/${orderId}?status=przeniesiona`)
+}
+
 export async function requestOrderRefund(formData: FormData) {
   const parsed = refundSchema.safeParse({
     orderId: formData.get("orderId"),
@@ -71,6 +165,7 @@ export async function requestOrderRefund(formData: FormData) {
   revalidatePath(`/host/sprzedaz/zamowienie/${orderId}`)
   revalidatePath("/host/sprzedaz")
   revalidatePath("/host/rozliczenia")
+  revalidatePath("/host/kalendarz")
   redirect(`/host/sprzedaz/zamowienie/${orderId}?status=zwrot`)
 }
 
