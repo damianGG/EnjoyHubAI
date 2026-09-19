@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronRight,
   MapPin,
+  MessageCircle,
   ShieldCheck,
   Star,
   Store,
@@ -13,7 +14,8 @@ import {
   Users,
 } from "lucide-react"
 
-import { startAttractionConversation } from "@/app/attractions/[slug]/actions"\nimport AttractionGallery from "@/components/attraction-gallery"
+import { startAttractionConversation } from "@/app/attractions/[slug]/actions"
+import AttractionGallery from "@/components/attraction-gallery"
 import { AttractionPageActions } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
