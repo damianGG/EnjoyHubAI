@@ -88,7 +88,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
           <DropdownMenuItem asChild>
             <Link href="/dashboard" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
-              Moje konto
+              Mój panel
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
