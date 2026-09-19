@@ -36,6 +36,8 @@ export default async function CheckoutOrderPage({
 
   const firstItem = order.items[0]
   const isPaid = order.status === "confirmed" && order.paymentStatus === "paid"
+  const isNoPaymentRequired = order.status === "confirmed" && order.paymentStatus === "not_required"
+  const isConfirmed = isPaid || isNoPaymentRequired
   const isAwaitingPayment = order.status === "awaiting_payment"
   const isClosed = ["cancelled", "expired"].includes(order.status) || order.paymentStatus === "failed"
   const returnedFromStripe = query.platnosc === "powrot"
@@ -63,9 +65,9 @@ export default async function CheckoutOrderPage({
             {[
               { label: "Termin", complete: true },
               { label: "Dane", complete: true },
-              { label: isPaid ? "Gotowe" : "Płatność", complete: isPaid },
+              { label: isConfirmed ? "Gotowe" : "Płatność", complete: isConfirmed },
             ].map((step, index) => (
-              <div key={step.label} className={`flex items-center justify-center gap-2 ${index < 2 ? "text-emerald-700" : isPaid ? "text-emerald-700" : "font-semibold text-[#ff5a1f]"}`}>
+              <div key={step.label} className={`flex items-center justify-center gap-2 ${index < 2 ? "text-emerald-700" : isConfirmed ? "text-emerald-700" : "font-semibold text-[#ff5a1f]"}`}>
                 <span className={`flex h-7 w-7 items-center justify-center rounded-full ${step.complete ? "bg-emerald-100" : "bg-[#ff5a1f] text-white"}`}>
                   {step.complete ? <Check className="h-4 w-4" /> : "3"}
                 </span>
@@ -76,18 +78,20 @@ export default async function CheckoutOrderPage({
         </div>
 
         <div className="mb-7 text-center">
-          <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${isPaid ? "bg-emerald-100" : isClosed ? "bg-red-100" : "bg-[#fff1eb]"}`}>
-            {isPaid
+          <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${isConfirmed ? "bg-emerald-100" : isClosed ? "bg-red-100" : "bg-[#fff1eb]"}`}>
+            {isConfirmed
               ? <CheckCircle2 className="h-8 w-8 text-emerald-700" />
               : <CircleAlert className={`h-8 w-8 ${isClosed ? "text-red-700" : "text-[#ff5a1f]"}`} />}
           </div>
-          <Badge variant={isPaid ? "default" : isClosed ? "destructive" : "secondary"}>Rezerwacja #{order.orderNumber}</Badge>
+          <Badge variant={isConfirmed ? "default" : isClosed ? "destructive" : "secondary"}>Rezerwacja #{order.orderNumber}</Badge>
           <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-            {isPaid ? "Rezerwacja potwierdzona!" : isClosed ? "Ta rezerwacja wygasła" : "Ostatni krok — płatność"}
+            {isConfirmed ? "Rezerwacja potwierdzona!" : isClosed ? "Ta rezerwacja wygasła" : "Ostatni krok — płatność"}
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            {isPaid
-              ? "Bilety są gotowe. Otwórz kod QR przy wejściu lub wróć do nich z wiadomości e-mail."
+            {isConfirmed
+              ? isNoPaymentRequired
+                ? "Voucher lub promocja pokrywa całą wartość. Bilety są gotowe i nie musisz przechodzić do płatności."
+                : "Bilety są gotowe. Otwórz kod QR przy wejściu lub wróć do nich z wiadomości e-mail."
               : isClosed
                 ? "Wybierz termin ponownie, aby utworzyć nową rezerwację."
                 : "Twoje miejsca są tymczasowo zablokowane. Dokończ płatność przed końcem odliczania."}
@@ -127,6 +131,18 @@ export default async function CheckoutOrderPage({
                   ))}
                 </div>
                 <Separator />
+                {order.discountAmount > 0 && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between gap-4 text-muted-foreground">
+                      <span>Wartość przed rabatem</span>
+                      <span>{formatMoney(order.subtotalAmount, order.currency)}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 font-semibold text-emerald-700">
+                      <span>Rabat</span>
+                      <span>−{formatMoney(order.discountAmount, order.currency)}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-end justify-between">
                   <span className="text-muted-foreground">Razem</span>
                   <span className="text-2xl font-black">{formatMoney(order.totalAmount, order.currency)}</span>
@@ -137,7 +153,7 @@ export default async function CheckoutOrderPage({
               </CardContent>
             </Card>
 
-            {isPaid && (
+            {isConfirmed && (
               <section className="space-y-4">
                 <div>
                   <h2 className="text-xl font-bold">Twoje bilety ({order.tickets.length})</h2>
@@ -176,10 +192,10 @@ export default async function CheckoutOrderPage({
           <aside className="order-first md:order-last">
             <Card className="rounded-3xl border-0 bg-white shadow-lg ring-1 ring-black/5 md:sticky md:top-6">
               <CardContent className="space-y-5 p-5">
-                {isPaid ? (
+                {isConfirmed ? (
                   <div className="space-y-3 text-center">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100"><ShieldCheck className="h-6 w-6 text-emerald-700" /></div>
-                    <p className="font-semibold">Zapłacono i potwierdzono</p>
+                    <p className="font-semibold">{isNoPaymentRequired ? "Potwierdzono bez płatności" : "Zapłacono i potwierdzono"}</p>
                     <p className="text-xs text-muted-foreground">Miejsca są zapisane w systemie obiektu.</p>
                   </div>
                 ) : isAwaitingPayment ? (
