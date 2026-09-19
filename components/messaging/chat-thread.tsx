@@ -66,6 +66,21 @@ export function ChatThread({
           }
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "marketplace_messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as MarketplaceChatMessage
+          setMessages((current) =>
+            current.map((message) => message.id === updated.id ? updated : message),
+          )
+        },
+      )
       .subscribe()
 
     return () => {
