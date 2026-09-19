@@ -164,7 +164,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
       : "Filtr aktywny"
     : "W pobliżu · Kiedy? · Liczba osób"
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Użytkownik"
   const initials = displayName
     .split(" ")
     .map((name: string) => name[0])
@@ -248,7 +248,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
             <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground xl:flex">
               <Link href="/attractions" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">Odkrywaj</Link>
               <Link href="/attractions?sort=rating" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">Popularne</Link>
-              <Link href="/dla-organizatorow" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">Dla firm</Link>
+              <Link href="/dla-organizatorow" className="rounded-full px-3 py-2 transition-colors hover:bg-secondary hover:text-foreground">Dla organizatorów</Link>
             </nav>
 
             <button
@@ -281,7 +281,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
             <div className="flex shrink-0 items-center gap-2">
               <Button asChild variant="ghost" className="hidden rounded-full px-4 font-semibold lg:inline-flex">
-                <Link href="/dla-organizatorow">Zostań gospodarzem</Link>
+                <Link href="/dla-organizatorow">Dodaj atrakcję</Link>
               </Button>
 
               {loading ? (
@@ -300,7 +300,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                   <DropdownMenuContent className="w-60 rounded-2xl p-2" align="end" sideOffset={10}>
                     <div className="p-2"><p className="font-semibold">{displayName}</p><p className="truncate text-xs text-muted-foreground">{user.email}</p></div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Mój panel</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/favorites"><Heart className="mr-2 h-4 w-4" />Ulubione</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/profile"><Settings className="mr-2 h-4 w-4" />Ustawienia</Link></DropdownMenuItem>
                     <DropdownMenuSeparator />

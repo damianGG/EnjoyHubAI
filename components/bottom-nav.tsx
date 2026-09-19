@@ -75,7 +75,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
     }
   }
 
-  const displayName = String(user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User")
+  const displayName = String(user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Użytkownik")
   const initials = displayName.split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
   const isActive = (path: string) => pathname === path
   const searchString = searchParams.toString()
@@ -119,7 +119,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
               <span className={`grid h-8 w-8 place-items-center rounded-xl ${isActive('/dla-organizatorow') ? 'bg-primary text-white' : 'bg-secondary'}`}>
                 <Plus className="h-4 w-4" />
               </span>
-              Dodaj miejsce
+              Dodaj atrakcję
             </Link>
 
             {loading ? (
@@ -132,7 +132,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
                       <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
                       <AvatarFallback className="bg-primary text-[9px] text-white">{initials}</AvatarFallback>
                     </Avatar>
-                    Profil
+                    Konto
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="mb-3 w-60 rounded-2xl p-2" align="end">
@@ -141,7 +141,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
                     <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Dashboard</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Mój panel</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/favorites"><Heart className="mr-2 h-4 w-4" />Ulubione</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/profile"><Settings className="mr-2 h-4 w-4" />Ustawienia</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -155,7 +155,7 @@ export function BottomNav({ onSearchClick }: BottomNavProps) {
                 <span className={`grid h-8 w-8 place-items-center rounded-xl ${authSheetOpen ? 'bg-primary text-white' : 'bg-secondary'}`}>
                   <UserIcon className="h-4 w-4" />
                 </span>
-                Profil
+                Konto
               </button>
             )}
           </div>

@@ -20,6 +20,7 @@ const requiredRoutes = [
   "app/page.tsx",
   "app/privacy/page.tsx",
   "app/attractions/[slug]/page.tsx",
+  "app/atrakcje/page.tsx",
   "app/offers/[id]/page.tsx",
   "app/checkout/page.tsx",
   "app/bilety/[productId]/page.tsx",
@@ -102,6 +103,9 @@ for (const route of requiredRoutes) {
 for (const route of removedRoutes) {
   assert.equal(await fileExists(route), false, `Wycofana trasa lub moduł nadal istnieje: ${route}`)
 }
+
+const polishAttractionsIndex = await source("app/atrakcje/page.tsx")
+assert.match(polishAttractionsIndex, /permanentRedirect\("\/attractions"\)/)
 
 const attractionPage = await source("app/attractions/[slug]/page.tsx")
 assert.match(attractionPage, /MarketplaceCalendar/)
@@ -213,6 +217,14 @@ for (const file of [
   assert.doesNotMatch(await source(file), /href=\{`\/properties\//)
 }
 
+const attractionCard = await source("components/AttractionCard.tsx")
+assert.match(attractionCard, /Najbliższy termin:/)
+assert.doesNotMatch(attractionCard, /Najbliżej:/)
+
+const userAvatar = await source("components/user-avatar.tsx")
+assert.match(userAvatar, /Mój panel/)
+assert.doesNotMatch(userAvatar, /Moje konto/)
+
 const authForm = await source("components/unified-auth-form.tsx")
 assert.match(authForm, /href="\/privacy"/)
 
@@ -277,9 +289,15 @@ const topNavigation = await source("components/top-nav.tsx")
 const bottomNavigation = await source("components/bottom-nav.tsx")
 for (const navigation of [topNavigation, bottomNavigation]) {
   assert.match(navigation, /href="\/dla-organizatorow"/)
+  assert.match(navigation, /href="\/attractions"/)
+  assert.doesNotMatch(navigation, /href="\/atrakcje"/)
+  assert.doesNotMatch(navigation, />Dashboard</)
 }
-assert.match(topNavigation, /Zostań gospodarzem/)
-assert.match(bottomNavigation, /Dodaj miejsce/)
+assert.match(topNavigation, /Dla organizatorów/)
+assert.match(topNavigation, /Dodaj atrakcję/)
+assert.match(bottomNavigation, /Dodaj atrakcję/)
+assert.match(bottomNavigation, /\bKonto\b/)
+assert.match(bottomNavigation, />Mój panel</)
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)

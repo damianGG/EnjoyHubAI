@@ -127,6 +127,8 @@ assert.match(landingSeo, /category\.seoEligibleCount >= SEO_CITY_CATEGORY_MIN_OB
 assert.match(landingSeo, /marketplace_seo_catalog_v1/)
 assert.match(landingSeo, /marketplace_seo_landing_v1/)
 assert.match(landingSeo, /getSeoLandingPath/)
+assert.match(landingSeo, /`\/atrakcje\/\$\{city\}\/\$\{category\}`/)
+assert.match(landingSeo, /`\/atrakcje\/\$\{city\}`/)
 assert.match(landingSeo, /CollectionPage/)
 assert.match(landingSeo, /ItemList/)
 assert.match(landingSeo, /BreadcrumbList/)
