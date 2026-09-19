@@ -7,6 +7,7 @@ create table public.promotions (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete restrict,
   venue_id uuid references public.venues(id) on delete restrict,
+  attraction_id uuid references public.properties(id) on delete restrict,
   product_id uuid references public.products(id) on delete restrict,
   name text not null check (char_length(btrim(name)) between 2 and 160),
   code text not null check (code ~ '^[A-Z0-9][A-Z0-9_-]{2,31}$'),
@@ -39,6 +40,9 @@ create index promotions_active_window_idx
 create index promotions_product_idx
   on public.promotions(product_id)
   where product_id is not null;
+create index promotions_attraction_idx
+  on public.promotions(attraction_id)
+  where attraction_id is not null;
 
 create table public.promotion_redemptions (
   id uuid primary key default gen_random_uuid(),
@@ -147,7 +151,8 @@ create or replace function public.ticketing_create_promotion(
   p_valid_from timestamptz default null,
   p_valid_until timestamptz default null,
   p_product_id uuid default null,
-  p_venue_id uuid default null
+  p_venue_id uuid default null,
+  p_attraction_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -158,6 +163,8 @@ declare
   actor_user_id uuid := auth.uid();
   normalized_code text := public.ticketing_normalize_promotion_code(p_code);
   resolved_venue_id uuid;
+  resolved_attraction_id uuid;
+  product_attraction_id uuid;
   new_id uuid;
 begin
   if actor_user_id is null then
@@ -203,8 +210,24 @@ begin
     end if;
   end if;
 
+  if p_attraction_id is not null then
+    select property.id
+    into resolved_attraction_id
+    from public.properties property
+    join public.venues venue on venue.property_id = property.id
+    where property.id = p_attraction_id
+      and venue.organization_id = p_organization_id
+    limit 1;
+
+    if resolved_attraction_id is null then
+      raise exception 'Promotion attraction does not belong to organization'
+        using errcode = '22023';
+    end if;
+  end if;
+
   if p_product_id is not null then
-    select venue.id into resolved_venue_id
+    select venue.id, product.attraction_id
+    into resolved_venue_id, product_attraction_id
     from public.products product
     join public.venues venue on venue.id = product.venue_id
     where product.id = p_product_id
@@ -219,11 +242,17 @@ begin
       raise exception 'Promotion product and venue scopes do not match'
         using errcode = '22023';
     end if;
+
+    if p_attraction_id is not null and p_attraction_id is distinct from product_attraction_id then
+      raise exception 'Promotion product and attraction scopes do not match'
+        using errcode = '22023';
+    end if;
   end if;
 
   insert into public.promotions (
     organization_id,
     venue_id,
+    attraction_id,
     product_id,
     name,
     code,
@@ -240,6 +269,7 @@ begin
   ) values (
     p_organization_id,
     coalesce(p_venue_id, case when p_product_id is not null then resolved_venue_id else null end),
+    p_attraction_id,
     p_product_id,
     btrim(p_name),
     normalized_code,
@@ -265,10 +295,10 @@ end;
 $$;
 
 revoke all on function public.ticketing_create_promotion(
-  uuid,text,text,text,text,numeric,text,numeric,integer,integer,timestamptz,timestamptz,uuid,uuid
+  uuid,text,text,text,text,numeric,text,numeric,integer,integer,timestamptz,timestamptz,uuid,uuid,uuid
 ) from public, anon;
 grant execute on function public.ticketing_create_promotion(
-  uuid,text,text,text,text,numeric,text,numeric,integer,integer,timestamptz,timestamptz,uuid,uuid
+  uuid,text,text,text,text,numeric,text,numeric,integer,integer,timestamptz,timestamptz,uuid,uuid,uuid
 ) to authenticated, service_role;
 
 create or replace function public.ticketing_set_promotion_active(
@@ -354,6 +384,7 @@ begin
   select
     session.id as session_id,
     product.id as product_id,
+    product.attraction_id,
     venue.id as venue_id,
     venue.organization_id
   into session_context
@@ -415,6 +446,7 @@ begin
     and promotion.code = normalized_code
     and promotion.is_active
     and (promotion.venue_id is null or promotion.venue_id = session_context.venue_id)
+    and (promotion.attraction_id is null or promotion.attraction_id = session_context.attraction_id)
     and (promotion.product_id is null or promotion.product_id = session_context.product_id)
     and (promotion.valid_from is null or promotion.valid_from <= statement_timestamp())
     and (promotion.valid_until is null or promotion.valid_until > statement_timestamp());
@@ -533,6 +565,7 @@ declare
   promotion_row public.promotions%rowtype;
   existing_redemption public.promotion_redemptions%rowtype;
   product_id uuid;
+  attraction_id uuid;
   product_count integer;
   customer_key text;
   total_uses integer;
@@ -583,9 +616,10 @@ begin
       using errcode = 'P0001';
   end if;
 
-  select item.product_id
-  into product_id
+  select item.product_id, product.attraction_id
+  into product_id, attraction_id
   from public.order_items item
+  join public.products product on product.id = item.product_id
   where item.order_id = p_order_id
   order by item.created_at, item.id
   limit 1;
@@ -601,6 +635,7 @@ begin
     and promotion.code = normalized_code
     and promotion.is_active
     and (promotion.venue_id is null or promotion.venue_id = order_row.venue_id)
+    and (promotion.attraction_id is null or promotion.attraction_id = attraction_id)
     and (promotion.product_id is null or promotion.product_id = product_id)
     and (promotion.valid_from is null or promotion.valid_from <= statement_timestamp())
     and (promotion.valid_until is null or promotion.valid_until > statement_timestamp())
