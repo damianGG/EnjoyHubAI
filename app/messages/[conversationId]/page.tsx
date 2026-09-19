@@ -1,9 +1,10 @@
 import Link from "next/link"
-import { ArrowLeft, MessageCircle, Ticket } from "lucide-react"
+import { ArrowLeft, ArrowUpRight, MessageCircle, Ticket } from "lucide-react"
 import { notFound, redirect } from "next/navigation"
 
 import { ChatThread, type MarketplaceChatMessage } from "@/components/messaging/chat-thread"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
@@ -84,10 +85,20 @@ export default async function ConversationPage({ params }: ConversationPageProps
                   {conversation.attraction_title || conversation.organization_name}
                 </p>
                 {conversation.order_number ? (
-                  <Badge variant="outline" className="mt-2">
-                    <Ticket className="mr-1.5 h-3.5 w-3.5" />
-                    Rezerwacja #{conversation.order_number}
-                  </Badge>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">
+                      <Ticket className="mr-1.5 h-3.5 w-3.5" />
+                      Rezerwacja #{conversation.order_number}
+                    </Badge>
+                    {!isCustomer && conversation.order_id ? (
+                      <Button asChild variant="outline" size="sm" className="h-7 rounded-lg px-2.5 text-xs">
+                        <Link href={`/host/sprzedaz/zamowienie/${conversation.order_id}`}>
+                          Zobacz rezerwację
+                          <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>
