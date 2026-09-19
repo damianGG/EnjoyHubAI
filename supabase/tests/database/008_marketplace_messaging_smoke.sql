@@ -1,4 +1,4 @@
--- Run after 20260919201500_marketplace_messaging_mvp.sql.
+-- Run after 20260919183044_marketplace_messaging_mvp.sql.
 -- Security and Realtime smoke checks for the marketplace messaging MVP.
 
 begin;
