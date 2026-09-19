@@ -226,7 +226,7 @@ begin
   end if;
 
   if p_product_id is not null then
-    select venue.id, product.attraction_id
+    select venue.id, coalesce(product.attraction_id, venue.property_id)
     into resolved_venue_id, product_attraction_id
     from public.products product
     join public.venues venue on venue.id = product.venue_id
@@ -384,7 +384,7 @@ begin
   select
     session.id as session_id,
     product.id as product_id,
-    product.attraction_id,
+    coalesce(product.attraction_id, venue.property_id) as attraction_id,
     venue.id as venue_id,
     venue.organization_id
   into session_context
@@ -616,10 +616,11 @@ begin
       using errcode = 'P0001';
   end if;
 
-  select item.product_id, product.attraction_id
+  select item.product_id, coalesce(product.attraction_id, venue.property_id)
   into product_id, attraction_id
   from public.order_items item
   join public.products product on product.id = item.product_id
+  join public.venues venue on venue.id = product.venue_id
   where item.order_id = p_order_id
   order by item.created_at, item.id
   limit 1;
