@@ -211,7 +211,6 @@ export default async function NewOrganizerBookingPage({
                       <select id="paymentMode" name="paymentMode" defaultValue="on_site_unpaid" className="h-11 w-full rounded-md border bg-background px-3 text-sm">
                         <option value="on_site_unpaid">Na miejscu — nieopłacona</option>
                         <option value="on_site_paid">Na miejscu — opłacona</option>
-                        <option value="online_unpaid">Online — oczekuje na płatność</option>
                       </select>
                       <p className="text-xs text-muted-foreground">
                         Płatności online pojawiają się automatycznie dla zamówień z checkoutu i potwierdza je Stripe. Ręczna rezerwacja rozliczana jest na miejscu.
@@ -266,6 +265,11 @@ export default async function NewOrganizerBookingPage({
                       <p className="text-xs text-muted-foreground">Opcjonalny przy płatności na miejscu. Wymagany przy płatności online i potrzebny do automatycznych przypomnień.</p>
                     </div>
                     <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="promotionCode">Kod promocji / voucher</Label>
+                      <Input id="promotionCode" name="promotionCode" maxLength={32} className="uppercase" placeholder="np. LATO20" />
+                      <p className="text-xs text-muted-foreground">Opcjonalnie. Kod zostanie zweryfikowany atomowo przy zapisie rezerwacji.</p>
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="note">Notatka wewnętrzna</Label>
                       <Input id="note" name="note" maxLength={1000} placeholder="np. urodziny, dodatkowe ustalenia, kontakt telefoniczny" />
                     </div>
@@ -317,6 +321,8 @@ function BookingError({ code }: { code: string }) {
       ? "Sprawdź adres e-mail. Dla płatności online e-mail jest wymagany."
       : code === "bilety"
         ? "Wybierz co najmniej jeden bilet / uczestnika."
+        : code === "promocja"
+          ? "Kod promocji lub voucher jest nieprawidłowy, wygasł albo osiągnął limit użyć."
         : code === "uprawnienia"
           ? "Nie masz uprawnień do dodawania rezerwacji dla tej organizacji."
           : "Nie udało się utworzyć rezerwacji. Sprawdź dane i spróbuj ponownie."
