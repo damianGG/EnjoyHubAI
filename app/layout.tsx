@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/enjoyhub-icon.svg',
     shortcut: '/enjoyhub-icon.svg',
-    apple: '/placeholder-logo.svg',
+    apple: '/enjoyhub-icon.svg',
   },
 }
 
