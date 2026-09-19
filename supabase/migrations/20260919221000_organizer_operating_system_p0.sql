@@ -252,7 +252,7 @@ begin
 
   if p_session_id is null
      or p_booking_source not in ('manual','walk_in')
-     or p_payment_method not in ('online','on_site')
+     or p_payment_method <> 'on_site'
      or p_items is null
      or jsonb_typeof(p_items) <> 'array'
      or jsonb_array_length(p_items) < 1
