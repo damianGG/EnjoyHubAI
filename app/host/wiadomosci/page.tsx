@@ -17,6 +17,7 @@ interface MembershipRow {
 interface ConversationRow {
   id: string
   organization_id: string
+  customer_user_id: string
   customer_name: string
   venue_name: string
   attraction_title: string | null
@@ -58,7 +59,7 @@ export default async function OrganizerMessagesPage() {
 
   const { data, error } = await supabase
     .from("marketplace_conversations")
-    .select("id, organization_id, customer_name, venue_name, attraction_title, order_number, last_message_at")
+    .select("id, organization_id, customer_user_id, customer_name, venue_name, attraction_title, order_number, last_message_at")
     .in("organization_id", organizationIds)
     .order("last_message_at", { ascending: false })
 
@@ -83,12 +84,18 @@ export default async function OrganizerMessagesPage() {
 
   const latestByConversation = new Map<string, MessageRow>()
   const unreadByConversation = new Map<string, number>()
+  const customerByConversation = new Map(
+    conversations.map((conversation) => [conversation.id, conversation.customer_user_id]),
+  )
 
   for (const message of messages) {
     if (!latestByConversation.has(message.conversation_id)) {
       latestByConversation.set(message.conversation_id, message)
     }
-    if (message.sender_user_id !== user.id && !message.read_at) {
+    if (
+      message.sender_user_id === customerByConversation.get(message.conversation_id)
+      && !message.read_at
+    ) {
       unreadByConversation.set(
         message.conversation_id,
         (unreadByConversation.get(message.conversation_id) ?? 0) + 1,
