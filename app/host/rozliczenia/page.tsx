@@ -109,7 +109,7 @@ export default async function HostSettlementsPage({
               <Badge variant="secondary" className="w-fit">Stripe Connect</Badge>
               <CardTitle className="mt-3">Moduł rozliczeń jest przygotowany</CardTitle>
               <CardDescription>
-                Włącz STRIPE_CONNECT_ENABLED dopiero po zastosowaniu migracji i dodaniu webhooka Connect w Stripe.
+                Wypłaty dla organizatorów nie są jeszcze aktywne. Gdy moduł zostanie uruchomiony, skonfigurujesz tutaj konto do rozliczeń i wypłat.
               </CardDescription>
             </CardHeader>
           </Card>
