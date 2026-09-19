@@ -388,7 +388,7 @@ export default async function OrganizerPromotionsPage({
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
                           <div className="text-xs text-muted-foreground">
-                            {promotion.minimum_subtotal > 0 ? `Min. koszyk ${formatMoney(Number(promotion.minimum_subtotal), promotion.currency ?? "PLN")} · ` : ""}
+                            {Number(promotion.minimum_subtotal) > 0 ? `Min. koszyk ${formatMoney(Number(promotion.minimum_subtotal), promotion.currency ?? "PLN")} · ` : ""}
                             {promotion.max_uses_per_customer ? `maks. ${promotion.max_uses_per_customer} / klient` : "bez limitu / klient"}
                           </div>
                           {manageableOrganizationIds.includes(promotion.organization_id) && (
