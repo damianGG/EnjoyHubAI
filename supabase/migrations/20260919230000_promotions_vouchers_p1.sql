@@ -125,9 +125,9 @@ immutable
 set search_path = public, pg_temp
 as $$
   select case
-    when p_customer_user_id is not null then 'user:' || p_customer_user_id::text
     when nullif(lower(btrim(coalesce(p_customer_email,''))), '') is not null
       then 'email:' || lower(btrim(p_customer_email))
+    when p_customer_user_id is not null then 'user:' || p_customer_user_id::text
     else null
   end
 $$;
