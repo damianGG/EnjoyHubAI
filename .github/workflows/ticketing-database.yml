@@ -1,0 +1,48 @@
+name: Ticketing Database
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/database/**"
+      - "scripts/test-ticketing-database.mjs"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches: [master]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/database/**"
+      - "scripts/test-ticketing-database.mjs"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ticketing-db-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: ticketing-database-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run ticketing database smoke tests
+        run: npm run test:ticketing-db
