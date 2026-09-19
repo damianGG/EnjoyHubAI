@@ -296,7 +296,7 @@ for (const navigation of [topNavigation, bottomNavigation]) {
 assert.match(topNavigation, /Dla organizatorów/)
 assert.match(topNavigation, /Dodaj atrakcję/)
 assert.match(bottomNavigation, /Dodaj atrakcję/)
-assert.match(bottomNavigation, />Konto</)
+assert.match(bottomNavigation, /\bKonto\b/)
 assert.match(bottomNavigation, />Mój panel</)
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
