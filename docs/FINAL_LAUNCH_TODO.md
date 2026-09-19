@@ -1,5 +1,8 @@
 # EnjoyHub — final launch TODO
 
+Szczegółowa procedura wdrożeniowa: [P3.5 — GO_LIVE_DEPLOYMENT_CHECKLIST.md](./GO_LIVE_DEPLOYMENT_CHECKLIST.md).
+
+
 This file tracks only go-live gates that must be completed before switching real marketplace traffic and payments fully on.
 
 - [ ] Configure the real public EnjoyHub/Codeli contact details in Vercel production: `NEXT_PUBLIC_LEGAL_CONTACT_EMAIL` and `NEXT_PUBLIC_LEGAL_CONTACT_PHONE`. Verify that the values are visible in `/regulamin`, checkout and booking confirmation e-mails before enabling live payments.
