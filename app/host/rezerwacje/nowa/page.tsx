@@ -213,7 +213,7 @@ export default async function NewOrganizerBookingPage({
                         <option value="online_unpaid">Online — oczekuje na płatność</option>
                       </select>
                       <p className="text-xs text-muted-foreground">
-                        Płatności online z marketplace nadal potwierdza Stripe. Ręcznie można oznaczyć jako opłaconą tylko płatność na miejscu.
+                        Płatności online pojawiają się automatycznie dla zamówień z checkoutu i potwierdza je Stripe. Ręczna rezerwacja rozliczana jest na miejscu.
                       </p>
                     </div>
                   </section>
@@ -328,7 +328,7 @@ function BookingError({ code }: { code: string }) {
   )
 }
 
-function InfoLine({ icon: Icon, children }: { icon: typeof Store; children: React.ReactNode }) {
+function InfoLine({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return <div className="flex items-start gap-2"><Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{children}</span></div>
 }
 
