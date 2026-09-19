@@ -117,7 +117,8 @@ export default async function OrganizerCalendarPage({
   const previousMonth = shiftMonth(currentMonth, -1)
   const nextMonth = shiftMonth(currentMonth, 1)
   const totalAvailable = rows.reduce((sum, row) => sum + row.available_capacity_units, 0)
-  const totalReserved = rows.reduce((sum, row) => sum + row.reserved_capacity_units, 0)
+  const availableSessions = rows.filter((row) => row.available_capacity_units > 0).length
+  const totalBookings = rows.reduce((sum, row) => sum + row.booking_count, 0)
 
   return (
     <main className="min-h-screen bg-muted/20">
@@ -148,10 +149,11 @@ export default async function OrganizerCalendarPage({
               W jednym miejscu widzisz terminy, zajętość i liczbę wolnych miejsc. Rezerwacje online, ręczne i walk-in korzystają z tej samej pojemności.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[28rem]">
+          <div className="grid grid-cols-2 gap-2 text-center sm:min-w-[32rem] sm:grid-cols-4">
             <SummaryMetric label="Terminy" value={rows.length} />
+            <SummaryMetric label="Wolne terminy" value={availableSessions} />
             <SummaryMetric label="Wolne miejsca" value={totalAvailable} />
-            <SummaryMetric label="Zajęte miejsca" value={totalReserved} />
+            <SummaryMetric label="Rezerwacje" value={totalBookings} />
           </div>
         </section>
 
@@ -184,7 +186,7 @@ export default async function OrganizerCalendarPage({
                   const dateKey = `${monthKey}-${String(day).padStart(2, "0")}`
                   const dayRows = byDate.get(dateKey) ?? []
                   const available = dayRows.reduce((sum, row) => sum + row.available_capacity_units, 0)
-                  const reserved = dayRows.reduce((sum, row) => sum + row.reserved_capacity_units, 0)
+                  const openTerms = dayRows.filter((row) => row.available_capacity_units > 0).length
                   const selected = dateKey === selectedDate
                   const isToday = dateKey === todayKey
 
@@ -200,8 +202,8 @@ export default async function OrganizerCalendarPage({
                       </div>
                       {dayRows.length > 0 ? (
                         <div className="mt-2 space-y-1">
-                          <div className="text-xs font-semibold text-emerald-700">{available} wolnych</div>
-                          <div className="text-[11px] text-muted-foreground">{reserved} zajętych</div>
+                          <div className="text-xs font-semibold text-emerald-700">{openTerms} wol. term.</div>
+                          <div className="text-[11px] text-muted-foreground">{available} wolnych miejsc</div>
                         </div>
                       ) : (
                         <div className="mt-3 text-[11px] text-muted-foreground">Brak terminów</div>
