@@ -6,7 +6,8 @@ import {
   enrichAnalyticsEvent,
   readAnalyticsRequestContext,
 } from "@/lib/analytics/server"
-import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"\nimport { getCheckoutLegalContext } from "@/lib/legal/checkout"
+import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
+import { getCheckoutLegalContext } from "@/lib/legal/checkout"
 import {
   CANCELLATION_POLICY_VERSION,
   MARKETPLACE_TERMS_VERSION,
