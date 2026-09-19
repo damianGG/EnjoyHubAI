@@ -53,7 +53,7 @@ export default async function OrganizerStartPage() {
             <ArrowLeft className="h-4 w-4" /> Jak działa EnjoyHub
           </Link>
           <Link href="/" aria-label="EnjoyHub — strona główna">
-            <Image src="/placeholder-logo.svg" alt="" width={36} height={36} />
+            <Image src="/enjoyhub-icon.svg" alt="" width={36} height={36} />
           </Link>
         </div>
       </header>
