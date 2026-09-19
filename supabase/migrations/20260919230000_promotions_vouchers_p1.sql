@@ -716,7 +716,7 @@ begin
       payment_status = case
         when customer_order.status = 'confirmed'
           and customer_order.subtotal_amount - calculated_discount = 0
-          and payment_status in ('unpaid','pending')
+          and customer_order.payment_status in ('unpaid','pending')
           then 'not_required'::public.ticketing_payment_status
         else customer_order.payment_status
       end,
