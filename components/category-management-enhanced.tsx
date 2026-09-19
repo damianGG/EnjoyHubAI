@@ -574,6 +574,7 @@ export default function CategoryManagementEnhanced() {
                       variant="destructive"
                       className="absolute top-2 right-2"
                       onClick={handleRemoveCategoryImage}
+                      aria-label="Usuń obraz kategorii"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -692,6 +693,7 @@ export default function CategoryManagementEnhanced() {
                       variant="destructive"
                       className="absolute top-2 right-2"
                       onClick={handleRemoveSubcategoryImage}
+                      aria-label="Usuń obraz podkategorii"
                     >
                       <X className="h-4 w-4" />
                     </Button>
