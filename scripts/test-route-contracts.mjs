@@ -217,6 +217,14 @@ for (const file of [
   assert.doesNotMatch(await source(file), /href=\{`\/properties\//)
 }
 
+const attractionCard = await source("components/AttractionCard.tsx")
+assert.match(attractionCard, /Najbliższy termin:/)
+assert.doesNotMatch(attractionCard, /Najbliżej:/)
+
+const userAvatar = await source("components/user-avatar.tsx")
+assert.match(userAvatar, /Mój panel/)
+assert.doesNotMatch(userAvatar, /Moje konto/)
+
 const authForm = await source("components/unified-auth-form.tsx")
 assert.match(authForm, /href="\/privacy"/)
 
