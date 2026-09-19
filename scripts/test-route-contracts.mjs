@@ -316,6 +316,10 @@ assert.match(bottomNavigation, /Dodaj atrakcję/)
 assert.match(bottomNavigation, /\bKonto\b/)
 assert.match(bottomNavigation, />Mój panel</)
 
+const hostSettlements = await source("app/host/rozliczenia/page.tsx")
+assert.doesNotMatch(hostSettlements, /STRIPE_CONNECT_ENABLED|webhooka Connect|zastosowaniu migracji/)
+assert.match(hostSettlements, /Wypłaty dla organizatorów nie są jeszcze aktywne/)
+
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
 
