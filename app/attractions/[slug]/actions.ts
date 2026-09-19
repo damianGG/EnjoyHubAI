@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import { createAdminClient } from "@/lib/supabase/admin"\nimport { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key)
