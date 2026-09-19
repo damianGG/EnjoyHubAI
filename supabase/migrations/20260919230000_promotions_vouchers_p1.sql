@@ -416,8 +416,8 @@ begin
     and promotion.is_active
     and (promotion.venue_id is null or promotion.venue_id = session_context.venue_id)
     and (promotion.product_id is null or promotion.product_id = session_context.product_id)
-    and (promotion.valid_from is null or promotion.valid_from <= clock_timestamp())
-    and (promotion.valid_until is null or promotion.valid_until > clock_timestamp());
+    and (promotion.valid_from is null or promotion.valid_from <= statement_timestamp())
+    and (promotion.valid_until is null or promotion.valid_until > statement_timestamp());
 
   if not found then
     raise exception 'Promotion code is invalid or unavailable' using errcode = 'P0001';
@@ -451,7 +451,7 @@ begin
           from public.inventory_holds hold
           where hold.order_id = customer_order.id
             and hold.status = 'active'
-            and hold.expires_at > clock_timestamp()
+            and hold.expires_at > statement_timestamp()
         )
       )
     );
@@ -480,7 +480,7 @@ begin
             from public.inventory_holds hold
             where hold.order_id = customer_order.id
               and hold.status = 'active'
-              and hold.expires_at > clock_timestamp()
+              and hold.expires_at > statement_timestamp()
           )
         )
       );
@@ -537,7 +537,7 @@ declare
   customer_key text;
   total_uses integer;
   customer_uses integer;
-  discount_amount numeric(12,2);
+  calculated_discount numeric(12,2);
 begin
   select * into order_row
   from public.orders
@@ -573,14 +573,25 @@ begin
     raise exception 'Promotion code is invalid or unavailable' using errcode = 'P0001';
   end if;
 
-  select min(item.product_id), count(distinct item.product_id)::integer
-  into product_id, product_count
+  select count(distinct item.product_id)::integer
+  into product_count
   from public.order_items item
   where item.order_id = p_order_id;
 
-  if product_id is null or product_count <> 1 then
+  if product_count <> 1 then
     raise exception 'Promotion requires a single-product order'
       using errcode = 'P0001';
+  end if;
+
+  select item.product_id
+  into product_id
+  from public.order_items item
+  where item.order_id = p_order_id
+  order by item.created_at, item.id
+  limit 1;
+
+  if product_id is null then
+    raise exception 'Promotion order has no items' using errcode = 'P0001';
   end if;
 
   select promotion.*
@@ -591,8 +602,8 @@ begin
     and promotion.is_active
     and (promotion.venue_id is null or promotion.venue_id = order_row.venue_id)
     and (promotion.product_id is null or promotion.product_id = product_id)
-    and (promotion.valid_from is null or promotion.valid_from <= clock_timestamp())
-    and (promotion.valid_until is null or promotion.valid_until > clock_timestamp())
+    and (promotion.valid_from is null or promotion.valid_from <= statement_timestamp())
+    and (promotion.valid_until is null or promotion.valid_until > statement_timestamp())
   for update;
 
   if not found then
@@ -627,7 +638,7 @@ begin
           from public.inventory_holds hold
           where hold.order_id = customer_order.id
             and hold.status = 'active'
-            and hold.expires_at > clock_timestamp()
+            and hold.expires_at > statement_timestamp()
         )
       )
     );
@@ -656,7 +667,7 @@ begin
             from public.inventory_holds hold
             where hold.order_id = customer_order.id
               and hold.status = 'active'
-              and hold.expires_at > clock_timestamp()
+              and hold.expires_at > statement_timestamp()
           )
         )
       );
@@ -666,7 +677,7 @@ begin
     end if;
   end if;
 
-  discount_amount := least(
+  calculated_discount := least(
     order_row.subtotal_amount,
     case
       when promotion_row.discount_type = 'percentage'
@@ -695,21 +706,21 @@ begin
     promotion_row.discount_type,
     promotion_row.discount_value,
     order_row.subtotal_amount,
-    discount_amount,
+    calculated_discount,
     order_row.currency
   );
 
-  update public.orders
-  set discount_amount = discount_amount,
-      total_amount = subtotal_amount - discount_amount,
+  update public.orders customer_order
+  set discount_amount = calculated_discount,
+      total_amount = customer_order.subtotal_amount - calculated_discount,
       payment_status = case
-        when status = 'confirmed'
-          and subtotal_amount - discount_amount = 0
+        when customer_order.status = 'confirmed'
+          and customer_order.subtotal_amount - calculated_discount = 0
           and payment_status in ('unpaid','pending')
           then 'not_required'::public.ticketing_payment_status
-        else payment_status
+        else customer_order.payment_status
       end,
-      metadata = metadata || jsonb_build_object(
+      metadata = customer_order.metadata || jsonb_build_object(
         'promotion',
         jsonb_build_object(
           'promotion_id', promotion_row.id,
@@ -724,9 +735,9 @@ begin
     'code', promotion_row.code,
     'name', promotion_row.name,
     'kind', promotion_row.kind,
-    'discountAmount', discount_amount,
+    'discountAmount', calculated_discount,
     'subtotalAmount', order_row.subtotal_amount,
-    'totalAmount', order_row.subtotal_amount - discount_amount,
+    'totalAmount', order_row.subtotal_amount - calculated_discount,
     'currency', order_row.currency
   );
 end;
@@ -857,7 +868,7 @@ set search_path = public, pg_temp
 as $$
 declare
   state record;
-  confirmation_time timestamptz := clock_timestamp();
+  confirmation_time timestamptz := statement_timestamp();
   ticket_count integer;
 begin
   select
