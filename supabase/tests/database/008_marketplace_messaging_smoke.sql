@@ -55,9 +55,12 @@ begin
     raise exception 'authenticated users need the public messaging RPCs';
   end if;
 
-  if has_function_privilege('authenticated', access_function, 'EXECUTE')
-     or has_function_privilege('authenticated', touch_function, 'EXECUTE') then
-    raise exception 'internal messaging helpers must not be directly executable';
+  if not has_function_privilege('authenticated', access_function, 'EXECUTE') then
+    raise exception 'authenticated needs the RLS access helper';
+  end if;
+
+  if has_function_privilege('authenticated', touch_function, 'EXECUTE') then
+    raise exception 'authenticated must not execute the trigger helper directly';
   end if;
 
   if not has_table_privilege('authenticated', 'public.marketplace_conversations', 'SELECT')
