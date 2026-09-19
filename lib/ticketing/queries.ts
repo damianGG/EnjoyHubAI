@@ -456,6 +456,8 @@ export async function getCheckoutOrderSummary(
         payment_status,
         customer_name,
         customer_email,
+        subtotal_amount,
+        discount_amount,
         total_amount,
         currency,
         expires_at,
@@ -494,6 +496,8 @@ export async function getCheckoutOrderSummary(
     payment_status: string
     customer_name: string
     customer_email: string
+    subtotal_amount: number | string
+    discount_amount: number | string
     total_amount: number | string
     currency: string
     expires_at: string | null
@@ -528,6 +532,8 @@ export async function getCheckoutOrderSummary(
     paymentStatus: order.payment_status,
     customerName: order.customer_name,
     customerEmail: order.customer_email,
+    subtotalAmount: Number(order.subtotal_amount),
+    discountAmount: Number(order.discount_amount),
     totalAmount: Number(order.total_amount),
     currency: order.currency,
     expiresAt: order.expires_at,
