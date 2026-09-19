@@ -13,6 +13,7 @@ import {
   Clock3,
   ExternalLink,
   MapPin,
+  MessageCircle,
   PlusCircle,
   ReceiptText,
   ScanLine,
@@ -508,7 +509,8 @@ export default async function HostDashboard() {
                 {canManage && <QuickAction href="/host/atrakcje/nowa" icon={PlusCircle} title="Dodaj atrakcję" />}
                 {canManage && <QuickAction href="/host/sprzedaz/konfiguracja" icon={Settings2} title="Oferty i cennik" />}
                 {canManage && <QuickAction href="/host/sprzedaz/dostepnosc" icon={CalendarClock} title="Kalendarz i dostępność" />}
-                {canViewSales && <QuickAction href="/host/sprzedaz" icon={BarChart3} title="Sprzedaż i zamówienia" />}\n                {canManage && <QuickAction href="/host/wiadomosci" icon={MessageCircle} title="Wiadomości od klientów" />}
+                {canViewSales && <QuickAction href="/host/sprzedaz" icon={BarChart3} title="Sprzedaż i zamówienia" />}
+                {canManage && <QuickAction href="/host/wiadomosci" icon={MessageCircle} title="Wiadomości od klientów" />}
                 {canScan && <QuickAction href="/host/skaner" icon={ScanLine} title="Kontrola wejścia" />}
                 {canManage && <QuickAction href="/host/weryfikacja" icon={ShieldCheck} title="Weryfikacja i płatności" />}
               </CardContent>
@@ -544,7 +546,8 @@ function DashboardNavigation({ canManage, canViewSales, canScan }: { canManage: 
   return (
     <nav className="flex gap-1 overflow-x-auto border-t py-2 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <NavItem href="/host" active>Pulpit</NavItem>
-      {canViewSales && <NavItem href="/host/sprzedaz">Sprzedaż</NavItem>}\n      {canManage && <NavItem href="/host/wiadomosci">Wiadomości</NavItem>}
+      {canViewSales && <NavItem href="/host/sprzedaz">Sprzedaż</NavItem>}
+      {canManage && <NavItem href="/host/wiadomosci">Wiadomości</NavItem>}
       {canManage && <NavItem href="/host/sprzedaz/konfiguracja">Oferty</NavItem>}
       {canManage && <NavItem href="/host/sprzedaz/dostepnosc">Kalendarz</NavItem>}
       {canManage && <NavItem href="/host/weryfikacja">Weryfikacja</NavItem>}
