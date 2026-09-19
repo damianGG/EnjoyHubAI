@@ -415,10 +415,10 @@ export default function CategoryManagementEnhanced() {
                     </div>
                   </AccordionTrigger>
                   <div className="flex space-x-2 ml-4">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenCategoryDialog(category)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenCategoryDialog(category)} aria-label={`Edytuj kategorię ${category.name}`}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteCategory(category.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteCategory(category.id)} aria-label={`Usuń kategorię ${category.name}`}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -472,6 +472,7 @@ export default function CategoryManagementEnhanced() {
                                     size="icon"
                                     className="h-7 w-7"
                                     onClick={() => handleOpenSubcategoryDialog(category.id, subcategory)}
+                                    aria-label={`Edytuj podkategorię ${subcategory.name}`}
                                   >
                                     <Edit className="h-3 w-3" />
                                   </Button>
@@ -480,6 +481,7 @@ export default function CategoryManagementEnhanced() {
                                     size="icon"
                                     className="h-7 w-7"
                                     onClick={() => handleDeleteSubcategory(subcategory.id)}
+                                    aria-label={`Usuń podkategorię ${subcategory.name}`}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -532,7 +534,7 @@ export default function CategoryManagementEnhanced() {
                 id="category-slug"
                 value={categoryFormData.slug}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, slug: e.target.value })}
-                placeholder="e.g., go-karts"
+                placeholder="np. gokarty"
               />
             </div>
 
@@ -650,7 +652,7 @@ export default function CategoryManagementEnhanced() {
                 id="subcategory-slug"
                 value={subcategoryFormData.slug}
                 onChange={(e) => setSubcategoryFormData({ ...subcategoryFormData, slug: e.target.value })}
-                placeholder="e.g., indoor-karting"
+                placeholder="np. karting-kryty"
               />
             </div>
 
