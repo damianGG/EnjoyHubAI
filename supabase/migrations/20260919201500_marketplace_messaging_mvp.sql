@@ -277,6 +277,8 @@ set search_path = public, pg_temp
 as $$
 declare
   actor_user_id uuid := auth.uid();
+  customer_user_id uuid;
+  actor_is_customer boolean;
   updated_count integer;
 begin
   if actor_user_id is null
@@ -285,11 +287,22 @@ begin
       using errcode = '42501';
   end if;
 
+  select conversation.customer_user_id
+    into customer_user_id
+    from public.marketplace_conversations conversation
+   where conversation.id = p_conversation_id;
+
+  actor_is_customer := actor_user_id = customer_user_id;
+
   update public.marketplace_messages message
      set read_at = now()
    where message.conversation_id = p_conversation_id
-     and message.sender_user_id <> actor_user_id
-     and message.read_at is null;
+     and message.read_at is null
+     and (
+       (actor_is_customer and message.sender_user_id <> customer_user_id)
+       or
+       (not actor_is_customer and message.sender_user_id = customer_user_id)
+     );
 
   get diagnostics updated_count = row_count;
   return updated_count;
@@ -304,6 +317,7 @@ grant execute on function public.marketplace_mark_conversation_read(uuid)
 create or replace function public.marketplace_touch_conversation()
 returns trigger
 language plpgsql
+security definer
 set search_path = public, pg_temp
 as $$
 begin
@@ -314,6 +328,8 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.marketplace_touch_conversation() from public, anon, authenticated;
 
 drop trigger if exists marketplace_messages_touch_conversation on public.marketplace_messages;
 create trigger marketplace_messages_touch_conversation
