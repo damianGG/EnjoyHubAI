@@ -1,8 +1,8 @@
 import Link from "next/link"
-import { ArrowLeft, CalendarDays, MapPin, ShoppingBag, Ticket } from "lucide-react"
+import { ArrowLeft, CalendarDays, MapPin, MessageCircle, ShoppingBag, Ticket } from "lucide-react"
 import { redirect } from "next/navigation"
 
-import { Badge } from "@/components/ui/badge"
+import { startOrderConversation } from "@/app/dashboard/bookings/actions"\nimport { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
@@ -129,6 +129,14 @@ function CustomerOrderCard({ order }: { order: CustomerTicketingOrder }) {
             </div>
           </div>
         )}
+
+        <form action={startOrderConversation}>
+          <input type="hidden" name="orderId" value={order.id} />
+          <Button type="submit" variant="outline" className="w-full sm:w-auto">
+            <MessageCircle className="mr-2 h-4 w-4" />
+            Napisz do organizatora
+          </Button>
+        </form>
       </CardContent>
     </Card>
   )
