@@ -6,11 +6,11 @@ import {
   CheckCircle2,
   Gift,
   Percent,
+  type LucideIcon,
   PlusCircle,
   Power,
   PowerOff,
   Tag,
-  TicketPercent,
   Users,
 } from "lucide-react"
 
@@ -232,7 +232,7 @@ export default async function OrganizerPromotionsPage({
         {query.blad && <PromotionError code={query.blad} />}
 
         <section className="mb-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric icon={TicketPercent} label="Wszystkie kody" value={String(promotions.length)} />
+          <Metric icon={Percent} label="Wszystkie kody" value={String(promotions.length)} />
           <Metric icon={CheckCircle2} label="Aktywne" value={String(activeCount)} />
           <Metric icon={CalendarClock} label="Zaplanowane" value={String(scheduledCount)} />
           <Metric icon={Users} label="Wykorzystania" value={String(totalUses)} />
@@ -417,7 +417,7 @@ export default async function OrganizerPromotionsPage({
   )
 }
 
-function Metric({ icon: Icon, label, value }: { icon: typeof Tag; label: string; value: string }) {
+function Metric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <Card>
       <CardContent className="flex items-start justify-between p-5">
