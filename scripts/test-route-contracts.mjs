@@ -223,7 +223,21 @@ assert.doesNotMatch(attractionCard, /Najbliżej:/)
 
 const userAvatar = await source("components/user-avatar.tsx")
 assert.match(userAvatar, /Mój panel/)
-assert.doesNotMatch(userAvatar, /Moje konto/)
+assert.match(userAvatar, /aria-label="Otwórz menu konta"/)
+assert.doesNotMatch(userAvatar, /Moje konto|placeholder\.svg/)
+
+const rootLayout = await source("app/layout.tsx")
+const organizerStart = await source("app/host/start/page.tsx")
+const organizerLandingBrand = await source("app/dla-organizatorow/page.tsx")
+for (const brandedSurface of [rootLayout, organizerStart, organizerLandingBrand]) {
+  assert.doesNotMatch(brandedSurface, /placeholder-logo\.svg/)
+  assert.match(brandedSurface, /enjoyhub-icon\.svg/)
+}
+
+const categoryManagement = await source("components/category-management.tsx")
+assert.doesNotMatch(categoryManagement, /Add Category|Cancel|Category updated|Category created|Failed to|Error loading categories|e\.g\.,/)
+assert.match(categoryManagement, /Dodaj kategorię/)
+assert.match(categoryManagement, /Anuluj/)
 
 const authForm = await source("components/unified-auth-form.tsx")
 assert.match(authForm, /href="\/privacy"/)
@@ -287,6 +301,9 @@ assert.match(organizerLanding, /Mam własny system/)
 
 const topNavigation = await source("components/top-nav.tsx")
 const bottomNavigation = await source("components/bottom-nav.tsx")
+assert.match(topNavigation, /usePathname/)
+assert.match(topNavigation, /returnToPath=\{returnToPath\}/)
+assert.doesNotMatch(topNavigation, /returnToPath="\/"|returnToPath='\/'/)
 for (const navigation of [topNavigation, bottomNavigation]) {
   assert.match(navigation, /href="\/dla-organizatorow"/)
   assert.match(navigation, /href="\/attractions"/)
