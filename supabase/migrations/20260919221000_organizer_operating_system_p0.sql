@@ -668,23 +668,30 @@ begin
   end if;
 
   select
-    min(item.session_id),
-    min(item.product_id),
     count(distinct item.session_id)::integer,
     count(distinct item.product_id)::integer,
     sum(item.quantity * item.capacity_units_each)::integer
   into
-    current_session_id,
-    current_product_id,
     session_count,
     product_count,
     requested_capacity
   from public.order_items item
   where item.order_id = p_order_id;
 
-  if current_session_id is null or session_count <> 1 or product_count <> 1 then
+  if session_count <> 1 or product_count <> 1 then
     raise exception 'This order is not a single-session booking'
       using errcode = 'P0001';
+  end if;
+
+  select item.session_id, item.product_id
+  into current_session_id, current_product_id
+  from public.order_items item
+  where item.order_id = p_order_id
+  order by item.created_at, item.id
+  limit 1;
+
+  if current_session_id is null or current_product_id is null then
+    raise exception 'Booking has no order items' using errcode = 'P0001';
   end if;
 
   if current_session_id = p_to_session_id then
