@@ -70,9 +70,9 @@ export function UserAvatar({ user }: UserAvatarProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full" aria-label="Otwórz menu konta">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} alt={displayName} />
+              <AvatarImage src={user.user_metadata?.avatar_url || undefined} alt={displayName} />
               <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
           </Button>
