@@ -12,7 +12,7 @@ const bookingSchema = z.object({
   customerName: z.string().trim().max(160),
   customerEmail: z.string().trim().max(254),
   customerPhone: z.string().trim().max(40),
-  paymentMode: z.enum(["on_site_unpaid", "on_site_paid", "online_unpaid"]),
+  paymentMode: z.enum(["on_site_unpaid", "on_site_paid"]),
   note: z.string().trim().max(1000),
 })
 
@@ -57,7 +57,7 @@ export async function createOrganizerBooking(formData: FormData) {
     p_customer_phone: input.customerPhone,
     p_items: items,
     p_booking_source: input.bookingSource,
-    p_payment_method: input.paymentMode === "online_unpaid" ? "online" : "on_site",
+    p_payment_method: "on_site",
     p_mark_paid: input.paymentMode === "on_site_paid",
     p_note: input.note,
   })
