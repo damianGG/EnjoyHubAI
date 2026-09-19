@@ -61,7 +61,7 @@ export default function OrganizerLandingPage() {
       <header className="border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <Link href="/" className="flex items-center gap-2" aria-label="EnjoyHub — strona główna">
-            <Image src="/placeholder-logo.svg" alt="" width={40} height={40} className="h-9 w-9" />
+            <Image src="/enjoyhub-icon.svg" alt="" width={40} height={40} className="h-9 w-9" />
             <span className="text-xl font-bold text-primary">EnjoyHub</span>
           </Link>
           <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import {
   CalendarDays,
@@ -80,6 +80,7 @@ function formatAgeLabel(min: string, max: string) {
 
 export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -171,6 +172,8 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
     .join("")
     .toUpperCase()
     .slice(0, 2)
+  const searchString = searchParams.toString()
+  const returnToPath = `${pathname}${searchString ? `?${searchString}` : ""}`
 
   return (
     <>
@@ -289,7 +292,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
               ) : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-11 rounded-full border-[#0b1220]/10 bg-white px-2.5 shadow-sm">
+                    <Button variant="outline" className="h-11 rounded-full border-[#0b1220]/10 bg-white px-2.5 shadow-sm" aria-label="Otwórz menu konta">
                       <Menu className="h-4 w-4" />
                       <Avatar className="h-7 w-7">
                         <AvatarImage src={user.user_metadata?.avatar_url || ""} alt={displayName} />
@@ -325,7 +328,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
         onOpenChange={setAuthSheetOpen}
         mode={authMode}
         onModeChange={setAuthMode}
-        returnToPath="/"
+        returnToPath={returnToPath}
       />
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

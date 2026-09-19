@@ -42,10 +42,10 @@ export default function CategoryManagementClient() {
         const data = await response.json()
         setCategories(data)
       } else {
-        toast.error("Failed to load categories")
+        toast.error("Nie udało się załadować kategorii")
       }
     } catch (error) {
-      toast.error("Error loading categories")
+      toast.error("Błąd podczas ładowania kategorii")
     } finally {
       setLoading(false)
     }
@@ -85,7 +85,7 @@ export default function CategoryManagementClient() {
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug || !formData.icon) {
-      toast.error("Name, slug, and icon are required")
+      toast.error("Nazwa, slug i ikona są wymagane")
       return
     }
 
@@ -103,22 +103,22 @@ export default function CategoryManagementClient() {
       })
 
       if (response.ok) {
-        toast.success(editingCategory ? "Category updated" : "Category created")
+        toast.success(editingCategory ? "Kategoria zaktualizowana" : "Kategoria utworzona")
         handleCloseDialog()
         loadCategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to save category")
+        toast.error(error.error || "Nie udało się zapisać kategorii")
       }
     } catch (error) {
-      toast.error("Error saving category")
+      toast.error("Błąd podczas zapisywania kategorii")
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category? This will also delete all associated fields.")) {
+    if (!confirm("Czy na pewno chcesz usunąć tę kategorię? Spowoduje to również usunięcie wszystkich powiązanych pól.")) {
       return
     }
 
@@ -128,14 +128,14 @@ export default function CategoryManagementClient() {
       })
 
       if (response.ok) {
-        toast.success("Category deleted")
+        toast.success("Kategoria usunięta")
         loadCategories()
       } else {
         const error = await response.json()
-        toast.error(error.error || "Failed to delete category")
+        toast.error(error.error || "Nie udało się usunąć kategorii")
       }
     } catch (error) {
-      toast.error("Error deleting category")
+      toast.error("Błąd podczas usuwania kategorii")
     }
   }
 
@@ -156,7 +156,7 @@ export default function CategoryManagementClient() {
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Category
+          Dodaj kategorię
         </Button>
       </div>
 
@@ -170,10 +170,10 @@ export default function CategoryManagementClient() {
                   <CardTitle>{category.name}</CardTitle>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(category)}>
+                  <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(category)} aria-label={`Edytuj kategorię ${category.name}`}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)} aria-label={`Usuń kategorię ${category.name}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -204,7 +204,7 @@ export default function CategoryManagementClient() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Go-Karts"
+                placeholder="np. Gokarty"
               />
             </div>
 
@@ -214,7 +214,7 @@ export default function CategoryManagementClient() {
                 id="slug"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                placeholder="e.g., go-karts"
+                placeholder="np. gokarty"
               />
             </div>
 
@@ -241,11 +241,11 @@ export default function CategoryManagementClient() {
 
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
-              Cancel
+              Anuluj
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editingCategory ? "Update" : "Create"}
+              {editingCategory ? "Zaktualizuj" : "Utwórz"}
             </Button>
           </DialogFooter>
         </DialogContent>
