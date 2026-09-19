@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Heart, Settings, ShoppingBag, Star, Ticket, User } from "lucide-react"
+import { ArrowLeft, Heart, MessageCircle, Settings, ShoppingBag, Star, Ticket, User } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
@@ -54,12 +54,13 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Mój panel</h1>
-          <p className="mt-2 text-muted-foreground">Bilety, zamówienia, ulubione atrakcje i ustawienia konta.</p>
+          <p className="mt-2 text-muted-foreground">Bilety, zamówienia, wiadomości, ulubione atrakcje i ustawienia konta.</p>
         </div>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <DashboardLink href="/" title="Atrakcje" description="Znajdź nowy termin" />
           <DashboardLink href="/dashboard/bookings" title="Moje bilety" description={`${orders.length} zamówień`} icon={<Ticket className="h-4 w-4" />} />
+          <DashboardLink href="/dashboard/messages" title="Wiadomości" description="Kontakt z organizatorami" icon={<MessageCircle className="h-4 w-4" />} />
           <DashboardLink href="/host" title="Panel sprzedaży" description="Oferty i bilety" icon={<ShoppingBag className="h-4 w-4" />} />
           <DashboardLink href="/dashboard/favorites" title="Ulubione" description={`${favorites.length} zapisanych`} icon={<Heart className="h-4 w-4" />} />
           <DashboardLink href="/dashboard/profile" title="Profil" description="Ustawienia konta" icon={<Settings className="h-4 w-4" />} />

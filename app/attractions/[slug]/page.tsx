@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronRight,
   MapPin,
+  MessageCircle,
   ShieldCheck,
   Star,
   Store,
@@ -13,6 +14,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { startAttractionConversation } from "@/app/attractions/[slug]/actions"
 import AttractionGallery from "@/components/attraction-gallery"
 import { AttractionPageActions } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
@@ -305,7 +307,17 @@ export default async function AttractionPage({ params, searchParams }: Attractio
             <aside id="booking" className="scroll-mt-24 lg:row-span-2">
               <div className="space-y-4 lg:sticky lg:top-5">
                 {ticketingVenue ? (
-                  <MarketplaceCalendar propertyId={attraction.id} />
+                  <div className="space-y-3">
+                    <MarketplaceCalendar propertyId={attraction.id} />
+                    <form action={startAttractionConversation}>
+                      <input type="hidden" name="attractionId" value={attraction.id} />
+                      <input type="hidden" name="returnTo" value={canonicalPath} />
+                      <Button type="submit" variant="outline" className="w-full rounded-xl">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Masz pytanie? Napisz do organizatora
+                      </Button>
+                    </form>
+                  </div>
                 ) : (
                   <>
                     {claimContext?.claimable && (
