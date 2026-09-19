@@ -279,7 +279,7 @@ function SummaryMetric({ label, value }: { label: string; value: number }) {
   )
 }
 
-function InfoPill({ icon: Icon, children }: { icon: typeof Clock3; children: React.ReactNode }) {
+function InfoPill({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-center gap-1 rounded-md bg-muted px-2 py-1.5 text-muted-foreground">
       <Icon className="h-3.5 w-3.5" /> {children}
