@@ -195,7 +195,7 @@ function AttractionCard({
           <div className="flex items-center gap-1.5 text-xs">
             <CalendarDays className="h-3.5 w-3.5 text-primary" />
             {nextAvailableSlot ? (
-              <span className="font-medium text-foreground">Najbliżej: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}</span>
+              <span className="font-medium text-foreground">Najbliższy termin: {formatSlotDate(nextAvailableSlot.date, nextAvailableSlot.startTime)}</span>
             ) : (
               <span className="text-muted-foreground">Sprawdź kolejne terminy</span>
             )}
