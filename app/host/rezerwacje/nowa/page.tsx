@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Store,
   Users,
+  type LucideIcon,
 } from "lucide-react"
 
 import { createOrganizerBooking } from "@/app/host/rezerwacje/nowa/actions"
