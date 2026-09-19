@@ -39,6 +39,7 @@ const checkoutSchema = z.object({
   termsAccepted: z.literal(true),
   termsVersion: z.literal(MARKETPLACE_TERMS_VERSION),
   cancellationPolicyVersion: z.literal(CANCELLATION_POLICY_VERSION),
+  promotionCode: z.string().trim().max(32).optional().nullable(),
   items: z.array(z.object({
     ticketTypeId: z.string().uuid(),
     quantity: z.number().int().positive().max(100),
@@ -221,7 +222,8 @@ export async function POST(request: Request) {
       p_source: "enjoyhub_marketplace",
       p_hold_minutes: checkoutHoldMinutes,
       p_terms_accepted: input.termsAccepted,
-      p_metadata: { checkout_version: "1f-legal" },
+      p_metadata: { checkout_version: "p1-promotions" },
+      p_promotion_code: input.promotionCode || null,
     })
 
     if (error || !data?.[0]) {
