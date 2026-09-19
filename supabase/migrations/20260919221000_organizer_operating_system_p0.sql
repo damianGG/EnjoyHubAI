@@ -51,6 +51,44 @@ create index if not exists orders_payment_method_status_idx
   on public.orders(payment_method, payment_status)
   where payment_method is not null;
 
+-- Compatibility layer: existing marketplace/widget checkout functions still
+-- write the legacy enum column `source`. Keep the new operating metadata in
+-- sync without forcing a rewrite of the proven atomic checkout path.
+create or replace function public.ticketing_sync_order_operating_metadata()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $
+begin
+  if new.booking_source is null then
+    new.booking_source := case new.source::text
+      when 'enjoyhub_marketplace' then 'marketplace'
+      when 'venue_widget' then 'widget'
+      when 'box_office' then 'walk_in'
+      when 'phone' then 'phone'
+      when 'integration' then 'integration'
+      else 'marketplace'
+    end;
+  end if;
+
+  if new.payment_method is null then
+    new.payment_method := case
+      when new.source::text in ('enjoyhub_marketplace','venue_widget') then 'online'
+      when new.source::text = 'box_office' then 'on_site'
+      else null
+    end;
+  end if;
+
+  return new;
+end;
+$;
+
+drop trigger if exists ticketing_orders_operating_metadata on public.orders;
+create trigger ticketing_orders_operating_metadata
+before insert or update of source, booking_source, payment_method
+on public.orders
+for each row execute function public.ticketing_sync_order_operating_metadata();
+
 create table if not exists public.booking_reschedules (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references public.orders(id) on delete restrict,
