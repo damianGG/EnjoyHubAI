@@ -44,6 +44,15 @@ export async function createSupplyLeadAction(formData: FormData) {
 export async function updateSupplyLeadAction(leadId: string, formData: FormData) {
   const { supabase } = await requirePlatformStaff(supplyRoles, `/admin/supply/${leadId}`)
 
+  const { data: current, error: currentError } = await supabase.rpc("platform_supply_get_lead", { p_lead_id: leadId })
+  if (currentError || !current) redirect(`/admin/supply/${leadId}?blad=update`)
+  const requestedStatus = text(formData, "status")
+  const editableStatuses = ["discovered", "reviewing", "verified", "contacted", "owner_approved", "rejected"]
+  // Publication status is assigned by the publish RPC, never by an editable form field.
+  const status = current.attraction_id
+    ? (requestedStatus === "partner" ? "partner" : current.status)
+    : (editableStatuses.includes(requestedStatus) ? requestedStatus : "reviewing")
+
   const payload = {
     name: text(formData, "name"),
     source_kind: text(formData, "source_kind") || "manual",
@@ -73,7 +82,7 @@ export async function updateSupplyLeadAction(leadId: string, formData: FormData)
     year_round: checked(formData, "year_round"),
     review_rating: text(formData, "review_rating"),
     review_count: text(formData, "review_count"),
-    status: text(formData, "status") || "discovered",
+    status,
     claim_status: text(formData, "claim_status") || "unclaimed",
     source_notes: text(formData, "source_notes"),
     admin_notes: text(formData, "admin_notes"),

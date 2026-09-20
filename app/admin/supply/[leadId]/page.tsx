@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, ExternalLink, Eye, Rocket, Save, Sparkles, XCi
 import { notFound } from "next/navigation"
 
 import { publishSupplyLeadAction, resolveSupplyClaimAction, updateSupplyLeadAction } from "@/app/admin/supply/actions"
+import { SupplyLocationPicker } from "@/components/admin/supply-location-picker"
 import { SupplyImageManager } from "@/components/admin/supply-image-manager"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,7 +49,9 @@ export default async function SupplyLeadPage({ params, searchParams }: {
   const action = updateSupplyLeadAction.bind(null, leadId)
   const publishAction = publishSupplyLeadAction.bind(null, leadId)
   const canReviewClaims = role === "platform_superadmin" || role === "platform_support"
-  const canPublish = !lead.attraction_id && ["verified", "owner_approved"].includes(lead.status)
+  const verified = ["verified", "owner_approved"].includes(lead.status)
+  const hasCity = Boolean(lead.city?.trim())
+  const canPublish = !lead.attraction_id && verified && hasCity
 
   return (
     <main className="container mx-auto max-w-7xl px-4 py-8">
@@ -69,14 +72,29 @@ export default async function SupplyLeadPage({ params, searchParams }: {
         <div className="flex flex-wrap gap-2">
           {lead.website_url && <Button asChild variant="outline"><a href={lead.website_url} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Strona źródłowa</a></Button>}
           <Button asChild variant="outline"><Link href={`/admin/supply/${lead.id}/podglad`}><Eye className="mr-2 h-4 w-4" />Podgląd roboczy</Link></Button>
-          {lead.attraction_id && <Button asChild variant="outline"><Link href={`/attractions/${lead.attraction_id}`} target="_blank"><ExternalLink className="mr-2 h-4 w-4" />Profil publiczny</Link></Button>}
-          {canPublish && (
+          {lead.attraction_id && <Button asChild variant="outline"><Link href={`/attractions/${lead.attraction_id}`} target="_blank"><ExternalLink className="mr-2 h-4 w-4" />Zobacz publiczny profil</Link></Button>}
+          {!lead.attraction_id && (
             <form action={publishAction}>
-              <Button type="submit" className="bg-emerald-600 text-white hover:bg-emerald-700"><Rocket className="mr-2 h-4 w-4" />Opublikuj profil</Button>
+              <Button type="submit" disabled={!canPublish} aria-describedby="publication-readiness" className="bg-emerald-600 text-white hover:bg-emerald-700"><Rocket className="mr-2 h-4 w-4" />Opublikuj profil</Button>
             </form>
           )}
         </div>
       </div>
+
+      {!lead.attraction_id && (
+        <Card className="mb-6" id="publication-readiness">
+          <CardHeader>
+            <CardTitle>Publikacja profilu</CardTitle>
+            <CardDescription>Publikujesz wizytówkę atrakcji bez właściciela. Sprzedaż biletów wymaga osobnej konfiguracji.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>{hasCity ? "✓ Miasto uzupełnione." : "Uzupełnij miasto w sekcji Lokalizacja."}</p>
+            <p>{verified ? "✓ Lead zweryfikowany." : "Sprawdź dane i ustaw status „Zweryfikowany” lub „Zgoda właściciela” w sekcji Status i własność."}</p>
+            <p className="font-medium">{canPublish ? "Możesz opublikować profil przyciskiem u góry." : "Po uzupełnieniu braków kliknij „Zapisz zmiany”, aby odblokować publikację."}</p>
+            <p className="text-muted-foreground">Publikacja używa zapisanych danych. Przed publikacją zapisz również ostatnie poprawki. Warto dodać opis, kategorię, punkt na mapie i zdjęcia z prawem publikacji.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {query.zapisano && <Notice>Zapisano zmiany.</Notice>}
       {query.opublikowano && <Notice>Profil został opublikowany bez przypisywania właściciela. Może zostać przejęty przez zweryfikowanego operatora.</Notice>}
@@ -176,8 +194,7 @@ export default async function SupplyLeadPage({ params, searchParams }: {
             <Field label="Województwo"><Input name="region" defaultValue={lead.region ?? ""} /></Field>
             <Field label="Kod pocztowy"><Input name="postal_code" defaultValue={lead.postal_code ?? ""} /></Field>
             <Field label="Kraj"><Input name="country_code" defaultValue={lead.country_code ?? "PL"} /></Field>
-            <Field label="Latitude"><Input name="latitude" inputMode="decimal" defaultValue={lead.latitude ?? ""} /></Field>
-            <Field label="Longitude"><Input name="longitude" inputMode="decimal" defaultValue={lead.longitude ?? ""} /></Field>
+            <div className="md:col-span-2 xl:col-span-4"><SupplyLocationPicker key={`${lead.latitude}:${lead.longitude}`} latitude={lead.latitude} longitude={lead.longitude} /></div>
           </CardContent>
         </Card>
 
@@ -214,10 +231,10 @@ export default async function SupplyLeadPage({ params, searchParams }: {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Status i własność</CardTitle><CardDescription>Najpierw zweryfikuj lead. Dopiero osobny przycisk publikacji tworzy publiczny profil bez właściciela.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Status i własność</CardTitle><CardDescription>Najpierw zweryfikuj lead i zapisz zmiany. Przycisk „Opublikuj profil” u góry tworzy publiczny profil i automatycznie nadaje status „Opublikowany”.</CardDescription></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Field label="Status leada">
-              <select name="status" defaultValue={lead.status} className="h-10 w-full rounded-md border bg-background px-3 text-sm">{statuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+              <select name="status" defaultValue={!lead.attraction_id && ["published", "partner"].includes(lead.status) ? "reviewing" : lead.status} className="h-10 w-full rounded-md border bg-background px-3 text-sm">{statuses.filter(([value]) => lead.attraction_id ? value === lead.status || value === "partner" : !["published", "partner"].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
             </Field>
             <Field label="Status przejęcia">
               <select name="claim_status" defaultValue={lead.claim_status} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="unclaimed">Nieprzejęty</option><option value="claim_requested">Wniosek o przejęcie</option><option value="claimed">Przejęty</option></select>

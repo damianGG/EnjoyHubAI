@@ -6,6 +6,7 @@ import { CheckCircle2, MapPin } from "lucide-react"
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void
+  draggable?: boolean
   initialLat?: number
   initialLng?: number
   selectedLat?: number | null
@@ -14,6 +15,7 @@ interface LocationPickerProps {
 
 export default function LocationPicker({
   onLocationSelect,
+  draggable = false,
   initialLat = 51.9194,
   initialLng = 19.1451,
   selectedLat = null,
@@ -55,7 +57,14 @@ export default function LocationPicker({
         [startLat, startLng],
         startsWithSelection ? 15 : 6,
       )
-      let marker = startsWithSelection ? L.marker([startLat, startLng]).addTo(map) : null
+      let marker = startsWithSelection ? L.marker([startLat, startLng], { draggable }).addTo(map) : null
+
+      const handleDrag = () => {
+        if (!marker) return
+        const { lat, lng } = marker.getLatLng()
+        callbackRef.current(lat, lng)
+      }
+      marker?.on("dragend", handleDrag)
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
@@ -66,7 +75,7 @@ export default function LocationPicker({
       const handleClick = (event: LeafletMouseEvent) => {
         const { lat, lng } = event.latlng
         if (marker) marker.setLatLng([lat, lng])
-        else marker = L.marker([lat, lng]).addTo(map)
+        else marker = L.marker([lat, lng], { draggable }).addTo(map).on("dragend", handleDrag)
 
         setHasSelection(true)
         callbackRef.current(lat, lng)
@@ -85,7 +94,7 @@ export default function LocationPicker({
       disposed = true
       cleanup?.()
     }
-  }, [initialLat, initialLng])
+  }, [initialLat, initialLng, draggable])
 
   return (
     <div className="space-y-3">

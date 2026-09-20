@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { BrainCircuit, ImagePlus, Loader2, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -23,17 +23,50 @@ export function SupplyImageManager({ leadId, images }: { leadId: string; images:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [files, setFiles] = useState<File[]>([])
+  const [progress, setProgress] = useState<string | null>(null)
+  const [primary, setPrimary] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const uploading = useRef(false)
+
   async function upload(formData: FormData) {
+    if (uploading.current || files.length === 0) return
+    uploading.current = true
     setBusy(true)
     setError(null)
+    const failed: File[] = []
+    const errors: string[] = []
+    let completed = 0
     try {
-      const response = await fetch(`/api/admin/supply/${leadId}/images`, { method: "POST", body: formData })
-      const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(result.error || "Nie udało się wgrać zdjęcia")
-      router.refresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Nie udało się wgrać zdjęcia")
+      for (const [index, file] of files.entries()) {
+        setProgress(`Przesyłanie ${index + 1} z ${files.length}: ${file.name}`)
+        try {
+          if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Dozwolone są JPG, PNG i WebP")
+          if (file.size === 0 || file.size > 10 * 1024 * 1024) throw new Error("Plik musi mieć od 1 bajta do 10 MB")
+          const body = new FormData()
+          for (const key of ["sourceType", "sourceUrl", "rightsConfirmed"]) {
+            const value = formData.get(key)
+            if (typeof value === "string") body.set(key, value)
+          }
+          body.set("image", file)
+          body.set("isPrimary", String(primary && index === 0))
+          const response = await fetch(`/api/admin/supply/${leadId}/images`, { method: "POST", body })
+          const result = await response.json().catch(() => ({}))
+          if (!response.ok) throw new Error(result.error || "Nie udało się wgrać zdjęcia")
+          completed += 1
+          if (primary && index === 0) setPrimary(false)
+        } catch (e) {
+          failed.push(file)
+          errors.push(`${file.name}: ${e instanceof Error ? e.message : "Nie udało się wgrać zdjęcia"}`)
+        }
+      }
+      setFiles(failed)
+      if (fileInput.current) fileInput.current.value = ""
+      setProgress(`Dodano ${completed} z ${files.length} zdjęć.${failed.length ? " Ponów przesyłanie nieudanych plików lub wybierz nowe." : ""}`)
+      setError(errors.length ? errors.join("\n") : null)
+      if (completed > 0) router.refresh()
     } finally {
+      uploading.current = false
       setBusy(false)
     }
   }
@@ -88,10 +121,13 @@ export function SupplyImageManager({ leadId, images }: { leadId: string; images:
         <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Brak zdjęć. Możesz je dodać po rozmowie z operatorem.</div>
       )}
 
-      <form action={upload} className="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-4">
+      <form onSubmit={(event) => { event.preventDefault(); void upload(new FormData(event.currentTarget)) }} className="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-4">
         <label className="space-y-2 text-sm xl:col-span-2">
-          <span className="font-medium">Plik</span>
-          <Input name="image" type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} />
+          <span className="font-medium">Zdjęcia — możesz wybrać wiele plików</span>
+          <Input ref={fileInput} name="image" type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy}
+            onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setError(null); setProgress(null) }} />
+          <p className="text-xs text-muted-foreground">JPG, PNG lub WebP, maks. 10 MB na plik. Wybrano: {files.length}.</p>
+          {files.length > 0 && <ul className="max-h-32 overflow-auto text-xs">{files.map((file, index) => <li key={`${file.name}-${index}`}>{file.name}</li>)}</ul>}
         </label>
         <label className="space-y-2 text-sm">
           <span className="font-medium">Źródło zdjęcia</span>
@@ -108,18 +144,19 @@ export function SupplyImageManager({ leadId, images }: { leadId: string; images:
 
         <label className="flex items-center gap-3 rounded-lg border bg-background p-3 text-sm md:col-span-1">
           <input type="checkbox" name="rightsConfirmed" value="true" className="h-4 w-4" disabled={busy} />
-          Mam potwierdzone prawo do publikacji
+          Mam potwierdzone prawo do publikacji wszystkich wybranych zdjęć
         </label>
         <label className="flex items-center gap-3 rounded-lg border bg-background p-3 text-sm md:col-span-1">
-          <input type="checkbox" name="isPrimary" value="true" className="h-4 w-4" disabled={busy} />
-          Ustaw jako zdjęcie główne
+          <input type="checkbox" name="isPrimary" value="true" checked={primary} onChange={(event) => setPrimary(event.target.checked)} className="h-4 w-4" disabled={busy} />
+          Ustaw pierwsze wybrane zdjęcie jako główne
         </label>
         <div className="flex items-end md:col-span-2 xl:justify-end">
-          <Button type="submit" disabled={busy} className="w-full xl:w-auto">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}Dodaj zdjęcie</Button>
+          <Button type="submit" disabled={busy || files.length === 0} className="w-full xl:w-auto">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}Dodaj zdjęcia</Button>
         </div>
       </form>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {progress && <p role="status" className="text-sm">{progress}</p>}
+      {error && <p role="alert" className="whitespace-pre-line text-sm text-destructive">{error}</p>}
       <p className="text-xs text-muted-foreground">Zdjęcia bez potwierdzonych praw są widoczne tylko roboczo w Supply. Nie trafiają do publicznej galerii.</p>
     </div>
   )
