@@ -10,7 +10,6 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
-  Clock3,
   ExternalLink,
   MapPin,
   MessageCircle,
@@ -36,6 +35,7 @@ import {
   type OrganizerRole,
 } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 import { formatMoney } from "@/lib/ticketing/format"
 
 export const dynamic = "force-dynamic"
@@ -50,6 +50,12 @@ interface DashboardOrganization {
   name: string
   verification_status: "not_started" | "pending" | "verified" | "rejected"
   payments_enabled: boolean
+  legal_name: string | null
+  tax_id: string | null
+  billing_email: string | null
+  legal_address: string | null
+  contact_phone: string | null
+  trader_self_certified_at: string | null
 }
 
 interface DashboardVenue {
@@ -148,7 +154,7 @@ export default async function HostDashboard() {
   const [organizationsResult, venuesResult, attractionsResult, ordersResult] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, name, verification_status, payments_enabled")
+      .select("id, name, verification_status, payments_enabled, legal_name, tax_id, billing_email, legal_address, contact_phone, trader_self_certified_at")
       .in("id", organizationIds)
       .order("name"),
     supabase
@@ -264,20 +270,37 @@ export default async function HostDashboard() {
   const activeAttractions = attractions.filter((attraction) => attraction.is_active)
   const activeOffers = products.filter((product) => product.status === "active")
   const pendingOrders = orders.filter((order) => order.status === "awaiting_payment").length
-  const unverifiedOrganizations = organizations.filter(
-    (organization) => organization.verification_status !== "verified" || !organization.payments_enabled,
+  const organizationsWithoutLegalData = organizations.filter((organization) => !(
+    organization.legal_name?.trim()
+    && organization.tax_id?.trim()
+    && organization.billing_email?.trim()
+    && organization.legal_address?.trim()
+    && organization.contact_phone?.trim()
+    && organization.trader_self_certified_at
+  ))
+  const organizationsWithoutPayments = organizations.filter(
+    (organization) => !organization.payments_enabled,
   )
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Użytkowniku"
   const tasks: DashboardTask[] = []
 
-  if (canManage && unverifiedOrganizations.length > 0) {
+  if (canManage && organizationsWithoutLegalData.length > 0) {
     tasks.push({
-      title: "Dokończ weryfikację firmy",
-      description: unverifiedOrganizations.length === 1
-        ? "Sprzedaż online wymaga zweryfikowanych danych organizacji i aktywnych płatności."
-        : `${unverifiedOrganizations.length} organizacje wymagają sprawdzenia przed pełnym uruchomieniem płatności.`,
+      title: "Uzupełnij dane sprzedawcy",
+      description: organizationsWithoutLegalData.length === 1
+        ? "Klient musi zobaczyć pełną nazwę firmy, NIP, adres i kontakt przed zakupem."
+        : `${organizationsWithoutLegalData.length} organizacje nie mają kompletnych danych sprzedawcy.`,
       href: "/host/weryfikacja",
-      action: "Sprawdź weryfikację",
+      action: "Uzupełnij dane",
+    })
+  } else if (canManage && organizationsWithoutPayments.length > 0) {
+    tasks.push({
+      title: isStripeConnectEnabled ? "Połącz płatności i rachunek" : "Dokończ weryfikację firmy",
+      description: isStripeConnectEnabled
+        ? "Dane firmy są kompletne. Potwierdź tożsamość i rachunek do wypłat w Stripe."
+        : "Dane firmy są kompletne i czekają na zakończenie weryfikacji płatności.",
+      href: isStripeConnectEnabled ? "/host/rozliczenia" : "/host/weryfikacja",
+      action: isStripeConnectEnabled ? "Połącz Stripe" : "Sprawdź status",
     })
   }
   if (canManage && activeAttractions.length > 0 && activeOffers.length === 0) {

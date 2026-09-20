@@ -7,6 +7,7 @@ export function ClearOrganizerOnboardingDraft({ userId }: { userId: string }) {
     window.localStorage.removeItem(`enjoyhub.organizer-onboarding.v1.${userId}`)
     window.localStorage.removeItem(`enjoyhub.organizer-onboarding-lite.v1.${userId}`)
     window.localStorage.removeItem(`enjoyhub.organizer-onboarding-lite.v2.${userId}`)
+    window.localStorage.removeItem(`enjoyhub.organizer-onboarding-lite.v3.${userId}`)
   }, [userId])
 
   return null

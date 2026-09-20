@@ -107,9 +107,9 @@ export function ImageUploadSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Zdjęcia</CardTitle>
+        <CardTitle>Zdjęcia atrakcji <span className="text-sm font-normal text-muted-foreground">(opcjonalnie)</span></CardTitle>
         <CardDescription>
-          Dodaj zdjęcia swojej atrakcji (maksymalnie {maxImages})
+          Dodaj maksymalnie {maxImages} zdjęć. Pierwsze zdjęcie będzie główne na stronie atrakcji. Jeśli nie masz zdjęć teraz, możesz przejść dalej.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

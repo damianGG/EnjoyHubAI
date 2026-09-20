@@ -68,7 +68,13 @@ interface Values {
 }
 
 const initialState: OrganizerOnboardingActionState = {}
-const stepLabels = ["Firma", "Atrakcja", "Oferta", "Podsumowanie"]
+const stepLabels = ["Firma", "Atrakcja", "Bilety", "Terminy", "Gotowe"]
+const nextStepLabels = [
+  "Dalej: opisz atrakcję",
+  "Dalej: ustaw ofertę",
+  "Dalej: ustaw terminy",
+  "Sprawdź i opublikuj",
+]
 const weekdays = [
   { value: 1, label: "Pon" },
   { value: 2, label: "Wt" },
@@ -97,14 +103,21 @@ function timeToMinutes(value: string) {
   return hours * 60 + minutes
 }
 
+function minutesToTime(value: number) {
+  const hours = Math.floor(value / 60).toString().padStart(2, "0")
+  const minutes = (value % 60).toString().padStart(2, "0")
+  return `${hours}:${minutes}`
+}
+
 export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props) {
   const [state, formAction] = useActionState(completeOrganizerOnboarding, initialState)
   const [step, setStep] = useState(0)
+  const [draftLoaded, setDraftLoaded] = useState(false)
   const [accepted, setAccepted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [images, setImages] = useState<ImageData[]>([])
   const [location, setLocation] = useState<LocationValue | null>(null)
-  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7])
+  const [days, setDays] = useState<number[]>([])
   const [salesMode, setSalesMode] = useState<SalesMode>("allocated_quota")
   const [values, setValues] = useState<Values>({
     organizationName: "",
@@ -114,22 +127,32 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
     address: "",
     postalCode: "",
     city: "",
-    offerName: "Wejście standardowe",
+    offerName: "",
     offerDescription: "",
-    ticketName: "Bilet wstępu",
+    ticketName: "",
     ticketDescription: "",
-    ticketPrice: "50",
-    durationMinutes: "60",
-    capacity: "20",
-    localStartTime: "10:00",
-    localEndTime: "18:00",
+    ticketPrice: "",
+    durationMinutes: "",
+    capacity: "",
+    localStartTime: "",
+    localEndTime: "",
   })
 
-  const storageKey = `enjoyhub.organizer-onboarding-lite.v2.${userId}`
+  const storageKey = `enjoyhub.organizer-onboarding-lite.v3.${userId}`
   const selectedCategory = useMemo(
     () => categories.find((item) => item.id === values.categoryId),
     [categories, values.categoryId],
   )
+  const examples = useMemo(() => {
+    const categoryName = selectedCategory?.name.toLocaleLowerCase("pl") ?? ""
+    if (categoryName.includes("paintball")) {
+      return { offer: "Gra paintballowa – pakiet 500 kulek", ticket: "Uczestnik", description: "Gra, wyposażenie ochronne i 500 kulek dla każdego uczestnika." }
+    }
+    if (categoryName.includes("gokart")) {
+      return { offer: "Przejazd gokartem – 10 minut", ticket: "Kierowca", description: "10-minutowy przejazd, kask i krótkie szkolenie." }
+    }
+    return { offer: "Wejście 60 minut", ticket: "Bilet normalny", description: "Opisz, co dokładnie otrzymuje klient w cenie." }
+  }, [selectedCategory])
 
   useEffect(() => {
     try {
@@ -137,20 +160,41 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
       if (!raw) return
       const saved = JSON.parse(raw)
       if (saved.values) setValues((current) => ({ ...current, ...saved.values }))
-      if (Array.isArray(saved.days) && saved.days.length) setDays(saved.days)
+      if (Array.isArray(saved.days)) setDays(saved.days)
       if (saved.location) setLocation(saved.location)
       if (Array.isArray(saved.images)) setImages(saved.images.slice(0, 8))
+      if (Number.isInteger(saved.step) && saved.step >= 0 && saved.step < stepLabels.length) {
+        setStep(saved.step)
+      }
       if (saved.salesMode === "native_enjoyhub" || saved.salesMode === "allocated_quota") {
         setSalesMode(saved.salesMode)
       }
     } catch {
       localStorage.removeItem(storageKey)
+    } finally {
+      setDraftLoaded(true)
     }
   }, [storageKey])
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify({ values, days, location, images, salesMode }))
-  }, [days, images, location, salesMode, storageKey, values])
+    if (!draftLoaded) return
+    localStorage.setItem(storageKey, JSON.stringify({ values, days, location, images, salesMode, step }))
+  }, [days, draftLoaded, images, location, salesMode, step, storageKey, values])
+
+  const entryTimes = useMemo(() => {
+    const duration = Number(values.durationMinutes)
+    if (!values.localStartTime || !values.localEndTime || !Number.isFinite(duration) || duration < 1) return []
+
+    const start = timeToMinutes(values.localStartTime)
+    const end = timeToMinutes(values.localEndTime)
+    if (end <= start || end - start < duration) return []
+
+    const slots: string[] = []
+    for (let current = start; current + duration <= end; current += duration) {
+      slots.push(minutesToTime(current))
+    }
+    return slots
+  }, [values.durationMinutes, values.localEndTime, values.localStartTime])
 
   const onLocation = useCallback((lat: number, lng: number) => {
     setLocation({ lat, lng })
@@ -178,8 +222,13 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
     if (step === 2) {
       if (values.offerName.trim().length < 2) return "Podaj nazwę oferty, czyli tego, co klient kupuje."
       if (!values.ticketName.trim() || Number(values.ticketPrice) <= 0) return "Podaj nazwę i cenę pierwszego rodzaju biletu."
-      if (Number(values.durationMinutes) < 1 || Number(values.capacity) < 1) return "Czas wizyty i liczba miejsc muszą być większe od zera."
+      if (Number(values.durationMinutes) < 1) return "Podaj czas jednej wizyty."
+    }
+
+    if (step === 3) {
+      if (Number(values.capacity) < 1) return "Podaj liczbę miejsc dostępną na jeden termin."
       if (!days.length) return "Wybierz przynajmniej jeden dzień dostępności."
+      if (!values.localStartTime || !values.localEndTime) return "Podaj godzinę pierwszego wejścia i zakończenia ostatniej wizyty."
       if (values.localStartTime >= values.localEndTime) return "Godzina końcowa musi być późniejsza niż początkowa."
       if (timeToMinutes(values.localEndTime) - timeToMinutes(values.localStartTime) < Number(values.durationMinutes)) {
         return "Godziny dostępności muszą mieścić co najmniej jedną pełną wizytę."
@@ -194,6 +243,12 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
     if (message) return setError(message)
     setError(null)
     setStep((current) => Math.min(current + 1, stepLabels.length - 1))
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  function goToStep(target: number) {
+    setStep(target)
+    setError(null)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -237,6 +292,10 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
           ))}
         </div>
         <Progress value={progress} />
+        <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Check className="h-3.5 w-3.5 text-emerald-600" />
+          Szkic zapisujemy automatycznie na tym urządzeniu. Możesz wrócić i dokończyć później.
+        </p>
       </div>
 
       <form action={formAction} onSubmit={onSubmit} className="mx-auto max-w-3xl">
@@ -295,23 +354,27 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
           <Card className="surface-3d">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" /> Co chcesz pokazać klientom?</CardTitle>
-              <CardDescription>Atrakcja to publiczna strona miejsca lub aktywności, np. park trampolin albo gokarty.</CardDescription>
+              <CardDescription>Atrakcja to publiczna strona miejsca lub aktywności. Te informacje klient zobaczy przed wyborem biletu.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <Field label="Nazwa atrakcji"><Input value={values.attractionName} onChange={(e) => setValue("attractionName", e.target.value)} placeholder="Park Linowy Wisła" autoFocus /></Field>
-              <Field label="Krótki opis atrakcji"><Textarea value={values.attractionDescription} onChange={(e) => setValue("attractionDescription", e.target.value)} rows={4} placeholder="Co czeka klienta, dla kogo jest atrakcja i dlaczego warto przyjechać?" /></Field>
-              <Field label="Kategoria">
-                <select value={values.categoryId} onChange={(e) => setValue("categoryId", e.target.value)} className="h-11 w-full rounded-md border bg-background px-3 text-sm">
+              <Field label="Nazwa atrakcji" htmlFor="attractionNameVisible"><Input id="attractionNameVisible" value={values.attractionName} onChange={(e) => setValue("attractionName", e.target.value)} placeholder="np. Paintball Rzeszów" autoFocus /></Field>
+              <Field label="Krótki opis atrakcji" htmlFor="attractionDescriptionVisible" help={`${values.attractionDescription.length}/4000 znaków · minimum 20`}><Textarea id="attractionDescriptionVisible" value={values.attractionDescription} onChange={(e) => setValue("attractionDescription", e.target.value)} rows={4} placeholder="Co czeka klienta, dla kogo jest atrakcja i dlaczego warto przyjechać?" /></Field>
+              <Field label="Kategoria" htmlFor="categoryVisible" help="Wybierz kategorię, w której klient będzie szukał tej atrakcji.">
+                <select id="categoryVisible" value={values.categoryId} onChange={(e) => setValue("categoryId", e.target.value)} className="h-11 w-full rounded-md border bg-background px-3 text-sm">
                   <option value="">Wybierz kategorię</option>
                   {categories.map((category) => <option key={category.id} value={category.id}>{category.icon ? `${category.icon} ` : ""}{category.name}</option>)}
                 </select>
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Ulica i numer" className="sm:col-span-2"><Input value={values.address} onChange={(e) => setValue("address", e.target.value)} placeholder="ul. Przykładowa 10" /></Field>
-                <Field label="Kod pocztowy"><Input value={values.postalCode} onChange={(e) => setValue("postalCode", e.target.value)} placeholder="35-001" /></Field>
-                <Field label="Miejscowość"><Input value={values.city} onChange={(e) => setValue("city", e.target.value)} placeholder="Rzeszów" /></Field>
+                <Field label="Ulica i numer" htmlFor="addressVisible" className="sm:col-span-2"><Input id="addressVisible" value={values.address} onChange={(e) => setValue("address", e.target.value)} placeholder="ul. Przykładowa 10" /></Field>
+                <Field label="Kod pocztowy" htmlFor="postalCodeVisible"><Input id="postalCodeVisible" value={values.postalCode} onChange={(e) => setValue("postalCode", e.target.value)} placeholder="35-001" /></Field>
+                <Field label="Miejscowość" htmlFor="cityVisible"><Input id="cityVisible" value={values.city} onChange={(e) => setValue("city", e.target.value)} placeholder="Rzeszów" /></Field>
               </div>
-              <div className="space-y-2"><Label>Położenie na mapie</Label><LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} /></div>
+              <div className="space-y-2">
+                <Label>Dokładne miejsce wejścia na mapie</Label>
+                <p className="text-xs text-muted-foreground">Kliknij punkt, do którego ma trafić klient. Lokalizację wykorzystamy na stronie atrakcji i w nawigacji.</p>
+                <LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} />
+              </div>
               <ImageUploadSection images={images} onImagesChange={setImages} userId={userId} maxImages={8} />
             </CardContent>
           </Card>
@@ -330,83 +393,118 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
                 <Ticket className="h-4 w-4" />
                 <AlertTitle>Atrakcja ≠ oferta ≠ rodzaj biletu</AlertTitle>
                 <AlertDescription>
-                  Przykład: „Park Trampolin Rzeszów” to atrakcja, „Wejście 60 minut” to oferta, a „Bilet normalny” i „Bilet ulgowy” to warianty biletu w tej ofercie.
+                  Przykład: „Paintball Rzeszów” to atrakcja, „Gra z pakietem 500 kulek” to oferta, a „Uczestnik” to rodzaj biletu w tej ofercie.
                 </AlertDescription>
               </Alert>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Nazwa oferty" className="sm:col-span-2">
-                  <Input value={values.offerName} onChange={(e) => setValue("offerName", e.target.value)} placeholder="np. Wejście 60 minut" />
+                <Field label="Nazwa oferty" htmlFor="offerNameVisible" help="Klient wybierze tę nazwę przed wskazaniem terminu." className="sm:col-span-2">
+                  <Input id="offerNameVisible" value={values.offerName} onChange={(e) => setValue("offerName", e.target.value)} placeholder={`np. ${examples.offer}`} />
                 </Field>
-                <Field label="Co obejmuje oferta? (opcjonalnie)" className="sm:col-span-2">
-                  <Textarea value={values.offerDescription} onChange={(e) => setValue("offerDescription", e.target.value)} rows={3} placeholder="Np. 60 minut korzystania ze wszystkich stref parku." />
+                <Field label="Co obejmuje oferta? (opcjonalnie)" htmlFor="offerDescriptionVisible" className="sm:col-span-2">
+                  <Textarea id="offerDescriptionVisible" value={values.offerDescription} onChange={(e) => setValue("offerDescription", e.target.value)} rows={3} placeholder={examples.description} />
                 </Field>
-                <Field label="Pierwszy rodzaj biletu">
-                  <Input value={values.ticketName} onChange={(e) => setValue("ticketName", e.target.value)} placeholder="Bilet normalny" />
+                <Field label="Pierwszy rodzaj biletu" htmlFor="ticketNameVisible">
+                  <Input id="ticketNameVisible" value={values.ticketName} onChange={(e) => setValue("ticketName", e.target.value)} placeholder={`np. ${examples.ticket}`} />
                 </Field>
-                <Field label="Cena brutto (zł)">
-                  <Input type="number" min="0.01" step="0.01" value={values.ticketPrice} onChange={(e) => setValue("ticketPrice", e.target.value)} />
+                <Field label="Cena brutto (zł)" htmlFor="ticketPriceVisible" help="Wpisz faktyczną cenę, którą zobaczy klient.">
+                  <Input id="ticketPriceVisible" type="number" min="0.01" step="0.01" value={values.ticketPrice} onChange={(e) => setValue("ticketPrice", e.target.value)} placeholder="np. 120" />
                 </Field>
-                <Field label="Dla kogo jest ten bilet? (opcjonalnie)" className="sm:col-span-2">
-                  <Input value={values.ticketDescription} onChange={(e) => setValue("ticketDescription", e.target.value)} placeholder="np. osoba dorosła od 16 lat" />
+                <Field label="Dla kogo jest ten bilet? (opcjonalnie)" htmlFor="ticketDescriptionVisible" className="sm:col-span-2">
+                  <Input id="ticketDescriptionVisible" value={values.ticketDescription} onChange={(e) => setValue("ticketDescription", e.target.value)} placeholder="np. uczestnik od 16 lat" />
                 </Field>
-                <Field label="Czas jednej wizyty (min)">
-                  <Input type="number" min="1" value={values.durationMinutes} onChange={(e) => setValue("durationMinutes", e.target.value)} />
-                </Field>
-                <Field label={salesMode === "allocated_quota" ? "Miejsca dla EnjoyHub / termin" : "Wszystkie miejsca / termin"}>
-                  <Input type="number" min="1" value={values.capacity} onChange={(e) => setValue("capacity", e.target.value)} />
+                <Field label="Ile trwa jedna wizyta? (min)" htmlFor="durationMinutesVisible" help="Na tej podstawie utworzymy godziny wejść." className="sm:col-span-2">
+                  <Input id="durationMinutesVisible" type="number" min="1" value={values.durationMinutes} onChange={(e) => setValue("durationMinutes", e.target.value)} placeholder="np. 120" />
                 </Field>
               </div>
+              <p className="text-xs text-muted-foreground">Na początek dodaj jeden podstawowy rodzaj biletu. Przed publikacją sprawdzisz jego nazwę i cenę.</p>
+            </CardContent>
+          </Card>
+        ) : null}
 
+        {step === 3 ? (
+          <Card className="surface-3d">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-primary" /> Kiedy klient może zarezerwować?</CardTitle>
+              <CardDescription>Ustaw typowy tydzień. Święta, zamknięcia i pojedyncze zmiany dodasz później jako wyjątki.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div>
-                <Label>Jak sprzedajesz na miejscu?</Label>
+                <Label>Czy prowadzisz rezerwacje również poza EnjoyHub?</Label>
+                <p className="mt-1 text-xs text-muted-foreground">Ten wybór określa, czy EnjoyHub otrzyma część miejsc, czy będzie pilnować całej dostępności.</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Choice selected={salesMode === "allocated_quota"} title="Mam własną kasę" text="EnjoyHub dostaje wydzieloną pulę miejsc." onClick={() => setSalesMode("allocated_quota")} />
-                  <Choice selected={salesMode === "native_enjoyhub"} title="Sprzedaję przez EnjoyHub" text="EnjoyHub prowadzi całą dostępność." onClick={() => setSalesMode("native_enjoyhub")} />
+                  <Choice selected={salesMode === "allocated_quota"} title="Tak — mam własny system" text="Rezerwuję dla EnjoyHub osobną pulę miejsc, żeby uniknąć podwójnej sprzedaży." onClick={() => setSalesMode("allocated_quota")} />
+                  <Choice selected={salesMode === "native_enjoyhub"} title="Nie — wszystko w EnjoyHub" text="Rezerwacje online, telefoniczne i klientów z wejścia zapisuję w jednym kalendarzu EnjoyHub." onClick={() => setSalesMode("native_enjoyhub")} />
                 </div>
               </div>
 
+              <Field
+                label={salesMode === "allocated_quota" ? "Ile miejsc rezerwujesz dla EnjoyHub na każdy termin?" : "Ile łącznie miejsc ma każdy termin?"}
+                htmlFor="capacityVisible"
+                help={salesMode === "allocated_quota" ? "EnjoyHub nigdy nie sprzeda więcej niż ta wydzielona pula." : "Każda rezerwacja — także telefoniczna i na miejscu — powinna trafić do kalendarza EnjoyHub."}
+              >
+                <Input id="capacityVisible" type="number" min="1" value={values.capacity} onChange={(e) => setValue("capacity", e.target.value)} placeholder="np. 20" />
+              </Field>
+
               <div>
-                <Label>Stała reguła tygodniowa</Label>
+                <Label>W które dni oferta jest zwykle dostępna?</Label>
                 <p className="mt-1 text-xs text-muted-foreground">Zaznacz dni, w które ta oferta zwykle jest dostępna.</p>
                 <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
                   {weekdays.map((day) => (
-                    <button key={day.value} type="button" onClick={() => toggleDay(day.value)} className={cn("rounded-lg border px-2 py-3 text-sm font-medium", days.includes(day.value) ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted")}>{day.label}</button>
+                    <button key={day.value} type="button" aria-pressed={days.includes(day.value)} onClick={() => toggleDay(day.value)} className={cn("rounded-lg border px-2 py-3 text-sm font-medium", days.includes(day.value) ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted")}>{day.label}</button>
                   ))}
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Pierwsze wejście"><Input type="time" value={values.localStartTime} onChange={(e) => setValue("localStartTime", e.target.value)} /></Field>
-                <Field label="Koniec okna wejść"><Input type="time" value={values.localEndTime} onChange={(e) => setValue("localEndTime", e.target.value)} /></Field>
+                <Field label="Godzina pierwszego wejścia" htmlFor="localStartTimeVisible"><Input id="localStartTimeVisible" type="time" value={values.localStartTime} onChange={(e) => setValue("localStartTime", e.target.value)} /></Field>
+                <Field label="Godzina zakończenia ostatniej wizyty" htmlFor="localEndTimeVisible" help="Ostatnia wizyta musi zakończyć się najpóźniej o tej godzinie."><Input id="localEndTimeVisible" type="time" value={values.localEndTime} onChange={(e) => setValue("localEndTime", e.target.value)} /></Field>
               </div>
+
+              {entryTimes.length ? (
+                <Alert className="border-emerald-200 bg-emerald-50 text-emerald-950">
+                  <CalendarClock className="h-4 w-4" />
+                  <AlertTitle>Klient zobaczy {entryTimes.length} {entryTimes.length === 1 ? "termin" : "terminów"} dziennie</AlertTitle>
+                  <AlertDescription>
+                    Godziny wejść: {entryTimes.join(", ")}. Ostatnia wizyta zakończy się o {values.localEndTime}.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
 
               <Alert>
                 <CalendarClock className="h-4 w-4" />
-                <AlertTitle>Nie będziesz ręcznie układać kalendarza</AlertTitle>
+                <AlertTitle>Co zrobi EnjoyHub?</AlertTitle>
                 <AlertDescription>
-                  Ta reguła tygodniowa jest źródłem prawdy. EnjoyHub automatycznie utrzymuje przyszłe terminy. Pojedyncze święta, zamknięcia, inne godziny lub inną pojemność ustawisz później jako wyjątek.
+                  Automatycznie utworzymy kolejne terminy i będziemy pilnować wolnych miejsc. W tej pierwszej ofercie sprzedaż online zamknie się 60 minut przed wejściem, a jedna osoba kupi maksymalnie 10 biletów.
                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <div className="space-y-5">
             <Card className="surface-3d">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Gotowe do publikacji</CardTitle>
-                <CardDescription>Po tym kroku zobaczysz swoją atrakcję tak jak klient.</CardDescription>
+                <CardDescription>Sprawdź, co pokażemy klientom. Każdą sekcję możesz jeszcze poprawić.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
-                <Summary icon={Building2} title="Organizator">{values.organizationName}</Summary>
-                <Summary icon={MapPin} title="Atrakcja">{values.attractionName}<br />{selectedCategory?.name}<br />{values.city}</Summary>
-                <Summary icon={Store} title="Oferta">{values.offerName}<br />{values.durationMinutes} min</Summary>
-                <Summary icon={Ticket} title="Rodzaj biletu">{values.ticketName} · {values.ticketPrice.replace(".", ",")} zł</Summary>
-                <Summary icon={CalendarClock} title="Dostępność">{days.map((day) => weekdays.find((item) => item.value === day)?.label).join(", ")}<br />{values.localStartTime}–{values.localEndTime} · {values.capacity} miejsc</Summary>
+                <Summary icon={Building2} title="Organizator" onEdit={() => goToStep(0)}>{values.organizationName}</Summary>
+                <Summary icon={MapPin} title="Atrakcja" onEdit={() => goToStep(1)}>{values.attractionName}<br />{selectedCategory?.name}<br />{values.address}, {values.city}<br />{images.length ? `${images.length} zdjęć` : "Bez zdjęć"}</Summary>
+                <Summary icon={Store} title="Oferta" onEdit={() => goToStep(2)}>{values.offerName}<br />{values.durationMinutes} min</Summary>
+                <Summary icon={Ticket} title="Rodzaj biletu" onEdit={() => goToStep(2)}>{values.ticketName} · {values.ticketPrice.replace(".", ",")} zł</Summary>
+                <Summary icon={CalendarClock} title="Dostępność" onEdit={() => goToStep(3)}>{days.map((day) => weekdays.find((item) => item.value === day)?.label).join(", ")}<br />Wejścia: {entryTimes.join(", ")}<br />{values.capacity} miejsc · {salesMode === "allocated_quota" ? "pula dla EnjoyHub" : "cała dostępność w EnjoyHub"}</Summary>
               </CardContent>
             </Card>
+
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>Co stanie się po publikacji?</AlertTitle>
+              <AlertDescription>
+                Strona atrakcji i terminy powstaną od razu. Po publikacji możesz wstrzymać ofertę i ustawiać wyjątki w kalendarzu. Klienci zapłacą online dopiero po uzupełnieniu danych firmy i połączeniu rachunku do wypłat.
+              </AlertDescription>
+            </Alert>
 
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-5">
@@ -426,12 +524,12 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
 
         <div className="mt-6 flex items-center justify-between border-t pt-6">
           {step > 0 ? (
-            <Button type="button" variant="outline" size="lg" onClick={() => { setStep((current) => current - 1); setError(null) }}>
+            <Button type="button" variant="outline" size="lg" onClick={() => goToStep(step - 1)}>
               <ArrowLeft className="h-4 w-4" /> Wstecz
             </Button>
           ) : <span />}
-          {step < 3 ? (
-            <Button type="button" size="lg" onClick={next}>Dalej <ArrowRight className="h-4 w-4" /></Button>
+          {step < stepLabels.length - 1 ? (
+            <Button type="button" size="lg" onClick={next}>{nextStepLabels[step]} <ArrowRight className="h-4 w-4" /></Button>
           ) : (
             <SubmitButton disabled={!accepted} />
           )}
@@ -441,23 +539,26 @@ export function OrganizerOnboardingLite({ categories, userId, userEmail }: Props
   )
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return <div className={cn("space-y-2", className)}><Label>{label}</Label>{children}</div>
+function Field({ label, children, className, help, htmlFor }: { label: string; children: React.ReactNode; className?: string; help?: string; htmlFor?: string }) {
+  return <div className={cn("space-y-2", className)}><Label htmlFor={htmlFor}>{label}</Label>{children}{help ? <p className="text-xs text-muted-foreground">{help}</p> : null}</div>
 }
 
 function Choice({ selected, title, text, onClick }: { selected: boolean; title: string; text: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className={cn("rounded-xl border p-4 text-left", selected ? "border-primary bg-primary/10" : "hover:bg-muted")}>
+    <button type="button" aria-pressed={selected} onClick={onClick} className={cn("rounded-xl border p-4 text-left", selected ? "border-primary bg-primary/10" : "hover:bg-muted")}>
       <div className="flex items-center gap-2 font-medium">{selected ? <Check className="h-4 w-4 text-primary" /> : null}{title}</div>
       <p className="mt-1 text-sm text-muted-foreground">{text}</p>
     </button>
   )
 }
 
-function Summary({ icon: Icon, title, children }: { icon: typeof Building2; title: string; children: React.ReactNode }) {
+function Summary({ icon: Icon, title, children, onEdit }: { icon: typeof Building2; title: string; children: React.ReactNode; onEdit: () => void }) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" />{title}</div>
+      <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+        <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-primary" />{title}</span>
+        <button type="button" onClick={onEdit} className="text-xs font-medium text-primary hover:underline">Zmień</button>
+      </div>
       <div className="mt-2 text-sm text-muted-foreground">{children}</div>
     </div>
   )

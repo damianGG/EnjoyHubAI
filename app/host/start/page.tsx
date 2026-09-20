@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, MapPin, Ticket } from "lucide-react"
+import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, Clock3, ImageIcon, MapPin, Ticket } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,8 +18,9 @@ export const metadata: Metadata = {
 const preparationItems = [
   { icon: Building2, label: "nazwa firmy lub organizacji" },
   { icon: MapPin, label: "adres i krótki opis atrakcji" },
-  { icon: Ticket, label: "rodzaje biletów i ceny" },
+  { icon: Ticket, label: "pierwszy rodzaj biletu i cena" },
   { icon: CalendarDays, label: "dni, godziny i liczba miejsc" },
+  { icon: ImageIcon, label: "zdjęcia atrakcji — opcjonalnie" },
 ]
 
 export default async function OrganizerStartPage() {
@@ -101,7 +102,7 @@ export default async function OrganizerStartPage() {
                 <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-950">
                   <p className="flex items-start gap-2 font-medium">
                     <Check className="mt-0.5 h-4 w-4 shrink-0" />
-                    Jeśli korzystasz z własnej kasy, nie musisz jej zmieniać. Wybierzesz po prostu pulę miejsc przeznaczoną dla EnjoyHub.
+                    Jeśli korzystasz z własnego kalendarza lub systemu rezerwacji, nie musisz go zmieniać. Wybierzesz po prostu osobną pulę miejsc dla EnjoyHub.
                   </p>
                 </div>
               </CardContent>
@@ -111,7 +112,8 @@ export default async function OrganizerStartPage() {
               <Button asChild size="lg" className="h-12 w-full px-8 text-base sm:w-auto">
                 <Link href="/host/onboarding">Zaczynamy <ArrowRight className="h-5 w-5" /></Link>
               </Button>
-              <p className="text-xs text-muted-foreground">Na końcu zobaczysz podsumowanie przed utworzeniem organizacji, atrakcji i sprzedaży.</p>
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> Zwykle zajmuje około 5–10 minut. Szkic zapisuje się automatycznie na tym urządzeniu.</p>
+              <p className="text-xs text-muted-foreground">Na końcu zobaczysz dokładne podsumowanie przed opublikowaniem strony atrakcji i terminów.</p>
             </div>
           </>
         )}
