@@ -112,6 +112,9 @@ export default async function OrganizerVerificationPage({
           <p className="mt-3 leading-7 text-muted-foreground">
             Klient przed zakupem zobaczy pełną nazwę firmy, NIP, adres oraz dane kontaktowe. Dane te są następnie zapisywane przy zamówieniu, dlatego muszą być aktualne i zgodne z danymi przedsiębiorcy.
           </p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            To pierwszy z dwóch etapów: EnjoyHub zapisuje dane sprzedawcy widoczne dla klienta, a Stripe osobno potwierdza tożsamość i rachunek potrzebny do płatności oraz wypłat.
+          </p>
         </div>
 
         {query.status === "wyslane" ? (

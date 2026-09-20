@@ -80,6 +80,10 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
   const finalAmount = promotionQuote?.totalAmount ?? subtotalAmount
   const capacityUnits = selected.reduce((sum, item) => sum + item.ticket.capacityUnits * item.quantity, 0)
   const currency = session.ticketTypes[0]?.currency ?? "PLN"
+  const isGroupPricing = session.product.pricingModel === "per_group"
+  const participantRange = session.product.maxParticipants
+    ? `${session.product.minParticipants}–${session.product.maxParticipants} osób`
+    : `od ${session.product.minParticipants} osób`
 
   function changeQuantity(ticketId: string, direction: 1 | -1) {
     const ticket = session.ticketTypes.find((item) => item.id === ticketId)
@@ -218,8 +222,8 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
           <div className="flex items-center gap-3 border-b p-5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff1eb] font-bold text-[#ff5a1f]">1</span>
             <div>
-              <p className="font-bold">Wybierz bilety</p>
-              <p className="text-xs text-muted-foreground">Dodaj tylko tyle osób, ile faktycznie przyjdzie.</p>
+              <p className="font-bold">{isGroupPricing ? "Wybierz rezerwację" : "Wybierz bilety"}</p>
+              <p className="text-xs text-muted-foreground">{isGroupPricing ? `Cena obejmuje cały termin dla jednej grupy ${participantRange}.` : "Dodaj tylko tyle osób, ile faktycznie przyjdzie."}</p>
             </div>
             <Ticket className="ml-auto h-5 w-5 text-muted-foreground" />
           </div>
@@ -240,7 +244,7 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
                   <div className="min-w-0">
                     <p className="font-semibold">{ticket.name}</p>
                     {ticket.description && <p className="mt-1 text-sm text-muted-foreground">{ticket.description}</p>}
-                    <p className="mt-2 font-bold text-[#0b1220]">{formatMoney(ticket.priceAmount, ticket.currency)}</p>
+                    <p className="mt-2 font-bold text-[#0b1220]">{formatMoney(ticket.priceAmount, ticket.currency)} <span className="text-xs font-normal text-muted-foreground">{isGroupPricing ? "za grupę" : "za osobę"}</span></p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 rounded-full border bg-muted/30 p-1" aria-label={`Liczba biletów: ${ticket.name}`}>
                     <Button type="button" variant="ghost" size="icon" onClick={() => changeQuantity(ticket.id, -1)} disabled={quantity === 0 || isSubmitting} className="h-9 w-9 rounded-full bg-white shadow-sm" aria-label={`Usuń bilet ${ticket.name}`}>
@@ -380,8 +384,8 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
 
       <div className="sticky bottom-3 z-20 rounded-3xl border bg-white/95 p-4 shadow-2xl backdrop-blur ring-1 ring-black/5 sm:static sm:shadow-lg">
         <div className="mb-3 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Wybrane miejsca</span>
-          <span className="font-medium">{capacityUnits} / {session.availableCapacity}</span>
+          <span className="text-muted-foreground">{isGroupPricing ? "Rezerwacja grupowa" : "Wybrane miejsca"}</span>
+          <span className="font-medium">{isGroupPricing ? (capacityUnits > 0 ? `1 · ${participantRange}` : "Nie wybrano") : `${capacityUnits} / ${session.availableCapacity}`}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="shrink-0">

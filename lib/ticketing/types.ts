@@ -1,3 +1,5 @@
+export type TicketingPricingModel = "per_person" | "per_group"
+
 export interface TicketingTicketType {
   id: string
   name: string
@@ -22,6 +24,7 @@ export interface TicketingCheckoutSession {
     durationMinutes: number
     minParticipants: number
     maxParticipants: number | null
+    pricingModel: TicketingPricingModel
   }
   venue: {
     id: string
@@ -154,6 +157,9 @@ export interface TicketingProductSalesPage {
   name: string
   description: string | null
   durationMinutes: number
+  minParticipants: number
+  maxParticipants: number | null
+  pricingModel: TicketingPricingModel
   venue: {
     id: string
     name: string

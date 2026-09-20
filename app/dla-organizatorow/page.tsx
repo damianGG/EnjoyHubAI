@@ -44,7 +44,7 @@ const steps = [
   {
     icon: QrCode,
     title: "Przyjmuj klientów",
-    description: "Klient płaci online i otrzymuje bilet QR, który sprawdzasz przy wejściu.",
+    description: "Po uzupełnieniu danych firmy i Stripe klient płaci online i otrzymuje bilet QR.",
   },
 ]
 
@@ -97,6 +97,9 @@ export default function OrganizerLandingPage() {
             </div>
             <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
               <Headphones className="h-4 w-4 text-primary" /> Nie musisz znać się na technologii — kreator prowadzi krok po kroku.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Utworzenie strony zajmuje zwykle 5–10 minut. Do uruchomienia płatności potrzebne będą później dane firmy, NIP, potwierdzenie tożsamości i rachunek bankowy.
             </p>
           </div>
 
@@ -236,10 +239,16 @@ export default function OrganizerLandingPage() {
               Po potwierdzeniu płatności powstaje bilet z kodem QR. Przy wejściu możesz sprawdzić go prostym skanerem w panelu EnjoyHub.
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="settlements">
+            <AccordionTrigger>Jak działa prowizja i wypłata pieniędzy?</AccordionTrigger>
+            <AccordionContent className="leading-6 text-muted-foreground">
+              Swoją stawkę prowizji zobaczysz w panelu przed uruchomieniem płatności. Środki są zabezpieczone do zakończenia usługi, a następnie możesz wypłacić część organizatora na rachunek połączony przez Stripe.
+            </AccordionContent>
+          </AccordionItem>
           <AccordionItem value="help">
             <AccordionTrigger>Co jeśli potrzebuję pomocy?</AccordionTrigger>
             <AccordionContent className="leading-6 text-muted-foreground">
-              Możesz przygotować szkic samodzielnie, a przed startem wspólnie sprawdzimy ofertę, ceny, terminy i testowy zakup.
+              Szkic zapisuje się automatycznie. Przed publikacją zobaczysz podsumowanie, a później możesz poprawić ofertę, ceny i terminy w panelu organizatora.
             </AccordionContent>
           </AccordionItem>
         </Accordion>

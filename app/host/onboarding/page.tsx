@@ -22,6 +22,14 @@ interface RawCategory {
   description: string | null
 }
 
+interface RawSubcategory {
+  id: string
+  parent_category_id: string
+  name: string
+  icon: string | null
+  description: string | null
+}
+
 export default async function OrganizerOnboardingPage() {
   if (!isSupabaseConfigured) {
     return <CenteredMessage>Kreator konfiguracji jest chwilowo niedostępny. Spróbuj ponownie za chwilę.</CenteredMessage>
@@ -31,10 +39,14 @@ export default async function OrganizerOnboardingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/sign-up?next=/host/onboarding")
 
-  const [categoriesResult, membershipsResult] = await Promise.all([
+  const [categoriesResult, subcategoriesResult, membershipsResult] = await Promise.all([
     supabase
       .from("categories")
       .select("id, name, icon, description")
+      .order("name"),
+    supabase
+      .from("subcategories")
+      .select("id, parent_category_id, name, icon, description")
       .order("name"),
     supabase
       .from("organization_memberships")
@@ -44,7 +56,7 @@ export default async function OrganizerOnboardingPage() {
       .limit(1),
   ])
 
-  if (membershipsResult.error || categoriesResult.error) {
+  if (membershipsResult.error || categoriesResult.error || subcategoriesResult.error) {
     return <CenteredMessage>Nie udało się załadować kreatora. Odśwież stronę i spróbuj ponownie.</CenteredMessage>
   }
 
@@ -57,6 +69,13 @@ export default async function OrganizerOnboardingPage() {
     name: category.name,
     icon: category.icon,
     description: category.description,
+  }))
+  const subcategories = ((subcategoriesResult.data ?? []) as RawSubcategory[]).map((subcategory) => ({
+    id: subcategory.id,
+    parentCategoryId: subcategory.parent_category_id,
+    name: subcategory.name,
+    icon: subcategory.icon,
+    description: subcategory.description,
   }))
 
   if (categories.length === 0) {
@@ -74,6 +93,7 @@ export default async function OrganizerOnboardingPage() {
       </header>
       <OrganizerOnboardingLite
         categories={categories}
+        subcategories={subcategories}
         userId={user.id}
         userEmail={user.email ?? ""}
       />

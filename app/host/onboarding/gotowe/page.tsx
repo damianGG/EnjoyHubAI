@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 interface OrganizerAttraction { id: string; name: string; venue_id: string | null }
 interface ProductForAttraction { id: string; name: string; attraction_id: string | null }
+interface ProductScheduleSummary { valid_from: string; capacity: number }
 interface VenueOrganization { organization_id: string }
 interface OrganizationReadiness {
   verification_status: "not_started" | "pending" | "verified" | "rejected"
@@ -51,13 +52,15 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login?next=/host")
 
-  const [attractionResult, productResult] = await Promise.all([
+  const [attractionResult, productResult, scheduleResult] = await Promise.all([
     supabase.from("organizer_attractions").select("id, name, venue_id").eq("id", query.atrakcja).single(),
     supabase.from("products").select("id, name, attraction_id").eq("id", query.oferta).single(),
+    supabase.from("product_schedules").select("valid_from, capacity").eq("product_id", query.oferta).eq("is_active", true).order("valid_from").limit(1).maybeSingle(),
   ])
 
   const attraction = attractionResult.data as OrganizerAttraction | null
   const product = productResult.data as ProductForAttraction | null
+  const schedule = scheduleResult.data as ProductScheduleSummary | null
   if (attractionResult.error || productResult.error || !attraction || !product || product.attraction_id !== attraction.id || !attraction.venue_id) redirect("/host")
 
   const { data: venueData } = await supabase.from("venues").select("organization_id").eq("id", attraction.venue_id).single()
@@ -97,7 +100,20 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
     && paymentAccount.payout_schedule_manual,
   )
   const organizerPaymentsReady = readiness?.verification_status === "verified" && readiness.payments_enabled === true
-  const publicSalesReady = isTicketingCheckoutEnabled && isTicketingPaymentsEnabled && organizerPaymentsReady
+  const publicSalesReady = isTicketingCheckoutEnabled
+    && isTicketingPaymentsEnabled
+    && legalDataComplete
+    && organizerPaymentsReady
+    && (!isStripeConnectEnabled || stripeAccountReady)
+  const salesStatusDescription = publicSalesReady
+    ? "Aktywna — klient może kupić bilet."
+    : !legalDataComplete
+      ? "Wyłączona — uzupełnij dane firmy."
+      : isStripeConnectEnabled && !stripeAccountReady
+        ? "Wyłączona — dokończ konfigurację Stripe."
+        : !organizerPaymentsReady
+          ? "Wyłączona — weryfikacja płatności jeszcze trwa."
+          : "Wyłączona w konfiguracji platformy."
 
   // Best-effort discovery notification after a successfully created organizer attraction.
   await submitIndexNowForAttractionId(attraction.id)
@@ -110,7 +126,12 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="h-8 w-8" /></div>
           <Badge variant="secondary" className="mt-5">Atrakcja opublikowana</Badge>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">„{attraction.name}” jest już w EnjoyHub</h1>
-          <p className="mt-4 text-lg text-muted-foreground">Strona atrakcji, oferta „{product.name}”, pierwszy rodzaj biletu i reguła dostępności są przygotowane. EnjoyHub automatycznie utrzymuje przyszłe terminy.</p>
+          <p className="mt-4 text-lg text-muted-foreground">Publiczna strona i oferta „{product.name}” są gotowe. Terminy utworzyliśmy od {schedule ? formatDate(schedule.valid_from) : "wybranej daty"}; sprawdź je przed rozpoczęciem sprzedaży.</p>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <StatusCard ready title="Strona atrakcji" description="Opublikowana i widoczna dla klientów." />
+          <StatusCard ready={publicSalesReady} title="Sprzedaż online" description={salesStatusDescription} />
         </div>
 
         {!legalDataComplete ? (
@@ -153,7 +174,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
               {isStripeConnectEnabled ? (
                 <ReadinessStep complete={stripeAccountReady} icon={WalletCards} title="Płatności i rachunek do wypłat" description={stripeAccountReady ? "Stripe potwierdził konto i rachunek do wypłat." : "Potwierdź tożsamość i rachunek w bezpiecznym formularzu Stripe."} href="/host/rozliczenia" action={stripeAccountReady ? "Rozliczenia" : "Połącz Stripe"} />
               ) : null}
-              <ReadinessStep complete icon={CalendarClock} title="Terminy i liczba miejsc" description="Automatyczny kalendarz jest utworzony; możesz dodać wyjątki." href="/host/sprzedaz/dostepnosc" action="Sprawdź terminy" />
+              <ReadinessStep complete icon={CalendarClock} title="Terminy utworzone" description={schedule ? `Kalendarz startuje ${formatDate(schedule.valid_from)} z limitem ${schedule.capacity} miejsc. Zalecamy sprawdzić święta i wyjątki.` : "Automatyczny kalendarz jest utworzony. Zalecamy sprawdzić daty, miejsca i wyjątki."} href="/host/sprzedaz/dostepnosc" action="Sprawdź terminy" />
             </div>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button asChild size="lg" className="h-12"><Link href={`/attractions/${attraction.id}`}>Zobacz stronę atrakcji <ExternalLink className="h-4 w-4" /></Link></Button>
@@ -167,6 +188,20 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
         <div className="mt-8 text-center"><Button asChild variant="ghost"><Link href="/host">Przejdź do panelu organizatora <ArrowRight className="h-4 w-4" /></Link></Button></div>
       </div>
     </main>
+  )
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeZone: "Europe/Warsaw" })
+    .format(new Date(`${value}T12:00:00Z`))
+}
+
+function StatusCard({ ready, title, description }: { ready: boolean; title: string; description: string }) {
+  return (
+    <div className={ready ? "rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950" : "rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"}>
+      <p className="flex items-center gap-2 text-sm font-semibold">{ready ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}{title}</p>
+      <p className="mt-1 text-xs leading-5">{description}</p>
+    </div>
   )
 }
 

@@ -47,6 +47,10 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
 
   const priceFrom = Math.min(...product.ticketTypes.map((ticketType) => ticketType.priceAmount))
   const currency = product.ticketTypes[0]?.currency ?? "PLN"
+  const isGroupPricing = product.pricingModel === "per_group"
+  const participantRange = product.maxParticipants
+    ? `${product.minParticipants}–${product.maxParticipants} osób`
+    : `od ${product.minParticipants} osób`
 
   return (
     <main className="min-h-screen bg-background">
@@ -71,7 +75,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
             <div className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />{product.venue.name}{product.venue.city ? `, ${product.venue.city}` : ""}</span>
               <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4 text-primary" />{product.durationMinutes} min</span>
-              <span className="inline-flex items-center gap-2"><Ticket className="h-4 w-4 text-primary" />od {formatMoney(priceFrom, currency)}</span>
+              <span className="inline-flex items-center gap-2"><Ticket className="h-4 w-4 text-primary" />od {formatMoney(priceFrom, currency)} {isGroupPricing ? "za grupę" : "za osobę"}</span>
             </div>
           </div>
 
@@ -95,7 +99,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
       <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-10 lg:grid-cols-[18rem_1fr] lg:py-14">
         <aside>
           <h2 className="text-lg font-semibold">Rodzaje biletów</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">Warianty ceny w ramach tej samej oferty. Wybierzesz ich liczbę po wskazaniu terminu.</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{isGroupPricing ? `Cena obejmuje jedną rezerwację całego terminu dla grupy ${participantRange}.` : "Warianty ceny w ramach tej samej oferty. Wybierzesz ich liczbę po wskazaniu terminu."}</p>
           <div className="mt-4 space-y-3">
             {product.ticketTypes.map((ticketType) => (
               <Card key={ticketType.id}>
@@ -105,13 +109,20 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
                       <p className="font-medium">{ticketType.name}</p>
                       {ticketType.description && <p className="mt-1 text-xs text-muted-foreground">{ticketType.description}</p>}
                     </div>
-                    <p className="whitespace-nowrap font-semibold">{formatMoney(ticketType.priceAmount, ticketType.currency)}</p>
+                    <p className="whitespace-nowrap font-semibold">{formatMoney(ticketType.priceAmount, ticketType.currency)}<span className="block text-right text-[11px] font-normal text-muted-foreground">{isGroupPricing ? "za grupę" : "za osobę"}</span></p>
                   </div>
-                  {ticketType.capacityUnits > 1 && (
+                  {isGroupPricing ? (
+                    <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" /> jedna rezerwacja · {participantRange}
+                    </p>
+                  ) : ticketType.capacityUnits > 1 ? (
                     <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Users className="h-3.5 w-3.5" /> obejmuje {ticketType.capacityUnits} miejsca
                     </p>
-                  )}
+                  ) : null}
+                  {!isGroupPricing && (ticketType.minQuantity > 1 || ticketType.maxQuantity !== null) ? (
+                    <p className="mt-2 text-xs text-muted-foreground">W jednym zamówieniu: {ticketType.minQuantity}{ticketType.maxQuantity ? `–${ticketType.maxQuantity}` : "+"} szt.</p>
+                  ) : null}
                 </CardContent>
               </Card>
             ))}
@@ -121,7 +132,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
         <section aria-labelledby="sessions-heading">
           <div className="mb-5">
             <h2 id="sessions-heading" className="text-2xl font-semibold">Wybierz termin</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Potem wybierzesz rodzaj i liczbę biletów.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{isGroupPricing ? "Potem wybierzesz jedną rezerwację grupową." : "Potem wybierzesz rodzaj i liczbę biletów."}</p>
           </div>
 
           {product.sessions.length === 0 ? (
@@ -143,7 +154,7 @@ export default async function TicketingProductPage({ params }: ProductPageProps)
                     <CardContent className="flex h-full items-center justify-between gap-4 p-4">
                       <div>
                         <p className="font-medium capitalize">{formatSessionDate(session.startsAt, product.venue.timezone)}</p>
-                        <p className="mt-1 text-xs text-emerald-700">{session.availableCapacity} miejsc dostępnych</p>
+                        <p className="mt-1 text-xs text-emerald-700">{isGroupPricing ? "Termin dostępny dla jednej grupy" : `${session.availableCapacity} miejsc dostępnych`}</p>
                       </div>
                       <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
                     </CardContent>
