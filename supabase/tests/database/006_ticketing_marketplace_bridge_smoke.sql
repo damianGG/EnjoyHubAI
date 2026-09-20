@@ -7,7 +7,7 @@ do $ticketing_marketplace_bridge_smoke$
 declare
   test_user_id uuid;
   other_user_id uuid := gen_random_uuid();
-  property_id uuid := gen_random_uuid();
+  test_property_id uuid := gen_random_uuid();
   other_property_id uuid := gen_random_uuid();
   suffix text := left(replace(gen_random_uuid()::text, '-', ''), 12);
   setup_result record;
@@ -40,7 +40,7 @@ begin
     price_per_night,
     is_active
   ) values (
-    property_id,
+    test_property_id,
     test_user_id,
     'Stage 2B Marketplace Property',
     'attraction',
@@ -83,14 +83,14 @@ begin
       20,
       0,
       current_date + 6,
-      property_id
+      test_property_id
     );
 
   if not exists (
     select 1
     from public.venues venue
     where venue.id = setup_result.created_venue_id
-      and venue.property_id = property_id
+      and venue.property_id = test_property_id
   ) then
     raise exception 'Marketplace setup did not link the venue and property';
   end if;
@@ -112,7 +112,7 @@ begin
   select *
     into calendar_state
     from public.ticketing_list_property_sessions(
-      property_id,
+      test_property_id,
       current_date,
       current_date + 6
     ) calendar
@@ -147,7 +147,7 @@ begin
   select *
     into calendar_state
     from public.ticketing_list_property_sessions(
-      property_id,
+      test_property_id,
       current_date,
       current_date + 6
     ) calendar
@@ -227,14 +227,14 @@ begin
 
   perform public.ticketing_link_venue_property(
     setup_result.created_venue_id,
-    property_id
+    test_property_id
   );
 
   if not exists (
     select 1
     from public.venues venue
     where venue.id = setup_result.created_venue_id
-      and venue.property_id = property_id
+      and venue.property_id = test_property_id
   ) then
     raise exception 'A venue manager could not preserve the existing marketplace link';
   end if;

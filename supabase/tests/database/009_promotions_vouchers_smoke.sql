@@ -33,7 +33,8 @@ begin
   values (org_id, 'P1 Promotions Test', user_id);
 
   insert into public.organization_memberships (organization_id, user_id, role)
-  values (org_id, user_id, 'owner');
+  values (org_id, user_id, 'owner')
+  on conflict on constraint organization_memberships_pkey do nothing;
 
   insert into public.venues (
     id, organization_id, name, slug, city, status, created_by

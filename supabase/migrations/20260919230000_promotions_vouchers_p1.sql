@@ -367,7 +367,7 @@ declare
   subtotal numeric(12,2);
   order_currency text;
   currency_count integer;
-  customer_key text;
+  resolved_customer_key text;
   total_uses integer;
   customer_uses integer;
   discount_amount numeric(12,2);
@@ -464,7 +464,7 @@ begin
     raise exception 'Promotion currency does not match order' using errcode = 'P0001';
   end if;
 
-  customer_key := public.ticketing_promotion_customer_key(
+  resolved_customer_key := public.ticketing_promotion_customer_key(
     p_customer_user_id,
     p_customer_email
   );
@@ -493,7 +493,7 @@ begin
   end if;
 
   if promotion_row.max_uses_per_customer is not null then
-    if customer_key is null then
+    if resolved_customer_key is null then
       raise exception 'Promotion customer limit requires identity' using errcode = 'P0001';
     end if;
 
@@ -502,7 +502,7 @@ begin
     from public.promotion_redemptions redemption
     join public.orders customer_order on customer_order.id = redemption.order_id
     where redemption.promotion_id = promotion_row.id
-      and redemption.customer_key = customer_key
+      and redemption.customer_key = resolved_customer_key
       and (
         customer_order.status in ('confirmed','partially_refunded','refunded')
         or (
@@ -564,10 +564,10 @@ declare
   order_row public.orders%rowtype;
   promotion_row public.promotions%rowtype;
   existing_redemption public.promotion_redemptions%rowtype;
-  product_id uuid;
-  attraction_id uuid;
+  resolved_product_id uuid;
+  resolved_attraction_id uuid;
   product_count integer;
-  customer_key text;
+  resolved_customer_key text;
   total_uses integer;
   customer_uses integer;
   calculated_discount numeric(12,2);
@@ -617,7 +617,7 @@ begin
   end if;
 
   select item.product_id, coalesce(product.attraction_id, venue.property_id)
-  into product_id, attraction_id
+  into resolved_product_id, resolved_attraction_id
   from public.order_items item
   join public.products product on product.id = item.product_id
   join public.venues venue on venue.id = product.venue_id
@@ -625,7 +625,7 @@ begin
   order by item.created_at, item.id
   limit 1;
 
-  if product_id is null then
+  if resolved_product_id is null then
     raise exception 'Promotion order has no items' using errcode = 'P0001';
   end if;
 
@@ -636,8 +636,8 @@ begin
     and promotion.code = normalized_code
     and promotion.is_active
     and (promotion.venue_id is null or promotion.venue_id = order_row.venue_id)
-    and (promotion.attraction_id is null or promotion.attraction_id = attraction_id)
-    and (promotion.product_id is null or promotion.product_id = product_id)
+    and (promotion.attraction_id is null or promotion.attraction_id = resolved_attraction_id)
+    and (promotion.product_id is null or promotion.product_id = resolved_product_id)
     and (promotion.valid_from is null or promotion.valid_from <= statement_timestamp())
     and (promotion.valid_until is null or promotion.valid_until > statement_timestamp())
   for update;
@@ -655,7 +655,7 @@ begin
     raise exception 'Promotion currency does not match order' using errcode = 'P0001';
   end if;
 
-  customer_key := public.ticketing_promotion_customer_key(
+  resolved_customer_key := public.ticketing_promotion_customer_key(
     order_row.customer_user_id,
     order_row.customer_email
   );
@@ -684,7 +684,7 @@ begin
   end if;
 
   if promotion_row.max_uses_per_customer is not null then
-    if customer_key is null then
+    if resolved_customer_key is null then
       raise exception 'Promotion customer limit requires identity' using errcode = 'P0001';
     end if;
 
@@ -693,7 +693,7 @@ begin
     from public.promotion_redemptions redemption
     join public.orders customer_order on customer_order.id = redemption.order_id
     where redemption.promotion_id = promotion_row.id
-      and redemption.customer_key = customer_key
+      and redemption.customer_key = resolved_customer_key
       and (
         customer_order.status in ('confirmed','partially_refunded','refunded')
         or (
@@ -736,7 +736,7 @@ begin
   ) values (
     promotion_row.id,
     order_row.id,
-    customer_key,
+    resolved_customer_key,
     promotion_row.code,
     promotion_row.kind,
     promotion_row.discount_type,
