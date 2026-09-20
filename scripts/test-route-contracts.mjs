@@ -322,15 +322,20 @@ assert.doesNotMatch(hostSettlements, /STRIPE_CONNECT_ENABLED|webhooka Connect|za
 assert.match(hostSettlements, /Wypłaty dla organizatorów nie są jeszcze aktywne/)
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
-assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
+assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding_v2/)
 
 const organizerOnboardingUi = await source("components/ticketing/organizer-onboarding-lite.tsx")
-assert.match(organizerOnboardingUi, /organizer-onboarding-lite\.v3/)
+assert.match(organizerOnboardingUi, /organizer-onboarding-lite\.v4/)
 assert.match(organizerOnboardingUi, /Szkic zapisujemy automatycznie/)
 assert.match(organizerOnboardingUi, /Czy prowadzisz rezerwacje również poza EnjoyHub/)
-assert.match(organizerOnboardingUi, /Godziny wejść:/)
+assert.match(organizerOnboardingUi, /Ostatnia wizyta faktycznie zakończy się/)
+assert.match(organizerOnboardingUi, /Od kiedy klienci mogą rezerwować/)
+assert.match(organizerOnboardingUi, /Cena za całą grupę i termin/)
+assert.match(organizerOnboardingUi, /Wybierz rodzaj atrakcji/)
+assert.match(organizerOnboardingUi, /!isLegacyDraft && \(saved\.salesMode/)
 assert.match(organizerOnboardingUi, /Dalej: ustaw terminy/)
 assert.doesNotMatch(organizerOnboardingUi, /ticketPrice: "50"/)
+assert.doesNotMatch(organizerOnboardingUi, /useState<SalesMode>\("allocated_quota"\)/)
 assert.doesNotMatch(organizerOnboardingUi, /useState<number\[\]>\(\[1, 2, 3, 4, 5, 6, 7\]\)/)
 
 const organizerOnboardingComplete = await source("app/host/onboarding/gotowe/page.tsx")
@@ -347,8 +352,24 @@ assert.match(organizerOnboardingMigration, /ticketing_create_sales_setup/)
 assert.match(organizerOnboardingMigration, /ticketing_link_venue_property/)
 assert.match(organizerOnboardingMigration, /insert into public\.properties/)
 
+const organizerOnboardingSafetyMigration = await source("supabase/migrations/20260920113000_organizer_onboarding_safety_p0.sql")
+assert.match(organizerOnboardingSafetyMigration, /ticketing_complete_organizer_onboarding_v2/)
+assert.match(organizerOnboardingSafetyMigration, /p_available_from/)
+assert.match(organizerOnboardingSafetyMigration, /p_subcategory_id/)
+assert.match(organizerOnboardingSafetyMigration, /pricing_model/)
+
 const publicTicketingOffer = await source("app/bilety/[productId]/page.tsx")
 assert.match(publicTicketingOffer, /\/checkout\/\$\{session\.id\}/)
+assert.match(publicTicketingOffer, /za grupę/)
+assert.match(publicTicketingOffer, /Termin dostępny dla jednej grupy/)
+
+const checkoutForm = await source("components/ticketing/checkout-form.tsx")
+assert.match(checkoutForm, /Cena obejmuje cały termin dla jednej grupy/)
+assert.match(checkoutForm, /Rezerwacja grupowa/)
+
+const ticketingQueries = await source("lib/ticketing/queries.ts")
+assert.match(ticketingQueries, /pricingModelFromRestrictions/)
+assert.match(ticketingQueries, /restrictions\?\.pricing_model === "per_group"/)
 
 const ticketingCron = await source("app/api/cron/ticketing-cleanup/route.ts")
 assert.match(ticketingCron, /ticketing_extend_active_sessions/)

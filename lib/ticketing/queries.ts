@@ -8,6 +8,7 @@ import type {
   PublicTicketSummary,
   TicketingCheckoutSession,
   TicketingProductSalesPage,
+  TicketingPricingModel,
   TicketingSessionListItem,
 } from "@/lib/ticketing/types"
 import { isTicketingPaymentsEnabled } from "@/lib/ticketing/config"
@@ -44,8 +45,13 @@ interface RawProduct {
   duration_minutes: number
   min_participants: number
   max_participants: number | null
+  restrictions: Record<string, unknown> | null
   venues: RawVenue
   ticket_types: RawTicketType[]
+}
+
+function pricingModelFromRestrictions(restrictions: RawProduct["restrictions"]): TicketingPricingModel {
+  return restrictions?.pricing_model === "per_group" ? "per_group" : "per_person"
 }
 
 interface RawSession {
@@ -68,6 +74,7 @@ const publicSessionSelect = `
     duration_minutes,
     min_participants,
     max_participants,
+    restrictions,
     venues!inner (
       id,
       name,
@@ -140,6 +147,7 @@ export async function getCheckoutSession(sessionId: string) {
       durationMinutes: product.duration_minutes,
       minParticipants: product.min_participants,
       maxParticipants: product.max_participants,
+      pricingModel: pricingModelFromRestrictions(product.restrictions),
     },
     venue: {
       id: venue.id,
@@ -320,6 +328,7 @@ export const getTicketingProductSalesPage = cache(async (
         duration_minutes,
         min_participants,
         max_participants,
+        restrictions,
         venues!inner (
           id,
           name,
@@ -375,6 +384,9 @@ export const getTicketingProductSalesPage = cache(async (
     name: product.name,
     description: product.description,
     durationMinutes: product.duration_minutes,
+    minParticipants: product.min_participants,
+    maxParticipants: product.max_participants,
+    pricingModel: pricingModelFromRestrictions(product.restrictions),
     venue: {
       id: product.venues.id,
       name: product.venues.name,

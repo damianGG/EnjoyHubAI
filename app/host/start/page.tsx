@@ -105,6 +105,10 @@ export default async function OrganizerStartPage() {
                     Jeśli korzystasz z własnego kalendarza lub systemu rezerwacji, nie musisz go zmieniać. Wybierzesz po prostu osobną pulę miejsc dla EnjoyHub.
                   </p>
                 </div>
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  <p className="font-medium">Stronę atrakcji przygotujesz teraz. Płatności uruchomisz w drugim etapie.</p>
+                  <p className="mt-1 leading-6">Do płatności przygotuj pełne dane firmy, NIP, dokument tożsamości i rachunek bankowy. Stripe może poprosić o dodatkowe informacje wymagane prawem.</p>
+                </div>
               </CardContent>
             </Card>
 
@@ -112,7 +116,7 @@ export default async function OrganizerStartPage() {
               <Button asChild size="lg" className="h-12 w-full px-8 text-base sm:w-auto">
                 <Link href="/host/onboarding">Zaczynamy <ArrowRight className="h-5 w-5" /></Link>
               </Button>
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> Zwykle zajmuje około 5–10 minut. Szkic zapisuje się automatycznie na tym urządzeniu.</p>
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> Przygotowanie i publikacja strony zwykle zajmują 5–10 minut. Szkic zapisuje się automatycznie na tym urządzeniu.</p>
               <p className="text-xs text-muted-foreground">Na końcu zobaczysz dokładne podsumowanie przed opublikowaniem strony atrakcji i terminów.</p>
             </div>
           </>

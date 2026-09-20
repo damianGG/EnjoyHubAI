@@ -19,6 +19,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
     getCheckoutLegalContext(sessionId),
   ])
   if (!session || session.ticketTypes.length === 0 || !legalContext) notFound()
+  const isGroupPricing = session.product.pricingModel === "per_group"
+  const participantRange = session.product.maxParticipants
+    ? `${session.product.minParticipants}–${session.product.maxParticipants} osób`
+    : `od ${session.product.minParticipants} osób`
 
   return (
     <main className="min-h-screen bg-[#f7f8fa] pb-10">
@@ -58,8 +62,8 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
           <section>
             <p className="text-sm font-medium text-[#ff5a1f]">Jeszcze chwila</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Bilety i dane rezerwacji</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Wybierz liczbę biletów i podaj dane, na które wyślemy potwierdzenie.</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{isGroupPricing ? "Rezerwacja grupowa i dane" : "Bilety i dane rezerwacji"}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{isGroupPricing ? `Wybierz jedną rezerwację dla grupy ${participantRange} i podaj dane do potwierdzenia.` : "Wybierz liczbę biletów i podaj dane, na które wyślemy potwierdzenie."}</p>
             <div className="mt-6">
               <CheckoutForm session={session} legalContext={legalContext} />
             </div>
@@ -77,7 +81,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
                 <div className="space-y-3 rounded-2xl bg-muted/50 p-4 text-sm">
                   <div className="flex items-start gap-2"><CalendarDays className="mt-0.5 h-4 w-4 text-[#ff5a1f]" /><span>{formatSessionDate(session.startsAt, session.venue.timezone)}</span></div>
                   <div className="flex items-start gap-2"><Clock className="mt-0.5 h-4 w-4 text-[#ff5a1f]" /><span>{session.product.durationMinutes} minut</span></div>
-                  <div className="flex items-start gap-2"><Users className="mt-0.5 h-4 w-4 text-[#ff5a1f]" /><span>{session.availableCapacity} miejsc dostępnych</span></div>
+                  <div className="flex items-start gap-2"><Users className="mt-0.5 h-4 w-4 text-[#ff5a1f]" /><span>{isGroupPricing ? `Jedna grupa: ${participantRange}` : `${session.availableCapacity} miejsc dostępnych`}</span></div>
                   {(session.venue.addressLine1 || session.venue.city) && (
                     <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-[#ff5a1f]" /><span>{[session.venue.addressLine1, session.venue.city].filter(Boolean).join(", ")}</span></div>
                   )}

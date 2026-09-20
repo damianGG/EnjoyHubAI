@@ -58,7 +58,7 @@ create or replace function public.ticketing_sync_order_operating_metadata()
 returns trigger
 language plpgsql
 set search_path = public, pg_temp
-as $
+as $$
 begin
   if new.booking_source is null then
     new.booking_source := case new.source::text
@@ -81,7 +81,7 @@ begin
 
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists ticketing_orders_operating_metadata on public.orders;
 create trigger ticketing_orders_operating_metadata
