@@ -50,9 +50,12 @@ export interface CheckoutOrderResult {
   orderId: string
   orderNumber: number
   expiresAt: string
+  subtotalAmount: number
+  discountAmount: number
   totalAmount: number
   currency: string
   availableCapacity: number
+  promotionCode?: string | null
 }
 
 export interface CheckoutOrderSummary {
@@ -62,6 +65,8 @@ export interface CheckoutOrderSummary {
   paymentStatus: string
   customerName: string
   customerEmail: string
+  subtotalAmount: number
+  discountAmount: number
   totalAmount: number
   currency: string
   expiresAt: string | null

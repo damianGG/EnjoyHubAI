@@ -6,6 +6,7 @@ import {
   enrichAnalyticsEvent,
   readAnalyticsRequestContext,
 } from "@/lib/analytics/server"
+import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation"
 import { getCheckoutLegalContext } from "@/lib/legal/checkout"
 import {
   CANCELLATION_POLICY_VERSION,
@@ -39,6 +40,7 @@ const checkoutSchema = z.object({
   termsAccepted: z.literal(true),
   termsVersion: z.literal(MARKETPLACE_TERMS_VERSION),
   cancellationPolicyVersion: z.literal(CANCELLATION_POLICY_VERSION),
+  promotionCode: z.string().trim().max(32).optional().nullable(),
   items: z.array(z.object({
     ticketTypeId: z.string().uuid(),
     quantity: z.number().int().positive().max(100),
@@ -86,6 +88,19 @@ function checkoutErrorResponse(message: string) {
   ) {
     return NextResponse.json(
       { error: "Sprzedaż dla tego terminu jest już zamknięta." },
+      { status: 409 },
+    )
+  }
+
+  if (
+    message.includes("Promotion code is invalid") ||
+    message.includes("Promotion usage limit") ||
+    message.includes("Promotion customer usage limit") ||
+    message.includes("Promotion minimum subtotal") ||
+    message.includes("Promotion currency")
+  ) {
+    return NextResponse.json(
+      { error: "Kod rabatowy jest nieprawidłowy, wygasł albo nie może być już użyty." },
       { status: 409 },
     )
   }
@@ -194,7 +209,7 @@ export async function POST(request: Request) {
     const userClient = createClient()
     const { data: { user } } = await userClient.auth.getUser()
     const supabase = createAdminClient()
-    const { data, error } = await supabase.rpc("ticketing_create_order_hold", {
+    const { data, error } = await supabase.rpc("ticketing_create_order_hold_with_promotion", {
       p_checkout_key: input.checkoutKey,
       p_session_id: input.sessionId,
       p_customer_name: input.customerName,
@@ -208,7 +223,8 @@ export async function POST(request: Request) {
       p_source: "enjoyhub_marketplace",
       p_hold_minutes: checkoutHoldMinutes,
       p_terms_accepted: input.termsAccepted,
-      p_metadata: { checkout_version: "1f-legal" },
+      p_metadata: { checkout_version: "p1-promotions" },
+      p_promotion_code: input.promotionCode || null,
     })
 
     if (error || !data?.[0]) {
@@ -231,9 +247,12 @@ export async function POST(request: Request) {
       created_order_number: number
       created_hold_token: string
       hold_expires_at: string
+      created_subtotal_amount: number | string
+      created_discount_amount: number | string
       created_total_amount: number | string
       created_currency: string
       available_capacity_units: number
+      applied_promotion_code: string | null
     }
 
     const { error: legalAcceptanceError } = await supabase.rpc(
@@ -266,6 +285,42 @@ export async function POST(request: Request) {
       )
     }
 
+    if (Number(order.created_total_amount) === 0) {
+      const { error: zeroTotalError } = await supabase.rpc(
+        "ticketing_confirm_zero_total_order",
+        {
+          p_order_id: order.created_order_id,
+          p_hold_token: order.created_hold_token,
+        },
+      )
+
+      if (zeroTotalError) {
+        reportServerError(zeroTotalError, {
+          area: "checkout",
+          operation: "confirm_zero_total_order",
+          route,
+          requestId,
+          extras: { orderId: order.created_order_id },
+        })
+        return NextResponse.json(
+          { error: "Nie udało się potwierdzić bezpłatnej rezerwacji." },
+          { status: 503 },
+        )
+      }
+
+      try {
+        await sendOrderConfirmationEmail(order.created_order_id)
+      } catch (emailError) {
+        reportServerError(emailError, {
+          area: "email",
+          operation: "zero_total_order_confirmation",
+          route,
+          requestId,
+          extras: { orderId: order.created_order_id },
+        })
+      }
+    }
+
     await enrichAnalyticsEvent(`order_created:${order.created_order_id}`, {
       ...analyticsContext,
       userId: user?.id ?? null,
@@ -277,9 +332,12 @@ export async function POST(request: Request) {
       orderId: order.created_order_id,
       orderNumber: order.created_order_number,
       expiresAt: order.hold_expires_at,
+      subtotalAmount: Number(order.created_subtotal_amount),
+      discountAmount: Number(order.created_discount_amount),
       totalAmount: Number(order.created_total_amount),
       currency: order.created_currency,
       availableCapacity: order.available_capacity_units,
+      promotionCode: order.applied_promotion_code,
     }, { status: 201 })
 
     response.cookies.set({

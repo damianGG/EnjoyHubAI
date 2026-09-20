@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react"
 import type { FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Building2, Loader2, Minus, Plus, RotateCcw, ShieldCheck, Ticket, UserRound } from "lucide-react"
+import { ArrowRight, Building2, Loader2, Minus, Plus, RotateCcw, ShieldCheck, Tag, Ticket, UserRound } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -46,20 +46,38 @@ interface CheckoutFormProps {
   legalContext: CheckoutLegalContext
 }
 
+interface PromotionQuote {
+  promotionId: string
+  code: string
+  name: string
+  kind: "promotion" | "voucher"
+  discountType: "percentage" | "fixed"
+  subtotalAmount: number
+  discountAmount: number
+  totalAmount: number
+  currency: string
+}
+
 export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
   const router = useRouter()
   const checkoutKey = useRef<string | null>(null)
+  const formRef = useRef<HTMLFormElement | null>(null)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [promotionCode, setPromotionCode] = useState("")
+  const [promotionQuote, setPromotionQuote] = useState<PromotionQuote | null>(null)
+  const [promotionLoading, setPromotionLoading] = useState(false)
+  const [promotionError, setPromotionError] = useState<string | null>(null)
 
   const selected = useMemo(() => session.ticketTypes.flatMap((ticket) => {
     const quantity = quantities[ticket.id] ?? 0
     return quantity > 0 ? [{ ticket, quantity }] : []
   }), [quantities, session.ticketTypes])
 
-  const totalAmount = selected.reduce((sum, item) => sum + item.ticket.priceAmount * item.quantity, 0)
+  const subtotalAmount = selected.reduce((sum, item) => sum + item.ticket.priceAmount * item.quantity, 0)
+  const finalAmount = promotionQuote?.totalAmount ?? subtotalAmount
   const capacityUnits = selected.reduce((sum, item) => sum + item.ticket.capacityUnits * item.quantity, 0)
   const currency = session.ticketTypes[0]?.currency ?? "PLN"
 
@@ -68,6 +86,8 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
     if (!ticket) return
 
     setError(null)
+    setPromotionQuote(null)
+    setPromotionError(null)
     setQuantities((current) => {
       const quantity = current[ticketId] ?? 0
       const currentCapacityUnits = session.ticketTypes.reduce(
@@ -89,6 +109,55 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
 
       return { ...current, [ticketId]: nextQuantity }
     })
+  }
+
+  async function applyPromotionCode() {
+    setPromotionError(null)
+    setPromotionQuote(null)
+
+    const code = promotionCode.trim()
+    if (code.length < 3) {
+      setPromotionError("Wpisz kod promocji lub vouchera.")
+      return
+    }
+    if (!selected.length) {
+      setPromotionError("Najpierw wybierz bilety.")
+      return
+    }
+
+    const form = formRef.current
+    const formData = form ? new FormData(form) : null
+    const customerEmail = String(formData?.get("customerEmail") ?? "").trim()
+    setPromotionLoading(true)
+
+    try {
+      const response = await fetch("/api/ticketing/promotions/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: session.id,
+          code,
+          customerEmail: customerEmail || null,
+          items: selected.map(({ ticket, quantity }) => ({
+            ticketTypeId: ticket.id,
+            quantity,
+          })),
+        }),
+      })
+
+      const result = await response.json() as PromotionQuote & { error?: string }
+      if (!response.ok) {
+        setPromotionError(result.error || "Nie udało się zastosować kodu.")
+        return
+      }
+
+      setPromotionCode(result.code)
+      setPromotionQuote(result)
+    } catch {
+      setPromotionError("Nie udało się sprawdzić kodu. Spróbuj ponownie.")
+    } finally {
+      setPromotionLoading(false)
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -122,6 +191,7 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
           termsAccepted,
           termsVersion: legalContext.termsVersion,
           cancellationPolicyVersion: legalContext.cancellationPolicyVersion,
+          promotionCode: promotionQuote?.code ?? null,
           items: selected.map(({ ticket, quantity }) => ({ ticketTypeId: ticket.id, quantity })),
         }),
       })
@@ -142,7 +212,7 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       <Card className="overflow-hidden rounded-3xl border-0 bg-white shadow-sm ring-1 ring-black/5">
         <CardContent className="p-0">
           <div className="flex items-center gap-3 border-b p-5">
@@ -185,6 +255,42 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
               </div>
             )
           })}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-3xl border-0 bg-white shadow-sm ring-1 ring-black/5">
+        <CardContent className="p-5">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff1eb] text-[#ff5a1f]"><Tag className="h-5 w-5" /></span>
+            <div>
+              <p className="font-bold">Kod promocji lub voucher</p>
+              <p className="text-xs text-muted-foreground">Opcjonalnie — rabat przeliczymy przed utworzeniem rezerwacji.</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={promotionCode}
+              onChange={(event) => {
+                setPromotionCode(event.target.value.toUpperCase())
+                setPromotionQuote(null)
+                setPromotionError(null)
+              }}
+              maxLength={32}
+              placeholder="np. LATO20"
+              className="h-11 rounded-xl uppercase"
+              disabled={promotionLoading || isSubmitting}
+            />
+            <Button type="button" variant="outline" onClick={applyPromotionCode} disabled={promotionLoading || isSubmitting || !selected.length}>
+              {promotionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Zastosuj"}
+            </Button>
+          </div>
+          {promotionQuote && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+              <p className="font-semibold">{promotionQuote.name} · kod {promotionQuote.code}</p>
+              <p className="mt-1">Rabat: {formatMoney(promotionQuote.discountAmount, promotionQuote.currency)}</p>
+            </div>
+          )}
+          {promotionError && <p className="mt-2 text-sm text-red-700">{promotionError}</p>}
         </CardContent>
       </Card>
 
@@ -280,19 +386,22 @@ export function CheckoutForm({ session, legalContext }: CheckoutFormProps) {
         <div className="flex items-center justify-between gap-4">
           <div className="shrink-0">
             <p className="text-xs text-muted-foreground">Razem</p>
-            <p className="text-2xl font-black">{formatMoney(totalAmount, currency)}</p>
+            {promotionQuote && <p className="text-xs text-muted-foreground line-through">{formatMoney(subtotalAmount, currency)}</p>}
+            <p className="text-2xl font-black">{formatMoney(finalAmount, currency)}</p>
           </div>
           <Button type="submit" size="lg" disabled={isSubmitting || capacityUnits === 0} className="h-12 flex-1 rounded-xl bg-[#ff5a1f] font-semibold text-white hover:bg-[#e94f18] sm:max-w-xs">
             {isSubmitting ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Rezerwuję…</>
             ) : (
-              <>Kupuję i płacę<ArrowRight className="ml-2 h-4 w-4" /></>
+              <>{finalAmount === 0 ? "Potwierdzam rezerwację" : "Kupuję i płacę"}<ArrowRight className="ml-2 h-4 w-4" /></>
             )}
           </Button>
         </div>
         <div className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-          Kliknięcie „Kupuję i płacę” oznacza złożenie zamówienia z obowiązkiem zapłaty. Miejsca zostaną zablokowane na 15 minut, a następnie przejdziesz do operatora płatności.
+          {finalAmount === 0
+            ? "Kod pokrywa całą wartość zamówienia. Po potwierdzeniu miejsca zostaną od razu zarezerwowane i wystawimy bilety."
+            : "Kliknięcie „Kupuję i płacę” oznacza złożenie zamówienia z obowiązkiem zapłaty. Miejsca zostaną zablokowane na 15 minut, a następnie przejdziesz do operatora płatności."}
         </div>
       </div>
     </form>

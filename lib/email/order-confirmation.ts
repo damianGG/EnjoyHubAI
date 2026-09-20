@@ -79,8 +79,8 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<Email
   }
 
   const order = orderData as unknown as OrderRow
-  if (order.status !== "confirmed" || order.payment_status !== "paid") {
-    return { sent: false, reason: "provider_error", error: "Order is not confirmed and paid" }
+  if (order.status !== "confirmed" || !["paid", "not_required"].includes(order.payment_status)) {
+    return { sent: false, reason: "provider_error", error: "Order is not confirmed" }
   }
 
   const [{ data: venueData, error: venueError }, { data: itemData, error: itemError }, { data: ticketData, error: ticketError }] = await Promise.all([

@@ -13,6 +13,7 @@ const bookingSchema = z.object({
   customerEmail: z.string().trim().max(254),
   customerPhone: z.string().trim().max(40),
   paymentMode: z.enum(["on_site_unpaid", "on_site_paid"]),
+  promotionCode: z.string().trim().max(32),
   note: z.string().trim().max(1000),
 })
 
@@ -24,6 +25,7 @@ export async function createOrganizerBooking(formData: FormData) {
     customerEmail: String(formData.get("customerEmail") ?? ""),
     customerPhone: String(formData.get("customerPhone") ?? ""),
     paymentMode: String(formData.get("paymentMode") ?? ""),
+    promotionCode: String(formData.get("promotionCode") ?? ""),
     note: String(formData.get("note") ?? ""),
   }
   const parsed = bookingSchema.safeParse(values)
@@ -50,7 +52,7 @@ export async function createOrganizerBooking(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login?next=/host/rezerwacje/nowa")
 
-  const { data, error } = await supabase.rpc("ticketing_create_organizer_booking", {
+  const { data, error } = await supabase.rpc("ticketing_create_organizer_booking_with_promotion", {
     p_session_id: input.sessionId,
     p_customer_name: input.customerName,
     p_customer_email: input.customerEmail,
@@ -60,6 +62,7 @@ export async function createOrganizerBooking(formData: FormData) {
     p_payment_method: "on_site",
     p_mark_paid: input.paymentMode === "on_site_paid",
     p_note: input.note,
+    p_promotion_code: input.promotionCode || null,
   })
 
   if (error || !data) {
@@ -74,6 +77,8 @@ export async function createOrganizerBooking(formData: FormData) {
       ? "uprawnienia"
       : message.includes("capacity")
         ? "miejsca"
+        : message.includes("promotion")
+        ? "promocja"
         : message.includes("email")
           ? "email"
           : "zapis"

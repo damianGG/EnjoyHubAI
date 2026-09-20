@@ -289,6 +289,18 @@ export default async function OrganizerOrderPage({
                   </div>
                 ))}
                 <Separator />
+                {Number(order.discountAmount) > 0 && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Wartość przed rabatem</span>
+                      <span>{formatMoney(Number(order.subtotalAmount), order.currency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between font-semibold text-emerald-700">
+                      <span>Rabat / voucher</span>
+                      <span>−{formatMoney(Number(order.discountAmount), order.currency)}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-lg font-bold">
                   <span>Razem</span>
                   <span>{formatMoney(Number(order.totalAmount), order.currency)}</span>
@@ -342,7 +354,7 @@ export default async function OrganizerOrderPage({
               </CardContent>
             </Card>
 
-            {(order.paymentMethod === "online" || lifecycle.paymentAttempts.length > 0) && (
+            {Number(order.totalAmount) > 0 && (order.paymentMethod === "online" || lifecycle.paymentAttempts.length > 0) && (
               <OrganizerRefundCard
                 orderId={order.id}
                 paymentStatus={order.paymentStatus}
@@ -483,6 +495,7 @@ function OrderStatusBadge({ status, paymentStatus, requiresReview }: { status: s
   if (paymentStatus === "partially_refunded" || status === "partially_refunded") return <Badge variant="secondary">Częściowy zwrot</Badge>
   if (status === "confirmed" && paymentStatus === "paid") return <Badge className="bg-emerald-600">Opłacona i potwierdzona</Badge>
   if (status === "confirmed" && paymentStatus === "unpaid") return <Badge variant="secondary">Potwierdzona · nieopłacona</Badge>
+  if (status === "confirmed" && paymentStatus === "not_required") return <Badge className="bg-emerald-600">Potwierdzona · bez płatności</Badge>
   if (status === "awaiting_payment") return <Badge variant="secondary">Oczekuje na płatność</Badge>
   if (status === "expired") return <Badge variant="outline">Wygasła</Badge>
   return <Badge variant="destructive">{status === "cancelled" ? "Anulowana" : status}</Badge>

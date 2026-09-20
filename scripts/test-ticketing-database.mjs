@@ -14,10 +14,18 @@ async function sqlFiles(relativeDirectory) {
     .map((name) => ({ name, url: new URL(name, directoryUrl) }))
 }
 
+function normalizeForPGlite(sql) {
+  return sql.replace(
+    /create\s+extension\s+if\s+not\s+exists\s+pgcrypto\s*;/gi,
+    "-- PGlite: pgcrypto extension bootstrap skipped; gen_random_uuid() is available.",
+  )
+}
+
 async function runSqlFiles(label, files) {
   for (const file of files) {
     try {
-      await database.exec(await readFile(file.url, "utf8"))
+      const sql = normalizeForPGlite(await readFile(file.url, "utf8"))
+      await database.exec(sql)
       process.stdout.write(`${label} OK: ${file.name}\n`)
     } catch (error) {
       console.error(`${label} FAILED: ${file.name}`)
@@ -37,6 +45,7 @@ try {
     create table auth.users (
       id uuid primary key default gen_random_uuid(),
       email text,
+      raw_user_meta_data jsonb not null default '{}'::jsonb,
       created_at timestamptz not null default now()
     );
     create function auth.uid()
@@ -72,6 +81,7 @@ try {
       description text,
       property_type text not null,
       category_id uuid references public.categories(id),
+      subcategory_id uuid,
       address text not null,
       city text not null,
       country text not null,
@@ -82,7 +92,8 @@ try {
       amenities text[],
       images text[],
       is_active boolean not null default true,
-      created_at timestamptz not null default now()
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
     );
     insert into public.users (id, email, full_name)
     values (

@@ -235,6 +235,9 @@ export default async function HostTicketingSalesPage() {
                 <Link href="/host/sprzedaz/dostepnosc"><CalendarClock className="h-4 w-4" /> Reguły dostępności</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
+                <Link href="/host/promocje"><TicketCheck className="h-4 w-4" /> Promocje i vouchery</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
                 <Link href="/host/sprzedaz/zasady-anulowania"><RotateCcw className="h-4 w-4" /> Zasady anulowania</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
