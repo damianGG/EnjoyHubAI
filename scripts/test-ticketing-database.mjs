@@ -73,6 +73,7 @@ try {
       description text,
       property_type text not null,
       category_id uuid references public.categories(id),
+      subcategory_id uuid,
       address text not null,
       city text not null,
       country text not null,
@@ -83,7 +84,8 @@ try {
       amenities text[],
       images text[],
       is_active boolean not null default true,
-      created_at timestamptz not null default now()
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
     );
     insert into public.users (id, email, full_name)
     values (
