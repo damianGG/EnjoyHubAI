@@ -14,10 +14,18 @@ async function sqlFiles(relativeDirectory) {
     .map((name) => ({ name, url: new URL(name, directoryUrl) }))
 }
 
+function normalizeForPGlite(sql) {
+  return sql.replace(
+    /create\s+extension\s+if\s+not\s+exists\s+pgcrypto\s*;/gi,
+    "-- PGlite: pgcrypto extension bootstrap skipped; gen_random_uuid() is available.",
+  )
+}
+
 async function runSqlFiles(label, files) {
   for (const file of files) {
     try {
-      await database.exec(await readFile(file.url, "utf8"))
+      const sql = normalizeForPGlite(await readFile(file.url, "utf8"))
+      await database.exec(sql)
       process.stdout.write(`${label} OK: ${file.name}\n`)
     } catch (error) {
       console.error(`${label} FAILED: ${file.name}`)
