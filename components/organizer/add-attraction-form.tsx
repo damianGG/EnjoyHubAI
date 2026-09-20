@@ -2,16 +2,18 @@
 
 import { useCallback, useState } from "react"
 import dynamic from "next/dynamic"
-import { CalendarClock, Info, MapPin, PlusCircle, Store, Ticket } from "lucide-react"
+import { CalendarClock, Info, PlusCircle, Store, Ticket } from "lucide-react"
 
 import { addOrganizerAttraction } from "@/app/host/atrakcje/nowa/actions"
 import { ImageUploadSection } from "@/components/forms/ImageUploadSection"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import type { LocationReverseResponse, LocationSuggestion } from "@/lib/locations/types"
 import { cn } from "@/lib/utils"
 
 const LocationPicker = dynamic(() => import("@/components/location-picker"), {
@@ -27,6 +29,10 @@ const weekdayOptions = [
   [1, "Pon"], [2, "Wt"], [3, "Śr"], [4, "Czw"], [5, "Pt"], [6, "Sob"], [7, "Niedz"],
 ] as const
 
+function clean(value: string, maximum: number) {
+  return value.trim().slice(0, maximum)
+}
+
 export function AddAttractionForm({
   organizations,
   categories,
@@ -37,9 +43,38 @@ export function AddAttractionForm({
   userId: string
 }) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [address, setAddress] = useState("")
+  const [postalCode, setPostalCode] = useState("")
+  const [city, setCity] = useState("")
   const [images, setImages] = useState<ImageData[]>([])
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7])
-  const onLocation = useCallback((lat: number, lng: number) => setLocation({ lat, lng }), [])
+
+  const applyAddressSuggestion = useCallback((item: LocationSuggestion) => {
+    setAddress(clean(item.addressLine || item.label, 240))
+    setPostalCode(clean(item.postcode, 20))
+    setCity(clean(item.city, 120))
+    setLocation({ lat: item.latitude, lng: item.longitude })
+  }, [])
+
+  const onLocation = useCallback((lat: number, lng: number) => {
+    setLocation({ lat, lng })
+
+    void (async () => {
+      try {
+        const params = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+        const response = await fetch(`/api/locations/reverse?${params.toString()}`)
+        if (!response.ok) return
+        const payload = await response.json() as LocationReverseResponse
+        if (!payload.item) return
+
+        setAddress(clean(payload.item.addressLine || payload.item.label, 240))
+        setPostalCode(clean(payload.item.postcode, 20))
+        setCity(clean(payload.item.city, 120))
+      } catch {
+        // The map selection stays valid even when reverse geocoding is temporarily unavailable.
+      }
+    })()
+  }, [])
 
   return (
     <form action={addOrganizerAttraction} className="space-y-6">
@@ -68,11 +103,41 @@ export function AddAttractionForm({
             </select>
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Ulica i numer" className="sm:col-span-2"><Input name="address" required minLength={3} maxLength={240} /></Field>
-            <Field label="Kod pocztowy"><Input name="postalCode" maxLength={20} /></Field>
-            <Field label="Miejscowość"><Input name="city" required minLength={2} maxLength={120} /></Field>
+            <Field label="Adres lub nazwa obiektu" className="sm:col-span-2">
+              <LocationAutocomplete
+                mode="address"
+                name="address"
+                required
+                value={address}
+                onValueChange={(value) => {
+                  setAddress(value)
+                  setLocation(null)
+                }}
+                onSelect={applyAddressSuggestion}
+                placeholder="np. Rejtana 20, Rzeszów albo nazwa obiektu"
+              />
+            </Field>
+            <Field label="Kod pocztowy"><Input name="postalCode" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} maxLength={20} /></Field>
+            <Field label="Miejscowość">
+              <LocationAutocomplete
+                mode="city"
+                name="city"
+                required
+                value={city}
+                onValueChange={setCity}
+                onSelect={(item) => {
+                  setCity(clean(item.city || item.label, 120))
+                  if (!location) setLocation({ lat: item.latitude, lng: item.longitude })
+                }}
+                placeholder="np. Rzeszów"
+              />
+            </Field>
           </div>
-          <div className="space-y-2"><Label>Położenie na mapie</Label><LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} /></div>
+          <div className="space-y-2">
+            <Label>Położenie na mapie</Label>
+            <p className="text-xs text-muted-foreground">Po wybraniu adresu pinezka ustawi się automatycznie. Możesz ją potem poprawić kliknięciem na mapie.</p>
+            <LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} />
+          </div>
           <ImageUploadSection images={images} onImagesChange={setImages} userId={userId} maxImages={8} />
         </CardContent>
       </Card>
