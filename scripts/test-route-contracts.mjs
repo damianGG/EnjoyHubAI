@@ -38,6 +38,7 @@ const requiredRoutes = [
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
   "components/ticketing/clear-organizer-onboarding-draft.tsx",
+  "components/ticketing/organizer-onboarding-lite.tsx",
   "components/ticketing/organizer-onboarding-wizard.tsx",
   "components/ticketing/sales-setup-form.tsx",
   "lib/auth/return-to.ts",
@@ -322,6 +323,24 @@ assert.match(hostSettlements, /Wypłaty dla organizatorów nie są jeszcze aktyw
 
 const organizerOnboarding = await source("app/host/onboarding/actions.ts")
 assert.match(organizerOnboarding, /ticketing_complete_organizer_onboarding/)
+
+const organizerOnboardingUi = await source("components/ticketing/organizer-onboarding-lite.tsx")
+assert.match(organizerOnboardingUi, /organizer-onboarding-lite\.v3/)
+assert.match(organizerOnboardingUi, /Szkic zapisujemy automatycznie/)
+assert.match(organizerOnboardingUi, /Czy prowadzisz rezerwacje również poza EnjoyHub/)
+assert.match(organizerOnboardingUi, /Godziny wejść:/)
+assert.match(organizerOnboardingUi, /Dalej: ustaw terminy/)
+assert.doesNotMatch(organizerOnboardingUi, /ticketPrice: "50"/)
+assert.doesNotMatch(organizerOnboardingUi, /useState<number\[\]>\(\[1, 2, 3, 4, 5, 6, 7\]\)/)
+
+const organizerOnboardingComplete = await source("app/host/onboarding/gotowe/page.tsx")
+assert.match(organizerOnboardingComplete, /Uruchom sprzedaż krok po kroku/)
+assert.match(organizerOnboardingComplete, /href="\/host\/weryfikacja"/)
+assert.match(organizerOnboardingComplete, /href="\/host\/rozliczenia"/)
+
+const organizerDashboard = await source("app/host/page.tsx")
+assert.match(organizerDashboard, /Połącz płatności i rachunek/)
+assert.match(organizerDashboard, /isStripeConnectEnabled \? "\/host\/rozliczenia" : "\/host\/weryfikacja"/)
 
 const organizerOnboardingMigration = await source("supabase/migrations/20260909204804_ticketing_organizer_onboarding.sql")
 assert.match(organizerOnboardingMigration, /ticketing_create_sales_setup/)

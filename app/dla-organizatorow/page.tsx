@@ -84,7 +84,7 @@ export default function OrganizerLandingPage() {
               Sprzedawaj bilety online. <span className="text-primary">Bez wywracania obiektu do góry nogami.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Masz już kasę lub własny system? Możesz przeznaczyć dla EnjoyHub tylko część miejsc.
+              Masz już własny kalendarz, system rezerwacji lub kasę? Możesz przeznaczyć dla EnjoyHub tylko część miejsc.
               Nie masz sprzedaży online? EnjoyHub może obsłużyć cały proces.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -173,7 +173,7 @@ export default function OrganizerLandingPage() {
         <div className="container mx-auto grid max-w-6xl gap-8 px-4 py-16 lg:grid-cols-2 lg:items-center">
           <div>
             <Badge variant="outline" className="mb-4">Dopasowane do Twojego obiektu</Badge>
-            <h2 className="text-3xl font-bold tracking-tight">Twoja obecna kasa może zostać</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Twój obecny system może zostać</h2>
             <p className="mt-4 leading-7 text-muted-foreground">
               Wybierasz model, który pasuje do sposobu pracy obiektu. Na początku możesz udostępnić w EnjoyHub niewielką pulę miejsc i zwiększyć ją później.
             </p>
@@ -219,9 +219,9 @@ export default function OrganizerLandingPage() {
         </div>
         <Accordion type="single" collapsible className="rounded-2xl border px-5">
           <AccordionItem value="system">
-            <AccordionTrigger>Czy muszę zrezygnować z obecnej kasy?</AccordionTrigger>
+            <AccordionTrigger>Czy muszę zrezygnować z obecnego systemu rezerwacji?</AccordionTrigger>
             <AccordionContent className="leading-6 text-muted-foreground">
-              Nie. W kreatorze wybierzesz wydzieloną pulę miejsc dla EnjoyHub. Obecny system i sposób pracy kasjerów mogą pozostać bez zmian.
+              Nie. W kreatorze wybierzesz wydzieloną pulę miejsc dla EnjoyHub. Obecny system, kasa i sposób pracy obsługi mogą pozostać bez zmian.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="technical">

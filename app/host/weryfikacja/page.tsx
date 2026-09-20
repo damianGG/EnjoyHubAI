@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { organizerVerificationRoles, type OrganizerRole } from "@/lib/organizer/access"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 
 export const dynamic = "force-dynamic"
 
@@ -117,7 +118,10 @@ export default async function OrganizerVerificationPage({
           <Alert className="mt-6 border-emerald-200 bg-emerald-50 text-emerald-950">
             <CheckCircle2 className="h-4 w-4" />
             <AlertTitle>Dane zostały wysłane</AlertTitle>
-            <AlertDescription>Status organizacji zmienił się na „Weryfikujemy”. Potwierdzenie prawdziwości danych sprzedawcy zostało zapisane.</AlertDescription>
+            <AlertDescription className="space-y-3">
+              <p>Status organizacji zmienił się na „Weryfikujemy”. Potwierdzenie prawdziwości danych sprzedawcy zostało zapisane.</p>
+              {isStripeConnectEnabled ? <Button asChild size="sm"><Link href="/host/rozliczenia">Dalej: połącz płatności i rachunek</Link></Button> : null}
+            </AlertDescription>
           </Alert>
         ) : null}
         {query.blad ? (
