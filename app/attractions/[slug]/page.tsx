@@ -17,7 +17,7 @@ import {
 import { startAttractionConversation } from "@/app/attractions/[slug]/actions"
 import { PaintballProfile, type PaintballProfileData } from "@/components/paintball/paintball-profile"
 import AttractionGallery from "@/components/attraction-gallery"
-import { AttractionPageActions } from "@/components/attraction-page-actions"
+import { AttractionPageActions, AttractionPageActionsProvider } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
 import PropertyContactInfo from "@/components/property-contact-info"
@@ -42,7 +42,7 @@ import {
   applyAttractionInternalBreadcrumbs,
   getAttractionInternalLinking,
 } from "@/lib/seo/internal-linking"
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { createPublicServerClient, isPublicSupabaseConfigured } from "@/lib/supabase/public-server"
 import { getMarketplaceTicketingVenue } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
 
@@ -50,7 +50,6 @@ export const revalidate = 120
 
 interface AttractionPageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ zainteresowanie?: string; blad_zainteresowania?: string }>
 }
 
 
@@ -109,8 +108,8 @@ export async function generateMetadata({ params }: Pick<AttractionPageProps, "pa
   }
 }
 
-export default async function AttractionPage({ params, searchParams }: AttractionPageProps) {
-  if (!isSupabaseConfigured) {
+export default async function AttractionPage({ params }: AttractionPageProps) {
+  if (!isPublicSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 text-center">
         <h1 className="text-2xl font-bold">Ta atrakcja jest chwilowo niedostępna. Spróbuj ponownie za chwilę.</h1>
@@ -118,7 +117,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     )
   }
 
-  const [{ slug }, query] = await Promise.all([params, searchParams])
+  const { slug } = await params
   const id = extractIdFromSlug(slug)
 
   const [attraction, ticketingVenue] = await Promise.all([
@@ -131,11 +130,12 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   const canonicalPath = getAttractionCanonicalPath(attraction)
   if (`/attractions/${slug}` !== canonicalPath) permanentRedirect(canonicalPath)
 
-  const supabase = createClient()
-  const [{ data: claimData }, seoLinking, { data: { user } }] = await Promise.all([
+  const supabase = createPublicServerClient()
+  if (!supabase) notFound()
+
+  const [{ data: claimData }, seoLinking] = await Promise.all([
     supabase.rpc("profile_claim_get", { p_attraction_id: id }),
     getAttractionInternalLinking(attraction),
-    supabase.auth.getUser(),
   ])
   const isPaintball = attraction.category?.slug === "paintball" || attraction.subcategory?.slug === "paintball"
   let paintballData: PaintballProfileData | null = null
@@ -146,16 +146,6 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   }
   const claimContext = claimData as { claimable?: boolean } | null
 
-  let initialFavorite = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("property_id", attraction.id)
-      .maybeSingle()
-    initialFavorite = Boolean(favorite)
-  }
   const venueContact = attraction.venueContact
   const { ratingValue: roundedRating, reviewCount } = getAttractionAverageRating(attraction)
   const locationLabel = [attraction.address, attraction.city].filter(Boolean).join(", ")
@@ -199,7 +189,12 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     || String(attraction.property_type || "atrakcja").replaceAll("_", " ")
 
   return (
-    <div className="min-h-screen bg-background pb-28 md:pb-0">
+    <AttractionPageActionsProvider
+      attractionId={attraction.id}
+      attractionTitle={attraction.title}
+      returnToPath={canonicalPath}
+    >
+      <div className="min-h-screen bg-background pb-28 md:pb-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="hidden md:block"><TopNav /></div>
 
@@ -207,13 +202,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         <Link href="/attractions" className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#0b1220] shadow-lg backdrop-blur" aria-label="Powrót do mapy atrakcji">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <AttractionPageActions
-          attractionId={attraction.id}
-          attractionTitle={attraction.title}
-          returnToPath={canonicalPath}
-          initialFavorite={initialFavorite}
-          compact
-        />
+        <AttractionPageActions compact />
       </div>
 
       <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-5">
@@ -237,12 +226,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
             <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate text-foreground" aria-current="page">{attraction.title}</span>
           </nav>
-          <AttractionPageActions
-            attractionId={attraction.id}
-            attractionTitle={attraction.title}
-            returnToPath={canonicalPath}
-            initialFavorite={initialFavorite}
-          />
+          <AttractionPageActions />
         </div>
 
         <AttractionGallery images={attraction.images || []} title={attraction.title} />
@@ -319,8 +303,6 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                       <AttractionDemandCard
                         attractionId={attraction.id}
                         slug={slug}
-                        success={query.zainteresowanie === "1"}
-                        error={query.blad_zainteresowania === "1"}
                       />
                     )}
                     <PropertyContactInfo
@@ -380,6 +362,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         </div>
       )}
 
-    </div>
+      </div>
+    </AttractionPageActionsProvider>
   )
 }
