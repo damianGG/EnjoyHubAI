@@ -46,6 +46,7 @@ import { createPublicServerClient, isPublicSupabaseConfigured } from "@/lib/supa
 import { getMarketplaceTicketingVenue } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
 
+export const dynamic = "force-static"
 export const revalidate = 120
 
 interface AttractionPageProps {
