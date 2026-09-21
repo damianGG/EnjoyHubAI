@@ -79,7 +79,6 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
       description,
       address,
       city,
-      region,
       country,
       latitude,
       longitude,
