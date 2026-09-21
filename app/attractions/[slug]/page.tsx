@@ -43,7 +43,7 @@ import {
   getAttractionInternalLinking,
 } from "@/lib/seo/internal-linking"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
-import { getMarketplaceTicketingVenue, listMarketplacePropertySessions } from "@/lib/ticketing/marketplace"
+import { getMarketplaceTicketingVenue } from "@/lib/ticketing/marketplace"
 import { extractIdFromSlug } from "@/lib/utils"
 
 export const revalidate = 120
@@ -53,9 +53,6 @@ interface AttractionPageProps {
   searchParams: Promise<{ zainteresowanie?: string; blad_zainteresowania?: string }>
 }
 
-function isoDate(date: Date) {
-  return date.toISOString().slice(0, 10)
-}
 
 export async function generateMetadata({ params }: Pick<AttractionPageProps, "params">): Promise<Metadata> {
   const { slug } = await params
@@ -123,14 +120,10 @@ export default async function AttractionPage({ params, searchParams }: Attractio
 
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const id = extractIdFromSlug(slug)
-  const today = new Date()
-  const sessionRangeEnd = new Date(today)
-  sessionRangeEnd.setUTCDate(sessionRangeEnd.getUTCDate() + 90)
 
-  const [attraction, ticketingVenue, marketplaceSessions] = await Promise.all([
+  const [attraction, ticketingVenue] = await Promise.all([
     getPublicAttractionSeoRecord(id),
     getMarketplaceTicketingVenue(id),
-    listMarketplacePropertySessions(id, isoDate(today), isoDate(sessionRangeEnd)),
   ])
 
   if (!attraction) notFound()
@@ -166,11 +159,10 @@ export default async function AttractionPage({ params, searchParams }: Attractio
   const venueContact = attraction.venueContact
   const { ratingValue: roundedRating, reviewCount } = getAttractionAverageRating(attraction)
   const locationLabel = [attraction.address, attraction.city].filter(Boolean).join(", ")
-  const livePrices = marketplaceSessions
-    .map((session) => session.priceFrom)
-    .filter((price) => Number.isFinite(price) && price >= 0)
-  const priceFrom = livePrices.length > 0 ? Math.min(...livePrices) : null
-  const nextSession = marketplaceSessions[0] ?? null
+  // Availability is intentionally owned by MarketplaceCalendar.
+  // Keeping session data out of the page prevents the profile from loading
+  // the same availability twice (server + client hydration).
+  const priceFrom = null
   const canonicalUrl = getAttractionCanonicalUrl(attraction)
   const bookingTarget = ticketingVenue
     ? `${canonicalUrl}#booking`
@@ -179,7 +171,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     buildAttractionJsonLd({
       attraction,
       priceFrom,
-      hasAvailability: marketplaceSessions.length > 0,
+      hasAvailability: false,
       bookingUrl: bookingTarget,
     }),
     attraction,
@@ -199,13 +191,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     images: attraction.images || [],
     avgRating: roundedRating,
     reviewCount,
-    nextAvailableSlot: nextSession
-      ? {
-          date: nextSession.localDate,
-          startTime: nextSession.localStartTime,
-          availableCapacity: nextSession.availableCapacity,
-        }
-      : null,
+    nextAvailableSlot: null,
   }
 
   const categoryLabel = seoLinking.category?.name
