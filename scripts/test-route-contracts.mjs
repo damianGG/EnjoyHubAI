@@ -38,6 +38,8 @@ const requiredRoutes = [
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
   "components/dynamic-filter-section.tsx",
+  "components/attraction-demand-status.tsx",
+  "lib/supabase/public-server.ts",
   "components/ticketing/clear-organizer-onboarding-draft.tsx",
   "components/ticketing/organizer-onboarding-lite.tsx",
   "components/ticketing/organizer-onboarding-wizard.tsx",
@@ -113,12 +115,31 @@ assert.match(polishAttractionsIndex, /permanentRedirect\("\/attractions"\)/)
 const attractionPage = await source("app/attractions/[slug]/page.tsx")
 assert.match(attractionPage, /MarketplaceCalendar/)
 assert.match(attractionPage, /getMarketplaceTicketingVenue/)
+assert.match(attractionPage, /export const dynamic = "force-static"/)
+assert.match(attractionPage, /export const revalidate = 120/)
+assert.match(attractionPage, /createPublicServerClient/)
+assert.match(attractionPage, /AttractionPageActionsProvider/)
+assert.doesNotMatch(attractionPage, /searchParams/)
+assert.doesNotMatch(attractionPage, /supabase\.auth\.getUser/)
+assert.doesNotMatch(attractionPage, /@\/lib\/supabase\/server/)
 assert.doesNotMatch(attractionPage, /listMarketplacePropertySessions/)
 assert.match(attractionPage, /const priceFrom = null/)
 assert.doesNotMatch(attractionPage, /\.from\("(?:offers|offer_availability|offer_bookings|bookings)"\)/)
 
 const propertyContactInfo = await source("components/property-contact-info.tsx")
 assert.doesNotMatch(propertyContactInfo, /^["']use client["']/m)
+
+const attractionActions = await source("components/attraction-page-actions.tsx")
+assert.match(attractionActions, /AttractionPageActionsProvider/)
+assert.match(attractionActions, /supabase\.auth\.getUser/)
+assert.doesNotMatch(attractionActions, /router\.refresh\(\)/)
+
+const attractionDemandStatus = await source("components/attraction-demand-status.tsx")
+assert.match(attractionDemandStatus, /useSearchParams/)
+
+const marketplaceTicketing = await source("lib/ticketing/marketplace.ts")
+assert.match(marketplaceTicketing, /createPublicServerClient/)
+assert.doesNotMatch(marketplaceTicketing, /@\/lib\/supabase\/server/)
 
 const marketplaceCalendar = await source("components/ticketing/marketplace-calendar.tsx")
 assert.match(marketplaceCalendar, /\/api\/ticketing\/properties\/\$\{propertyId\}\/sessions/)
