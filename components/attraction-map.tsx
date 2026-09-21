@@ -7,7 +7,7 @@ import { CalendarDays, ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, 
 
 import { Button } from "@/components/ui/button"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
-import { generateAttractionSlug } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 type AvailableSlot = {
   date: string
@@ -89,14 +89,7 @@ function getFallbackCoordinates(attraction: Attraction): [number, number] {
   return [base[0] + stableOffset(attraction.id, 1), base[1] + stableOffset(attraction.id, 2)]
 }
 
-function hrefFor(attraction: Attraction) {
-  return `/attractions/${generateAttractionSlug({
-    city: attraction.city,
-    category: attraction.property_type,
-    title: attraction.title,
-    id: attraction.id,
-  })}`
-}
+const hrefFor = publicAttractionPath
 
 function localIsoDate(date: Date) {
   const year = date.getFullYear()

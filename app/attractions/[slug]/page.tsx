@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { startAttractionConversation } from "@/app/attractions/[slug]/actions"
+import { PaintballProfile, type PaintballProfileData } from "@/components/paintball/paintball-profile"
 import AttractionGallery from "@/components/attraction-gallery"
 import { AttractionPageActions } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
@@ -144,6 +145,13 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     getAttractionInternalLinking(attraction),
     supabase.auth.getUser(),
   ])
+  const isPaintball = attraction.category?.slug === "paintball" || attraction.subcategory?.slug === "paintball"
+  let paintballData: PaintballProfileData | null = null
+  if (isPaintball) {
+    const result = await supabase.rpc("marketplace_paintball_profile", { p_property_id: id })
+    if (result.error) console.error("[paintball:profile]", { code: result.error.code })
+    else paintballData = result.data as PaintballProfileData | null
+  }
   const claimContext = claimData as { claimable?: boolean } | null
 
   let initialFavorite = false
@@ -278,7 +286,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                   ) : (
                     <Badge variant="secondary" className="rounded-full px-3 py-1.5">{categoryLabel}</Badge>
                   )}
-                  {(attraction.max_guests || 0) > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
+                  {!isPaintball && (attraction.max_guests || 0) > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
                   {ticketingVenue && <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800"><Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online</Badge>}
                 </div>
               </header>
@@ -288,11 +296,13 @@ export default async function AttractionPage({ params, searchParams }: Attractio
                 <p className="whitespace-pre-line text-[15px] leading-7 text-muted-foreground sm:text-base">{attraction.description}</p>
               </section>
 
-              <section className="grid grid-cols-3 gap-3 border-b pb-7">
+              {isPaintball ? <PaintballProfile data={paintballData} online={Boolean(ticketingVenue)} /> : <section className="grid grid-cols-3 gap-3 border-b pb-7">
                 <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><Users className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Dla {attraction.max_guests || "grup"} osób</p></div>
                 <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><CalendarDays className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Wybierz termin</p></div>
                 <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><ShieldCheck className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Bezpieczna rezerwacja</p></div>
               </section>
+
+              }
 
               {(attraction.amenities?.length || 0) > 0 && (
                 <section className="space-y-4 border-b pb-7">
@@ -373,14 +383,14 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         </div>
       </div>
 
-      {ticketingVenue && (
+      {(ticketingVenue || isPaintball) && (
         <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-white/95 p-3 shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
             <div>
               <p className="text-xs text-muted-foreground">{priceFrom !== null ? "Cena od" : "Cena"}</p>
-              <p className="text-lg font-bold">{priceFrom !== null ? `${Math.round(priceFrom)} zł` : "Sprawdź termin"}</p>
+              <p className="text-lg font-bold">{priceFrom !== null ? `${Math.round(priceFrom)} zł` : ticketingVenue ? "Sprawdź termin" : "Zapytaj o cenę"}</p>
             </div>
-            <Button asChild className="h-12 flex-1 rounded-xl bg-[#ff5a1f] text-base font-semibold text-white hover:bg-[#e94f18]"><a href="#booking">Sprawdź terminy</a></Button>
+            <Button asChild className="h-12 flex-1 rounded-xl bg-[#ff5a1f] text-base font-semibold text-white hover:bg-[#e94f18]"><a href="#booking">{ticketingVenue ? "Sprawdź terminy" : "Kontakt i rezerwacja"}</a></Button>
           </div>
         </div>
       )}

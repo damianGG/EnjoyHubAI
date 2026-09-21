@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 }
 
 interface RawCategory {
+  slug: string
   id: string
   name: string
   icon: string | null
@@ -42,7 +43,7 @@ export default async function OrganizerOnboardingPage() {
   const [categoriesResult, subcategoriesResult, membershipsResult] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, name, icon, description")
+      .select("id, name, slug, icon, description")
       .order("name"),
     supabase
       .from("subcategories")
@@ -67,6 +68,7 @@ export default async function OrganizerOnboardingPage() {
   const categories = ((categoriesResult.data ?? []) as RawCategory[]).map((category) => ({
     id: category.id,
     name: category.name,
+    slug: category.slug,
     icon: category.icon,
     description: category.description,
   }))

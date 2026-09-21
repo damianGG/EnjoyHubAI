@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import { cache } from "react"
 
 import { getPublicSiteUrl } from "@/lib/site-url"
-import { generateAttractionSlug } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 export type PublicAttractionReview = {
   id: string
@@ -19,6 +19,8 @@ export type PublicAttractionReview = {
 export type PublicAttractionSeoRecord = {
   id: string
   title: string
+  category?: { slug: string } | null
+  subcategory?: { slug: string } | null
   description?: string | null
   address?: string | null
   city: string
@@ -72,6 +74,8 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
     .select(`
       id,
       title,
+      category:categories(slug),
+      subcategory:subcategories(slug),
       description,
       address,
       city,
@@ -123,19 +127,16 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
   }
 
   return {
-    ...(attraction as PublicAttractionSeoRecord),
+    ...({ ...attraction,
+      category: Array.isArray(attraction.category) ? attraction.category[0] ?? null : attraction.category,
+      subcategory: Array.isArray(attraction.subcategory) ? attraction.subcategory[0] ?? null : attraction.subcategory,
+    } as PublicAttractionSeoRecord),
     venueContact,
   }
 })
 
 export function getAttractionCanonicalPath(attraction: Pick<PublicAttractionSeoRecord, "id" | "title" | "city" | "property_type">) {
-  const slug = generateAttractionSlug({
-    id: attraction.id,
-    title: attraction.title,
-    city: attraction.city,
-    category: attraction.property_type ?? null,
-  })
-  return `/attractions/${slug}`
+  return publicAttractionPath(attraction)
 }
 
 export function getAttractionCanonicalUrl(attraction: Pick<PublicAttractionSeoRecord, "id" | "title" | "city" | "property_type">) {

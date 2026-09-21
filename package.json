@@ -12,10 +12,11 @@
     "test:monitoring": "node scripts/monitoring-contracts.mjs",
     "test:seo": "node scripts/test-seo-contracts.mjs",
     "test:supply": "node scripts/test-supply-contracts.mjs",
-    "test:contracts": "npm run test:routes && npm run test:monitoring && npm run test:seo && npm run test:supply",
+    "test:contracts": "npm run test:routes && npm run test:monitoring && npm run test:seo && npm run test:supply && npm run test:paintball",
     "test:ticketing-db": "node scripts/test-ticketing-database.mjs",
     "test:ticketing-concurrency": "node scripts/test-ticketing-concurrency.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test:contracts && npm run build"
+    "ci": "npm run lint && npm run typecheck && npm run test:contracts && npm run build",
+    "test:paintball": "node scripts/test-paintball-template.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

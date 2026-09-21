@@ -1,5 +1,7 @@
 "use client"
 
+import { ActivityCategorySelect } from "@/components/activity-category-select"
+
 import { useCallback, useState } from "react"
 import dynamic from "next/dynamic"
 import { CalendarClock, Info, MapPin, PlusCircle, Store, Ticket } from "lucide-react"
@@ -20,7 +22,7 @@ const LocationPicker = dynamic(() => import("@/components/location-picker"), {
 })
 
 type Organization = { id: string; name: string }
-type Category = { id: string; name: string; icon: string | null }
+type Category = { id: string; name: string; slug: string; icon: string | null }
 type ImageData = { url: string; publicId: string }
 
 const weekdayOptions = [
@@ -61,12 +63,7 @@ export function AddAttractionForm({
           </Field>
           <Field label="Nazwa atrakcji"><Input name="attractionName" minLength={2} maxLength={160} required placeholder="np. Gokarty Rzeszów" /></Field>
           <Field label="Opis atrakcji"><Textarea name="attractionDescription" minLength={20} maxLength={4000} required rows={4} placeholder="Co czeka klienta i dla kogo jest atrakcja?" /></Field>
-          <Field label="Kategoria">
-            <select name="categoryId" required defaultValue="" className="h-11 w-full rounded-md border bg-background px-3 text-sm">
-              <option value="" disabled>Wybierz kategorię</option>
-              {categories.map((item) => <option key={item.id} value={item.id}>{item.icon ? `${item.icon} ` : ""}{item.name}</option>)}
-            </select>
-          </Field>
+<ActivityCategorySelect categories={categories} name="categoryId" required />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ulica i numer" className="sm:col-span-2"><Input name="address" required minLength={3} maxLength={240} /></Field>
             <Field label="Kod pocztowy"><Input name="postalCode" maxLength={20} /></Field>
