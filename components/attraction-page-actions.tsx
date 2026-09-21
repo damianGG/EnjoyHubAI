@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { Heart, Share2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -8,27 +8,59 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
-interface AttractionPageActionsProps {
-  attractionId: string
-  attractionTitle: string
-  returnToPath: string
-  initialFavorite: boolean
-  compact?: boolean
-  className?: string
+type AttractionActionsContextValue = {
+  favorite: boolean
+  favoritePending: boolean
+  feedback: string
+  toggleFavorite: () => Promise<void>
+  shareAttraction: () => Promise<void>
 }
 
-export function AttractionPageActions({
+const AttractionActionsContext = createContext<AttractionActionsContextValue | null>(null)
+
+export function AttractionPageActionsProvider({
   attractionId,
   attractionTitle,
   returnToPath,
-  initialFavorite,
-  compact = false,
-  className,
-}: AttractionPageActionsProps) {
+  children,
+}: {
+  attractionId: string
+  attractionTitle: string
+  returnToPath: string
+  children: ReactNode
+}) {
   const router = useRouter()
-  const [favorite, setFavorite] = useState(initialFavorite)
+  const [favorite, setFavorite] = useState(false)
   const [favoritePending, setFavoritePending] = useState(false)
   const [feedback, setFeedback] = useState("")
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || cancelled) return
+
+        const { data, error } = await supabase
+          .from("favorites")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("property_id", attractionId)
+          .maybeSingle()
+
+        if (error) throw error
+        if (!cancelled) setFavorite(Boolean(data))
+      } catch (error) {
+        console.error("[attraction-actions] Failed to load favorite state", error)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [attractionId])
 
   async function toggleFavorite() {
     if (favoritePending) return
@@ -55,7 +87,6 @@ export function AttractionPageActions({
       const nextFavorite = !favorite
       setFavorite(nextFavorite)
       setFeedback(nextFavorite ? "Dodano do ulubionych" : "Usunięto z ulubionych")
-      router.refresh()
     } catch (error) {
       console.error("[attraction-actions] Failed to update favorite", error)
       setFeedback("Nie udało się zmienić ulubionych")
@@ -83,6 +114,29 @@ export function AttractionPageActions({
       setFeedback("Nie udało się udostępnić")
     }
   }
+
+  const value = useMemo<AttractionActionsContextValue>(() => ({
+    favorite,
+    favoritePending,
+    feedback,
+    toggleFavorite,
+    shareAttraction,
+  }), [favorite, favoritePending, feedback])
+
+  return <AttractionActionsContext.Provider value={value}>{children}</AttractionActionsContext.Provider>
+}
+
+export function AttractionPageActions({
+  compact = false,
+  className,
+}: {
+  compact?: boolean
+  className?: string
+}) {
+  const actions = useContext(AttractionActionsContext)
+  if (!actions) throw new Error("AttractionPageActions must be used inside AttractionPageActionsProvider")
+
+  const { favorite, favoritePending, feedback, toggleFavorite, shareAttraction } = actions
 
   if (compact) {
     return (
