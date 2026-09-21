@@ -65,9 +65,9 @@ function createPublicSeoClient() {
   })
 }
 
-export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<PublicAttractionSeoRecord | null> => {
+async function loadPublicAttractionSeoRecord(column: "id" | "public_code", value: string): Promise<PublicAttractionSeoRecord | null> {
   const supabase = createPublicSeoClient()
-  if (!supabase || !id) return null
+  if (!supabase || !value) return null
 
   const { data: attraction, error } = await supabase
     .from("properties")
@@ -99,7 +99,7 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
         users!reviews_guest_id_fkey (full_name)
       )
     `)
-    .eq("id", id)
+    .eq(column, value)
     .eq("is_active", true)
     .maybeSingle()
 
@@ -131,7 +131,15 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
     } as PublicAttractionSeoRecord),
     venueContact,
   }
-})
+}
+
+export const getPublicAttractionSeoRecord = cache(async (id: string) => (
+  loadPublicAttractionSeoRecord("id", id)
+))
+
+export const getPublicAttractionSeoRecordByCode = cache(async (publicCode: string) => (
+  loadPublicAttractionSeoRecord("public_code", publicCode)
+))
 
 export function getAttractionCanonicalPath(attraction: Pick<PublicAttractionSeoRecord, "id" | "title" | "city" | "property_type">) {
   return publicAttractionPath(attraction)
