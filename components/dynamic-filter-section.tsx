@@ -82,6 +82,7 @@ export function DynamicFilterSection({
       return (
         <label key={id} className="flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3 text-sm hover:bg-muted/50">
           <Checkbox
+            className="mt-0.5 shrink-0"
             checked={condition?.eq === true}
             onCheckedChange={(checked) => updateCondition(definition, checked === true ? { eq: true } : undefined)}
           />
@@ -118,7 +119,7 @@ export function DynamicFilterSection({
 
     if (definition.valueType === "number") {
       return (
-        <div key={id} className="space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
+        <div key={id} className="min-w-0 space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
           <Label className="block break-words leading-5">{definition.label}{definition.unit ? ` (${definition.unit})` : ""}</Label>
           <div className="grid min-w-0 grid-cols-2 gap-2">
             <Input
@@ -132,7 +133,7 @@ export function DynamicFilterSection({
                 })
               }}
               placeholder="Od"
-              className="h-10 rounded-xl"
+              className="h-10 min-w-0 rounded-xl"
             />
             <Input
               type="number"
@@ -145,7 +146,7 @@ export function DynamicFilterSection({
                 })
               }}
               placeholder="Do"
-              className="h-10 rounded-xl"
+              className="h-10 min-w-0 rounded-xl"
             />
           </div>
         </div>
@@ -153,7 +154,7 @@ export function DynamicFilterSection({
     }
 
     return (
-      <div key={id} className="space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
+      <div key={id} className="min-w-0 space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
         <Label>{definition.label}</Label>
         <Input
           value={typeof condition?.eq === "string" ? condition.eq : ""}
@@ -161,7 +162,7 @@ export function DynamicFilterSection({
             definition,
             event.target.value.trim() ? { eq: event.target.value } : undefined,
           )}
-          className="h-10 rounded-xl"
+          className="h-10 min-w-0 rounded-xl"
         />
       </div>
     )
