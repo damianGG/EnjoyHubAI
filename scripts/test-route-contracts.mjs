@@ -91,6 +91,7 @@ const removedRoutes = [
   "components/booking-widget.tsx",
   "components/create-offer-dialog.tsx",
   "components/multi-slot-booking-widget.tsx",
+  "components/quick-discovery-filters.tsx",
   "components/offer-availability-manager.tsx",
   "components/slot-availability-widget.tsx",
   "lib/booking-actions.ts",
@@ -217,6 +218,10 @@ assert.doesNotMatch(searchDialog, /<ScrollArea/)
 assert.doesNotMatch(searchDialog, /absolute inset-x-0 bottom-0/)
 assert.match(searchDialog, /overflow-y-auto/)
 assert.match(searchDialog, /shrink-0 border-t/)
+
+for (const file of ["components/home-discovery.tsx", "components/discovery-chrome.tsx"]) {
+  assert.doesNotMatch(await source(file), /QuickDiscoveryFilters|quick-discovery-filters/)
+}
 
 const categoryBar = await source("components/category-bar.tsx")
 assert.match(categoryBar, /const localSelectedGroup =/)
