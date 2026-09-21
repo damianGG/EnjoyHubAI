@@ -8,7 +8,6 @@ import { DynamicFilterSection, type DynamicFilterCondition, type DynamicFilterDe
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Slider } from "@/components/ui/slider"
 import { BrandLogo } from "@/components/brand-logo"
 import { CATEGORY_GROUPS } from "@/lib/category-groups"
@@ -323,8 +322,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
           </div>
         </header>
 
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-7 px-4 py-5 pb-32 md:px-6 md:py-6">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
+          <div className="min-w-0 space-y-6 px-4 py-5 pb-6 md:space-y-7 md:px-6 md:py-6">
             <section className="space-y-4">
               <div className="flex items-center gap-2">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><Sparkles className="h-3.5 w-3.5" /></span>
@@ -473,19 +472,19 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
 
               <div>
                 <h4 className="mb-3 text-xs font-extrabold">Wiek uczestników <span className="font-medium text-muted-foreground">(opcjonalnie)</span></h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid min-w-0 grid-cols-2 gap-2.5">
                   <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 min-w-0 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
                   <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 min-w-0 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
                 </div>
               </div>
 
               <div className="space-y-4 rounded-[18px] border border-[#0b1220]/[0.07] bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><WalletCards className="h-3.5 w-3.5" /></span>
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-secondary text-primary"><WalletCards className="h-3.5 w-3.5" /></span>
                     <h4 className="truncate text-xs font-extrabold">Budżet za osobę</h4>
                   </div>
-                  <span className="text-xs font-bold">{priceRange[0]}–{priceRange[1] === 500 ? "500+" : priceRange[1]} zł</span>
+                  <span className="shrink-0 text-xs font-bold">{priceRange[0]}–{priceRange[1] === 500 ? "500+" : priceRange[1]} zł</span>
                 </div>
                 <Slider value={priceRange} onValueChange={(value) => setPriceRange(value as [number, number])} min={0} max={500} step={10} />
               </div>
@@ -499,9 +498,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
               onValuesChange={setDynamicFilters}
             />
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-[#0b1220]/[0.055] bg-white/96 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:static md:px-6 md:pb-5">
+        <div className="z-30 shrink-0 border-t border-[#0b1220]/[0.055] bg-white/96 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:px-6 md:pb-5">
           <Button onClick={handleSearch} className="h-13 w-full rounded-full text-sm font-extrabold orange-glow md:h-12">
             <Search className="mr-2 h-4 w-4" />
             Pokaż atrakcje
