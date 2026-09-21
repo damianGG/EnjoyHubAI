@@ -295,11 +295,11 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-background p-0 md:h-auto md:max-h-[90vh] md:max-w-3xl md:rounded-[28px]"
+        className="flex h-[100dvh] max-h-[100dvh] w-full max-w-none min-w-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 md:h-auto md:max-h-[90vh] md:max-w-3xl md:rounded-[28px]"
       >
         <DialogTitle className="sr-only">Filtry wyszukiwania atrakcji</DialogTitle>
 
-        <header className="sticky top-0 z-20 border-b border-[#0b1220]/[0.055] bg-white/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:py-5">
+        <header className="z-20 shrink-0 border-b border-[#0b1220]/[0.055] bg-white/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl md:px-6 md:py-5">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setIsOpen(false)}
@@ -334,7 +334,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                 </div>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                   type="button"
                   onClick={() => {
@@ -377,7 +377,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2.5 min-[390px]:grid-cols-3 sm:grid-cols-4">
                     <button
                       type="button"
                       onClick={() => selectActivity(null)}
@@ -444,7 +444,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                     value={location}
                     onChange={(event) => setLocation(event.target.value)}
                     placeholder="Miasto, okolica lub nazwa atrakcji"
-                    className="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
+                    className="h-14 min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
                   />
                 </div>
               </div>
@@ -474,8 +474,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
               <div>
                 <h4 className="mb-3 text-xs font-extrabold">Wiek uczestników <span className="font-medium text-muted-foreground">(opcjonalnie)</span></h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
-                  <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
+                  <Input type="number" min="0" max="99" value={ageMin} onChange={(event) => setAgeMin(event.target.value)} placeholder="Od ilu lat" className="h-13 min-w-0 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
+                  <Input type="number" min="0" max="99" value={ageMax} onChange={(event) => setAgeMax(event.target.value)} placeholder="Do ilu lat" className="h-13 min-w-0 rounded-[16px] border-[#0b1220]/[0.07] bg-white shadow-sm" />
                 </div>
               </div>
 
@@ -483,7 +483,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><WalletCards className="h-3.5 w-3.5" /></span>
-                    <h4 className="text-xs font-extrabold">Budżet za osobę</h4>
+                    <h4 className="truncate text-xs font-extrabold">Budżet za osobę</h4>
                   </div>
                   <span className="text-xs font-bold">{priceRange[0]}–{priceRange[1] === 500 ? "500+" : priceRange[1]} zł</span>
                 </div>
