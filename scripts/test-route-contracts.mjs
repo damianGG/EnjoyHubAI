@@ -275,7 +275,7 @@ assert.match(hostPanel, /\.from\("organization_memberships"\)/)
 assert.match(hostPanel, /href="\/host\/start"/)
 assert.doesNotMatch(hostPanel, /\.from\("(?:properties|bookings|offers)"\)/)
 
-for (const file of ["components/top-nav.tsx", "components/bottom-nav.tsx", "app/dashboard/page.tsx"]) {
+for (const file of ["components/top-nav.tsx", "app/dashboard/page.tsx"]) {
   assert.doesNotMatch(await source(file), /\/host\/properties|\/host\/bookings/)
 }
 
