@@ -147,7 +147,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       categories: categories.filter((category) => (group.activities as readonly string[]).includes(category.slug)),
     })).filter((group) => group.categories.length > 0)
 
-    const known = new Set(CATEGORY_GROUPS.flatMap((group) => [...group.activities]))
+    const known = new Set<string>(CATEGORY_GROUPS.flatMap((group) => [...group.activities]))
     const other = categories.filter((category) => !known.has(category.slug))
     if (other.length) groups.push({ slug: "inne", name: "Inne", icon: "✨", categories: other })
 
