@@ -2,7 +2,6 @@ import Link from "next/link"
 import { ArrowLeft, MapPin, Star, Ticket } from "lucide-react"
 
 import AttractionCard from "@/components/AttractionCard"
-import { BottomNav } from "@/components/bottom-nav"
 import { TopNav } from "@/components/top-nav"
 import {
   getSeoAttractionPath,
@@ -28,7 +27,7 @@ export function MarketplaceSeoLanding({
   const indexableCategories = catalogCity.categories.filter(isSeoCategoryIndexable)
 
   return (
-    <div className="min-h-screen bg-[#fffdf9] pb-24 md:pb-10">
+    <div className="min-h-screen bg-[#fffdf9] pb-10">
       <TopNav />
 
       <main className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
@@ -157,7 +156,6 @@ export function MarketplaceSeoLanding({
         </section>
       </main>
 
-      <BottomNav />
     </div>
   )
 }
