@@ -30,6 +30,6 @@ export async function submitProfileClaimAction(attractionId: string, formData: F
   }
 
   revalidatePath(returnTo)
-  revalidatePath(`/attractions/${attractionId}`)
+  revalidatePath("/atrakcja/[slug]", "page")
   redirect(`${returnTo}?wyslano=1`)
 }

@@ -1,6 +1,13 @@
-import { generateAttractionSlug } from "@/lib/utils"
+import { generatePublicAttractionSlug } from "@/lib/utils"
 
-// Shared by map cards and the detail page's canonical redirect.
-export function publicAttractionPath(attraction: {id:string;title:string;city:string;property_type?:string|null}) {
-  return `/attractions/${generateAttractionSlug({id:attraction.id,title:attraction.title,city:attraction.city,category:attraction.property_type ?? null})}`
+export type PublicAttractionPathInput = {
+  id: string
+  title: string
+  city: string
+  property_type?: string | null
+}
+
+// Canonical public route for a single attraction. Collection/local SEO pages remain under /atrakcje.
+export function publicAttractionPath(attraction: PublicAttractionPathInput) {
+  return `/atrakcja/${generatePublicAttractionSlug(attraction)}`
 }

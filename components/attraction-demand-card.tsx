@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { BellRing, CalendarDays, Mail, Users } from "lucide-react"
 
-import { submitAttractionInterestAction } from "@/app/attractions/[slug]/actions"
+import { submitAttractionInterestAction } from "@/app/atrakcja/[slug]/actions"
 import { AttractionDemandState } from "@/components/attraction-demand-status"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

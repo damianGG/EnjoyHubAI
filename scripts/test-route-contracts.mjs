@@ -20,6 +20,10 @@ const requiredRoutes = [
   "app/page.tsx",
   "app/privacy/page.tsx",
   "app/attractions/[slug]/page.tsx",
+  "app/atrakcja/[slug]/page.tsx",
+  "app/atrakcja/[slug]/actions.ts",
+  "components/analytics/attraction-view-tracker.tsx",
+  "supabase/migrations/20260921183930_property_public_codes.sql",
   "app/atrakcje/page.tsx",
   "app/offers/[id]/page.tsx",
   "app/checkout/page.tsx",
@@ -112,9 +116,12 @@ for (const route of removedRoutes) {
 const polishAttractionsIndex = await source("app/atrakcje/page.tsx")
 assert.match(polishAttractionsIndex, /permanentRedirect\("\/attractions"\)/)
 
-const attractionPage = await source("app/attractions/[slug]/page.tsx")
+const attractionPage = await source("app/atrakcja/[slug]/page.tsx")
 assert.match(attractionPage, /MarketplaceCalendar/)
 assert.match(attractionPage, /getMarketplaceTicketingVenue/)
+assert.match(attractionPage, /getPublicAttractionSeoRecordByCode/)
+assert.match(attractionPage, /extractPublicAttractionCode/)
+assert.match(attractionPage, /\/atrakcja\/\$\{slug\}/)
 assert.match(attractionPage, /export const dynamic = "force-static"/)
 assert.match(attractionPage, /export const revalidate = 120/)
 assert.match(attractionPage, /createPublicServerClient/)
@@ -125,6 +132,11 @@ assert.doesNotMatch(attractionPage, /@\/lib\/supabase\/server/)
 assert.doesNotMatch(attractionPage, /listMarketplacePropertySessions/)
 assert.match(attractionPage, /const priceFrom = null/)
 assert.doesNotMatch(attractionPage, /\.from\("(?:offers|offer_availability|offer_bookings|bookings)"\)/)
+
+const legacyAttractionPage = await source("app/attractions/[slug]/page.tsx")
+assert.match(legacyAttractionPage, /extractIdFromSlug/)
+assert.match(legacyAttractionPage, /getPublicAttractionSeoRecord/)
+assert.match(legacyAttractionPage, /permanentRedirect\(getAttractionCanonicalPath\(attraction\)\)/)
 
 const propertyContactInfo = await source("components/property-contact-info.tsx")
 assert.doesNotMatch(propertyContactInfo, /^["']use client["']/m)

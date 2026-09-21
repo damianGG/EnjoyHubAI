@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Heart, ArrowLeft, Star, MapPin } from "lucide-react"
 import Link from "next/link"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 export default async function FavoritesPage() {
   if (!isSupabaseConfigured) {
@@ -111,7 +112,7 @@ export default async function FavoritesPage() {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-primary">Sprawdź aktualną ofertę</span>
-                    <Link href={`/attractions/${favorite.properties.id}`}>
+                    <Link href={publicAttractionPath(favorite.properties)}>
                       <Button size="sm">Zobacz szczegóły</Button>
                     </Link>
                   </div>

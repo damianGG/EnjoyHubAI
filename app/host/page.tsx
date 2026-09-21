@@ -34,6 +34,7 @@ import {
   organizerScannerRoles,
   type OrganizerRole,
 } from "@/lib/organizer/access"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { isStripeConnectEnabled } from "@/lib/stripe-connect"
 import { formatMoney } from "@/lib/ticketing/format"
@@ -485,7 +486,7 @@ export default async function HostDashboard() {
                             </div>
                             <Badge variant="secondary">{offerCount} {offerCount === 1 ? "oferta" : "ofert"}</Badge>
                           </div>
-                          <Link href={`/attractions/${attraction.id}`} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                          <Link href={publicAttractionPath({ id: attraction.id, title: attraction.name, city: attraction.city })} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
                             Zobacz stronę <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </div>

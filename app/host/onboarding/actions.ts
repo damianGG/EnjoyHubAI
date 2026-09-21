@@ -366,7 +366,7 @@ export async function completeOrganizerOnboarding(
   revalidatePath("/host/sprzedaz")
   revalidatePath("/host/sprzedaz/konfiguracja")
   revalidatePath("/host/sprzedaz/dostepnosc")
-  revalidatePath(`/attractions/${result.created_property_id}`)
+  revalidatePath("/atrakcja/[slug]", "page")
   redirect(`/host/onboarding/gotowe?atrakcja=${result.created_property_id}&oferta=${result.created_product_id}`)
   return {}
 }

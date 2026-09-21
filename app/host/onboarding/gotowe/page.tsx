@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 import { submitIndexNowForAttractionId } from "@/lib/seo/indexnow"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { isStripeConnectEnabled } from "@/lib/stripe-connect"
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   description: "Atrakcja i pierwsza oferta biletowa zostały przygotowane.",
 }
 
-interface OrganizerAttraction { id: string; name: string; venue_id: string | null }
+interface OrganizerAttraction { id: string; name: string; city: string; venue_id: string | null }
 interface ProductForAttraction { id: string; name: string; attraction_id: string | null }
 interface ProductScheduleSummary { valid_from: string; capacity: number }
 interface VenueOrganization { organization_id: string }
@@ -53,7 +54,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
   if (!user) redirect("/auth/login?next=/host")
 
   const [attractionResult, productResult, scheduleResult] = await Promise.all([
-    supabase.from("organizer_attractions").select("id, name, venue_id").eq("id", query.atrakcja).single(),
+    supabase.from("organizer_attractions").select("id, name, city, venue_id").eq("id", query.atrakcja).single(),
     supabase.from("products").select("id, name, attraction_id").eq("id", query.oferta).single(),
     supabase.from("product_schedules").select("valid_from, capacity").eq("product_id", query.oferta).eq("is_active", true).order("valid_from").limit(1).maybeSingle(),
   ])
@@ -115,6 +116,8 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
           ? "Wyłączona — weryfikacja płatności jeszcze trwa."
           : "Wyłączona w konfiguracji platformy."
 
+  const attractionPath = publicAttractionPath({ id: attraction.id, title: attraction.name, city: attraction.city })
+
   // Best-effort discovery notification after a successfully created organizer attraction.
   await submitIndexNowForAttractionId(attraction.id)
 
@@ -169,7 +172,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
             <h2 className="text-lg font-semibold">Uruchom sprzedaż krok po kroku</h2>
             <p className="mt-2 text-sm text-muted-foreground">Zawsze widzisz, co jest gotowe i jaki krok pozostał.</p>
             <div className="mt-5 space-y-3">
-              <ReadinessStep complete icon={Building2} title="Strona atrakcji i pierwsza oferta" description="Opublikowane — zobacz je oczami klienta." href={`/attractions/${attraction.id}`} action="Zobacz stronę" />
+              <ReadinessStep complete icon={Building2} title="Strona atrakcji i pierwsza oferta" description="Opublikowane — zobacz je oczami klienta." href={attractionPath} action="Zobacz stronę" />
               <ReadinessStep complete={legalDataComplete} icon={ShieldCheck} title="Dane sprzedawcy" description={legalDataComplete ? "Pełna nazwa firmy, NIP, adres i kontakt są uzupełnione." : "Uzupełnij dane, które klient zobaczy przed zakupem."} href="/host/weryfikacja" action={legalDataComplete ? "Sprawdź dane" : "Uzupełnij"} />
               {isStripeConnectEnabled ? (
                 <ReadinessStep complete={stripeAccountReady} icon={WalletCards} title="Płatności i rachunek do wypłat" description={stripeAccountReady ? "Stripe potwierdził konto i rachunek do wypłat." : "Potwierdź tożsamość i rachunek w bezpiecznym formularzu Stripe."} href="/host/rozliczenia" action={stripeAccountReady ? "Rozliczenia" : "Połącz Stripe"} />
@@ -177,7 +180,7 @@ export default async function OrganizerOnboardingCompletePage({ searchParams }: 
               <ReadinessStep complete icon={CalendarClock} title="Terminy utworzone" description={schedule ? `Kalendarz startuje ${formatDate(schedule.valid_from)} z limitem ${schedule.capacity} miejsc. Zalecamy sprawdzić święta i wyjątki.` : "Automatyczny kalendarz jest utworzony. Zalecamy sprawdzić daty, miejsca i wyjątki."} href="/host/sprzedaz/dostepnosc" action="Sprawdź terminy" />
             </div>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild size="lg" className="h-12"><Link href={`/attractions/${attraction.id}`}>Zobacz stronę atrakcji <ExternalLink className="h-4 w-4" /></Link></Button>
+              <Button asChild size="lg" className="h-12"><Link href={attractionPath}>Zobacz stronę atrakcji <ExternalLink className="h-4 w-4" /></Link></Button>
               {isTicketingCheckoutEnabled ? <Button asChild size="lg" variant="outline" className="h-12"><Link href={`/bilety/${product.id}`}>Zobacz ofertę <ShoppingCart className="h-4 w-4" /></Link></Button> : null}
               <Button asChild size="lg" variant="outline" className="h-12"><Link href="/host/sprzedaz/dostepnosc">Kalendarz i dostępność <CalendarClock className="h-4 w-4" /></Link></Button>
               {publicSalesReady ? <Button asChild size="lg" variant="outline" className="h-12"><Link href="/host/skaner">Otwórz skaner <QrCode className="h-4 w-4" /></Link></Button> : null}

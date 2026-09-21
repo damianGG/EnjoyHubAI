@@ -33,6 +33,6 @@ export async function submitVerifiedReviewAction(token: string, propertyId: stri
     redirect(`/opinia/${token}?blad=1`)
   }
 
-  revalidatePath(`/attractions/${propertyId}`)
+  revalidatePath("/atrakcja/[slug]", "page")
   redirect(`/opinia/${token}?dziekujemy=1`)
 }

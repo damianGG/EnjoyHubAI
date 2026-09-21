@@ -262,7 +262,7 @@ export async function linkTicketingVenueToProperty(formData: FormData) {
   }
 
   revalidatePath("/")
-  revalidatePath(`/attractions/${parsed.data.propertyId}`)
+  revalidatePath("/atrakcja/[slug]", "page")
   revalidatePath("/host/sprzedaz/konfiguracja")
   redirect("/host/sprzedaz/konfiguracja?powiazano=1")
 }
