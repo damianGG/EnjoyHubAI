@@ -1,6 +1,8 @@
+import { Suspense } from "react"
 import { BellRing, CalendarDays, Mail, Users } from "lucide-react"
 
 import { submitAttractionInterestAction } from "@/app/attractions/[slug]/actions"
+import { AttractionDemandState } from "@/components/attraction-demand-status"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,11 +10,9 @@ import { Input } from "@/components/ui/input"
 type AttractionDemandCardProps = {
   attractionId: string
   slug: string
-  success?: boolean
-  error?: boolean
 }
 
-export function AttractionDemandCard({ attractionId, slug, success, error }: AttractionDemandCardProps) {
+export function AttractionDemandCard({ attractionId, slug }: AttractionDemandCardProps) {
   const action = submitAttractionInterestAction.bind(null, slug, attractionId)
 
   return (
@@ -27,21 +27,9 @@ export function AttractionDemandCard({ attractionId, slug, success, error }: Att
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-5">
-        {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
-            <p className="font-semibold">Zapisaliśmy Twoje zainteresowanie.</p>
-            <p className="mt-1">Nie pobieramy żadnej opłaty. Gdy rezerwacja przez EnjoyHub będzie dostępna, będziemy mogli Cię o tym poinformować.</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            Nie udało się zapisać zainteresowania. Sprawdź adres e-mail, termin i liczbę osób.
-          </div>
-        )}
-
-        {!success && (
-          <form action={action} className="space-y-3">
+        <Suspense fallback={null}>
+          <AttractionDemandState>
+            <form action={action} className="space-y-3">
             <div className="hidden" aria-hidden="true">
               <label htmlFor={`company-website-${attractionId}`}>Strona firmy</label>
               <input id={`company-website-${attractionId}`} name="company_website" type="text" tabIndex={-1} autoComplete="off" />
@@ -68,8 +56,9 @@ export function AttractionDemandCard({ attractionId, slug, success, error }: Att
             <p className="text-xs leading-5 text-muted-foreground">
               To nie jest rezerwacja ani zobowiązanie do zakupu. Zgłoszenie pomaga nam uruchomić sprzedaż online dla tego miejsca.
             </p>
-          </form>
-        )}
+            </form>
+          </AttractionDemandState>
+        </Suspense>
       </CardContent>
     </Card>
   )

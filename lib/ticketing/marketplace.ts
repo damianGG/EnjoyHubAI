@@ -1,5 +1,5 @@
 import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { createPublicServerClient, isPublicSupabaseConfigured } from "@/lib/supabase/public-server"
 
 export interface MarketplaceTicketingVenue {
   id: string
@@ -47,9 +47,10 @@ function isMissingMarketplaceBridge(error: { code?: string; message?: string }) 
 export async function getMarketplaceTicketingVenue(
   propertyId: string,
 ): Promise<MarketplaceTicketingVenue | null> {
-  if (!isSupabaseConfigured || !isTicketingCheckoutEnabled) return null
+  if (!isPublicSupabaseConfigured || !isTicketingCheckoutEnabled) return null
 
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
+  if (!supabase) return null
   const { data, error } = await supabase
     .from("venues")
     .select("id, name, timezone")
@@ -79,9 +80,10 @@ export async function listMarketplacePropertySessions(
   startDate: string,
   endDate: string,
 ): Promise<MarketplaceTicketingSession[]> {
-  if (!isSupabaseConfigured || !isTicketingCheckoutEnabled) return []
+  if (!isPublicSupabaseConfigured || !isTicketingCheckoutEnabled) return []
 
-  const supabase = createClient()
+  const supabase = createPublicServerClient()
+  if (!supabase) return []
   const { data, error } = await supabase.rpc(
     "ticketing_list_property_sessions",
     {
