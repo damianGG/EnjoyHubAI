@@ -4,7 +4,6 @@ import dynamic from "next/dynamic"
 import { useState, type ReactNode } from "react"
 
 import { TopNav } from "@/components/top-nav"
-import { BottomNav } from "@/components/bottom-nav"
 import { CategoryBar } from "@/components/category-bar"
 import { QuickDiscoveryFilters } from "@/components/quick-discovery-filters"
 
@@ -25,7 +24,6 @@ export function DiscoveryChrome({ children }: { children: ReactNode }) {
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <div className="min-h-0 flex-1 md:block">{children}</div>
-      <BottomNav onSearchClick={() => setSearchOpen(true)} />
     </div>
   )
 }

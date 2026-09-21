@@ -275,7 +275,7 @@ assert.match(hostPanel, /\.from\("organization_memberships"\)/)
 assert.match(hostPanel, /href="\/host\/start"/)
 assert.doesNotMatch(hostPanel, /\.from\("(?:properties|bookings|offers)"\)/)
 
-for (const file of ["components/top-nav.tsx", "components/bottom-nav.tsx", "app/dashboard/page.tsx"]) {
+for (const file of ["components/top-nav.tsx", "app/dashboard/page.tsx"]) {
   assert.doesNotMatch(await source(file), /\/host\/properties|\/host\/bookings/)
 }
 
@@ -301,21 +301,15 @@ assert.match(organizerLanding, /href="\/host\/start"/)
 assert.match(organizerLanding, /Mam własny system/)
 
 const topNavigation = await source("components/top-nav.tsx")
-const bottomNavigation = await source("components/bottom-nav.tsx")
 assert.match(topNavigation, /usePathname/)
 assert.match(topNavigation, /returnToPath=\{returnToPath\}/)
 assert.doesNotMatch(topNavigation, /returnToPath="\/"|returnToPath='\/'/)
-for (const navigation of [topNavigation, bottomNavigation]) {
-  assert.match(navigation, /href="\/dla-organizatorow"/)
-  assert.match(navigation, /href="\/attractions"/)
-  assert.doesNotMatch(navigation, /href="\/atrakcje"/)
-  assert.doesNotMatch(navigation, />Dashboard</)
-}
+assert.match(topNavigation, /href="\/dla-organizatorow"/)
+assert.match(topNavigation, /href="\/attractions"/)
+assert.doesNotMatch(topNavigation, /href="\/atrakcje"/)
+assert.doesNotMatch(topNavigation, />Dashboard</)
 assert.match(topNavigation, /Dla organizatorów/)
 assert.match(topNavigation, /Dodaj atrakcję/)
-assert.match(bottomNavigation, /Dodaj atrakcję/)
-assert.match(bottomNavigation, /\bKonto\b/)
-assert.match(bottomNavigation, />Mój panel</)
 
 const hostSettlements = await source("app/host/rozliczenia/page.tsx")
 assert.doesNotMatch(hostSettlements, /STRIPE_CONNECT_ENABLED|webhooka Connect|zastosowaniu migracji/)
