@@ -8,7 +8,7 @@ import {
   isSeoCategoryIndexable,
   isSeoCityIndexable,
 } from "@/lib/seo/landings"
-import { generateAttractionSlug } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 const PAGE_SIZE = 1000
 
@@ -138,11 +138,11 @@ export async function getSeoQualityDashboard(): Promise<SeoQualityDashboard> {
     const score = Math.round((passed / SEO_PROFILE_REQUIREMENTS.length) * 100)
     const title = row.title?.trim() || "Bez nazwy"
     const city = row.city?.trim() || "Brak miasta"
-    const canonicalSlug = generateAttractionSlug({
+    const canonicalPath = publicAttractionPath({
       id: row.id,
       title,
       city,
-      category: row.property_type,
+      property_type: row.property_type,
     })
 
     return {
@@ -154,7 +154,7 @@ export async function getSeoQualityDashboard(): Promise<SeoQualityDashboard> {
       missingLabels: missing.map((requirement) => requirementLabels[requirement]),
       seoEligible: missing.length === 0 && !row.seo_excluded,
       seoExcluded: Boolean(row.seo_excluded),
-      canonicalPath: `/attractions/${canonicalSlug}`,
+      canonicalPath,
       updatedAt: row.updated_at,
     }
   })
