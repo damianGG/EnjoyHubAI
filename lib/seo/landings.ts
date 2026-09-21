@@ -4,7 +4,8 @@ import { cache } from "react"
 
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { getPublicSiteUrl } from "@/lib/site-url"
-import { generateAttractionSlug, slugify } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
+import { slugify } from "@/lib/utils"
 
 export const SEO_CITY_MIN_OBJECTS = 3
 export const SEO_CITY_CATEGORY_MIN_OBJECTS = 2
@@ -256,13 +257,12 @@ export function getSeoLandingUrl(citySlug: string, categorySlug?: string | null)
 }
 
 export function getSeoAttractionPath(item: SeoLandingAttraction) {
-  const attractionSlug = generateAttractionSlug({
+  return publicAttractionPath({
     id: item.id,
     title: item.title,
     city: item.city,
-    category: item.propertyType,
+    property_type: item.propertyType,
   })
-  return `/attractions/${attractionSlug}`
 }
 
 export function getSeoLandingDescription(landing: SeoLandingData) {
