@@ -35,12 +35,14 @@ export function getAttractionPublicCode(id: string): string {
   const hex = id.toLowerCase().replace(/-/g, "")
   if (!/^[0-9a-f]{32}$/.test(hex)) return ""
 
-  let value = BigInt(`0x${hex.slice(0, 13)}`) >> 2n
+  // 13 hex chars = 52 bits, which still fits exactly within Number.MAX_SAFE_INTEGER.
+  // Dropping the last 2 bits leaves the same stable 50-bit value as the DB function.
+  let value = Math.floor(Number.parseInt(hex.slice(0, 13), 16) / 4)
   let code = ""
 
   for (let index = 0; index < 10; index += 1) {
-    code = PUBLIC_ATTRACTION_ALPHABET[Number(value % 32n)] + code
-    value /= 32n
+    code = PUBLIC_ATTRACTION_ALPHABET[value % 32] + code
+    value = Math.floor(value / 32)
   }
 
   return code
