@@ -37,6 +37,7 @@ interface ScrollableCategoryNavProps {
   onCategorySelect: (categorySlug: string | null) => void
   useNavigation?: boolean
   compact?: boolean
+  mobileCollapsed?: boolean
 }
 
 export function ScrollableCategoryNav({
@@ -45,6 +46,7 @@ export function ScrollableCategoryNav({
   onCategorySelect,
   useNavigation = false,
   compact = false,
+  mobileCollapsed = false,
 }: ScrollableCategoryNavProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftButton, setShowLeftButton] = useState(false)
@@ -130,7 +132,11 @@ export function ScrollableCategoryNav({
           ref={scrollContainerRef}
           className={cn(
             "hide-scrollbar flex w-full overflow-x-auto overflow-y-hidden scroll-smooth",
-            compact ? "gap-2 px-3 py-2.5 md:px-4" : "gap-2.5 px-3 py-3 md:gap-4 md:px-4 md:py-4"
+            compact
+              ? "gap-2 px-3 py-2.5 md:px-4"
+              : mobileCollapsed
+                ? "gap-1.5 px-3 py-2 md:gap-4 md:px-4 md:py-4"
+                : "gap-2.5 px-3 py-3 md:gap-4 md:px-4 md:py-4"
           )}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
@@ -143,29 +149,46 @@ export function ScrollableCategoryNav({
               "shrink-0 transition-all",
               compact
                 ? "brand-pill flex h-9 items-center gap-2 rounded-full px-4 text-xs font-semibold"
-                : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
-              !selectedCategory ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                : mobileCollapsed
+                  ? "flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold shadow-[0_4px_12px_rgba(11,18,32,0.06)] md:h-auto md:min-w-[96px] md:flex-col md:gap-2 md:rounded-2xl md:border-transparent md:px-2 md:py-1.5 md:shadow-none"
+                  : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
+              !selectedCategory
+                ? mobileCollapsed
+                  ? "border-primary/30 bg-primary/10 text-primary shadow-[inset_0_2px_5px_rgba(11,18,32,0.10)] md:border-transparent md:bg-transparent md:shadow-none"
+                  : "text-primary"
+                : mobileCollapsed
+                  ? "border-[#0b1220]/10 bg-white text-muted-foreground hover:text-foreground md:border-transparent md:bg-transparent"
+                  : "text-muted-foreground hover:text-foreground"
             )}
           >
+            {!compact && mobileCollapsed && <Sparkles className="h-3.5 w-3.5 md:hidden" />}
             {!compact && (
               <span className={cn(
-                "grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 ring-[#0b1220]/[0.05] md:h-14 md:w-14",
+                "grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 ring-[#0b1220]/[0.05]",
+                mobileCollapsed ? "hidden md:grid md:h-14 md:w-14" : "md:h-14 md:w-14",
                 !selectedCategory ? "bg-primary text-white" : "bg-gradient-to-br from-secondary to-white text-primary"
               )}>
                 <Sparkles className="h-5 w-5 md:h-6 md:w-6" />
               </span>
             )}
-            <span className={cn("whitespace-nowrap font-semibold", compact ? "text-xs" : "text-[11px] md:text-xs")}>Wszystkie</span>
+            <span className={cn("whitespace-nowrap font-semibold", compact || mobileCollapsed ? "text-xs" : "text-[11px] md:text-xs")}>Wszystkie</span>
           </button>
 
           {categories.map((category) => {
             const selected = selectedCategory === category.slug
             const content = (
               <>
-                {!compact && <CategoryVisual category={category} />}
+                {!compact && mobileCollapsed && (
+                  <span className="text-sm leading-none md:hidden">{category.icon || '✨'}</span>
+                )}
+                {!compact && (
+                  <span className={mobileCollapsed ? "hidden md:inline-flex" : "inline-flex"}>
+                    <CategoryVisual category={category} />
+                  </span>
+                )}
                 <span className={cn(
                   "max-w-[104px] truncate whitespace-nowrap text-center font-semibold",
-                  compact ? "text-xs" : "text-[11px] md:text-xs"
+                  compact || mobileCollapsed ? "text-xs" : "text-[11px] md:text-xs"
                 )}>
                   {category.name}
                 </span>
@@ -176,8 +199,16 @@ export function ScrollableCategoryNav({
               "shrink-0 transition-all duration-200",
               compact
                 ? "brand-pill flex h-9 items-center rounded-full px-4"
-                : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
-              selected ? "text-primary" : "text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
+                : mobileCollapsed
+                  ? "flex h-9 items-center gap-1.5 rounded-full border px-3 shadow-[0_4px_12px_rgba(11,18,32,0.06)] md:h-auto md:min-w-[96px] md:flex-col md:gap-2 md:rounded-2xl md:border-transparent md:px-2 md:py-1.5 md:shadow-none"
+                  : "flex min-w-[82px] flex-col items-center gap-2 rounded-2xl px-2 py-1.5 md:min-w-[96px]",
+              selected
+                ? mobileCollapsed
+                  ? "translate-y-px border-primary bg-primary text-primary-foreground shadow-[inset_0_2px_6px_rgba(11,18,32,0.18)] md:translate-y-0 md:border-transparent md:bg-transparent md:text-primary md:shadow-none"
+                  : "text-primary"
+                : mobileCollapsed
+                  ? "border-[#0b1220]/10 bg-white text-muted-foreground hover:border-primary/25 hover:text-foreground md:border-transparent md:bg-transparent"
+                  : "text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
             )
 
             return useNavigation ? (

@@ -120,6 +120,7 @@ export function CategoryBar({
         onCategorySelect={handleCategorySelect}
         useNavigation={false}
         compact={compact}
+        mobileCollapsed={!compact && Boolean(selectedCategoryData)}
       />
 
       {selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (

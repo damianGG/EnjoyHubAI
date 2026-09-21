@@ -1,9 +1,10 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, X } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { getEnjoyHubCategoryIcon } from '@/lib/category-icon-assets'
 import Image from 'next/image'
 import type { Subcategory } from './scrollable-category-nav'
 
@@ -32,22 +33,22 @@ export function ScrollableSubcategoryNav({
     const container = scrollContainerRef.current
     if (!container) return
 
-    setShowLeftButton(container.scrollLeft > 0)
+    setShowLeftButton(container.scrollLeft > 4)
     setShowRightButton(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - 1
+      container.scrollLeft < container.scrollWidth - container.clientWidth - 4
     )
   }
 
   useEffect(() => {
     checkScroll()
     const container = scrollContainerRef.current
-    if (container) {
-      container.addEventListener('scroll', checkScroll)
-      window.addEventListener('resize', checkScroll)
-      return () => {
-        container.removeEventListener('scroll', checkScroll)
-        window.removeEventListener('resize', checkScroll)
-      }
+    if (!container) return
+
+    container.addEventListener('scroll', checkScroll)
+    window.addEventListener('resize', checkScroll)
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
     }
   }, [subcategories])
 
@@ -55,42 +56,66 @@ export function ScrollableSubcategoryNav({
     const container = scrollContainerRef.current
     if (!container) return
 
-    const scrollAmount = 300
-    const targetScroll =
-      direction === 'left'
-        ? container.scrollLeft - scrollAmount
-        : container.scrollLeft + scrollAmount
-
     container.scrollTo({
-      left: targetScroll,
+      left: container.scrollLeft + (direction === 'left' ? -300 : 300),
       behavior: 'smooth',
     })
   }
 
-  const renderSubcategoryIcon = (subcategory: Subcategory) => {
-    if (subcategory.image_url) {
+  const tileClassName = (selected: boolean) => cn(
+    'shrink-0 transition-all duration-200',
+    compact
+      ? 'flex items-center gap-1.5 rounded-full border px-2.5 py-1 whitespace-nowrap'
+      : 'flex min-w-[82px] flex-col items-center gap-2 rounded-2xl border px-2 py-2 md:min-w-[60px] md:max-w-[120px] md:gap-1 md:rounded-lg md:px-2 md:py-1.5',
+    selected
+      ? 'translate-y-px border-primary/35 bg-primary/[0.07] text-primary shadow-[inset_0_2px_5px_rgba(11,18,32,0.08),0_5px_16px_rgba(255,90,31,0.10)]'
+      : 'border-transparent bg-white text-foreground hover:border-primary/15 hover:text-primary'
+  )
+
+  const renderSubcategoryVisual = (subcategory: Subcategory, selected: boolean) => {
+    const localImage = getEnjoyHubCategoryIcon(subcategory.slug)
+    const imageUrl = localImage || subcategory.image_url
+
+    if (imageUrl) {
       return (
-        <div className="relative w-4 h-4 rounded-full overflow-hidden">
+        <span className={cn(
+          'relative h-12 w-12 overflow-hidden rounded-[15px] bg-gradient-to-br from-secondary to-white shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 md:h-4 md:w-4 md:rounded-full md:shadow-none',
+          selected ? 'ring-primary/35' : 'ring-[#0b1220]/[0.05]'
+        )}>
           <Image
-            src={subcategory.image_url}
-            alt={subcategory.name}
+            src={imageUrl}
+            alt=""
             fill
-            className="object-cover"
+            className={localImage ? 'object-contain p-1' : 'object-cover'}
+            sizes="48px"
           />
-        </div>
+        </span>
       )
     }
+
     if (subcategory.icon) {
-      return <span className="text-lg">{subcategory.icon}</span>
+      return (
+        <span className={cn(
+          'grid h-12 w-12 place-items-center rounded-[15px] bg-gradient-to-br from-secondary via-white to-[#fff8f4] text-[28px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 md:h-4 md:w-4 md:rounded-full md:bg-transparent md:text-lg md:shadow-none md:ring-0',
+          selected ? 'ring-primary/35' : 'ring-[#0b1220]/[0.05]'
+        )}>
+          {subcategory.icon}
+        </span>
+      )
     }
-    return <span>•</span>
+
+    return (
+      <span className="grid h-12 w-12 place-items-center rounded-[15px] bg-secondary text-xl text-primary md:h-4 md:w-4 md:bg-transparent md:text-sm">
+        •
+      </span>
+    )
   }
 
   return (
-    <div className="relative w-full bg-card">
+    <div className="relative w-full border-b border-[#0b1220]/[0.055] bg-white/95 backdrop-blur-xl">
       <div className="relative flex items-center">
         {!compact && (
-          <div className="flex items-center gap-1.5 pl-3">
+          <div className="hidden items-center gap-1.5 pl-3 md:flex">
             <span className="text-xs font-medium text-muted-foreground">
               {parentCategoryName}
             </span>
@@ -99,6 +124,7 @@ export function ScrollableSubcategoryNav({
               size="icon"
               className="h-5 w-5"
               onClick={onClose}
+              aria-label={`Wyczyść kategorię ${parentCategoryName}`}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -107,10 +133,11 @@ export function ScrollableSubcategoryNav({
 
         {showLeftButton && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="absolute left-0 z-10 h-full rounded-none bg-gradient-to-r from-card via-card to-transparent px-2 hover:bg-card"
+            className="absolute left-2 z-20 hidden h-9 w-9 rounded-full border-[#0b1220]/10 bg-white/95 shadow-lg md:flex"
             onClick={() => scroll('left')}
+            aria-label="Przewiń podkategorie w lewo"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -119,48 +146,63 @@ export function ScrollableSubcategoryNav({
         <div
           ref={scrollContainerRef}
           className={cn(
-            "hide-scrollbar flex flex-1 gap-2 overflow-x-auto overflow-y-hidden px-4",
-            compact ? "py-1.5" : "py-2"
+            'hide-scrollbar flex flex-1 overflow-x-auto overflow-y-hidden scroll-smooth',
+            compact ? 'gap-2 px-4 py-1.5' : 'gap-2.5 px-3 py-2.5 md:gap-2 md:px-4 md:py-2'
           )}
-          style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {subcategories.map((subcategory) => (
-            <button
-              key={subcategory.id}
-              onClick={() => onSubcategorySelect(subcategory.slug)}
-              className={cn(
-                compact 
-                  ? 'flex items-center gap-1.5 rounded-full px-2.5 py-1 whitespace-nowrap'
-                  : 'flex min-w-[60px] max-w-[120px] flex-col items-center gap-1 rounded-lg px-2 py-1.5',
-                selectedSubcategory === subcategory.slug
-                  ? 'text-primary font-semibold'
-                  : 'text-foreground hover:text-primary transition-colors'
-              )}
-            >
-              {!compact && (
-                <div className="flex h-4 w-4 items-center justify-center">
-                  {renderSubcategoryIcon(subcategory)}
-                </div>
-              )}
+          <button
+            onClick={() => onSubcategorySelect(null)}
+            className={tileClassName(!selectedSubcategory)}
+            aria-pressed={!selectedSubcategory}
+          >
+            {!compact && (
               <span className={cn(
-                "block truncate text-center font-medium",
-                compact ? "text-xs" : "w-full text-[10px]"
+                'grid h-12 w-12 place-items-center rounded-[15px] shadow-[0_8px_18px_rgba(11,18,32,0.10)] ring-1 md:h-4 md:w-4 md:rounded-full md:shadow-none md:ring-0',
+                !selectedSubcategory
+                  ? 'bg-primary text-white ring-primary/30'
+                  : 'bg-gradient-to-br from-secondary to-white text-primary ring-[#0b1220]/[0.05]'
               )}>
-                {subcategory.name}
+                <Sparkles className="h-5 w-5 md:h-3.5 md:w-3.5" />
               </span>
-            </button>
-          ))}
+            )}
+            <span className={cn(
+              'block max-w-[104px] truncate whitespace-nowrap text-center font-semibold',
+              compact ? 'text-xs' : 'text-[11px] md:text-[10px]'
+            )}>
+              Wszystkie
+            </span>
+          </button>
+
+          {subcategories.map((subcategory) => {
+            const selected = selectedSubcategory === subcategory.slug
+
+            return (
+              <button
+                key={subcategory.id}
+                onClick={() => onSubcategorySelect(subcategory.slug)}
+                className={tileClassName(selected)}
+                aria-pressed={selected}
+              >
+                {!compact && renderSubcategoryVisual(subcategory, selected)}
+                <span className={cn(
+                  'block max-w-[104px] truncate whitespace-nowrap text-center font-semibold',
+                  compact ? 'text-xs' : 'text-[11px] md:text-[10px]'
+                )}>
+                  {subcategory.name}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         {showRightButton && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="absolute right-0 z-10 h-full rounded-none bg-gradient-to-l from-card via-card to-transparent px-2 hover:bg-card"
+            className="absolute right-2 z-20 hidden h-9 w-9 rounded-full border-[#0b1220]/10 bg-white/95 shadow-lg md:flex"
             onClick={() => scroll('right')}
+            aria-label="Przewiń podkategorie w prawo"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
