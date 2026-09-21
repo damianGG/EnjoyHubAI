@@ -24,6 +24,52 @@ export function slugify(text: string): string {
  * Generates an attraction slug in format: city-category-title-id
  * Example: warsaw-escape-room-amazing-adventure-123e4567
  */
+
+const PUBLIC_ATTRACTION_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
+
+/**
+ * Stable 10-character public code derived from the first 50 bits of a UUID.
+ * Matches public.marketplace_property_public_code(uuid) in Supabase.
+ */
+export function getAttractionPublicCode(id: string): string {
+  const hex = id.toLowerCase().replace(/-/g, "")
+  if (!/^[0-9a-f]{32}$/.test(hex)) return ""
+
+  let value = BigInt(`0x${hex.slice(0, 13)}`) >> 2n
+  let code = ""
+
+  for (let index = 0; index < 10; index += 1) {
+    code = PUBLIC_ATTRACTION_ALPHABET[Number(value % 32n)] + code
+    value /= 32n
+  }
+
+  return code
+}
+
+export function generatePublicAttractionSlug(params: {
+  id: string
+  title: string
+  city: string
+}): string {
+  const titleSlug = slugify(params.title)
+  const citySlug = slugify(params.city)
+  const code = getAttractionPublicCode(params.id)
+  const titleAlreadyContainsCity = Boolean(citySlug) && (
+    titleSlug === citySlug
+    || titleSlug.endsWith(`-${citySlug}`)
+  )
+  const descriptiveSlug = [titleSlug, titleAlreadyContainsCity ? null : citySlug]
+    .filter(Boolean)
+    .join("-")
+
+  return [descriptiveSlug || "atrakcja", code].filter(Boolean).join("-")
+}
+
+export function extractPublicAttractionCode(slug: string): string {
+  const match = slug.toLowerCase().match(/(?:^|-)([0-9a-hjkmnp-tv-z]{10})$/)
+  return match?.[1] ?? ""
+}
+
 export function generateAttractionSlug(params: {
   city: string
   category: string | null
