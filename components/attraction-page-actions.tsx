@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { Heart, Share2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -62,7 +62,7 @@ export function AttractionPageActionsProvider({
     }
   }, [attractionId])
 
-  async function toggleFavorite() {
+  const toggleFavorite = useCallback(async () => {
     if (favoritePending) return
 
     setFavoritePending(true)
@@ -93,9 +93,9 @@ export function AttractionPageActionsProvider({
     } finally {
       setFavoritePending(false)
     }
-  }
+  }, [attractionId, favorite, favoritePending, returnToPath, router])
 
-  async function shareAttraction() {
+  const shareAttraction = useCallback(async () => {
     setFeedback("")
     const url = `${window.location.origin}${returnToPath}`
 
@@ -113,7 +113,7 @@ export function AttractionPageActionsProvider({
       console.error("[attraction-actions] Failed to share attraction", error)
       setFeedback("Nie udało się udostępnić")
     }
-  }
+  }, [attractionTitle, returnToPath])
 
   const value = useMemo<AttractionActionsContextValue>(() => ({
     favorite,
@@ -121,7 +121,7 @@ export function AttractionPageActionsProvider({
     feedback,
     toggleFavorite,
     shareAttraction,
-  }), [favorite, favoritePending, feedback])
+  }), [favorite, favoritePending, feedback, shareAttraction, toggleFavorite])
 
   return <AttractionActionsContext.Provider value={value}>{children}</AttractionActionsContext.Provider>
 }
