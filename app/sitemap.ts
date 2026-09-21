@@ -8,7 +8,7 @@ import {
 } from "@/lib/seo/landings"
 import { getPublicSiteUrl } from "@/lib/site-url"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
-import { generateAttractionSlug } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 export const revalidate = 900
 
@@ -81,15 +81,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const attractionRoutes: MetadataRoute.Sitemap = attractions
       .filter((attraction) => attraction.id && attraction.title && attraction.city)
       .map((attraction) => {
-        const slug = generateAttractionSlug({
-          id: attraction.id,
-          title: attraction.title,
-          city: attraction.city,
-          category: attraction.property_type,
-        })
-
         return {
-          url: `${siteUrl}/attractions/${slug}`,
+          url: `${siteUrl}${publicAttractionPath(attraction)}`,
           lastModified: attraction.updated_at || undefined,
           changeFrequency: "weekly" as const,
           priority: 0.8,
