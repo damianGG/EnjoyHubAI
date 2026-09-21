@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, ExternalLink, Eye, Rocket, Save, Sparkles, XCi
 import { notFound } from "next/navigation"
 
 import { publishSupplyLeadAction, resolveSupplyClaimAction, updateSupplyLeadAction } from "@/app/admin/supply/actions"
+import { SupplyCategoryPicker } from "@/components/admin/supply-category-picker"
 import { SupplyLocationPicker } from "@/components/admin/supply-location-picker"
 import { SupplyImageManager } from "@/components/admin/supply-image-manager"
 import { Badge } from "@/components/ui/badge"
@@ -37,7 +38,7 @@ export default async function SupplyLeadPage({ params, searchParams }: {
   const { supabase, role } = await requirePlatformStaff(supplyRoles, next)
   const [{ data, error }, categoriesResult, subcategoriesResult] = await Promise.all([
     supabase.rpc("platform_supply_get_lead", { p_lead_id: leadId }),
-    supabase.from("categories").select("id,name").order("name"),
+    supabase.from("categories").select("id,name,slug").order("name"),
     supabase.from("subcategories").select("id,parent_category_id,name").order("name"),
   ])
   if (error || !data) notFound()
@@ -173,16 +174,7 @@ export default async function SupplyLeadPage({ params, searchParams }: {
                 <option value="manual">Ręcznie</option><option value="web">WWW</option><option value="map">Mapa</option><option value="social">Social media</option><option value="referral">Polecenie</option><option value="owner">Właściciel</option>
               </select>
             </Field>
-            <Field label="Kategoria">
-              <select name="category_id" defaultValue={lead.category_id ?? ""} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Bez kategorii</option>{categories.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Podkategoria">
-              <select name="subcategory_id" defaultValue={lead.subcategory_id ?? ""} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Bez podkategorii</option>{subcategories.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </Field>
+            <SupplyCategoryPicker categories={categories} subcategories={subcategories} categoryId={lead.category_id} subcategoryId={lead.subcategory_id} />
           </CardContent>
         </Card>
 

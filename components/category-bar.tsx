@@ -1,5 +1,6 @@
 "use client"
 
+import { CATEGORY_GROUPS } from "@/lib/category-groups"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -39,10 +40,6 @@ export function CategoryBar({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
-    if (selectedCategory !== undefined) setLocalSelectedCategory(selectedCategory ?? null)
-  }, [selectedCategory])
-
-  useEffect(() => {
     const loadCategoriesWithSubcategories = async () => {
       const s = createClient()
 
@@ -79,75 +76,56 @@ export function CategoryBar({
     void loadCategoriesWithSubcategories()
   }, [])
 
-  useEffect(() => {
-    if (!useNavigation || selectedCategory !== undefined) return
+  const groupedCategories: Category[] = CATEGORY_GROUPS.map(group => ({
+    id: group.slug, slug: group.slug, name: group.name, icon: group.icon, description: "",
+    subcategories: categories.filter(category => (group.activities as readonly string[]).includes(category.slug))
+      .map(category => ({ ...category, parent_category_id: group.slug })),
+  })).filter(group => group.subcategories.length > 0)
+  const known = new Set<string>(CATEGORY_GROUPS.flatMap(group => [...group.activities]))
+  const other = categories.filter(category => !known.has(category.slug))
+  if (other.length) groupedCategories.push({ id: "inne", slug: "inne", name: "Inne atrakcje", icon: "✨", description: "", subcategories: other.map(category => ({ ...category, parent_category_id: "inne" })) })
 
-    const activeSlug = (searchParams.get("categories") || "")
-      .split(",")
-      .map((value) => value.trim())
-      .find(Boolean) ?? null
+  const activeSlugs = (selectedCategory ?? searchParams.get("categories") ?? "").split(",").filter(Boolean)
+  const activeGroup = groupedCategories.find(group => group.subcategories?.some(item => activeSlugs.includes(item.slug)))
+  const selectedCategoryData = activeGroup ?? (!useNavigation ? groupedCategories.find(group => group.slug === localSelectedCategory) : undefined)
 
-    if (!activeSlug) {
-      setLocalSelectedCategory(null)
-      setSelectedSubcategory(null)
-      return
-    }
-
-    const directCategory = categories.find((category) => category.slug === activeSlug)
-    if (directCategory) {
-      setLocalSelectedCategory(directCategory.slug)
-      setSelectedSubcategory(null)
-      return
-    }
-
-    const parentCategory = categories.find((category) =>
-      category.subcategories?.some((subcategory) => subcategory.slug === activeSlug),
-    )
-
-    if (parentCategory) {
-      setLocalSelectedCategory(parentCategory.slug)
-      setSelectedSubcategory(activeSlug)
-    }
-  }, [useNavigation, selectedCategory, urlSearchString, categories, searchParams])
-
-  const handleCategorySelect = (categorySlug: string | null) => {
-    setLocalSelectedCategory(categorySlug)
-    setSelectedSubcategory(null)
-    onCategorySelect?.(categorySlug)
-  }
-
-  const handleSubcategorySelect = (subcategorySlug: string | null) => {
-    setSelectedSubcategory(subcategorySlug)
-    onCategorySelect?.(subcategorySlug)
-
+  function navigate(slugs: string | null) {
+    onCategorySelect?.(slugs)
     if (useNavigation) {
-      router.push(subcategorySlug ? `/attractions?categories=${encodeURIComponent(subcategorySlug)}` : "/attractions")
+      const params = new URLSearchParams(urlSearchString)
+      if (slugs) params.set("categories", slugs)
+      else params.delete("categories")
+      params.delete("page")
+      params.delete("attrs")
+      router.push(`/attractions${params.size ? `?${params}` : ""}`)
     }
   }
-
-  const handleCloseSubcategories = () => {
-    setLocalSelectedCategory(null)
+  const handleCategorySelect = (slug: string | null) => {
+    setLocalSelectedCategory(slug)
     setSelectedSubcategory(null)
-    onCategorySelect?.(null)
-    if (useNavigation) router.push("/attractions")
+    const group = groupedCategories.find(item => item.slug === slug)
+    navigate(group?.subcategories?.map(item => item.slug).join(",") || null)
   }
-
-  const selectedCategoryData = categories.find((cat) => cat.slug === localSelectedCategory)
+  const handleSubcategorySelect = (slug: string | null) => {
+    setSelectedSubcategory(slug)
+    navigate(slug || selectedCategoryData?.subcategories?.map(item => item.slug).join(",") || null)
+  }
+  const handleCloseSubcategories = () => handleCategorySelect(null)
 
   return (
     <>
       <ScrollableCategoryNav
-        categories={categories}
-        selectedCategory={localSelectedCategory}
+        categories={groupedCategories}
+        selectedCategory={selectedCategoryData?.slug ?? null}
         onCategorySelect={handleCategorySelect}
-        useNavigation={useNavigation}
+        useNavigation={false}
         compact={compact}
       />
 
-      {localSelectedCategory && selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
+      {selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
         <ScrollableSubcategoryNav
           subcategories={selectedCategoryData.subcategories}
-          selectedSubcategory={selectedSubcategory}
+          selectedSubcategory={activeSlugs.length === 1 ? activeSlugs[0] : selectedSubcategory}
           onSubcategorySelect={handleSubcategorySelect}
           onClose={handleCloseSubcategories}
           parentCategoryName={selectedCategoryData.name}

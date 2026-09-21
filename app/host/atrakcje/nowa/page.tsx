@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
 
 type Membership = { organization_id: string; role: string }
 type Organization = { id: string; name: string }
-type Category = { id: string; name: string; icon: string | null }
+type Category = { id: string; name: string; slug: string; icon: string | null }
 
 export default async function NewOrganizerAttractionPage({ searchParams }: { searchParams: Promise<{ blad?: string }> }) {
   if (!isSupabaseConfigured) redirect("/host")
@@ -35,7 +35,7 @@ export default async function NewOrganizerAttractionPage({ searchParams }: { sea
   const organizationIds = [...new Set(memberships.map((item) => item.organization_id))]
   const [organizationsResult, categoriesResult] = await Promise.all([
     supabase.from("organizations").select("id, name").in("id", organizationIds).eq("status", "active").order("name"),
-    supabase.from("categories").select("id, name, icon").order("name"),
+    supabase.from("categories").select("id, name, slug, icon").order("name"),
   ])
 
   if (organizationsResult.error || categoriesResult.error) return <CenteredMessage>Nie udało się przygotować formularza atrakcji.</CenteredMessage>

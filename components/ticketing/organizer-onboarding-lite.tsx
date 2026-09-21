@@ -1,5 +1,7 @@
 "use client"
 
+import { ActivityCategorySelect } from "@/components/activity-category-select"
+
 import { useActionState, useCallback, useEffect, useMemo, useState } from "react"
 import { useFormStatus } from "react-dom"
 import dynamic from "next/dynamic"
@@ -37,7 +39,7 @@ const LocationPicker = dynamic(() => import("@/components/location-picker"), {
   loading: () => <div className="h-72 animate-pulse rounded-xl border bg-muted" />,
 })
 
-type Category = { id: string; name: string; icon: string | null; description: string | null }
+type Category = { id: string; name: string; slug: string; icon: string | null; description: string | null }
 type Subcategory = { id: string; parentCategoryId: string; name: string; icon: string | null; description: string | null }
 type ImageData = { url: string; publicId: string }
 type LocationValue = { lat: number; lng: number }
@@ -455,12 +457,7 @@ export function OrganizerOnboardingLite({ categories, subcategories, userId, use
             <CardContent className="space-y-5">
               <Field label="Nazwa atrakcji" htmlFor="attractionNameVisible"><Input id="attractionNameVisible" maxLength={160} value={values.attractionName} onChange={(e) => setValue("attractionName", e.target.value)} placeholder="np. Paintball Rzeszów" autoFocus /></Field>
               <Field label="Krótki opis atrakcji" htmlFor="attractionDescriptionVisible" help={`${values.attractionDescription.length}/4000 znaków · minimum 20`}><Textarea id="attractionDescriptionVisible" maxLength={4000} value={values.attractionDescription} onChange={(e) => setValue("attractionDescription", e.target.value)} rows={4} placeholder="Co czeka klienta, dla kogo jest atrakcja i dlaczego warto przyjechać?" /></Field>
-              <Field label="Kategoria" htmlFor="categoryVisible" help="Wybierz kategorię, w której klient będzie szukał tej atrakcji.">
-                <select id="categoryVisible" value={values.categoryId} onChange={(e) => setCategory(e.target.value)} className="h-11 w-full rounded-md border bg-background px-3 text-sm">
-                  <option value="">Wybierz kategorię</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.icon ? `${category.icon} ` : ""}{category.name}</option>)}
-                </select>
-              </Field>
+<ActivityCategorySelect categories={categories} value={values.categoryId} onChange={setCategory} />
               {availableSubcategories.length > 0 ? (
                 <Field label="Rodzaj atrakcji" htmlFor="subcategoryVisible" help="Dzięki temu klienci znajdą Cię w dokładnej podkategorii.">
                   <select id="subcategoryVisible" value={values.subcategoryId} onChange={(e) => setValue("subcategoryId", e.target.value)} className="h-11 w-full rounded-md border bg-background px-3 text-sm">
