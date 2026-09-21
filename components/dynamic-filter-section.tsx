@@ -80,12 +80,13 @@ export function DynamicFilterSection({
 
     if (definition.valueType === "boolean") {
       return (
-        <label key={id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3 text-sm hover:bg-muted/50">
+        <label key={id} className="flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3 text-sm hover:bg-muted/50">
           <Checkbox
+            className="mt-0.5 shrink-0"
             checked={condition?.eq === true}
             onCheckedChange={(checked) => updateCondition(definition, checked === true ? { eq: true } : undefined)}
           />
-          <span className="font-medium">{definition.label}</span>
+          <span className="min-w-0 break-words font-medium leading-5">{definition.label}</span>
         </label>
       )
     }
@@ -93,8 +94,8 @@ export function DynamicFilterSection({
     if (definition.valueType === "select") {
       const value = typeof condition?.eq === "string" ? condition.eq : "__any__"
       return (
-        <div key={id} className="space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
-          <Label>{definition.label}</Label>
+        <div key={id} className="min-w-0 space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
+          <Label className="block break-words leading-5">{definition.label}</Label>
           <Select
             value={value}
             onValueChange={(nextValue) => updateCondition(
@@ -102,7 +103,7 @@ export function DynamicFilterSection({
               nextValue === "__any__" ? undefined : { eq: nextValue },
             )}
           >
-            <SelectTrigger className="h-10 rounded-xl">
+            <SelectTrigger className="h-10 w-full min-w-0 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -118,9 +119,9 @@ export function DynamicFilterSection({
 
     if (definition.valueType === "number") {
       return (
-        <div key={id} className="space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
-          <Label>{definition.label}{definition.unit ? ` (${definition.unit})` : ""}</Label>
-          <div className="grid grid-cols-2 gap-2">
+        <div key={id} className="min-w-0 space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
+          <Label className="block break-words leading-5">{definition.label}{definition.unit ? ` (${definition.unit})` : ""}</Label>
+          <div className="grid min-w-0 grid-cols-2 gap-2">
             <Input
               type="number"
               value={condition?.min ?? ""}
@@ -132,7 +133,7 @@ export function DynamicFilterSection({
                 })
               }}
               placeholder="Od"
-              className="h-10 rounded-xl"
+              className="h-10 min-w-0 rounded-xl"
             />
             <Input
               type="number"
@@ -145,7 +146,7 @@ export function DynamicFilterSection({
                 })
               }}
               placeholder="Do"
-              className="h-10 rounded-xl"
+              className="h-10 min-w-0 rounded-xl"
             />
           </div>
         </div>
@@ -153,7 +154,7 @@ export function DynamicFilterSection({
     }
 
     return (
-      <div key={id} className="space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
+      <div key={id} className="min-w-0 space-y-2 rounded-xl border border-[#0b1220]/[0.07] bg-white p-3">
         <Label>{definition.label}</Label>
         <Input
           value={typeof condition?.eq === "string" ? condition.eq : ""}
@@ -161,14 +162,14 @@ export function DynamicFilterSection({
             definition,
             event.target.value.trim() ? { eq: event.target.value } : undefined,
           )}
-          className="h-10 rounded-xl"
+          className="h-10 min-w-0 rounded-xl"
         />
       </div>
     )
   }
 
   return (
-    <section className={`space-y-4 rounded-2xl border border-primary/15 bg-secondary/35 p-4 ${className}`}>
+    <section className={`min-w-0 space-y-4 overflow-hidden rounded-2xl border border-primary/15 bg-secondary/35 p-3.5 sm:p-4 ${className}`}>
       <div>
         <Label className="text-base">Filtry dla: {categoryName}</Label>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -190,7 +191,7 @@ export function DynamicFilterSection({
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-primary">Obiekt</p>
                 <p className="text-xs text-muted-foreground">Cechy miejsca niezależne od konkretnego pakietu.</p>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">{supplyDefinitions.map(renderControl)}</div>
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2">{supplyDefinitions.map(renderControl)}</div>
             </div>
           )}
 
@@ -200,7 +201,7 @@ export function DynamicFilterSection({
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-primary">Pakiet / oferta</p>
                 <p className="text-xs text-muted-foreground">Parametry konkretnej oferty dostępnej do zakupu.</p>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">{productDefinitions.map(renderControl)}</div>
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2">{productDefinitions.map(renderControl)}</div>
             </div>
           )}
         </div>
