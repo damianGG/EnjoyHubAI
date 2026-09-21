@@ -1,8 +1,9 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
+import type { ReactNode } from "react"
 
-export function AttractionDemandStatus() {
+export function AttractionDemandState({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams()
   const success = searchParams.get("zainteresowanie") === "1"
   const error = searchParams.get("blad_zainteresowania") === "1"
@@ -16,13 +17,14 @@ export function AttractionDemandStatus() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-        Nie udało się zapisać zainteresowania. Sprawdź adres e-mail, termin i liczbę osób.
-      </div>
-    )
-  }
-
-  return null
+  return (
+    <>
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Nie udało się zapisać zainteresowania. Sprawdź adres e-mail, termin i liczbę osób.
+        </div>
+      )}
+      {children}
+    </>
+  )
 }
