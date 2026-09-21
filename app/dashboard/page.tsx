@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { formatMoney, formatSessionDate } from "@/lib/ticketing/format"
 import { listCustomerTicketingOrders } from "@/lib/ticketing/queries"
@@ -123,7 +124,7 @@ export default async function DashboardPage() {
                 ) : (
                   <div className="space-y-3">
                     {favorites.slice(0, 2).map((favorite: any) => (
-                      <Link key={favorite.id} href={`/attractions/${favorite.properties.id}`} className="flex gap-3 rounded-md p-1 hover:bg-muted">
+                      <Link key={favorite.id} href={publicAttractionPath(favorite.properties)} className="flex gap-3 rounded-md p-1 hover:bg-muted">
                         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded">
                           <Image
                             src={favorite.properties.images?.[0] || "/placeholder.jpg"}
