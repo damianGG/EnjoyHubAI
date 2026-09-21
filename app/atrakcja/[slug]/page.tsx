@@ -14,8 +14,9 @@ import {
   Users,
 } from "lucide-react"
 
-import { startAttractionConversation } from "@/app/attractions/[slug]/actions"
+import { startAttractionConversation } from "@/app/atrakcja/[slug]/actions"
 import { PaintballProfile, type PaintballProfileData } from "@/components/paintball/paintball-profile"
+import { AttractionViewTracker } from "@/components/analytics/attraction-view-tracker"
 import AttractionGallery from "@/components/attraction-gallery"
 import { AttractionPageActions, AttractionPageActionsProvider } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
@@ -195,6 +196,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       returnToPath={canonicalPath}
     >
       <div className="min-h-screen bg-background pb-28 md:pb-0">
+      <AttractionViewTracker attractionId={attraction.id} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="hidden md:block"><TopNav /></div>
 
