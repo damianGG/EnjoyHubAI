@@ -24,7 +24,7 @@ function refresh(leadId: string) {
   revalidatePath(`/admin/supply/${leadId}`)
   revalidatePath(`/admin/supply/${leadId}/podglad`)
   revalidatePath("/attractions")
-  revalidatePath("/attractions/[slug]", "page")
+  revalidatePath("/atrakcja/[slug]", "page")
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ leadId: string }> }) {
