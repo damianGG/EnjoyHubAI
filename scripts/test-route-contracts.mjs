@@ -37,6 +37,7 @@ const requiredRoutes = [
   "app/api/search/filter-definitions/route.ts",
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
+  "components/dynamic-filter-section.tsx",
   "components/ticketing/clear-organizer-onboarding-draft.tsx",
   "components/ticketing/organizer-onboarding-lite.tsx",
   "components/ticketing/organizer-onboarding-wizard.tsx",
@@ -144,6 +145,8 @@ assert.match(filterDefinitionsRoute, /supply_attribute_definitions/)
 assert.match(filterDefinitionsRoute, /product_attribute_definitions/)
 assert.match(filterDefinitionsRoute, /\.eq\("filterable", true\)/)
 assert.match(filterDefinitionsRoute, /scope: "supply" \| "product"/)
+assert.match(filterDefinitionsRoute, /parent_category_id/)
+assert.doesNotMatch(filterDefinitionsRoute, /subcategory\.category_id/)
 
 const marketplaceSearchMigration = await source("supabase/migrations/20260915084851_marketplace_dynamic_category_filters.sql")
 const marketplaceSearchSql = marketplaceSearchMigration.replace(/^--.*$/gm, "")
@@ -191,12 +194,25 @@ assert.doesNotMatch(attractionsView, /onSearch=\{\(\) => undefined\}/)
 assert.doesNotMatch(attractionsView, /price_per_night/)
 
 const attractionFilters = await source("components/attraction-filters.tsx")
+assert.match(attractionFilters, /DynamicFilterSection/)
 assert.match(attractionFilters, /dynamicDefinitions/)
-assert.match(attractionFilters, /Filtry dla:/)
-assert.match(attractionFilters, /Pakiet \/ oferta/)
-assert.match(attractionFilters, /definition\.valueType === "boolean"/)
-assert.match(attractionFilters, /definition\.valueType === "select"/)
-assert.match(attractionFilters, /definition\.valueType === "number"/)
+
+const dynamicFilterSection = await source("components/dynamic-filter-section.tsx")
+assert.match(dynamicFilterSection, /Filtry dla:/)
+assert.match(dynamicFilterSection, /Pakiet \/ oferta/)
+assert.match(dynamicFilterSection, /definition\.valueType === "boolean"/)
+assert.match(dynamicFilterSection, /definition\.valueType === "select"/)
+assert.match(dynamicFilterSection, /definition\.valueType === "number"/)
+
+const searchDialog = await source("components/search-dialog.tsx")
+assert.match(searchDialog, /CATEGORY_GROUPS/)
+assert.match(searchDialog, /Podkategoria/)
+assert.match(searchDialog, /Filtry główne/)
+assert.match(searchDialog, /DynamicFilterSection/)
+assert.match(searchDialog, /\/api\/search\/filter-definitions\?category=/)
+assert.match(searchDialog, /attrs: serializeDynamicFilters/)
+assert.match(searchDialog, /min_price:/)
+assert.match(searchDialog, /max_price:/)
 
 const attractionMap = await source("components/attraction-map.tsx")
 assert.match(attractionMap, /Sprawdź ofertę/)

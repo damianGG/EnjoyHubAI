@@ -65,12 +65,12 @@ export async function GET(request: Request) {
   }
 
   let resolvedCategory = category
-  let resolvedSubcategory: { id: string; name: string; slug: string; category_id: string } | null = null
+  let resolvedSubcategory: { id: string; name: string; slug: string; parent_category_id: string } | null = null
 
   if (!resolvedCategory) {
     const { data: subcategory, error: subcategoryError } = await supabase
       .from("subcategories")
-      .select("id,name,slug,category_id")
+      .select("id,name,slug,parent_category_id")
       .eq("slug", slug)
       .maybeSingle()
 
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     const { data: parentCategory, error: parentError } = await supabase
       .from("categories")
       .select("id,name,slug")
-      .eq("id", subcategory.category_id)
+      .eq("id", subcategory.parent_category_id)
       .single()
 
     if (parentError || !parentCategory) {
