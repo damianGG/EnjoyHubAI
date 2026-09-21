@@ -9,7 +9,8 @@ import {
   isSeoCityIndexable,
 } from "@/lib/seo/landings"
 import { getPublicSiteUrl } from "@/lib/site-url"
-import { generateAttractionSlug, slugify } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
+import { slugify } from "@/lib/utils"
 
 export const INDEXNOW_KEY = "db13ebf9007a99a14b35f8d474700d02"
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
@@ -110,13 +111,7 @@ export async function submitIndexNowUrls(urls: string[]): Promise<IndexNowResult
 
 async function attractionCanonicalUrl(attraction: AttractionRow) {
   const { siteUrl } = canonicalSite()
-  const slug = generateAttractionSlug({
-    id: attraction.id,
-    title: attraction.title,
-    city: attraction.city,
-    category: attraction.property_type ?? null,
-  })
-  return `${siteUrl}/attractions/${slug}`
+  return `${siteUrl}${publicAttractionPath(attraction)}`
 }
 
 export async function submitIndexNowForAttractionId(attractionId: string) {
