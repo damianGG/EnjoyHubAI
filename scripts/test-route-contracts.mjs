@@ -113,7 +113,12 @@ assert.match(polishAttractionsIndex, /permanentRedirect\("\/attractions"\)/)
 const attractionPage = await source("app/attractions/[slug]/page.tsx")
 assert.match(attractionPage, /MarketplaceCalendar/)
 assert.match(attractionPage, /getMarketplaceTicketingVenue/)
+assert.doesNotMatch(attractionPage, /listMarketplacePropertySessions/)
+assert.match(attractionPage, /const priceFrom = null/)
 assert.doesNotMatch(attractionPage, /\.from\("(?:offers|offer_availability|offer_bookings|bookings)"\)/)
+
+const propertyContactInfo = await source("components/property-contact-info.tsx")
+assert.doesNotMatch(propertyContactInfo, /^["']use client["']/m)
 
 const marketplaceCalendar = await source("components/ticketing/marketplace-calendar.tsx")
 assert.match(marketplaceCalendar, /\/api\/ticketing\/properties\/\$\{propertyId\}\/sessions/)
