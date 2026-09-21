@@ -16,6 +16,6 @@ Każda publiczna atrakcja o kategorii albo podkategorii `paintball` otrzymuje sz
 
 ## Wdrożenie i testy
 
-Najpierw zastosować `20260921033123_paintball_public_profile.sql`, potem wdrożyć kod. Bez RPC profil nadal otworzy się, ale szczegóły będą oznaczone jako niedostępne.
+Najpierw zastosować `20260921051934_paintball_public_profile.sql`, potem wdrożyć kod. Bez RPC profil nadal otworzy się, ale szczegóły będą oznaczone jako niedostępne.
 
 `node scripts/test-paintball-template.mjs` sprawdza treść, braki danych, grupy i adresy z mapy. `npm run test:ticketing-db` zawiera test filtrowania sugestii i nieaktywnych profili. Testy nie zastępują sprawdzenia mapy i finalnej rezerwacji w przeglądarce po wdrożeniu.
