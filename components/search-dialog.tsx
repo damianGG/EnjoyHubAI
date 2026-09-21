@@ -322,7 +322,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
           </div>
         </header>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
           <div className="min-w-0 space-y-6 px-4 py-5 pb-6 md:space-y-7 md:px-6 md:py-6">
             <section className="space-y-4">
               <div className="flex items-center gap-2">
@@ -454,7 +454,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                     <span className="grid h-7 w-7 place-items-center rounded-lg bg-secondary text-primary"><CalendarDays className="h-3.5 w-3.5" /></span>
                     <h4 className="text-xs font-extrabold">Kiedy?</h4>
                   </div>
-                  <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-14 rounded-[18px] border-[#0b1220]/[0.07] bg-white px-4 text-sm shadow-sm focus-visible:ring-primary/25" />
+                  <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-14 w-full min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white px-4 text-sm shadow-sm focus-visible:ring-primary/25" />
                 </div>
 
                 <div className="space-y-3">
