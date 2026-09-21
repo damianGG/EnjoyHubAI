@@ -20,6 +20,8 @@ for (const file of [
   "app/robots.ts",
   "app/sitemap.ts",
   "app/attractions/[slug]/page.tsx",
+  "app/atrakcja/[slug]/page.tsx",
+  "supabase/migrations/20260921183930_property_public_codes.sql",
   "app/atrakcje/[city]/page.tsx",
   "app/atrakcje/[city]/[category]/page.tsx",
   "app/admin/seo/page.tsx",
@@ -53,7 +55,7 @@ assert.match(sitemap, /PAGE_SIZE = 1000/)
 assert.match(sitemap, /\.eq\("is_active", true\)/)
 assert.match(sitemap, /\.eq\("seo_excluded", false\)/)
 assert.match(sitemap, /updated_at/)
-assert.match(sitemap, /generateAttractionSlug/)
+assert.match(sitemap, /publicAttractionPath/)
 assert.match(sitemap, /for \(let from = 0; ; from \+= PAGE_SIZE\)/)
 assert.match(sitemap, /getSeoLandingCatalog/)
 assert.match(sitemap, /isSeoCityIndexable/)
@@ -62,7 +64,8 @@ assert.match(sitemap, /getSeoLandingPath/)
 assert.doesNotMatch(sitemap, /\?categories=/)
 
 const attractionSeo = await source("lib/seo/attraction.ts")
-assert.match(attractionSeo, /cache\(async \(id: string\)/)
+assert.match(attractionSeo, /getPublicAttractionSeoRecordByCode/)
+assert.match(attractionSeo, /"public_code"/)
 assert.match(attractionSeo, /\.eq\("is_active", true\)/)
 assert.match(attractionSeo, /getAttractionCanonicalPath/)
 assert.match(attractionSeo, /getAttractionCanonicalUrl/)
@@ -77,7 +80,7 @@ assert.match(attractionSeo, /ReserveAction/)
 assert.match(attractionSeo, /serializeJsonLd/)
 assert.doesNotMatch(attractionSeo, /FAQPage/)
 
-const attractionPage = await source("app/attractions/[slug]/page.tsx")
+const attractionPage = await source("app/atrakcja/[slug]/page.tsx")
 assert.match(attractionPage, /export async function generateMetadata/)
 assert.match(attractionPage, /alternates:/)
 assert.match(attractionPage, /canonical: canonicalUrl/)
@@ -95,9 +98,12 @@ assert.match(attractionPage, /<RelatedAttractions sections=\{seoLinking\.related
 assert.match(attractionPage, /aria-label="Okruszki"/)
 assert.doesNotMatch(attractionPage, /\.from\("properties"\)/)
 
+const legacyAttractionPage = await source("app/attractions/[slug]/page.tsx")
+assert.match(legacyAttractionPage, /permanentRedirect\(getAttractionCanonicalPath\(attraction\)\)/)
+
 const discoveryView = await source("components/attractions-view.tsx")
 assert.match(discoveryView, /function attractionHref\(attraction: Attraction\)/)
-assert.match(discoveryView, /generateAttractionSlug/)
+assert.match(discoveryView, /publicAttractionPath/)
 assert.match(discoveryView, /<Link href=\{attractionHref\(attraction\)\}/)
 
 const internalLinking = await source("lib/seo/internal-linking.ts")
@@ -169,6 +175,11 @@ assert.match(qualityMigration, /cardinality\(coalesce\(p\.images, array\[\]::tex
 assert.match(qualityMigration, /seo_eligible_count/)
 assert.match(qualityMigration, /security invoker/i)
 assert.match(qualityMigration, /grant execute on function public\.marketplace_seo_catalog_v1\(\) to service_role/i)
+
+const publicCodeMigration = await source("supabase/migrations/20260921183930_property_public_codes.sql")
+assert.match(publicCodeMigration, /marketplace_property_public_code/)
+assert.match(publicCodeMigration, /generated always as/)
+assert.match(publicCodeMigration, /properties_public_code_key/)
 
 const siteEntity = await source("lib/seo/site-entity.ts")
 assert.match(siteEntity, /"@type": "Organization"/)
