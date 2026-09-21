@@ -20,7 +20,6 @@ import AttractionGallery from "@/components/attraction-gallery"
 import { AttractionPageActions } from "@/components/attraction-page-actions"
 import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
-import { BottomNav } from "@/components/bottom-nav"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
 import { RelatedAttractions } from "@/components/seo/related-attractions"
@@ -214,7 +213,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
     || String(attraction.property_type || "atrakcja").replaceAll("_", " ")
 
   return (
-    <div className="min-h-screen bg-background pb-36 md:pb-0">
+    <div className="min-h-screen bg-background pb-28 md:pb-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="hidden md:block"><TopNav /></div>
 
@@ -384,7 +383,7 @@ export default async function AttractionPage({ params, searchParams }: Attractio
       </div>
 
       {(ticketingVenue || isPaintball) && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-white/95 p-3 shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
             <div>
               <p className="text-xs text-muted-foreground">{priceFrom !== null ? "Cena od" : "Cena"}</p>
@@ -395,7 +394,6 @@ export default async function AttractionPage({ params, searchParams }: Attractio
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }
