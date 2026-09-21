@@ -87,7 +87,15 @@ export function CategoryBar({
 
   const activeSlugs = (selectedCategory ?? searchParams.get("categories") ?? "").split(",").filter(Boolean)
   const activeGroup = groupedCategories.find(group => group.subcategories?.some(item => activeSlugs.includes(item.slug)))
-  const selectedCategoryData = activeGroup ?? (!useNavigation ? groupedCategories.find(group => group.slug === localSelectedCategory) : undefined)
+  const localSelectedGroup = groupedCategories.find(group => group.slug === localSelectedCategory)
+  const selectedCategoryData = localSelectedGroup ?? activeGroup
+
+  useEffect(() => {
+    if (!useNavigation || !localSelectedCategory) return
+    if (activeGroup?.slug === localSelectedCategory) {
+      setLocalSelectedCategory(null)
+    }
+  }, [activeGroup?.slug, localSelectedCategory, useNavigation])
 
   function navigate(slugs: string | null) {
     onCategorySelect?.(slugs)
@@ -101,10 +109,24 @@ export function CategoryBar({
     }
   }
   const handleCategorySelect = (slug: string | null) => {
-    setLocalSelectedCategory(slug)
+    const hadLocalSelection = Boolean(localSelectedCategory)
     setSelectedSubcategory(null)
-    const group = groupedCategories.find(item => item.slug === slug)
-    navigate(group?.subcategories?.map(item => item.slug).join(",") || null)
+
+    if (!slug) {
+      setLocalSelectedCategory(null)
+
+      if (!useNavigation || (!hadLocalSelection && activeGroup)) {
+        navigate(null)
+      }
+      return
+    }
+
+    setLocalSelectedCategory(slug)
+
+    if (!useNavigation) {
+      const group = groupedCategories.find(item => item.slug === slug)
+      navigate(group?.subcategories?.map(item => item.slug).join(",") || null)
+    }
   }
   const handleSubcategorySelect = (slug: string | null) => {
     setSelectedSubcategory(slug)
@@ -126,7 +148,7 @@ export function CategoryBar({
       {selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
         <ScrollableSubcategoryNav
           subcategories={selectedCategoryData.subcategories}
-          selectedSubcategory={activeSlugs.length === 1 ? activeSlugs[0] : selectedSubcategory}
+          selectedSubcategory={localSelectedCategory ? selectedSubcategory : (activeSlugs.length === 1 ? activeSlugs[0] : selectedSubcategory)}
           onSubcategorySelect={handleSubcategorySelect}
           onClose={handleCloseSubcategories}
           parentCategoryName={selectedCategoryData.name}
