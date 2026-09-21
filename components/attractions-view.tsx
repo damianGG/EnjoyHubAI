@@ -15,7 +15,7 @@ import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useUrlState } from "@/lib/search/url-state"
-import { generateAttractionSlug } from "@/lib/utils"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 type AvailableSlot = {
   date: string
@@ -108,12 +108,7 @@ const SEARCH_KEYS = [
 ]
 
 function attractionHref(attraction: Attraction) {
-  return `/attractions/${generateAttractionSlug({
-    city: attraction.city,
-    category: attraction.property_type,
-    title: attraction.title,
-    id: attraction.id,
-  })}`
+  return publicAttractionPath(attraction)
 }
 
 function localIsoDate(date: Date) {
