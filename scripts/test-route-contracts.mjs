@@ -218,6 +218,12 @@ assert.doesNotMatch(searchDialog, /absolute inset-x-0 bottom-0/)
 assert.match(searchDialog, /overflow-y-auto/)
 assert.match(searchDialog, /shrink-0 border-t/)
 
+const categoryBar = await source("components/category-bar.tsx")
+assert.match(categoryBar, /const localSelectedGroup =/)
+assert.match(categoryBar, /const selectedCategoryData = localSelectedGroup \?\? activeGroup/)
+assert.match(categoryBar, /if \(!useNavigation\) \{[\s\S]*navigate\(group\?\.subcategories/)
+assert.match(categoryBar, /handleSubcategorySelect[\s\S]*navigate\(slug \|\| selectedCategoryData/)
+
 const attractionMap = await source("components/attraction-map.tsx")
 assert.match(attractionMap, /Sprawdź ofertę/)
 assert.doesNotMatch(attractionMap, /price_per_night/)
