@@ -86,7 +86,6 @@ export const getPublicAttractionSeoRecord = cache(async (id: string): Promise<Pu
       max_guests,
       images,
       amenities,
-      opening_hours,
       venue_id,
       updated_at,
       users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
