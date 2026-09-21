@@ -12,7 +12,7 @@ function text(formData: FormData, key: string) {
 }
 
 export async function submitAttractionInterestAction(slug: string, attractionId: string, formData: FormData) {
-  const returnTo = `/attractions/${slug}`
+  const returnTo = `/atrakcja/${slug}`
   const email = text(formData, "email")
   const desiredDate = text(formData, "desired_date")
   const partySize = Number(text(formData, "party_size"))
