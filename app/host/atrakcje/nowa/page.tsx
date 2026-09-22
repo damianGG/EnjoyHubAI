@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic"
 type Membership = { organization_id: string; role: string }
 type Organization = { id: string; name: string }
 type Category = { id: string; name: string; slug: string; icon: string | null }
+type Subcategory = { id: string; parent_category_id: string; name: string; slug: string }
 
 export default async function NewOrganizerAttractionPage({ searchParams }: { searchParams: Promise<{ blad?: string }> }) {
   if (!isSupabaseConfigured) redirect("/host")
@@ -33,15 +34,22 @@ export default async function NewOrganizerAttractionPage({ searchParams }: { sea
   if (!memberships.length) redirect("/host/start")
 
   const organizationIds = [...new Set(memberships.map((item) => item.organization_id))]
-  const [organizationsResult, categoriesResult] = await Promise.all([
+  const [organizationsResult, categoriesResult, subcategoriesResult] = await Promise.all([
     supabase.from("organizations").select("id, name").in("id", organizationIds).eq("status", "active").order("name"),
-    supabase.from("categories").select("id, name, slug, icon").order("name"),
+    supabase.from("categories").select("id, name, slug, icon").eq("catalog_visible", true).order("name"),
+    supabase.from("subcategories").select("id, parent_category_id, name, slug").order("name"),
   ])
 
-  if (organizationsResult.error || categoriesResult.error) return <CenteredMessage>Nie udało się przygotować formularza atrakcji.</CenteredMessage>
+  if (organizationsResult.error || categoriesResult.error || subcategoriesResult.error) return <CenteredMessage>Nie udało się przygotować formularza atrakcji.</CenteredMessage>
   const organizations = (organizationsResult.data ?? []) as Organization[]
   const categories = (categoriesResult.data ?? []) as Category[]
-  if (!organizations.length || !categories.length) return <CenteredMessage>Brakuje aktywnej organizacji lub kategorii atrakcji.</CenteredMessage>
+  const subcategories = ((subcategoriesResult.data ?? []) as Subcategory[]).map((subcategory) => ({
+    id: subcategory.id,
+    parentCategoryId: subcategory.parent_category_id,
+    name: subcategory.name,
+    slug: subcategory.slug,
+  }))
+  if (!organizations.length || !categories.length || !subcategories.length) return <CenteredMessage>Brakuje aktywnej organizacji albo skonfigurowanego katalogu atrakcji.</CenteredMessage>
 
   return (
     <main className="min-h-screen bg-muted/20">
@@ -49,7 +57,7 @@ export default async function NewOrganizerAttractionPage({ searchParams }: { sea
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
         <div className="mb-8 max-w-3xl"><Badge variant="secondary">Nowa atrakcja</Badge><h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Dodaj kolejną atrakcję</h1><p className="mt-3 text-muted-foreground">Nie przechodzisz drugi raz onboardingu firmy. Wybierasz organizację, dodajesz atrakcję, pierwszą ofertę, rodzaj biletu i stałą regułę dostępności.</p></div>
         {query.blad ? <Alert variant="destructive" className="mb-6"><AlertTitle>Nie udało się dodać atrakcji</AlertTitle><AlertDescription>{query.blad === "dane" ? "Sprawdź wymagane pola, mapę, ofertę, cenę i godziny." : query.blad === "konfiguracja" ? "Brakuje aktualnej konfiguracji ticketingu. Odśwież po wdrożeniu najnowszej migracji." : "Sprawdź uprawnienia i spróbuj ponownie."}</AlertDescription></Alert> : null}
-        <AddAttractionForm organizations={organizations} categories={categories} userId={user.id} />
+        <AddAttractionForm organizations={organizations} categories={categories} subcategories={subcategories} userId={user.id} />
       </div>
     </main>
   )
