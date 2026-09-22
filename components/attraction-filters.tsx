@@ -292,7 +292,7 @@ export default function AttractionFilters({
           </DialogContent>
         </Dialog>
 
-        <Button onClick={onSearch} className="h-11 rounded-xl bg-[#ff5a1f] px-5 text-white hover:bg-[#e94f18]">
+        <Button onClick={() => onSearch()} className="h-11 rounded-xl bg-[#ff5a1f] px-5 text-white hover:bg-[#e94f18]">
           <Search className="mr-2 h-4 w-4" />Szukaj
         </Button>
       </div>
