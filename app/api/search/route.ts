@@ -269,7 +269,7 @@ export async function GET(request: Request) {
       : null
 
     const supabase = createAdminClient()
-    const { data, error } = await supabase.rpc("marketplace_search_attractions_v5", {
+    const { data, error } = await supabase.rpc("marketplace_search_attractions_v6", {
       p_query: safeQuery || null,
       p_category_slugs: categorySlugs.length > 0 ? categorySlugs : null,
       p_type_slugs: typeSlugs.length > 0 ? typeSlugs : null,
