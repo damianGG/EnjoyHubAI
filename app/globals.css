@@ -247,80 +247,38 @@
   }
 }
 
-.leaflet-container {
+
+.maplibregl-map {
   font-family: var(--font-sans);
   background: #f5f6f8;
 }
 
-.leaflet-control-zoom {
+.maplibregl-ctrl-group {
   border: none !important;
-  box-shadow: 0 7px 22px rgba(11, 18, 32, 0.14) !important;
   border-radius: 14px !important;
+  box-shadow: 0 7px 22px rgba(11, 18, 32, 0.14) !important;
   overflow: hidden;
 }
 
-.leaflet-control-zoom a {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  color: #0b1220 !important;
-  border: none !important;
+.maplibregl-ctrl-group button {
   width: 38px !important;
   height: 38px !important;
-  line-height: 38px !important;
-  font-size: 20px !important;
-  transition: all 0.2s ease !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #0b1220 !important;
 }
 
-.leaflet-control-zoom a:hover {
+.maplibregl-ctrl-group button:hover {
   background-color: #fff1eb !important;
-  color: #ff5a1f !important;
 }
 
-.leaflet-control-zoom a:first-child {
-  border-bottom: 1px solid #e6e8ec !important;
-}
-
-.leaflet-control-attribution {
+.maplibregl-ctrl-attrib {
+  margin: 0 8px 8px 0 !important;
+  border-radius: 7px !important;
   background-color: rgba(255, 255, 255, 0.82) !important;
   backdrop-filter: blur(4px);
   font-size: 10px !important;
-  padding: 2px 6px !important;
-  border-radius: 7px !important;
-  margin: 0 8px 8px 0 !important;
 }
 
-.custom-marker,
-.custom-leaflet-marker {
-  background: transparent !important;
-  border: none !important;
-}
-
-.leaflet-popup-content-wrapper {
-  border-radius: 18px !important;
-  box-shadow: 0 16px 42px rgba(11, 18, 32, 0.18) !important;
-  padding: 0 !important;
-}
-
-.leaflet-popup-tip {
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12) !important;
-}
-
-.custom-popup .leaflet-popup-content-wrapper {
-  border-radius: 18px !important;
-  padding: 0 !important;
-}
-
-.custom-popup .leaflet-popup-content {
-  margin: 0 !important;
-  border-radius: 18px !important;
-}
-
-.leaflet-popup-close-button {
-  color: #5e6673 !important;
-  font-size: 20px !important;
-  padding: 8px 8px 0 0 !important;
-  transition: color 0.2s ease !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: #0b1220 !important;
+.maplibregl-marker {
+  will-change: transform;
 }
