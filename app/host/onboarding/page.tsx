@@ -27,6 +27,7 @@ interface RawSubcategory {
   id: string
   parent_category_id: string
   name: string
+  slug: string
   icon: string | null
   description: string | null
 }
@@ -44,10 +45,11 @@ export default async function OrganizerOnboardingPage() {
     supabase
       .from("categories")
       .select("id, name, slug, icon, description")
+      .eq("catalog_visible", true)
       .order("name"),
     supabase
       .from("subcategories")
-      .select("id, parent_category_id, name, icon, description")
+      .select("id, parent_category_id, name, slug, icon, description")
       .order("name"),
     supabase
       .from("organization_memberships")
@@ -76,6 +78,7 @@ export default async function OrganizerOnboardingPage() {
     id: subcategory.id,
     parentCategoryId: subcategory.parent_category_id,
     name: subcategory.name,
+    slug: subcategory.slug,
     icon: subcategory.icon,
     description: subcategory.description,
   }))
