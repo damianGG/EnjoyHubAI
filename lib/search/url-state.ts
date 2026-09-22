@@ -106,5 +106,5 @@ export function useUrlState() {
     [searchParams, router, pathname],
   )
 
-  return { get, setMany }
+  return { get, setMany, searchString: searchParams.toString() }
 }
