@@ -38,7 +38,7 @@ export default async function SupplyLeadPage({ params, searchParams }: {
   const { supabase, role } = await requirePlatformStaff(supplyRoles, next)
   const [{ data, error }, categoriesResult, subcategoriesResult] = await Promise.all([
     supabase.rpc("platform_supply_get_lead", { p_lead_id: leadId }),
-    supabase.from("categories").select("id,name,slug").order("name"),
+    supabase.from("categories").select("id,name,slug").eq("catalog_visible", true).order("name"),
     supabase.from("subcategories").select("id,parent_category_id,name").order("name"),
   ])
   if (error || !data) notFound()

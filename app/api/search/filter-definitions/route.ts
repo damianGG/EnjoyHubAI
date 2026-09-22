@@ -57,6 +57,7 @@ export async function GET(request: Request) {
     .from("categories")
     .select("id,name,slug")
     .eq("slug", slug)
+    .eq("catalog_visible", true)
     .maybeSingle()
 
   if (categoryError) {
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
     resolvedCategory = parentCategory
   }
 
-  const [categorySupply, subcategorySupply, productDefinitions] = await Promise.all([
+  const [categorySupply, subcategorySupply, categoryProduct, subcategoryProduct] = await Promise.all([
     supabase
       .from("supply_attribute_definitions")
       .select("key,label,value_type,options,unit,sort_order")
@@ -117,12 +118,22 @@ export async function GET(request: Request) {
       .from("product_attribute_definitions")
       .select("key,label,value_type,options,unit,sort_order")
       .eq("category_id", resolvedCategory.id)
+      .is("subcategory_id", null)
       .eq("active", true)
       .eq("filterable", true)
       .order("sort_order"),
+    resolvedSubcategory
+      ? supabase
+          .from("product_attribute_definitions")
+          .select("key,label,value_type,options,unit,sort_order")
+          .eq("subcategory_id", resolvedSubcategory.id)
+          .eq("active", true)
+          .eq("filterable", true)
+          .order("sort_order")
+      : Promise.resolve({ data: [] as RawDefinition[], error: null }),
   ])
 
-  const firstError = categorySupply.error || subcategorySupply.error || productDefinitions.error
+  const firstError = categorySupply.error || subcategorySupply.error || categoryProduct.error || subcategoryProduct.error
   if (firstError) {
     console.error("[search filters] Failed to load definitions", firstError)
     return NextResponse.json({ error: "Unable to load filters" }, { status: 500 })
@@ -136,9 +147,17 @@ export async function GET(request: Request) {
     supplyByKey.set(definition.key, mapDefinition("supply", definition))
   }
 
+  const productByKey = new Map<string, FilterDefinition>()
+  for (const definition of (categoryProduct.data || []) as RawDefinition[]) {
+    productByKey.set(definition.key, mapDefinition("product", definition))
+  }
+  for (const definition of (subcategoryProduct.data || []) as RawDefinition[]) {
+    productByKey.set(definition.key, mapDefinition("product", definition))
+  }
+
   const definitions = [
     ...supplyByKey.values(),
-    ...((productDefinitions.data || []) as RawDefinition[]).map((definition) => mapDefinition("product", definition)),
+    ...productByKey.values(),
   ].sort((a, b) => a.scope.localeCompare(b.scope) || a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, "pl"))
 
   const response = NextResponse.json({

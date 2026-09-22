@@ -1,11 +1,12 @@
 "use client"
 
-import { CATEGORY_GROUPS } from "@/lib/category-groups"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+
 import { ScrollableCategoryNav, type Category } from "@/components/scrollable-category-nav"
 import { ScrollableSubcategoryNav } from "@/components/scrollable-subcategory-nav"
+import { buildCategoryCatalog } from "@/lib/categories/catalog"
+import { createClient } from "@/lib/supabase/client"
 
 interface CategoryBarProps {
   selectedCategory?: string
@@ -16,15 +17,6 @@ interface CategoryBarProps {
   compact?: boolean
 }
 
-const FALLBACK_CATEGORIES: Category[] = [
-  { id: "paintball", name: "Paintball", slug: "paintball", icon: "🎯", description: "Paintball i gry zespołowe" },
-  { id: "gokarty", name: "Gokarty", slug: "gokarty", icon: "🏎️", description: "Tory kartingowe" },
-  { id: "trampoliny", name: "Park trampolin", slug: "park-trampolin", icon: "🤸", description: "Parki trampolin" },
-  { id: "place-zabaw", name: "Place zabaw", slug: "plac-zabaw", icon: "🛝", description: "Sale i place zabaw" },
-  { id: "park-linowy", name: "Park linowy", slug: "park-linowy", icon: "🧗", description: "Parki linowe i przygoda" },
-  { id: "escape-room", name: "Escape room", slug: "escape-room", icon: "🗝️", description: "Pokoje zagadek" },
-]
-
 export function CategoryBar({
   selectedCategory,
   onCategorySelect,
@@ -34,60 +26,74 @@ export function CategoryBar({
   const router = useRouter()
   const searchParams = useSearchParams()
   const urlSearchString = searchParams.toString()
-  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES)
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [localSelectedCategory, setLocalSelectedCategory] = useState<string | null>(selectedCategory ?? null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadCategoriesWithSubcategories = async () => {
-      const s = createClient()
+    const loadCatalog = async () => {
+      const supabase = createClient()
+      const [categoriesResult, subcategoriesResult] = await Promise.all([
+        supabase
+          .from("categories")
+          .select("id,name,slug,icon,description,image_url,image_public_id")
+          .eq("catalog_visible", true)
+          .order("name"),
+        supabase
+          .from("subcategories")
+          .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
+          .order("name"),
+      ])
 
-      const { data: categoriesData, error: categoriesError } = await s
-        .from("categories")
-        .select("id,name,slug,icon,description,image_url,image_public_id")
-        .order("name")
-
-      if (categoriesError || !categoriesData?.length) {
-        setCategories(FALLBACK_CATEGORIES)
+      if (categoriesResult.error || subcategoriesResult.error) {
+        console.error("[category bar] Failed to load catalog", categoriesResult.error || subcategoriesResult.error)
+        setCategories([])
         setLoading(false)
         return
       }
 
-      const typedCategories = categoriesData as Category[]
-      const { data: subcategoriesData, error: subcategoriesError } = await s
-        .from("subcategories")
-        .select("id,parent_category_id,name,slug,icon,description,image_url,image_public_id")
-        .order("name")
+      const catalog = buildCategoryCatalog(
+        (categoriesResult.data ?? []).map((category) => ({
+          ...category,
+          icon: category.icon ?? "✨",
+          description: category.description ?? "",
+        })),
+        (subcategoriesResult.data ?? []).map((subcategory) => ({
+          ...subcategory,
+          icon: subcategory.icon ?? undefined,
+          description: subcategory.description ?? undefined,
+          image_url: subcategory.image_url ?? undefined,
+          image_public_id: subcategory.image_public_id ?? undefined,
+        })),
+      )
 
-      if (!subcategoriesError && subcategoriesData) {
-        const typedSubcategories = subcategoriesData as NonNullable<Category["subcategories"]>
-        setCategories(typedCategories.map((cat) => ({
-          ...cat,
-          subcategories: typedSubcategories.filter((sub) => sub.parent_category_id === cat.id),
-        })))
-      } else {
-        setCategories(typedCategories)
-      }
-
+      setCategories(catalog.map((category) => ({
+        ...category,
+        icon: category.icon ?? "✨",
+        description: category.description ?? "",
+        image_url: category.image_url ?? undefined,
+        image_public_id: category.image_public_id ?? undefined,
+        subcategories: category.subcategories.map((subcategory) => ({
+          ...subcategory,
+          icon: subcategory.icon ?? undefined,
+          description: subcategory.description ?? undefined,
+          image_url: subcategory.image_url ?? undefined,
+          image_public_id: subcategory.image_public_id ?? undefined,
+        })),
+      })))
       setLoading(false)
     }
 
-    void loadCategoriesWithSubcategories()
+    void loadCatalog()
   }, [])
 
-  const groupedCategories: Category[] = CATEGORY_GROUPS.map(group => ({
-    id: group.slug, slug: group.slug, name: group.name, icon: group.icon, description: "",
-    subcategories: categories.filter(category => (group.activities as readonly string[]).includes(category.slug))
-      .map(category => ({ ...category, parent_category_id: group.slug })),
-  })).filter(group => group.subcategories.length > 0)
-  const known = new Set<string>(CATEGORY_GROUPS.flatMap(group => [...group.activities]))
-  const other = categories.filter(category => !known.has(category.slug))
-  if (other.length) groupedCategories.push({ id: "inne", slug: "inne", name: "Inne atrakcje", icon: "✨", description: "", subcategories: other.map(category => ({ ...category, parent_category_id: "inne" })) })
-
   const activeSlugs = (selectedCategory ?? searchParams.get("categories") ?? "").split(",").filter(Boolean)
-  const activeGroup = groupedCategories.find(group => group.subcategories?.some(item => activeSlugs.includes(item.slug)))
-  const localSelectedGroup = groupedCategories.find(group => group.slug === localSelectedCategory)
+  const activeGroup = categories.find((category) =>
+    activeSlugs.includes(category.slug)
+    || category.subcategories?.some((subcategory) => activeSlugs.includes(subcategory.slug)),
+  )
+  const localSelectedGroup = categories.find((category) => category.slug === localSelectedCategory)
   const selectedCategoryData = localSelectedGroup ?? activeGroup
 
   useEffect(() => {
@@ -97,47 +103,41 @@ export function CategoryBar({
     }
   }, [activeGroup?.slug, localSelectedCategory, useNavigation])
 
-  function navigate(slugs: string | null) {
-    onCategorySelect?.(slugs)
-    if (useNavigation) {
-      const params = new URLSearchParams(urlSearchString)
-      if (slugs) params.set("categories", slugs)
-      else params.delete("categories")
-      params.delete("page")
-      params.delete("attrs")
-      router.push(`/attractions${params.size ? `?${params}` : ""}`)
-    }
+  function navigate(slug: string | null) {
+    onCategorySelect?.(slug)
+    if (!useNavigation) return
+
+    const params = new URLSearchParams(urlSearchString)
+    if (slug) params.set("categories", slug)
+    else params.delete("categories")
+    params.delete("page")
+    params.delete("attrs")
+    router.push(`/attractions${params.size ? `?${params}` : ""}`)
   }
+
   const handleCategorySelect = (slug: string | null) => {
     const hadLocalSelection = Boolean(localSelectedCategory)
     setSelectedSubcategory(null)
 
     if (!slug) {
       setLocalSelectedCategory(null)
-
-      if (!useNavigation || (!hadLocalSelection && activeGroup)) {
-        navigate(null)
-      }
+      if (!useNavigation || (!hadLocalSelection && activeGroup)) navigate(null)
       return
     }
 
     setLocalSelectedCategory(slug)
-
-    if (!useNavigation) {
-      const group = groupedCategories.find(item => item.slug === slug)
-      navigate(group?.subcategories?.map(item => item.slug).join(",") || null)
-    }
+    if (!useNavigation) navigate(slug)
   }
+
   const handleSubcategorySelect = (slug: string | null) => {
     setSelectedSubcategory(slug)
-    navigate(slug || selectedCategoryData?.subcategories?.map(item => item.slug).join(",") || null)
+    navigate(slug || selectedCategoryData?.slug || null)
   }
-  const handleCloseSubcategories = () => handleCategorySelect(null)
 
   return (
     <>
       <ScrollableCategoryNav
-        categories={groupedCategories}
+        categories={categories}
         selectedCategory={selectedCategoryData?.slug ?? null}
         onCategorySelect={handleCategorySelect}
         useNavigation={false}
@@ -148,9 +148,15 @@ export function CategoryBar({
       {selectedCategoryData?.subcategories && selectedCategoryData.subcategories.length > 0 && (
         <ScrollableSubcategoryNav
           subcategories={selectedCategoryData.subcategories}
-          selectedSubcategory={localSelectedCategory ? selectedSubcategory : (activeSlugs.length === 1 ? activeSlugs[0] : selectedSubcategory)}
+          selectedSubcategory={
+            localSelectedCategory
+              ? selectedSubcategory
+              : activeSlugs.length === 1 && activeSlugs[0] !== selectedCategoryData.slug
+                ? activeSlugs[0]
+                : selectedSubcategory
+          }
           onSubcategorySelect={handleSubcategorySelect}
-          onClose={handleCloseSubcategories}
+          onClose={() => handleCategorySelect(null)}
           parentCategoryName={selectedCategoryData.name}
           compact={compact}
         />

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 
 import { getPlatformContentApiClient } from "@/lib/platform-admin/api-access"
-import type { CategoryField } from "@/lib/types/dynamic-fields"
-import { REQUIRED_CATEGORY_FIELDS, validateCategoryFields } from "@/lib/validation/category-fields"
 
 type CategoryRow = {
   id: string
@@ -10,38 +8,61 @@ type CategoryRow = {
   slug: string
 }
 
+type SubcategoryRow = {
+  id: string
+  parent_category_id: string
+  name: string
+  slug: string
+}
+
+async function validateCatalog() {
+  const supabase = await getPlatformContentApiClient()
+  if (!supabase) return { unauthorized: true as const }
+
+  const [categoriesResult, subcategoriesResult] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id,name,slug")
+      .eq("catalog_visible", true)
+      .order("name"),
+    supabase
+      .from("subcategories")
+      .select("id,parent_category_id,name,slug")
+      .order("name"),
+  ])
+
+  const error = categoriesResult.error || subcategoriesResult.error
+  if (error) return { error: error.message }
+
+  const categories = (categoriesResult.data ?? []) as CategoryRow[]
+  const subcategories = (subcategoriesResult.data ?? []) as SubcategoryRow[]
+  const categoriesStatus = categories.map((category) => {
+    const activities = subcategories.filter((activity) => activity.parent_category_id === category.id)
+    return {
+      category_id: category.id,
+      category_name: category.name,
+      category_slug: category.slug,
+      activity_count: activities.length,
+      is_valid: activities.length > 0,
+      issue: activities.length > 0 ? null : "Kategoria nie ma żadnego rodzaju atrakcji.",
+    }
+  })
+
+  const invalidCategories = categoriesStatus.filter((category) => !category.is_valid)
+  return {
+    total_categories: categories.length,
+    valid_categories: categoriesStatus.length - invalidCategories.length,
+    invalid_categories: invalidCategories.length,
+    categories_with_issues: invalidCategories,
+  }
+}
+
 export async function GET() {
   try {
-    const supabase = await getPlatformContentApiClient()
-    if (!supabase) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-
-    const { data: categories, error: categoriesError } = await supabase.from("categories").select("id, name, slug")
-    if (categoriesError) return NextResponse.json({ error: categoriesError.message }, { status: 400 })
-
-    const { data: allFields, error: fieldsError } = await supabase.from("category_fields").select("*").order("field_order")
-    if (fieldsError) return NextResponse.json({ error: fieldsError.message }, { status: 400 })
-
-    const typedCategories = (categories ?? []) as CategoryRow[]
-    const typedFields = (allFields ?? []) as CategoryField[]
-    const categoriesStatus = typedCategories.map((category) => {
-      const categoryFields = typedFields.filter((field) => field.category_id === category.id)
-      const validation = validateCategoryFields(categoryFields)
-      return {
-        category_id: category.id,
-        category_name: category.name,
-        category_slug: category.slug,
-        is_valid: validation.isValid,
-        missing_fields: validation.missingFields,
-      }
-    })
-
-    const invalidCategories = categoriesStatus.filter((category) => !category.is_valid)
-    return NextResponse.json({
-      total_categories: typedCategories.length,
-      valid_categories: categoriesStatus.filter((category) => category.is_valid).length,
-      invalid_categories: invalidCategories.length,
-      categories_with_issues: invalidCategories,
-    })
+    const result = await validateCatalog()
+    if ("unauthorized" in result) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 })
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
@@ -49,52 +70,17 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const supabase = await getPlatformContentApiClient()
-    if (!supabase) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    const result = await validateCatalog()
+    if ("unauthorized" in result) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 })
 
-    const { data: categories, error: categoriesError } = await supabase.from("categories").select("id")
-    if (categoriesError) return NextResponse.json({ error: categoriesError.message }, { status: 400 })
-
-    const { data: allFields, error: fieldsError } = await supabase.from("category_fields").select("*")
-    if (fieldsError) return NextResponse.json({ error: fieldsError.message }, { status: 400 })
-
-    const typedCategories = (categories ?? []) as Array<{ id: string }>
-    const typedFields = (allFields ?? []) as CategoryField[]
-    let fixedCount = 0
-    const fieldsToCreate: Record<string, unknown>[] = []
-
-    for (const category of typedCategories) {
-      const categoryFields = typedFields.filter((field) => field.category_id === category.id)
-      const existingFieldNames = new Set(categoryFields.map((field) => field.field_name))
-      const maxOrder = categoryFields.length > 0
-        ? categoryFields.reduce((max: number, field) => Math.max(max, field.field_order), -1)
-        : -1
-
-      for (const [index, requiredField] of REQUIRED_CATEGORY_FIELDS.entries()) {
-        if (!existingFieldNames.has(requiredField.field_name)) {
-          fieldsToCreate.push({
-            category_id: category.id,
-            field_name: requiredField.field_name,
-            field_label: requiredField.field_label,
-            field_type: requiredField.field_type,
-            field_order: maxOrder + 1 + index,
-            is_required: requiredField.is_required,
-            validation_rules: requiredField.validation_rules,
-            options: [],
-            placeholder: requiredField.placeholder,
-            help_text: requiredField.help_text,
-          })
-          fixedCount++
-        }
-      }
-    }
-
-    if (fieldsToCreate.length > 0) {
-      const { error: insertError } = await supabase.from("category_fields").insert(fieldsToCreate)
-      if (insertError) return NextResponse.json({ error: insertError.message }, { status: 400 })
-    }
-
-    return NextResponse.json({ success: true, message: `Added ${fixedCount} missing required fields to categories`, fields_added: fixedCount })
+    return NextResponse.json({
+      ...result,
+      success: result.invalid_categories === 0,
+      message: result.invalid_categories === 0
+        ? "Katalog ma poprawną strukturę kategorii i rodzajów atrakcji."
+        : "Dodaj co najmniej jeden rodzaj atrakcji do każdej kategorii. EnjoyHub nie tworzy sztucznych podkategorii automatycznie.",
+    })
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

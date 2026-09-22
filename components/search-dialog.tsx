@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { ArrowLeft, CalendarDays, MapPin, Minus, Plus, Search, Sparkles, Users, WalletCards } from "lucide-react"
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { BrandLogo } from "@/components/brand-logo"
-import { CATEGORY_GROUPS } from "@/lib/category-groups"
+import { buildCategoryCatalog } from "@/lib/categories/catalog"
 import { useUrlState } from "@/lib/search/url-state"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { createClient } from "@/lib/supabase/client"
@@ -45,15 +45,6 @@ interface SearchDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
-
-const fallbackCategories: Category[] = [
-  { id: "paintball", name: "Paintball", slug: "paintball", icon: "🎯" },
-  { id: "gokarty", name: "Gokarty", slug: "go-karts", icon: "🏎️" },
-  { id: "trampoliny", name: "Park trampolin", slug: "park-trampolin", icon: "🤸" },
-  { id: "plac-zabaw", name: "Place zabaw", slug: "plac-zabaw", icon: "🛝" },
-  { id: "park-linowy", name: "Park linowy", slug: "park-linowy", icon: "🧗" },
-  { id: "escape-room", name: "Escape room", slug: "escape-room", icon: "🗝️" },
-]
 
 function normalizeSlug(value?: string | null) {
   return (value || "").trim().toLowerCase().replaceAll("_", "-")
@@ -119,7 +110,7 @@ function serializeDynamicFilters(categorySlug: string | null, values: Record<str
 
 export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnOpenChange }: SearchDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
-  const [categories, setCategories] = useState<Category[]>(fallbackCategories)
+  const [groupedCategories, setGroupedCategories] = useState<CategoryGroupView[]>([])
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [location, setLocation] = useState("")
@@ -138,36 +129,52 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const isOpen = isControlled ? controlledOpen : internalOpen
   const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setInternalOpen
 
-  const groupedCategories = useMemo<CategoryGroupView[]>(() => {
-    const groups: CategoryGroupView[] = CATEGORY_GROUPS.map((group) => ({
-      slug: group.slug,
-      name: group.name,
-      icon: group.icon,
-      categories: categories.filter((category) => (group.activities as readonly string[]).includes(category.slug)),
-    })).filter((group) => group.categories.length > 0)
-
-    const known = new Set<string>(CATEGORY_GROUPS.flatMap((group) => [...group.activities]))
-    const other = categories.filter((category) => !known.has(category.slug))
-    if (other.length) groups.push({ slug: "inne", name: "Inne", icon: "✨", categories: other })
-
-    return groups
-  }, [categories])
-
   const selectedGroupData = groupedCategories.find((group) => group.slug === selectedGroup) ?? null
-  const selectedActivitySlug = selectedCategories.length === 1 ? selectedCategories[0] : null
+  const selectedFilterSlug = selectedCategories.length === 1 ? selectedCategories[0] : null
+  const selectedActivitySlug = selectedFilterSlug && selectedGroupData?.categories.some((category) => category.slug === selectedFilterSlug)
+    ? selectedFilterSlug
+    : null
 
   useEffect(() => {
     const loadCategories = async () => {
       try {
         const supabase = createClient()
-        const { data } = await supabase
-          .from("categories")
-          .select("id,name,slug,icon,image_url")
-          .order("name")
+        const [categoriesResult, subcategoriesResult] = await Promise.all([
+          supabase
+            .from("categories")
+            .select("id,name,slug,icon,image_url")
+            .eq("catalog_visible", true)
+            .order("name"),
+          supabase
+            .from("subcategories")
+            .select("id,parent_category_id,name,slug,icon,image_url")
+            .order("name"),
+        ])
 
-        if (data?.length) setCategories(data)
-      } catch {
-        // Preview environments can continue with local fallbacks.
+        if (categoriesResult.error || subcategoriesResult.error) {
+          throw categoriesResult.error || subcategoriesResult.error
+        }
+
+        const catalog = buildCategoryCatalog(
+          categoriesResult.data ?? [],
+          subcategoriesResult.data ?? [],
+        )
+
+        setGroupedCategories(catalog.map((category) => ({
+          slug: category.slug,
+          name: category.name,
+          icon: category.icon || "✨",
+          categories: category.subcategories.map((subcategory) => ({
+            id: subcategory.id,
+            name: subcategory.name,
+            slug: subcategory.slug,
+            icon: subcategory.icon || undefined,
+            image_url: subcategory.image_url || undefined,
+          })),
+        })))
+      } catch (error) {
+        console.error("[search dialog] Failed to load category catalog", error)
+        setGroupedCategories([])
       }
     }
 
@@ -196,7 +203,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
 
     const matchingGroup = groupedCategories.find((group) => (
       currentCategories.length > 0
-      && currentCategories.every((slug) => group.categories.some((category) => category.slug === slug))
+      && currentCategories.every((slug) => (
+        slug === group.slug || group.categories.some((category) => category.slug === slug)
+      ))
     ))
     setSelectedGroup(matchingGroup?.slug ?? null)
 
@@ -205,7 +214,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   }, [isOpen, groupedCategories])
 
   useEffect(() => {
-    if (!isOpen || !selectedActivitySlug) {
+    if (!isOpen || !selectedFilterSlug) {
       setDynamicDefinitions([])
       setDynamicCategoryName(null)
       setDynamicDefinitionsLoading(false)
@@ -216,7 +225,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setDynamicDefinitionsLoading(true)
     setDynamicDefinitions([])
 
-    void fetch(`/api/search/filter-definitions?category=${encodeURIComponent(selectedActivitySlug)}`, {
+    void fetch(`/api/search/filter-definitions?category=${encodeURIComponent(selectedFilterSlug)}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -224,13 +233,13 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
         return response.json() as Promise<DynamicFilterDefinitionsPayload>
       })
       .then((payload) => {
-        setDynamicCategoryName(payload.category?.name || selectedActivitySlug)
+        setDynamicCategoryName(payload.category?.name || selectedFilterSlug)
         setDynamicDefinitions(Array.isArray(payload.definitions) ? payload.definitions : [])
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return
         console.error("[search dialog] Failed to load dynamic filters", error)
-        setDynamicCategoryName(selectedActivitySlug)
+        setDynamicCategoryName(selectedFilterSlug)
         setDynamicDefinitions([])
       })
       .finally(() => {
@@ -238,17 +247,17 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       })
 
     return () => controller.abort()
-  }, [isOpen, selectedActivitySlug])
+  }, [isOpen, selectedFilterSlug])
 
   const selectGroup = (group: CategoryGroupView) => {
     setSelectedGroup(group.slug)
-    setSelectedCategories(group.categories.map((category) => category.slug))
+    setSelectedCategories([group.slug])
     setDynamicFilters({})
   }
 
   const selectActivity = (slug: string | null) => {
     if (!selectedGroupData) return
-    setSelectedCategories(slug ? [slug] : selectedGroupData.categories.map((category) => category.slug))
+    setSelectedCategories([slug || selectedGroupData.slug])
     setDynamicFilters({})
   }
 
@@ -285,7 +294,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       age_max: normalizedMax || null,
       min_price: priceRange[0] > 0 ? String(priceRange[0]) : null,
       max_price: priceRange[1] < 500 ? String(priceRange[1]) : null,
-      attrs: serializeDynamicFilters(selectedActivitySlug, dynamicFilters),
+      attrs: serializeDynamicFilters(selectedFilterSlug, dynamicFilters),
     })
     setIsOpen(false)
   }

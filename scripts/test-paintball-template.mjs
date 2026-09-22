@@ -30,8 +30,18 @@ const href=publicAttractionPath({id,title:'Paintball & las',city:'Rzeszów',prop
 assert.ok(href.startsWith('/atrakcja/'))
 assert.ok(!href.includes(id))
 assert.equal(extractPublicAttractionCode(href.split('/').pop()),getAttractionPublicCode(id))
-const {categoryGroup}=load('lib/category-groups.ts')
-assert.equal(categoryGroup('paintball').slug,'adrenalina')
-assert.equal(categoryGroup('go-karts').slug,'adrenalina')
-assert.equal(categoryGroup('park-trampolin').slug,'dzieci-i-rodzina')
-console.log('Paintball template: content, missing data, taxonomy and map route PASS')
+const {buildCategoryCatalog}=load('lib/categories/catalog.ts')
+const catalog=buildCategoryCatalog(
+  [
+    {id:'adrenalina',name:'Adrenalina',slug:'adrenalina'},
+    {id:'rodzina',name:'Dzieci i rodzina',slug:'dzieci-i-rodzina'},
+  ],
+  [
+    {id:'paintball',parent_category_id:'adrenalina',name:'Paintball',slug:'paintball'},
+    {id:'gokarty',parent_category_id:'adrenalina',name:'Gokarty',slug:'go-karts'},
+    {id:'dmuchance',parent_category_id:'rodzina',name:'Dmuchańce',slug:'dmuchance'},
+  ],
+)
+assert.equal(catalog.find(item=>item.slug==='adrenalina').subcategories.map(item=>item.slug).join(','),'go-karts,paintball')
+assert.equal(catalog.find(item=>item.slug==='dzieci-i-rodzina').subcategories.map(item=>item.slug).join(','),'dmuchance')
+console.log('Paintball template: content, missing data, canonical taxonomy and map route PASS')

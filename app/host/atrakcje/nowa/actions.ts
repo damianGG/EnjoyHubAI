@@ -24,6 +24,7 @@ const schema = z.object({
   attractionName: z.string().trim().min(2).max(160),
   attractionDescription: z.string().trim().min(20).max(4000),
   categoryId: z.string().uuid(),
+  subcategoryId: z.string().uuid(),
   address: z.string().trim().min(3).max(240),
   postalCode: z.string().trim().max(20),
   city: z.string().trim().min(2).max(120),
@@ -73,6 +74,7 @@ export async function addOrganizerAttraction(formData: FormData) {
     attractionName: formData.get("attractionName"),
     attractionDescription: formData.get("attractionDescription"),
     categoryId: formData.get("categoryId"),
+    subcategoryId: formData.get("subcategoryId"),
     address: formData.get("address"),
     postalCode: formData.get("postalCode"),
     city: formData.get("city"),
@@ -102,12 +104,13 @@ export async function addOrganizerAttraction(formData: FormData) {
   generationEnd.setUTCDate(generationEnd.getUTCDate() + 90)
   const input = parsed.data
 
-  const { data, error } = await supabase.rpc("ticketing_add_organizer_attraction_v2", {
+  const { data, error } = await supabase.rpc("ticketing_add_organizer_attraction_v3", {
     p_organization_id: input.organizationId,
     p_attraction_name: input.attractionName,
     p_attraction_slug: slugify(input.attractionName),
     p_attraction_description: input.attractionDescription,
     p_category_id: input.categoryId,
+    p_subcategory_id: input.subcategoryId,
     p_address: input.address,
     p_postal_code: input.postalCode || null,
     p_city: input.city,
@@ -131,7 +134,7 @@ export async function addOrganizerAttraction(formData: FormData) {
 
   if (error || !data?.[0]) {
     console.error("Additional attraction creation failed", { code: error?.code, message: error?.message })
-    if (error?.code === "PGRST202" || error?.message?.includes("ticketing_add_organizer_attraction_v2")) {
+    if (error?.code === "PGRST202" || error?.message?.includes("ticketing_add_organizer_attraction_v3")) {
       redirect("/host/atrakcje/nowa?blad=konfiguracja")
     }
     redirect(error?.code === "42501" ? "/host/atrakcje/nowa?blad=uprawnienia" : "/host/atrakcje/nowa?blad=zapis")

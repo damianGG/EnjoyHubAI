@@ -457,15 +457,15 @@ export function OrganizerOnboardingLite({ categories, subcategories, userId, use
             <CardContent className="space-y-5">
               <Field label="Nazwa atrakcji" htmlFor="attractionNameVisible"><Input id="attractionNameVisible" maxLength={160} value={values.attractionName} onChange={(e) => setValue("attractionName", e.target.value)} placeholder="np. Paintball Rzeszów" autoFocus /></Field>
               <Field label="Krótki opis atrakcji" htmlFor="attractionDescriptionVisible" help={`${values.attractionDescription.length}/4000 znaków · minimum 20`}><Textarea id="attractionDescriptionVisible" maxLength={4000} value={values.attractionDescription} onChange={(e) => setValue("attractionDescription", e.target.value)} rows={4} placeholder="Co czeka klienta, dla kogo jest atrakcja i dlaczego warto przyjechać?" /></Field>
-<ActivityCategorySelect categories={categories} value={values.categoryId} onChange={setCategory} />
-              {availableSubcategories.length > 0 ? (
-                <Field label="Rodzaj atrakcji" htmlFor="subcategoryVisible" help="Dzięki temu klienci znajdą Cię w dokładnej podkategorii.">
-                  <select id="subcategoryVisible" value={values.subcategoryId} onChange={(e) => setValue("subcategoryId", e.target.value)} className="h-11 w-full rounded-md border bg-background px-3 text-sm">
-                    <option value="">Wybierz rodzaj atrakcji</option>
-                    {availableSubcategories.map((subcategory) => <option key={subcategory.id} value={subcategory.id}>{subcategory.icon ? `${subcategory.icon} ` : ""}{subcategory.name}</option>)}
-                  </select>
-                </Field>
-              ) : null}
+<ActivityCategorySelect
+                categories={categories}
+                subcategories={subcategories}
+                categoryValue={values.categoryId}
+                subcategoryValue={values.subcategoryId}
+                onCategoryChange={setCategory}
+                onSubcategoryChange={(id) => setValue("subcategoryId", id)}
+                required
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Ulica i numer" htmlFor="addressVisible" className="sm:col-span-2"><Input id="addressVisible" maxLength={240} value={values.address} onChange={(e) => setValue("address", e.target.value)} placeholder="ul. Przykładowa 10" /></Field>
                 <Field label="Kod pocztowy" htmlFor="postalCodeVisible"><Input id="postalCodeVisible" maxLength={20} value={values.postalCode} onChange={(e) => setValue("postalCode", e.target.value)} placeholder="35-001" /></Field>

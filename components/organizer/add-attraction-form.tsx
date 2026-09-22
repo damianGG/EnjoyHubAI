@@ -23,6 +23,7 @@ const LocationPicker = dynamic(() => import("@/components/location-picker"), {
 
 type Organization = { id: string; name: string }
 type Category = { id: string; name: string; slug: string; icon: string | null }
+type Subcategory = { id: string; parentCategoryId: string; name: string; slug: string }
 type ImageData = { url: string; publicId: string }
 
 const weekdayOptions = [
@@ -32,10 +33,12 @@ const weekdayOptions = [
 export function AddAttractionForm({
   organizations,
   categories,
+  subcategories,
   userId,
 }: {
   organizations: Organization[]
   categories: Category[]
+  subcategories: Subcategory[]
   userId: string
 }) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -63,7 +66,7 @@ export function AddAttractionForm({
           </Field>
           <Field label="Nazwa atrakcji"><Input name="attractionName" minLength={2} maxLength={160} required placeholder="np. Gokarty Rzeszów" /></Field>
           <Field label="Opis atrakcji"><Textarea name="attractionDescription" minLength={20} maxLength={4000} required rows={4} placeholder="Co czeka klienta i dla kogo jest atrakcja?" /></Field>
-<ActivityCategorySelect categories={categories} name="categoryId" required />
+<ActivityCategorySelect categories={categories} subcategories={subcategories} required />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ulica i numer" className="sm:col-span-2"><Input name="address" required minLength={3} maxLength={240} /></Field>
             <Field label="Kod pocztowy"><Input name="postalCode" maxLength={20} /></Field>

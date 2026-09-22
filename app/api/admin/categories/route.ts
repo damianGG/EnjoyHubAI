@@ -3,12 +3,11 @@ import { NextResponse } from "next/server"
 import { getPlatformContentApiClient } from "@/lib/platform-admin/api-access"
 import { createClient } from "@/lib/supabase/server"
 import type { Category } from "@/lib/types/dynamic-fields"
-import { REQUIRED_CATEGORY_FIELDS } from "@/lib/validation/category-fields"
 
 export async function GET() {
   try {
     const supabase = createClient()
-    const { data, error } = await supabase.from("categories").select("*").order("name")
+    const { data, error } = await supabase.from("categories").select("*").eq("catalog_visible", true).order("name")
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json(data)
   } catch {
@@ -27,25 +26,6 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase.from("categories").insert({ name, slug, icon, description, image_url, image_public_id }).select().single()
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-
-    const fieldsToCreate = REQUIRED_CATEGORY_FIELDS.map((field, index) => ({
-      category_id: data.id,
-      field_name: field.field_name,
-      field_label: field.field_label,
-      field_type: field.field_type,
-      field_order: index,
-      is_required: field.is_required,
-      validation_rules: field.validation_rules,
-      options: [],
-      placeholder: field.placeholder,
-      help_text: field.help_text,
-    }))
-
-    const { error: fieldsError } = await supabase.from("category_fields").insert(fieldsToCreate)
-    if (fieldsError) {
-      await supabase.from("categories").delete().eq("id", data.id)
-      return NextResponse.json({ error: `Failed to create required fields: ${fieldsError.message}` }, { status: 500 })
-    }
 
     return NextResponse.json(data, { status: 201 })
   } catch {

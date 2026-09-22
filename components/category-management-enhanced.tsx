@@ -379,8 +379,8 @@ export default function CategoryManagementEnhanced() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Kategorie i podkategorie</h2>
-          <p className="text-muted-foreground">Zarządzaj kategoriami rozrywki i ich podkategoriami</p>
+          <h2 className="text-2xl font-bold">Kategorie i rodzaje atrakcji</h2>
+          <p className="text-muted-foreground">Kategoria jest grupą nawigacyjną, a rodzaj atrakcji to konkretna aktywność widoczna w wyszukiwarce.</p>
         </div>
         <Button onClick={() => handleOpenCategoryDialog()}>
           <Plus className="h-4 w-4 mr-2" />
@@ -431,14 +431,14 @@ export default function CategoryManagementEnhanced() {
                 <CardContent className="pt-0">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-semibold">Podkategorie</h3>
+                      <h3 className="text-sm font-semibold">Rodzaje atrakcji</h3>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => handleOpenSubcategoryDialog(category.id)}
                       >
                         <Plus className="h-3 w-3 mr-1" />
-                        Dodaj podkategorię
+                        Dodaj rodzaj atrakcji
                       </Button>
                     </div>
                     
@@ -496,7 +496,7 @@ export default function CategoryManagementEnhanced() {
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        Brak podkategorii. Kliknij „Dodaj podkategorię", aby utworzyć.
+                        Brak rodzajów atrakcji. Dodaj co najmniej jeden, np. Paintball lub Gokarty.
                       </p>
                     )}
                   </div>
@@ -513,7 +513,7 @@ export default function CategoryManagementEnhanced() {
           <DialogHeader>
             <DialogTitle>{editingCategory ? "Edytuj kategorię" : "Utwórz kategorię"}</DialogTitle>
             <DialogDescription>
-              {editingCategory ? "Zaktualizuj dane kategorii" : "Dodaj nową kategorię rozrywki"}
+              {editingCategory ? "Zaktualizuj dane kategorii" : "Dodaj nową kategorię główną, która grupuje konkretne rodzaje atrakcji"}
             </DialogDescription>
           </DialogHeader>
 
@@ -524,7 +524,7 @@ export default function CategoryManagementEnhanced() {
                 id="category-name"
                 value={categoryFormData.name}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                placeholder="np. Gokarty"
+                placeholder="np. Adrenalina"
               />
             </div>
 

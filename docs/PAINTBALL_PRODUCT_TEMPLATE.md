@@ -2,7 +2,7 @@
 
 Kategorie główne (np. Adrenalina) grupują istniejące aktywności (Paintball, Gokarty). Mapowanie jest w `lib/category-groups.ts`; pokazujemy grupy mające aktywności w katalogu. Identyfikatory `categories`, dotychczasowe slugi, definicje pól i filtry pozostają zgodne. Starsze `subcategories` pozostają dodatkowym rodzajem aktywności w formularzach. Nie przenosimy rekordów między tabelami ani nie tworzymy duplikatów.
 
-W Supply i formularzach organizatora wybierz kategorię główną, potem aktywność. Nowe aktywności dodawane do bazy trafiają do grup zgodnie ze slugiem; nierozpoznane są w „Inne atrakcje”. Dodanie nowej grupy lub przypisania wymaga aktualizacji mapowania.
+W Supply i formularzach organizatora wybierz kategorię główną, potem aktywność. Nowe aktywności są przypisywane bezpośrednio do kategorii nadrzędnej w panelu administratora. Obiekt zapisuje jednocześnie `category_id` wrappera i `subcategory_id` konkretnej aktywności.
 
 Każda publiczna atrakcja o kategorii albo podkategorii `paintball` otrzymuje szablon na istniejącym adresie `/attractions/[slug]`. Mapa i canonical używają wspólnej funkcji adresu. Szablon nie zastępuje galerii, kontaktu, opinii, dojazdu ani aktualnego kalendarza.
 
@@ -18,4 +18,4 @@ Każda publiczna atrakcja o kategorii albo podkategorii `paintball` otrzymuje sz
 
 Najpierw zastosować `20260921051934_paintball_public_profile.sql`, potem wdrożyć kod. Bez RPC profil nadal otworzy się, ale szczegóły będą oznaczone jako niedostępne.
 
-`node scripts/test-paintball-template.mjs` sprawdza treść, braki danych, grupy i adresy z mapy. `npm run test:ticketing-db` zawiera test filtrowania sugestii i nieaktywnych profili. Testy nie zastępują sprawdzenia mapy i finalnej rezerwacji w przeglądarce po wdrożeniu.
+`node scripts/test-paintball-template.mjs` sprawdza treść, braki danych, hierarchię katalogu i adresy z mapy. `npm run test:ticketing-db` zawiera test filtrowania sugestii i nieaktywnych profili. Testy nie zastępują sprawdzenia mapy i finalnej rezerwacji w przeglądarce po wdrożeniu.
