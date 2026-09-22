@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { CheckCircle2, MapPin } from "lucide-react"
 
-import { getMapTilerKey, getMapTilerStyleUrl, loadMapLibre } from "@/lib/maps/maplibre"
+import { applyEnjoyHubMapTheme, getMapTilerKey, getMapTilerStyleUrl, loadMapLibre } from "@/lib/maps/maplibre"
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void
@@ -65,6 +65,7 @@ export default function LocationPicker({
         })
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left")
+        map.on("style.load", () => applyEnjoyHubMapTheme(map, "simple"))
 
         let marker = startsWithSelection
           ? new maplibregl.Marker({ draggable }).setLngLat([startLng, startLat]).addTo(map)
