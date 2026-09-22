@@ -358,8 +358,11 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   const [dynamicDefinitionsLoading, setDynamicDefinitionsLoading] = useState(false)
   const [filters, setFilters] = useState<FilterState>(() => {
     const initialDynamicCategory = selectedDynamicCategory(searchParams.get("categories"))
+    const initialBbox = searchParams.get("bbox") || ""
+    const initialQuery = searchParams.get("q") || ""
     return {
-      location: searchParams.get("q") || "",
+      location: initialBbox && !initialQuery ? "Moja lokalizacja" : initialQuery,
+      bbox: initialBbox,
       checkIn: "",
       checkOut: "",
       guests: searchParams.get("guests") || "1",
@@ -384,8 +387,11 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   )
 
   useEffect(() => {
+    const currentBbox = searchParams.get("bbox") || ""
+    const currentQuery = searchParams.get("q") || ""
     setFilters({
-      location: searchParams.get("q") || "",
+      location: currentBbox && !currentQuery ? "Moja lokalizacja" : currentQuery,
+      bbox: currentBbox,
       checkIn: "",
       checkOut: "",
       guests: searchParams.get("guests") || "1",
@@ -486,7 +492,8 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
     urlState.setMany({
       page: 1,
-      q: next.location?.trim() || null,
+      q: next.bbox ? null : next.location?.trim() || null,
+      bbox: next.bbox || null,
       guests: next.guests !== "1" ? next.guests : null,
       min_price: next.priceRange[0] > 0 ? next.priceRange[0] : null,
       max_price: next.priceRange[1] < 500 ? next.priceRange[1] : null,
@@ -551,7 +558,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
         <AttractionFilters
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onSearch={() => applyFilters(filters)}
+          onSearch={(next) => applyFilters(next ?? filters)}
           onClearFilters={clearFilters}
           totalResults={totalResults}
           dynamicCategoryName={dynamicCategoryName}
