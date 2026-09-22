@@ -7,6 +7,7 @@ import { CalendarDays, ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, 
 
 import { Button } from "@/components/ui/button"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
+import { getMapTilerKey, getMapTilerStyleUrl, loadMapLibre } from "@/lib/maps/maplibre"
 import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 type AvailableSlot = {
@@ -43,6 +44,11 @@ interface AttractionMapProps {
   onAttractionSelect?: (attractionId: string | null) => void
   className?: string
   immersiveMobile?: boolean
+}
+
+type MarkerRecord = {
+  marker: any
+  element: HTMLDivElement
 }
 
 const CITY_COORDINATES: Record<string, [number, number]> = {
@@ -177,47 +183,60 @@ export default function AttractionMap({
 }: AttractionMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
-  const leafletRef = useRef<any>(null)
-  const markerLayerRef = useRef<any>(null)
-  const markersByIdRef = useRef<Map<string, any>>(new Map())
+  const mapLibreRef = useRef<any>(null)
+  const markersByIdRef = useRef<Map<string, MarkerRecord>>(new Map())
   const fittedLocationsRef = useRef<string | null>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
 
   const [map, setMap] = useState<any>(null)
+  const [mapError, setMapError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
   const [popupImageIndex, setPopupImageIndex] = useState(0)
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return
+
+    const apiKey = getMapTilerKey()
+    if (!apiKey) {
+      setMapError("Brak klucza MapTiler. Dodaj NEXT_PUBLIC_MAPTILER_KEY.")
+      return
+    }
+
     let disposed = false
 
     void (async () => {
-      const L = (await import("leaflet")).default
-      if (disposed || !mapRef.current) return
-      leafletRef.current = L
+      try {
+        const maplibregl = await loadMapLibre()
+        if (disposed || !mapRef.current) return
+        mapLibreRef.current = maplibregl
 
-      const instance = L.map(mapRef.current, {
-        center: immersiveMobile ? [52.2297, 21.0122] : [52.0693, 19.4803],
-        zoom: immersiveMobile ? 11 : 6,
-        zoomControl: false,
-        attributionControl: true,
-      })
+        const instance = new maplibregl.Map({
+          container: mapRef.current,
+          style: getMapTilerStyleUrl(apiKey),
+          center: immersiveMobile ? [21.0122, 52.2297] : [19.4803, 52.0693],
+          zoom: immersiveMobile ? 11 : 5.5,
+          attributionControl: true,
+        })
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      }).addTo(instance)
+        instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left")
+        instance.on("error", (event: any) => {
+          if (event?.error?.message) console.error("MapTiler map error:", event.error.message)
+        })
 
-      L.control.zoom({ position: "topleft" }).addTo(instance)
-      markerLayerRef.current = L.layerGroup().addTo(instance)
-      mapInstanceRef.current = instance
-      setMap(instance)
+        mapInstanceRef.current = instance
+        setMap(instance)
+      } catch (error) {
+        if (!disposed) {
+          console.error("Unable to initialize MapLibre:", error)
+          setMapError("Nie udało się uruchomić mapy. Sprawdź klucz MapTiler.")
+        }
+      }
     })()
 
     return () => {
       disposed = true
+      markersByIdRef.current.forEach(({ marker }) => marker.remove())
       markersByIdRef.current.clear()
       mapInstanceRef.current?.remove()
       mapInstanceRef.current = null
@@ -226,70 +245,81 @@ export default function AttractionMap({
   }, [immersiveMobile])
 
   useEffect(() => {
-    if (!map || !leafletRef.current || !markerLayerRef.current) return
-    const L = leafletRef.current
-    markerLayerRef.current.clearLayers()
+    const maplibregl = mapLibreRef.current
+    if (!map || !maplibregl) return
+
+    markersByIdRef.current.forEach(({ marker }) => marker.remove())
     markersByIdRef.current.clear()
+
     if (!attractions.length) {
       fittedLocationsRef.current = null
       return
     }
 
-    const bounds = L.latLngBounds([])
+    const bounds = new maplibregl.LngLatBounds()
     const locations: string[] = []
 
     attractions.forEach((attraction, index) => {
-      const coordinates: [number, number] =
+      const [lat, lng] =
         typeof attraction.latitude === "number" && typeof attraction.longitude === "number"
           ? [attraction.latitude, attraction.longitude]
           : getFallbackCoordinates(attraction)
 
-      bounds.extend(coordinates)
-      locations.push(JSON.stringify([attraction.id, ...coordinates]))
-      const icon = L.divIcon({
-        html: markerHtml(attraction, index),
-        className: "eh-object-marker-wrapper",
-        iconSize: [60, 64],
-        iconAnchor: [30, 61],
-        tooltipAnchor: [0, -48],
-      })
-      const marker = L.marker(coordinates, { icon, riseOnHover: true })
-      marker.bindTooltip(attraction.title, {
-        direction: "top",
-        offset: [0, -8],
-        opacity: 0.96,
-        className: "eh-object-marker-tooltip",
-      })
-      marker.on("click", () => {
+      bounds.extend([lng, lat])
+      locations.push(JSON.stringify([attraction.id, lat, lng]))
+
+      const element = document.createElement("div")
+      element.className = "eh-object-marker-wrapper"
+      element.innerHTML = markerHtml(attraction, index)
+      element.title = attraction.title
+      element.setAttribute("role", "button")
+      element.setAttribute("aria-label", attraction.title)
+      element.tabIndex = 0
+
+      const selectAttraction = () => {
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
         setPopupImageIndex(0)
+      }
+
+      element.addEventListener("click", selectAttraction)
+      element.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          selectAttraction()
+        }
       })
-      marker.addTo(markerLayerRef.current)
-      markersByIdRef.current.set(attraction.id, marker)
+
+      const marker = new maplibregl.Marker({
+        element,
+        anchor: "bottom",
+      })
+        .setLngLat([lng, lat])
+        .addTo(map)
+
+      markersByIdRef.current.set(attraction.id, { marker, element })
     })
 
-    // Selection, sorting and refreshed object references must preserve the user's view.
-    // Only fit when the actual set of attractions or their coordinates changes.
     const locationsKey = JSON.stringify(locations.sort())
-    if (bounds.isValid() && fittedLocationsRef.current !== locationsKey) {
+    if (!bounds.isEmpty() && fittedLocationsRef.current !== locationsKey) {
       map.fitBounds(bounds, {
-        padding: immersiveMobile ? [46, 46] : [60, 60],
+        padding: immersiveMobile ? 46 : 60,
         maxZoom: attractions.length === 1 ? 14 : 13,
+        duration: 420,
       })
       fittedLocationsRef.current = locationsKey
     }
   }, [attractions, map, onAttractionSelect, immersiveMobile])
 
   useEffect(() => {
-    markersByIdRef.current.forEach((marker, id) => {
-      const root = marker.getElement()?.querySelector(".eh-object-marker") as HTMLElement | null
+    markersByIdRef.current.forEach(({ element }, id) => {
+      const root = element.querySelector(".eh-object-marker") as HTMLElement | null
       if (!root) return
       const selected = id === selectedAttraction
       root.classList.toggle("eh-object-marker--selected", selected)
-      marker.setZIndexOffset(selected ? 1000 : 0)
+      element.style.zIndex = selected ? "10" : ""
     })
-  }, [selectedAttraction, attractions, map, onAttractionSelect, immersiveMobile])
+  }, [selectedAttraction, attractions, map])
 
   useEffect(() => {
     if (popupAttraction && !attractions.some((item) => item.id === popupAttraction.id)) setPopupAttraction(null)
@@ -308,7 +338,7 @@ export default function AttractionMap({
 
   useEffect(() => {
     if (!map) return
-    const timer = window.setTimeout(() => map.invalidateSize(), 160)
+    const timer = window.setTimeout(() => map.resize(), 160)
     return () => window.clearTimeout(timer)
   }, [isFullscreen, map])
 
@@ -346,6 +376,16 @@ export default function AttractionMap({
         } ${className}`}
       >
         <div ref={mapRef} className={`h-full w-full ${immersiveMobile ? "min-h-0" : "min-h-80"}`} />
+
+        {mapError && (
+          <div className="absolute inset-0 z-[850] grid place-items-center bg-muted px-6 text-center">
+            <div>
+              <MapPin className="mx-auto mb-2 h-7 w-7 text-primary" />
+              <p className="font-bold text-foreground">Mapa jest gotowa do konfiguracji</p>
+              <p className="mt-1 text-xs text-muted-foreground">{mapError}</p>
+            </div>
+          </div>
+        )}
 
         <div className="absolute right-3 top-3 z-[900]">
           <Button
@@ -483,7 +523,7 @@ export default function AttractionMap({
         <style>{`
           .eh-map-gallery::-webkit-scrollbar { display: none; }
           .eh-map-gallery { scrollbar-width: none; }
-          .eh-object-marker-wrapper { background: transparent !important; border: 0 !important; overflow: visible !important; }
+          .eh-object-marker-wrapper { background: transparent !important; border: 0 !important; overflow: visible !important; width:60px; height:64px; }
           .eh-object-marker { --eh-orange:#ff5a1f; position:relative; display:grid; height:64px; width:60px; place-items:start center; transform-origin:50% 92%; animation:eh-marker-enter .28s cubic-bezier(.2,.85,.32,1.2) both; animation-delay:var(--eh-enter-delay,0ms); cursor:pointer; }
           .eh-object-marker__halo { position:absolute; top:-4px; left:2px; width:56px; height:56px; border-radius:20px; background:rgba(255,90,31,.22); opacity:0; pointer-events:none; }
           .eh-object-marker__bubble { position:relative; z-index:2; display:grid; width:52px; height:52px; place-items:center; overflow:hidden; border:2px solid rgba(11,18,32,.12); border-radius:18px; background:rgba(255,255,255,.98); box-shadow:0 7px 20px rgba(11,18,32,.20),0 2px 5px rgba(11,18,32,.10); transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
@@ -494,11 +534,6 @@ export default function AttractionMap({
           .eh-object-marker:hover .eh-object-marker__bubble { transform:translateY(-3px) scale(1.07); border-color:rgba(255,90,31,.45); }
           .eh-object-marker--selected .eh-object-marker__halo { animation:eh-marker-selected-pulse 1.8s ease-out infinite; }
           .eh-object-marker--selected .eh-object-marker__bubble { transform:translateY(-4px) scale(1.1); border-color:var(--eh-orange); box-shadow:0 12px 30px rgba(255,90,31,.28); }
-          .eh-object-marker-tooltip { border:0 !important; border-radius:12px !important; background:rgba(11,18,32,.96) !important; color:white !important; box-shadow:0 8px 24px rgba(11,18,32,.18) !important; padding:7px 10px !important; font-size:11px !important; font-weight:700 !important; }
-          .eh-object-marker-tooltip::before { display:none !important; }
-          .leaflet-control-zoom { border:0 !important; box-shadow:0 5px 18px rgba(11,18,32,.18) !important; margin-top:12px !important; margin-left:12px !important; }
-          .leaflet-control-zoom a { color:#0b1220 !important; border:0 !important; }
-          .leaflet-control-attribution { font-size:8px !important; }
           @keyframes eh-marker-enter { from { opacity:0; transform:translateY(10px) scale(.76); } to { opacity:1; transform:translateY(0) scale(1); } }
           @keyframes eh-marker-selected-pulse { 0% { opacity:.38; transform:scale(.84); } 60% { opacity:.04; transform:scale(1.22); } 100% { opacity:0; transform:scale(1.28); } }
           @media (prefers-reduced-motion: reduce) { .eh-object-marker,.eh-object-marker--selected .eh-object-marker__halo { animation:none !important; } .eh-object-marker__bubble { transition:none !important; } }
@@ -506,7 +541,6 @@ export default function AttractionMap({
       </div>
 
       {isFullscreen && <div className="fixed inset-0 z-[1300] bg-[#0b1220]/45" onClick={() => setIsFullscreen(false)} />}
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     </>
   )
 }
