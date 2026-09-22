@@ -207,7 +207,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
         <AttractionPageActions compact />
       </div>
 
-      <div className="mx-auto w-full max-w-[1320px] md:px-4 md:pt-5">
+      <div className="mx-auto w-full max-w-[1360px] md:px-5 md:pt-5">
         <div className="hidden items-center justify-between gap-5 pb-4 md:flex">
           <nav aria-label="Okruszki" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
             <Link href="/" className="shrink-0 hover:text-foreground">EnjoyHub</Link>
@@ -231,71 +231,102 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           <AttractionPageActions />
         </div>
 
-        <AttractionGallery images={attraction.images || []} title={attraction.title} />
+        <div className="md:overflow-hidden md:rounded-[28px]">
+          <AttractionGallery images={attraction.images || []} title={attraction.title} />
+        </div>
 
-        <div className="relative z-10 -mt-5 rounded-t-[28px] bg-background px-4 pt-6 md:mt-0 md:rounded-none md:px-0 md:pt-7">
-          <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
-            <div className="space-y-7">
-              <header className="space-y-3 border-b pb-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{attraction.title}</h1>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                      {roundedRating > 0 && (
-                        <span className="flex items-center gap-1 font-semibold"><Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />{roundedRating}<span className="font-normal text-muted-foreground">({reviewCount} opinii)</span></span>
-                      )}
-                      <a href="#location" className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"><MapPin className="h-4 w-4" />{locationLabel || attraction.city}</a>
-                    </div>
+        <div className="relative z-10 -mt-3 rounded-t-[26px] bg-background px-4 pt-6 md:mt-0 md:rounded-none md:px-0 md:pt-8">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+            <div className="space-y-9">
+              <header className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{categoryLabel}</p>
+                  <h1 className="mt-2 text-[2rem] font-semibold leading-[1.08] tracking-[-0.04em] sm:text-4xl">{attraction.title}</h1>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                    {roundedRating > 0 && (
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        <Star className="h-4 w-4 fill-[#ff9f0a] text-[#ff9f0a]" />
+                        {roundedRating}
+                        <span className="font-normal text-muted-foreground">({reviewCount} opinii)</span>
+                      </span>
+                    )}
+                    <a href="#location" className="flex items-center gap-1.5 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+                      <MapPin className="h-4 w-4" />
+                      {locationLabel || attraction.city}
+                    </a>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                   {seoLinking.category ? (
                     <Link href={seoLinking.category.path} aria-label={`${seoLinking.category.name} w ${seoLinking.city?.name || attraction.city}`}>
-                      <Badge variant="secondary" className="rounded-full px-3 py-1.5 transition hover:bg-secondary/70">{categoryLabel}</Badge>
+                      <Badge variant="secondary" className="rounded-full px-3 py-1.5 font-medium transition hover:bg-secondary/70">Zobacz podobne</Badge>
                     </Link>
-                  ) : (
-                    <Badge variant="secondary" className="rounded-full px-3 py-1.5">{categoryLabel}</Badge>
+                  ) : null}
+                  {!isPaintball && (attraction.max_guests || 0) > 0 && (
+                    <Badge variant="outline" className="rounded-full border-[#0b1220]/10 px-3 py-1.5 font-medium">
+                      <Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób
+                    </Badge>
                   )}
-                  {!isPaintball && (attraction.max_guests || 0) > 0 && <Badge variant="outline" className="rounded-full px-3 py-1.5"><Users className="mr-1.5 h-3.5 w-3.5" />do {attraction.max_guests} osób</Badge>}
-                  {ticketingVenue && <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800"><Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online</Badge>}
+                  {ticketingVenue && (
+                    <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-800">
+                      <Ticket className="mr-1.5 h-3.5 w-3.5" />Rezerwacja online
+                    </Badge>
+                  )}
                 </div>
               </header>
 
-              <section className="space-y-4 border-b pb-7">
-                <h2 className="text-xl font-bold">O atrakcji</h2>
+              <section className="max-w-3xl space-y-3">
+                <h2 className="text-xl font-semibold tracking-tight">O atrakcji</h2>
                 <p className="whitespace-pre-line text-[15px] leading-7 text-muted-foreground sm:text-base">{attraction.description}</p>
               </section>
 
-              {isPaintball ? <PaintballProfile data={paintballData} online={Boolean(ticketingVenue)} /> : <section className="grid grid-cols-3 gap-3 border-b pb-7">
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><Users className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Dla {attraction.max_guests || "grup"} osób</p></div>
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><CalendarDays className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Wybierz termin</p></div>
-                <div className="rounded-2xl bg-muted/60 p-3 text-center sm:p-4"><ShieldCheck className="mx-auto mb-2 h-5 w-5 text-[#ff5a1f]" /><p className="text-xs font-medium sm:text-sm">Bezpieczna rezerwacja</p></div>
-              </section>
-
-              }
+              {isPaintball ? (
+                <PaintballProfile data={paintballData} online={Boolean(ticketingVenue)} />
+              ) : (
+                <section className="grid grid-cols-3 border-y border-[#0b1220]/[0.07] py-5">
+                  <div className="px-2 first:pl-0 sm:px-4 sm:first:pl-0">
+                    <Users className="mb-2 h-5 w-5 text-primary" />
+                    <p className="text-xs leading-5 text-muted-foreground sm:text-sm">Dla {attraction.max_guests || "różnych"} osób</p>
+                  </div>
+                  <div className="border-l border-[#0b1220]/[0.07] px-3 sm:px-4">
+                    <CalendarDays className="mb-2 h-5 w-5 text-primary" />
+                    <p className="text-xs leading-5 text-muted-foreground sm:text-sm">Wybierz dogodny termin</p>
+                  </div>
+                  <div className="border-l border-[#0b1220]/[0.07] px-3 sm:px-4">
+                    <ShieldCheck className="mb-2 h-5 w-5 text-primary" />
+                    <p className="text-xs leading-5 text-muted-foreground sm:text-sm">Jasne warunki rezerwacji</p>
+                  </div>
+                </section>
+              )}
 
               {(attraction.amenities?.length || 0) > 0 && (
-                <section className="space-y-4 border-b pb-7">
-                  <h2 className="text-xl font-bold">Na miejscu</h2>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {(attraction.amenities || []).slice(0, 9).map((amenity) => <div key={amenity} className="rounded-xl border px-3 py-3 text-sm">{amenity}</div>)}
+                <section className="space-y-4">
+                  <h2 className="text-xl font-semibold tracking-tight">Na miejscu</h2>
+                  <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                    {(attraction.amenities || []).slice(0, 10).map((amenity) => (
+                      <div key={amenity} className="flex items-center gap-3 text-sm">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        <span>{amenity}</span>
+                      </div>
+                    ))}
                   </div>
                 </section>
               )}
             </div>
 
             <aside id="booking" className="scroll-mt-24 lg:row-span-2">
-              <div className="space-y-4 lg:sticky lg:top-5">
+              <div className="space-y-4 lg:sticky lg:top-24">
                 {ticketingVenue ? (
                   <div className="space-y-3">
                     <MarketplaceCalendar propertyId={attraction.id} />
                     <form action={startAttractionConversation}>
                       <input type="hidden" name="attractionId" value={attraction.id} />
                       <input type="hidden" name="returnTo" value={canonicalPath} />
-                      <Button type="submit" variant="outline" className="w-full rounded-xl">
+                      <Button type="submit" variant="outline" className="h-12 w-full rounded-2xl border-[#0b1220]/10 font-semibold">
                         <MessageCircle className="mr-2 h-4 w-4" />
-                        Masz pytanie? Napisz do organizatora
+                        Napisz do organizatora
                       </Button>
                     </form>
                   </div>
@@ -322,10 +353,13 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
               </div>
             </aside>
 
-            <div className="space-y-8">
-              <section id="location" className="scroll-mt-24 space-y-4 border-t pt-7 lg:border-t-0 lg:pt-0">
-                <div><h2 className="text-xl font-bold">Gdzie to jest</h2><p className="mt-1 text-sm text-muted-foreground">{[attraction.address, attraction.city, attraction.country].filter(Boolean).join(", ")}</p></div>
-                <div className="h-72 overflow-hidden rounded-3xl sm:h-96"><AttractionMap attractions={[mapAttraction]} className="h-full border-0 shadow-none" /></div>
+            <div className="space-y-10">
+              <section id="location" className="scroll-mt-24 space-y-4 border-t border-[#0b1220]/[0.07] pt-8 lg:border-t-0 lg:pt-0">
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight">Lokalizacja</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{[attraction.address, attraction.city, attraction.country].filter(Boolean).join(", ")}</p>
+                </div>
+                <div className="h-72 overflow-hidden rounded-[24px] sm:h-96"><AttractionMap attractions={[mapAttraction]} className="h-full border-0 shadow-none" /></div>
               </section>
 
               <ReviewsList reviews={attraction.reviews || []} avgRating={roundedRating} />
@@ -353,7 +387,7 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
       </div>
 
       {(ticketingVenue || isPaintball) && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#0b1220]/[0.08] bg-white/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(11,18,32,0.08)] backdrop-blur md:hidden">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
             <div>
               <p className="text-xs text-muted-foreground">{priceFrom !== null ? "Cena od" : "Cena"}</p>
