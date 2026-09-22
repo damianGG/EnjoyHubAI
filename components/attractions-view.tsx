@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation"
 import { CalendarDays, List, Loader2, Map, MapPin, SearchX, Sparkles, Star, Users } from "lucide-react"
 
 import AttractionFilters, {
-  createDefaultFilterState,
   type DynamicFilterCondition,
   type DynamicFilterDefinition,
   type FilterState,
