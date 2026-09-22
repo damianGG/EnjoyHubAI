@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { BrandLogo } from "@/components/brand-logo"
 import { buildCategoryCatalog } from "@/lib/categories/catalog"
-import { useUrlState } from "@/lib/search/url-state"
+import { marketplaceSearchResetUpdates, useUrlState } from "@/lib/search/url-state"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -123,7 +123,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [dynamicCategoryName, setDynamicCategoryName] = useState<string | null>(null)
   const [dynamicDefinitionsLoading, setDynamicDefinitionsLoading] = useState(false)
   const [dynamicFilters, setDynamicFilters] = useState<Record<string, DynamicFilterCondition>>({})
-  const urlState = useUrlState()
+  const { get: getUrlParam, setMany: setUrlParams } = useUrlState()
 
   const isControlled = controlledOpen !== undefined
   const isOpen = isControlled ? controlledOpen : internalOpen
@@ -184,34 +184,42 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   useEffect(() => {
     if (!isOpen) return
 
-    const currentCategories = csvParam(urlState.get("categories"))
+    const currentCategories = csvParam(getUrlParam("categories"))
     setSelectedCategories(currentCategories)
-    setLocation(urlState.get("q") || "")
-    setDate(urlState.get("date") || "")
-    setAgeMin(urlState.get("age_min") || "")
-    setAgeMax(urlState.get("age_max") || "")
+    setLocation(getUrlParam("q") || "")
+    setDate(getUrlParam("date") || "")
+    setAgeMin(getUrlParam("age_min") || "")
+    setAgeMax(getUrlParam("age_max") || "")
 
-    const minPrice = Number.parseInt(urlState.get("min_price") || "0", 10)
-    const maxPrice = Number.parseInt(urlState.get("max_price") || "500", 10)
+    const minPrice = Number.parseInt(getUrlParam("min_price") || "0", 10)
+    const maxPrice = Number.parseInt(getUrlParam("max_price") || "500", 10)
     setPriceRange([
       Number.isFinite(minPrice) ? Math.max(0, Math.min(500, minPrice)) : 0,
       Number.isFinite(maxPrice) ? Math.max(0, Math.min(500, maxPrice)) : 500,
     ])
 
-    const currentGuests = Number.parseInt(urlState.get("guests") || "1", 10)
+    const currentGuests = Number.parseInt(getUrlParam("guests") || "1", 10)
     setGuests(Number.isFinite(currentGuests) && currentGuests > 0 ? currentGuests : 1)
 
+    const currentActivity = currentCategories.length === 1 ? currentCategories[0] : null
+    setDynamicFilters(parseDynamicFilters(getUrlParam("attrs"), currentActivity))
+  }, [getUrlParam, isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (selectedCategories.length === 0) {
+      setSelectedGroup(null)
+      return
+    }
+
     const matchingGroup = groupedCategories.find((group) => (
-      currentCategories.length > 0
-      && currentCategories.every((slug) => (
+      selectedCategories.every((slug) => (
         slug === group.slug || group.categories.some((category) => category.slug === slug)
       ))
     ))
     setSelectedGroup(matchingGroup?.slug ?? null)
-
-    const currentActivity = currentCategories.length === 1 ? currentCategories[0] : null
-    setDynamicFilters(parseDynamicFilters(urlState.get("attrs"), currentActivity))
-  }, [isOpen, groupedCategories])
+  }, [groupedCategories, isOpen, selectedCategories])
 
   useEffect(() => {
     if (!isOpen || !selectedFilterSlug) {
@@ -271,11 +279,25 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setAgeMax("")
     setPriceRange([0, 500])
     setDynamicFilters({})
+
+    setUrlParams(
+      {
+        ...marketplaceSearchResetUpdates(),
+        page: null,
+      },
+      { navigateToResults: false },
+    )
   }
 
   const handleSearch = () => {
-    let normalizedMin = ageMin.trim()
-    let normalizedMax = ageMax.trim()
+    const normalizeAge = (value: string) => {
+      const parsed = Number.parseInt(value.trim(), 10)
+      if (!Number.isFinite(parsed)) return ""
+      return String(Math.max(0, Math.min(99, parsed)))
+    }
+
+    let normalizedMin = normalizeAge(ageMin)
+    let normalizedMax = normalizeAge(ageMax)
 
     const min = Number.parseInt(normalizedMin, 10)
     const max = Number.parseInt(normalizedMax, 10)
@@ -284,7 +306,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       normalizedMax = String(min)
     }
 
-    urlState.setMany({
+    setUrlParams({
       page: 1,
       categories: selectedCategories.length ? selectedCategories.join(",") : null,
       q: location.trim() || null,
