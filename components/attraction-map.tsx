@@ -168,20 +168,6 @@ function markerHtml(attraction: Attraction, index: number) {
   `
 }
 
-function focusMarkerAboveCard(map: any, marker: any, cardRef: { current: HTMLDivElement | null }) {
-  if (typeof window === "undefined" || !map || !marker) return
-  window.setTimeout(() => {
-    if (!map.getSize || !marker.getLatLng) return
-    const size = map.getSize()
-    const point = map.latLngToContainerPoint(marker.getLatLng())
-    const cardHeight = cardRef.current?.getBoundingClientRect().height ?? Math.min(340, size.y * 0.52)
-    const openHeight = Math.max(140, size.y - cardHeight - 78)
-    const targetX = size.x / 2
-    const targetY = Math.max(80, Math.min(165, openHeight * 0.5))
-    map.panBy([point.x - targetX, point.y - targetY], { animate: true, duration: 0.35 })
-  }, 110)
-}
-
 export default function AttractionMap({
   attractions,
   selectedAttraction,
@@ -194,7 +180,7 @@ export default function AttractionMap({
   const leafletRef = useRef<any>(null)
   const markerLayerRef = useRef<any>(null)
   const markersByIdRef = useRef<Map<string, any>>(new Map())
-  const popupCardRef = useRef<HTMLDivElement>(null)
+  const fittedLocationsRef = useRef<string | null>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
 
   const [map, setMap] = useState<any>(null)
@@ -235,6 +221,7 @@ export default function AttractionMap({
       markersByIdRef.current.clear()
       mapInstanceRef.current?.remove()
       mapInstanceRef.current = null
+      fittedLocationsRef.current = null
     }
   }, [immersiveMobile])
 
@@ -243,9 +230,13 @@ export default function AttractionMap({
     const L = leafletRef.current
     markerLayerRef.current.clearLayers()
     markersByIdRef.current.clear()
-    if (!attractions.length) return
+    if (!attractions.length) {
+      fittedLocationsRef.current = null
+      return
+    }
 
     const bounds = L.latLngBounds([])
+    const locations: string[] = []
 
     attractions.forEach((attraction, index) => {
       const coordinates: [number, number] =
@@ -254,6 +245,7 @@ export default function AttractionMap({
           : getFallbackCoordinates(attraction)
 
       bounds.extend(coordinates)
+      locations.push(JSON.stringify([attraction.id, ...coordinates]))
       const icon = L.divIcon({
         html: markerHtml(attraction, index),
         className: "eh-object-marker-wrapper",
@@ -272,17 +264,20 @@ export default function AttractionMap({
         onAttractionSelect?.(attraction.id)
         setPopupAttraction(attraction)
         setPopupImageIndex(0)
-        if (immersiveMobile) focusMarkerAboveCard(map, marker, popupCardRef)
       })
       marker.addTo(markerLayerRef.current)
       markersByIdRef.current.set(attraction.id, marker)
     })
 
-    if (bounds.isValid()) {
+    // Selection, sorting and refreshed object references must preserve the user's view.
+    // Only fit when the actual set of attractions or their coordinates changes.
+    const locationsKey = JSON.stringify(locations.sort())
+    if (bounds.isValid() && fittedLocationsRef.current !== locationsKey) {
       map.fitBounds(bounds, {
         padding: immersiveMobile ? [46, 46] : [60, 60],
         maxZoom: attractions.length === 1 ? 14 : 13,
       })
+      fittedLocationsRef.current = locationsKey
     }
   }, [attractions, map, onAttractionSelect, immersiveMobile])
 
@@ -294,7 +289,7 @@ export default function AttractionMap({
       root.classList.toggle("eh-object-marker--selected", selected)
       marker.setZIndexOffset(selected ? 1000 : 0)
     })
-  }, [selectedAttraction, attractions])
+  }, [selectedAttraction, attractions, map, onAttractionSelect, immersiveMobile])
 
   useEffect(() => {
     if (popupAttraction && !attractions.some((item) => item.id === popupAttraction.id)) setPopupAttraction(null)
@@ -367,7 +362,6 @@ export default function AttractionMap({
 
         {popupAttraction && immersiveMobile && (
           <div
-            ref={popupCardRef}
             className="absolute left-1/2 z-[800] w-[calc(100%-1.25rem)] max-w-[520px] -translate-x-1/2"
             style={{ bottom: "calc(max(14px, env(safe-area-inset-bottom)) + 64px)" }}
           >
