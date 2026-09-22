@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { CalendarDays, ChevronRight, MapPin, Maximize2, Minimize2, Star, Users, X } from "lucide-react"
+import { CalendarDays, ChevronRight, MapPin, Maximize2, Minimize2, Sparkles, Star, Users, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
-import { getMapTilerKey, getMapTilerStyleUrl, loadMapLibre } from "@/lib/maps/maplibre"
+import { applyEnjoyHubMapTheme, getMapTilerKey, getMapTilerStyleUrl, loadMapLibre, type EnjoyHubMapTheme } from "@/lib/maps/maplibre"
 import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 type AvailableSlot = {
@@ -187,17 +187,29 @@ export default function AttractionMap({
   const markersByIdRef = useRef<Map<string, MarkerRecord>>(new Map())
   const fittedLocationsRef = useRef<string | null>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
+  const mapThemeRef = useRef<EnjoyHubMapTheme>("enjoyhub")
+  const mapTilerKeyRef = useRef("")
 
   const [map, setMap] = useState<any>(null)
   const [mapError, setMapError] = useState<string | null>(null)
+  const [mapTheme, setMapTheme] = useState<EnjoyHubMapTheme>("enjoyhub")
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [popupAttraction, setPopupAttraction] = useState<Attraction | null>(null)
   const [popupImageIndex, setPopupImageIndex] = useState(0)
 
   useEffect(() => {
+    const savedTheme = window.localStorage.getItem("enjoyhub-map-theme")
+    if (savedTheme === "simple" || savedTheme === "enjoyhub") {
+      mapThemeRef.current = savedTheme
+      setMapTheme(savedTheme)
+    }
+  }, [])
+
+  useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return
 
     const apiKey = getMapTilerKey()
+    mapTilerKeyRef.current = apiKey
     if (!apiKey) {
       setMapError("Brak klucza MapTiler. Dodaj NEXT_PUBLIC_MAPTILER_KEY.")
       return
@@ -220,6 +232,7 @@ export default function AttractionMap({
         })
 
         instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left")
+        instance.on("style.load", () => applyEnjoyHubMapTheme(instance, mapThemeRef.current))
         instance.on("error", (event: any) => {
           if (event?.error?.message) console.error("MapTiler map error:", event.error.message)
         })
@@ -342,6 +355,19 @@ export default function AttractionMap({
     return () => window.clearTimeout(timer)
   }, [isFullscreen, map])
 
+  const handleMapThemeChange = (nextTheme: EnjoyHubMapTheme) => {
+    if (nextTheme === mapThemeRef.current) return
+
+    mapThemeRef.current = nextTheme
+    setMapTheme(nextTheme)
+    window.localStorage.setItem("enjoyhub-map-theme", nextTheme)
+
+    if (!map || !mapTilerKeyRef.current) return
+
+    map.once("style.load", () => applyEnjoyHubMapTheme(map, nextTheme))
+    map.setStyle(getMapTilerStyleUrl(mapTilerKeyRef.current))
+  }
+
   const galleryImages = popupAttraction?.images?.filter(Boolean).length
     ? popupAttraction.images!.filter(Boolean)
     : ["/placeholder.jpg"]
@@ -386,6 +412,34 @@ export default function AttractionMap({
             </div>
           </div>
         )}
+
+        <div className="absolute left-14 top-3 z-[900] flex rounded-full border border-[#0b1220]/[0.08] bg-white/95 p-1 shadow-lg backdrop-blur">
+          <button
+            type="button"
+            onClick={() => handleMapThemeChange("simple")}
+            className={`rounded-full px-3 py-2 text-[11px] font-bold transition sm:text-xs ${
+              mapTheme === "simple"
+                ? "bg-[#0b1220] text-white shadow-sm"
+                : "text-[#5e6673] hover:bg-[#f5f6f8] hover:text-[#0b1220]"
+            }`}
+            aria-pressed={mapTheme === "simple"}
+          >
+            Prosta PL
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMapThemeChange("enjoyhub")}
+            className={`flex items-center gap-1 rounded-full px-3 py-2 text-[11px] font-bold transition sm:text-xs ${
+              mapTheme === "enjoyhub"
+                ? "bg-primary text-white shadow-sm"
+                : "text-[#5e6673] hover:bg-[#fff1eb] hover:text-primary"
+            }`}
+            aria-pressed={mapTheme === "enjoyhub"}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            EnjoyHub
+          </button>
+        </div>
 
         <div className="absolute right-3 top-3 z-[900]">
           <Button
