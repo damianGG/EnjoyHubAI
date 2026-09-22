@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { ArrowLeft, CalendarDays, MapPin, Minus, Plus, Search, Sparkles, Users, WalletCards } from "lucide-react"
 
@@ -130,7 +130,10 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const setIsOpen = isControlled ? controlledOnOpenChange || (() => {}) : setInternalOpen
 
   const selectedGroupData = groupedCategories.find((group) => group.slug === selectedGroup) ?? null
-  const selectedActivitySlug = selectedCategories.length === 1 ? selectedCategories[0] : null
+  const selectedFilterSlug = selectedCategories.length === 1 ? selectedCategories[0] : null
+  const selectedActivitySlug = selectedFilterSlug && selectedGroupData?.categories.some((category) => category.slug === selectedFilterSlug)
+    ? selectedFilterSlug
+    : null
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -211,7 +214,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   }, [isOpen, groupedCategories])
 
   useEffect(() => {
-    if (!isOpen || !selectedActivitySlug) {
+    if (!isOpen || !selectedFilterSlug) {
       setDynamicDefinitions([])
       setDynamicCategoryName(null)
       setDynamicDefinitionsLoading(false)
@@ -222,7 +225,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setDynamicDefinitionsLoading(true)
     setDynamicDefinitions([])
 
-    void fetch(`/api/search/filter-definitions?category=${encodeURIComponent(selectedActivitySlug)}`, {
+    void fetch(`/api/search/filter-definitions?category=${encodeURIComponent(selectedFilterSlug)}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -230,13 +233,13 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
         return response.json() as Promise<DynamicFilterDefinitionsPayload>
       })
       .then((payload) => {
-        setDynamicCategoryName(payload.category?.name || selectedActivitySlug)
+        setDynamicCategoryName(payload.category?.name || selectedFilterSlug)
         setDynamicDefinitions(Array.isArray(payload.definitions) ? payload.definitions : [])
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return
         console.error("[search dialog] Failed to load dynamic filters", error)
-        setDynamicCategoryName(selectedActivitySlug)
+        setDynamicCategoryName(selectedFilterSlug)
         setDynamicDefinitions([])
       })
       .finally(() => {
@@ -244,7 +247,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       })
 
     return () => controller.abort()
-  }, [isOpen, selectedActivitySlug])
+  }, [isOpen, selectedFilterSlug])
 
   const selectGroup = (group: CategoryGroupView) => {
     setSelectedGroup(group.slug)
@@ -291,7 +294,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       age_max: normalizedMax || null,
       min_price: priceRange[0] > 0 ? String(priceRange[0]) : null,
       max_price: priceRange[1] < 500 ? String(priceRange[1]) : null,
-      attrs: serializeDynamicFilters(selectedActivitySlug, dynamicFilters),
+      attrs: serializeDynamicFilters(selectedFilterSlug, dynamicFilters),
     })
     setIsOpen(false)
   }
