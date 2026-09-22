@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import type { LeafletMouseEvent } from "leaflet"
 import { CheckCircle2, MapPin } from "lucide-react"
+
+import { getMapTilerKey, getMapTilerStyleUrl, loadMapLibre } from "@/lib/maps/maplibre"
 
 interface LocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void
@@ -27,6 +28,7 @@ export default function LocationPicker({
   const [hasSelection, setHasSelection] = useState(
     selectedLat !== null && selectedLng !== null,
   )
+  const [mapError, setMapError] = useState<string | null>(null)
 
   useEffect(() => {
     callbackRef.current = onLocationSelect
@@ -35,56 +37,79 @@ export default function LocationPicker({
   useEffect(() => {
     if (!mapElementRef.current) return
 
+    const apiKey = getMapTilerKey()
+    if (!apiKey) {
+      setMapError("Brak klucza MapTiler. Dodaj NEXT_PUBLIC_MAPTILER_KEY.")
+      return
+    }
+
     let disposed = false
     let cleanup: (() => void) | undefined
 
     async function initializeMap() {
-      const L = (await import("leaflet")).default
-      if (disposed || !mapElementRef.current) return
+      try {
+        const maplibregl = await loadMapLibre()
+        if (disposed || !mapElementRef.current) return
 
-      delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-      })
+        const initialSelection = initialSelectionRef.current
+        const startsWithSelection = initialSelection.lat !== null && initialSelection.lng !== null
+        const startLat = initialSelection.lat ?? initialLat
+        const startLng = initialSelection.lng ?? initialLng
 
-      const initialSelection = initialSelectionRef.current
-      const startsWithSelection = initialSelection.lat !== null && initialSelection.lng !== null
-      const startLat = initialSelection.lat ?? initialLat
-      const startLng = initialSelection.lng ?? initialLng
-      const map = L.map(mapElementRef.current).setView(
-        [startLat, startLng],
-        startsWithSelection ? 15 : 6,
-      )
-      let marker = startsWithSelection ? L.marker([startLat, startLng], { draggable }).addTo(map) : null
+        const map = new maplibregl.Map({
+          container: mapElementRef.current,
+          style: getMapTilerStyleUrl(apiKey),
+          center: [startLng, startLat],
+          zoom: startsWithSelection ? 15 : 6,
+          attributionControl: true,
+        })
 
-      const handleDrag = () => {
-        if (!marker) return
-        const { lat, lng } = marker.getLatLng()
-        callbackRef.current(lat, lng)
-      }
-      marker?.on("dragend", handleDrag)
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left")
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      }).addTo(map)
+        let marker = startsWithSelection
+          ? new maplibregl.Marker({ draggable }).setLngLat([startLng, startLat]).addTo(map)
+          : null
 
-      const handleClick = (event: LeafletMouseEvent) => {
-        const { lat, lng } = event.latlng
-        if (marker) marker.setLatLng([lat, lng])
-        else marker = L.marker([lat, lng], { draggable }).addTo(map).on("dragend", handleDrag)
+        const handleDrag = () => {
+          if (!marker) return
+          const { lat, lng } = marker.getLngLat()
+          callbackRef.current(lat, lng)
+        }
 
-        setHasSelection(true)
-        callbackRef.current(lat, lng)
-      }
+        marker?.on("dragend", handleDrag)
 
-      map.on("click", handleClick)
-      cleanup = () => {
-        map.off("click", handleClick)
-        map.remove()
+        const handleClick = (event: any) => {
+          const { lat, lng } = event.lngLat
+
+          if (marker) {
+            marker.setLngLat([lng, lat])
+          } else {
+            marker = new maplibregl.Marker({ draggable })
+              .setLngLat([lng, lat])
+              .addTo(map)
+              .on("dragend", handleDrag)
+          }
+
+          setHasSelection(true)
+          callbackRef.current(lat, lng)
+        }
+
+        map.on("click", handleClick)
+
+        map.on("error", (event: any) => {
+          if (event?.error?.message) console.error("MapTiler map error:", event.error.message)
+        })
+
+        cleanup = () => {
+          map.off("click", handleClick)
+          marker?.remove()
+          map.remove()
+        }
+      } catch (error) {
+        if (!disposed) {
+          console.error("Unable to initialize MapLibre:", error)
+          setMapError("Nie udało się uruchomić mapy. Sprawdź klucz MapTiler.")
+        }
       }
     }
 
@@ -110,11 +135,23 @@ export default function LocationPicker({
             : "Kliknij na mapie dokładnie tam, gdzie znajduje się wejście do obiektu."}
         </p>
       </div>
-      <div
-        ref={mapElementRef}
-        className="h-72 w-full overflow-hidden rounded-xl border bg-muted"
-        aria-label="Mapa do zaznaczenia lokalizacji obiektu"
-      />
+
+      <div className="relative h-72 w-full overflow-hidden rounded-xl border bg-muted">
+        <div
+          ref={mapElementRef}
+          className="h-full w-full"
+          aria-label="Mapa do zaznaczenia lokalizacji obiektu"
+        />
+        {mapError && (
+          <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center">
+            <div>
+              <MapPin className="mx-auto mb-2 h-6 w-6 text-primary" />
+              <p className="text-sm font-semibold text-foreground">Mapa jest gotowa do konfiguracji</p>
+              <p className="mt-1 text-xs text-muted-foreground">{mapError}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
