@@ -27,10 +27,26 @@ export interface FilterState {
   dynamicFilters: Record<string, DynamicFilterCondition>
 }
 
+export function createDefaultFilterState(): FilterState {
+  return {
+    location: "",
+    checkIn: "",
+    checkOut: "",
+    guests: "1",
+    priceRange: [0, 500],
+    ageRange: [0, 18],
+    attractionTypes: [],
+    amenities: [],
+    sortBy: "newest",
+    dynamicFilters: {},
+  }
+}
+
 interface AttractionFiltersProps {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
   onSearch: () => void
+  onClearFilters: (filters: FilterState) => void
   totalResults: number
   dynamicCategoryName?: string | null
   dynamicDefinitions?: DynamicFilterDefinition[]
@@ -81,6 +97,7 @@ export default function AttractionFilters({
   filters,
   onFiltersChange,
   onSearch,
+  onClearFilters,
   totalResults,
   dynamicCategoryName = null,
   dynamicDefinitions = [],
@@ -102,18 +119,7 @@ export default function AttractionFilters({
   }
 
   const clearFilters = () => {
-    onFiltersChange({
-      location: "",
-      checkIn: "",
-      checkOut: "",
-      guests: "1",
-      priceRange: [0, 500],
-      ageRange: [0, 18],
-      attractionTypes: [],
-      amenities: [],
-      sortBy: "newest",
-      dynamicFilters: {},
-    })
+    onClearFilters(createDefaultFilterState())
   }
 
   const activeFiltersCount = [

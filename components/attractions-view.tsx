@@ -14,7 +14,11 @@ import AttractionFilters, {
 import AttractionMap from "@/components/attraction-map"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useUrlState } from "@/lib/search/url-state"
+import {
+  MARKETPLACE_SEARCH_PARAM_KEYS,
+  marketplaceSearchResetUpdates,
+  useUrlState,
+} from "@/lib/search/url-state"
 import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 
 type AvailableSlot = {
@@ -87,25 +91,6 @@ interface AttractionsViewProps {
   attractions: Attraction[]
   mobileImmersive?: boolean
 }
-
-const SEARCH_KEYS = [
-  "categories",
-  "q",
-  "date",
-  "date_from",
-  "date_to",
-  "when",
-  "guests",
-  "age_min",
-  "age_max",
-  "min_price",
-  "max_price",
-  "types",
-  "amenities",
-  "attrs",
-  "sort",
-  "bbox",
-]
 
 function attractionHref(attraction: Attraction) {
   return publicAttractionPath(attraction)
@@ -394,7 +379,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   })
 
   const hasSearchCriteria = useMemo(
-    () => SEARCH_KEYS.some((key) => Boolean(searchParams.get(key))),
+    () => MARKETPLACE_SEARCH_PARAM_KEYS.some((key) => Boolean(searchParams.get(key))),
     [urlSearchString, searchParams],
   )
 
@@ -465,7 +450,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
 
     const controller = new AbortController()
     const params = new URLSearchParams()
-    SEARCH_KEYS.forEach((key) => {
+    MARKETPLACE_SEARCH_PARAM_KEYS.forEach((key) => {
       const value = searchParams.get(key)
       if (value) params.set(key, value)
     })
@@ -520,6 +505,17 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     if (sortChanged) applyFilters(next)
   }
 
+  const clearFilters = (next: FilterState) => {
+    setFilters(next)
+    urlState.setMany(
+      {
+        ...marketplaceSearchResetUpdates(["categories"]),
+        page: null,
+      },
+      { navigateToResults: false },
+    )
+  }
+
   const filteredAttractions = (remoteAttractions ?? attractions).filter(
     (attraction) => Boolean(attraction?.title && attraction?.city && attraction?.country),
   )
@@ -556,6 +552,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
           filters={filters}
           onFiltersChange={handleFiltersChange}
           onSearch={() => applyFilters(filters)}
+          onClearFilters={clearFilters}
           totalResults={totalResults}
           dynamicCategoryName={dynamicCategoryName}
           dynamicDefinitions={dynamicDefinitions}

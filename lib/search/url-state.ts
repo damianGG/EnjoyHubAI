@@ -1,14 +1,15 @@
 "use client"
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
-import { useCallback, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 interface SetManyOptions {
   debounce?: number | boolean
   debounceMs?: number
+  navigateToResults?: boolean
 }
 
-const MARKETPLACE_SEARCH_KEYS = new Set([
+export const MARKETPLACE_SEARCH_PARAM_KEYS = [
   "categories",
   "q",
   "date",
@@ -24,7 +25,23 @@ const MARKETPLACE_SEARCH_KEYS = new Set([
   "amenities",
   "attrs",
   "sort",
-])
+  "bbox",
+] as const
+
+export type MarketplaceSearchParamKey = (typeof MARKETPLACE_SEARCH_PARAM_KEYS)[number]
+
+const MARKETPLACE_SEARCH_KEYS = new Set<string>(MARKETPLACE_SEARCH_PARAM_KEYS)
+
+export function marketplaceSearchResetUpdates(
+  preserve: readonly MarketplaceSearchParamKey[] = [],
+): Record<string, null> {
+  const preserved = new Set<string>(preserve)
+  return Object.fromEntries(
+    MARKETPLACE_SEARCH_PARAM_KEYS
+      .filter((key) => !preserved.has(key))
+      .map((key) => [key, null]),
+  )
+}
 
 export function useUrlState() {
   const searchParams = useSearchParams()
@@ -32,10 +49,17 @@ export function useUrlState() {
   const pathname = usePathname()
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    }
+  }, [])
+
   const get = useCallback(
     (key: string): string | null => {
       return searchParams.get(key)
-    }, [searchParams]
+    },
+    [searchParams],
   )
 
   const setMany = useCallback(
@@ -52,7 +76,10 @@ export function useUrlState() {
         })
 
         const isMarketplaceSearch = Object.keys(updates).some((key) => MARKETPLACE_SEARCH_KEYS.has(key))
-        const targetPath = pathname === "/" && isMarketplaceSearch ? "/attractions" : pathname
+        const shouldNavigateToResults = options?.navigateToResults !== false
+        const targetPath = pathname === "/" && isMarketplaceSearch && shouldNavigateToResults
+          ? "/attractions"
+          : pathname
         const query = params.toString()
 
         router.replace(query ? `${targetPath}?${query}` : targetPath, { scroll: false })
@@ -62,11 +89,12 @@ export function useUrlState() {
         ? options.debounce
         : options?.debounceMs || (options?.debounce ? 300 : 0)
 
-      if (debounceValue > 0) {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current)
-        }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
 
+      if (debounceValue > 0) {
         debounceTimerRef.current = setTimeout(() => {
           performUpdate()
           debounceTimerRef.current = null
@@ -75,8 +103,8 @@ export function useUrlState() {
         performUpdate()
       }
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname],
   )
 
-  return { get, setMany }
+  return { get, setMany, searchString: searchParams.toString() }
 }
