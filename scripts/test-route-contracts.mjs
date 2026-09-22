@@ -189,7 +189,7 @@ assert.match(filterDefinitionsRoute, /subcategoryProduct/)
 assert.match(filterDefinitionsRoute, /\.is\("subcategory_id", null\)/)
 assert.doesNotMatch(filterDefinitionsRoute, /subcategory\.category_id/)
 
-const marketplaceSearchMigration = await source("supabase/migrations/20260922173000_unified_category_model_schema.sql")
+const marketplaceSearchMigration = await source("supabase/migrations/20260922154727_unified_category_model_schema.sql")
 const marketplaceSearchSql = marketplaceSearchMigration.slice(marketplaceSearchMigration.indexOf("create or replace function public.marketplace_search_attractions_v6")).replace(/^--.*$/gm, "")
 assert.match(marketplaceSearchMigration, /marketplace_search_attractions_v6/)
 assert.match(marketplaceSearchMigration, /security invoker/)
