@@ -292,7 +292,20 @@ assert.doesNotMatch(activityCategorySelect, /CATEGORY_GROUPS|categoryGroup/)
 
 const attractionMap = await source("components/attraction-map.tsx")
 assert.match(attractionMap, /Sprawdź ofertę/)
+assert.match(attractionMap, /loadMapLibre/)
+assert.match(attractionMap, /getMapTilerStyleUrl/)
+assert.doesNotMatch(attractionMap, /leaflet|cartocdn/)
 assert.doesNotMatch(attractionMap, /price_per_night/)
+
+const locationPicker = await source("components/location-picker.tsx")
+assert.match(locationPicker, /loadMapLibre/)
+assert.match(locationPicker, /getMapTilerStyleUrl/)
+assert.doesNotMatch(locationPicker, /leaflet|cartocdn/)
+
+const mapLibreLoader = await source("lib/maps/maplibre.ts")
+assert.match(mapLibreLoader, /NEXT_PUBLIC_MAPTILER_KEY/)
+assert.match(mapLibreLoader, /api\.maptiler\.com\/maps\/streets-v4\/style\.json/)
+assert.match(mapLibreLoader, /maplibre-gl@/)
 
 const nextConfig = await source("next.config.mjs")
 assert.match(nextConfig, /source: '\/properties\/:id'/)
