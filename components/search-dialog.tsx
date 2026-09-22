@@ -123,7 +123,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [dynamicCategoryName, setDynamicCategoryName] = useState<string | null>(null)
   const [dynamicDefinitionsLoading, setDynamicDefinitionsLoading] = useState(false)
   const [dynamicFilters, setDynamicFilters] = useState<Record<string, DynamicFilterCondition>>({})
-  const { get: getUrlParam, setMany: setUrlParams } = useUrlState()
+  const { searchString: urlSearchString, setMany: setUrlParams } = useUrlState()
 
   const isControlled = controlledOpen !== undefined
   const isOpen = isControlled ? controlledOpen : internalOpen
@@ -184,26 +184,27 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   useEffect(() => {
     if (!isOpen) return
 
-    const currentCategories = csvParam(getUrlParam("categories"))
+    const params = new URLSearchParams(urlSearchString)
+    const currentCategories = csvParam(params.get("categories"))
     setSelectedCategories(currentCategories)
-    setLocation(getUrlParam("q") || "")
-    setDate(getUrlParam("date") || "")
-    setAgeMin(getUrlParam("age_min") || "")
-    setAgeMax(getUrlParam("age_max") || "")
+    setLocation(params.get("q") || "")
+    setDate(params.get("date") || "")
+    setAgeMin(params.get("age_min") || "")
+    setAgeMax(params.get("age_max") || "")
 
-    const minPrice = Number.parseInt(getUrlParam("min_price") || "0", 10)
-    const maxPrice = Number.parseInt(getUrlParam("max_price") || "500", 10)
+    const minPrice = Number.parseInt(params.get("min_price") || "0", 10)
+    const maxPrice = Number.parseInt(params.get("max_price") || "500", 10)
     setPriceRange([
       Number.isFinite(minPrice) ? Math.max(0, Math.min(500, minPrice)) : 0,
       Number.isFinite(maxPrice) ? Math.max(0, Math.min(500, maxPrice)) : 500,
     ])
 
-    const currentGuests = Number.parseInt(getUrlParam("guests") || "1", 10)
+    const currentGuests = Number.parseInt(params.get("guests") || "1", 10)
     setGuests(Number.isFinite(currentGuests) && currentGuests > 0 ? currentGuests : 1)
 
     const currentActivity = currentCategories.length === 1 ? currentCategories[0] : null
-    setDynamicFilters(parseDynamicFilters(getUrlParam("attrs"), currentActivity))
-  }, [getUrlParam, isOpen])
+    setDynamicFilters(parseDynamicFilters(params.get("attrs"), currentActivity))
+  }, [isOpen, urlSearchString])
 
   useEffect(() => {
     if (!isOpen) return
