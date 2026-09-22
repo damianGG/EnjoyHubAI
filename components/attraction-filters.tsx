@@ -10,12 +10,15 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DynamicFilterSection, hasDynamicFilterCondition, type DynamicFilterCondition, type DynamicFilterDefinition } from "@/components/dynamic-filter-section"
 import { Slider } from "@/components/ui/slider"
-import { MapPin, Search, SlidersHorizontal, Users, X } from "lucide-react"
+import { resolveCurrentLocation } from "@/lib/search/current-location"
+import { getMapTilerKey } from "@/lib/maps/maplibre"
+import { LocateFixed, Loader2, MapPin, Search, SlidersHorizontal, Users, X } from "lucide-react"
 
 export type { DynamicFilterCondition, DynamicFilterDefinition } from "@/components/dynamic-filter-section"
 
 export interface FilterState {
   location?: string
+  bbox?: string
   checkIn?: string
   checkOut?: string
   guests: string
@@ -30,6 +33,7 @@ export interface FilterState {
 export function createDefaultFilterState(): FilterState {
   return {
     location: "",
+    bbox: "",
     checkIn: "",
     checkOut: "",
     guests: "1",
@@ -45,7 +49,7 @@ export function createDefaultFilterState(): FilterState {
 interface AttractionFiltersProps {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
-  onSearch: () => void
+  onSearch: (filters?: FilterState) => void
   onClearFilters: (filters: FilterState) => void
   totalResults: number
   dynamicCategoryName?: string | null
@@ -104,9 +108,31 @@ export default function AttractionFilters({
   dynamicDefinitionsLoading = false,
 }: AttractionFiltersProps) {
   const [showFilters, setShowFilters] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   const updateFilter = (key: keyof FilterState, value: unknown) => {
     onFiltersChange({ ...filters, [key]: value })
+  }
+
+  const useCurrentLocation = async () => {
+    setLocationLoading(true)
+    setLocationError(null)
+
+    try {
+      const result = await resolveCurrentLocation(getMapTilerKey())
+      const next = {
+        ...filters,
+        location: result.label ? `W pobliżu: ${result.label}` : "Moja lokalizacja",
+        bbox: result.bbox,
+      }
+      onFiltersChange(next)
+      onSearch(next)
+    } catch (error) {
+      setLocationError(error instanceof Error ? error.message : "Nie udało się pobrać lokalizacji.")
+    } finally {
+      setLocationLoading(false)
+    }
   }
 
   const toggleAmenity = (amenity: string) => {
@@ -137,12 +163,29 @@ export default function AttractionFilters({
           <MapPin className="h-4 w-4 shrink-0 text-[#ff5a1f]" />
           <Input
             value={filters.location ?? ""}
-            onChange={(event) => updateFilter("location", event.target.value)}
+            onChange={(event) => {
+              setLocationError(null)
+              onFiltersChange({ ...filters, location: event.target.value, bbox: "" })
+            }}
             onKeyDown={(event) => event.key === "Enter" && onSearch()}
             placeholder="Miasto, okolica lub atrakcja"
             aria-label="Lokalizacja lub nazwa atrakcji"
             className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
           />
+          <button
+            type="button"
+            onClick={useCurrentLocation}
+            disabled={locationLoading}
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
+              filters.bbox
+                ? "bg-primary text-white shadow-[0_6px_16px_rgba(255,90,31,0.22)]"
+                : "bg-secondary text-primary hover:bg-primary/10"
+            }`}
+            aria-label="Użyj mojej lokalizacji"
+            title="Użyj mojej lokalizacji"
+          >
+            {locationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+          </button>
         </div>
 
         <div className="hidden h-8 w-px bg-border md:block" />
@@ -253,6 +296,8 @@ export default function AttractionFilters({
           <Search className="mr-2 h-4 w-4" />Szukaj
         </Button>
       </div>
+
+      {locationError && <p className="px-1 text-xs font-medium text-destructive">{locationError}</p>}
 
       <div className="flex items-center justify-between gap-3 px-1">
         <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{totalResults}</span> atrakcji</p>
