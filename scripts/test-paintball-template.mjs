@@ -42,6 +42,6 @@ const catalog=buildCategoryCatalog(
     {id:'dmuchance',parent_category_id:'rodzina',name:'Dmuchańce',slug:'dmuchance'},
   ],
 )
-assert.deepEqual(catalog.find(item=>item.slug==='adrenalina').subcategories.map(item=>item.slug),['go-karts','paintball'])
-assert.deepEqual(catalog.find(item=>item.slug==='dzieci-i-rodzina').subcategories.map(item=>item.slug),['dmuchance'])
+assert.equal(catalog.find(item=>item.slug==='adrenalina').subcategories.map(item=>item.slug).join(','),'go-karts,paintball')
+assert.equal(catalog.find(item=>item.slug==='dzieci-i-rodzina').subcategories.map(item=>item.slug).join(','),'dmuchance')
 console.log('Paintball template: content, missing data, canonical taxonomy and map route PASS')
