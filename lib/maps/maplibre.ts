@@ -36,8 +36,12 @@ function localizeTextField(value: any): any {
   return value
 }
 
+function includesAny(value: string, tokens: string[]) {
+  return tokens.some((token) => value.includes(token))
+}
+
 function shouldHideDetailLayer(layerId: string) {
-  return [
+  return includesAny(layerId, [
     "poi",
     "housenumber",
     "house_number",
@@ -51,7 +55,10 @@ function shouldHideDetailLayer(layerId: string) {
     "shop",
     "aeroway",
     "airport",
-  ].some((token) => layerId.includes(token))
+    "pedestrian",
+    "cycleway",
+    "footway",
+  ])
 }
 
 function setLayoutSafely(map: any, layerId: string, property: string, value: any) {
@@ -70,7 +77,14 @@ function setPaintSafely(map: any, layerId: string, property: string, value: any)
   }
 }
 
-export function applyEnjoyHubMapTheme(map: any, theme: EnjoyHubMapTheme) {
+/**
+ * Keeps the MapTiler vector data, but gives EnjoyHub one quiet, familiar map
+ * treatment: pale green nature areas, cool blue water, neutral city fabric,
+ * white local roads and restrained Polish labels. The theme argument remains
+ * for the location picker API, but both public map modes intentionally share
+ * the same visual language now.
+ */
+export function applyEnjoyHubMapTheme(map: any, _theme: EnjoyHubMapTheme = "enjoyhub") {
   const layers = map.getStyle()?.layers ?? []
 
   for (const layer of layers) {
@@ -86,43 +100,84 @@ export function applyEnjoyHubMapTheme(map: any, theme: EnjoyHubMapTheme) {
         continue
       }
 
-      if (theme === "enjoyhub") {
-        setPaintSafely(map, id, "text-color", "#505967")
-        setPaintSafely(map, id, "text-halo-color", "#fffaf7")
-        setPaintSafely(map, id, "text-halo-width", 1.25)
-      }
+      const isRoadLabel = includesAny(normalizedId, ["road", "street", "highway", "motorway"])
+      const isWaterLabel = includesAny(normalizedId, ["water", "marine"])
+      const isPlaceLabel = includesAny(normalizedId, ["place", "city", "town", "village", "settlement"])
+
+      setPaintSafely(
+        map,
+        id,
+        "text-color",
+        isRoadLabel ? "#777773" : isWaterLabel ? "#6d98a7" : isPlaceLabel ? "#686864" : "#73736f",
+      )
+      setPaintSafely(map, id, "text-halo-color", "#f7f6f1")
+      setPaintSafely(map, id, "text-halo-width", 1.35)
+      setPaintSafely(map, id, "text-halo-blur", 0.25)
+      continue
     }
 
-    if (layer.type === "background" && theme === "enjoyhub") {
-      setPaintSafely(map, id, "background-color", "#fffaf7")
+    if (layer.type === "background") {
+      setPaintSafely(map, id, "background-color", "#f3f2ed")
       continue
     }
 
     if (layer.type === "fill") {
       if (normalizedId.includes("water")) {
-        setPaintSafely(map, id, "fill-color", theme === "enjoyhub" ? "#dcecf7" : "#e5f1f8")
-      } else if (
-        theme === "enjoyhub" &&
-        ["park", "grass", "wood", "forest", "landcover", "landuse"].some((token) => normalizedId.includes(token))
-      ) {
-        setPaintSafely(map, id, "fill-color", "#edf4e8")
-      } else if (theme === "enjoyhub" && normalizedId.includes("building")) {
+        setPaintSafely(map, id, "fill-color", "#b9deea")
+        setPaintSafely(map, id, "fill-opacity", 1)
+      } else if (normalizedId.includes("building")) {
         setLayoutSafely(map, id, "visibility", "none")
+      } else if (
+        includesAny(normalizedId, [
+          "park",
+          "grass",
+          "wood",
+          "forest",
+          "nature",
+          "natural",
+          "green",
+          "landcover",
+        ])
+      ) {
+        setPaintSafely(map, id, "fill-color", "#dcefc1")
+        setPaintSafely(map, id, "fill-opacity", 0.92)
+      } else if (
+        includesAny(normalizedId, [
+          "residential",
+          "urban",
+          "commercial",
+          "industrial",
+          "landuse",
+        ])
+      ) {
+        setPaintSafely(map, id, "fill-color", "#efeee9")
+        setPaintSafely(map, id, "fill-opacity", 0.9)
       }
+      continue
     }
 
     if (layer.type === "line") {
-      if (
-        theme === "enjoyhub" &&
-        ["road", "street", "highway", "motorway", "path"].some((token) => normalizedId.includes(token))
-      ) {
-        setPaintSafely(map, id, "line-color", "#eaded8")
-      } else if (theme === "enjoyhub" && normalizedId.includes("boundary")) {
-        setPaintSafely(map, id, "line-color", "#d6d9df")
-      }
-
       if (shouldHideDetailLayer(normalizedId)) {
         setLayoutSafely(map, id, "visibility", "none")
+        continue
+      }
+
+      if (includesAny(normalizedId, ["waterway", "river", "stream", "canal"])) {
+        setPaintSafely(map, id, "line-color", "#b4d9e5")
+        continue
+      }
+
+      if (includesAny(normalizedId, ["road", "street", "highway", "motorway", "trunk", "primary", "secondary"])) {
+        const isCasing = includesAny(normalizedId, ["casing", "outline"])
+        const isMajor = includesAny(normalizedId, ["motorway", "trunk", "primary"])
+        setPaintSafely(map, id, "line-color", isCasing ? "#d6d5d0" : isMajor ? "#deddd9" : "#ffffff")
+        setPaintSafely(map, id, "line-opacity", 0.96)
+        continue
+      }
+
+      if (normalizedId.includes("boundary")) {
+        setPaintSafely(map, id, "line-color", "#c8c8c3")
+        setPaintSafely(map, id, "line-opacity", 0.7)
       }
     }
   }
