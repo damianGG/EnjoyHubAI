@@ -506,8 +506,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     if (sortChanged) applyFilters(next)
   }
 
-  const clearFilters = () => {
-    const next = createDefaultFilterState()
+  const clearFilters = (next: FilterState) => {
     setFilters(next)
     urlState.setMany(
       {
