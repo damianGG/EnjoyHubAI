@@ -220,6 +220,16 @@ export default function AttractionMap({
         })
 
         instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left")
+        instance.addControl(
+          new maplibregl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: false,
+            showUserLocation: true,
+            showAccuracyCircle: false,
+            fitBoundsOptions: { maxZoom: 13 },
+          }),
+          "top-left",
+        )
         instance.on("style.load", () => applyEnjoyHubMapTheme(instance, "enjoyhub"))
         instance.on("error", (event: any) => {
           if (event?.error?.message) console.error("MapTiler map error:", event.error.message)

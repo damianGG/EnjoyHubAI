@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { ArrowLeft, CalendarDays, MapPin, Minus, Plus, Search, Sparkles, Users, WalletCards } from "lucide-react"
+import { ArrowLeft, CalendarDays, LocateFixed, Loader2, MapPin, Minus, Plus, Search, Sparkles, Users, WalletCards } from "lucide-react"
 
 import { DynamicFilterSection, type DynamicFilterCondition, type DynamicFilterDefinition } from "@/components/dynamic-filter-section"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -12,6 +12,8 @@ import { Slider } from "@/components/ui/slider"
 import { BrandLogo } from "@/components/brand-logo"
 import { buildCategoryCatalog } from "@/lib/categories/catalog"
 import { marketplaceSearchResetUpdates, useUrlState } from "@/lib/search/url-state"
+import { resolveCurrentLocation } from "@/lib/search/current-location"
+import { getMapTilerKey } from "@/lib/maps/maplibre"
 import { getEnjoyHubCategoryIcon } from "@/lib/category-icon-assets"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -114,6 +116,10 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [location, setLocation] = useState("")
+  const [currentLocationBbox, setCurrentLocationBbox] = useState("")
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const [date, setDate] = useState("")
   const [guests, setGuests] = useState(1)
   const [ageMin, setAgeMin] = useState("")
@@ -187,7 +193,13 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     const params = new URLSearchParams(urlSearchString)
     const currentCategories = csvParam(params.get("categories"))
     setSelectedCategories(currentCategories)
-    setLocation(params.get("q") || "")
+    const savedBbox = params.get("bbox") || ""
+    const savedQuery = params.get("q") || ""
+    const hasCurrentLocation = Boolean(savedBbox && !savedQuery)
+    setCurrentLocationBbox(savedBbox)
+    setUsingCurrentLocation(hasCurrentLocation)
+    setLocation(hasCurrentLocation ? "Moja lokalizacja" : savedQuery)
+    setLocationError(null)
     setDate(params.get("date") || "")
     setAgeMin(params.get("age_min") || "")
     setAgeMax(params.get("age_max") || "")
@@ -274,6 +286,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setSelectedGroup(null)
     setSelectedCategories([])
     setLocation("")
+    setCurrentLocationBbox("")
+    setUsingCurrentLocation(false)
+    setLocationError(null)
     setDate("")
     setGuests(1)
     setAgeMin("")
@@ -288,6 +303,22 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
       },
       { navigateToResults: false },
     )
+  }
+
+  const useCurrentLocation = async () => {
+    setLocationLoading(true)
+    setLocationError(null)
+
+    try {
+      const result = await resolveCurrentLocation(getMapTilerKey())
+      setCurrentLocationBbox(result.bbox)
+      setUsingCurrentLocation(true)
+      setLocation(result.label ? `W pobliżu: ${result.label}` : "Moja lokalizacja")
+    } catch (error) {
+      setLocationError(error instanceof Error ? error.message : "Nie udało się pobrać lokalizacji.")
+    } finally {
+      setLocationLoading(false)
+    }
   }
 
   const handleSearch = () => {
@@ -310,7 +341,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setUrlParams({
       page: 1,
       categories: selectedCategories.length ? selectedCategories.join(",") : null,
-      q: location.trim() || null,
+      q: usingCurrentLocation ? null : location.trim() || null,
+      bbox: usingCurrentLocation && currentLocationBbox ? currentLocationBbox : null,
       date: date || null,
       guests: guests > 1 ? String(guests) : null,
       age_min: normalizedMin || null,
@@ -473,11 +505,47 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                   <Input
                     value={location}
-                    onChange={(event) => setLocation(event.target.value)}
+                    onChange={(event) => {
+                      setLocation(event.target.value)
+                      setUsingCurrentLocation(false)
+                      setCurrentLocationBbox("")
+                      setLocationError(null)
+                    }}
                     placeholder="Miasto, okolica lub nazwa atrakcji"
-                    className="h-14 min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 text-sm shadow-sm focus-visible:ring-primary/25"
+                    className="h-14 min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 pr-12 text-sm shadow-sm focus-visible:ring-primary/25"
                   />
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locationLoading}
+                    className={cn(
+                      "absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full transition",
+                      usingCurrentLocation
+                        ? "bg-primary text-white shadow-[0_6px_16px_rgba(255,90,31,0.25)]"
+                        : "bg-secondary text-primary hover:bg-primary/10",
+                    )}
+                    aria-label="Użyj mojej lokalizacji"
+                    title="Użyj mojej lokalizacji"
+                  >
+                    {locationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                  </button>
                 </div>
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locationLoading}
+                    className="text-[11px] font-bold text-primary hover:underline disabled:opacity-60"
+                  >
+                    {locationLoading ? "Ustalam lokalizację…" : "Użyj mojej lokalizacji"}
+                  </button>
+                  {usingCurrentLocation && (
+                    <span className="text-[10px] font-medium text-muted-foreground">okolica ok. 30 km</span>
+                  )}
+                </div>
+                {locationError && (
+                  <p className="px-1 text-[11px] font-medium leading-4 text-destructive">{locationError}</p>
+                )}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
