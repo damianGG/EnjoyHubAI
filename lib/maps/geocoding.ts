@@ -125,7 +125,7 @@ export async function searchPlaces(
   endpoint.searchParams.set("limit", String(Math.max(1, Math.min(options.limit ?? 6, 10))))
   endpoint.searchParams.set("autocomplete", "true")
   endpoint.searchParams.set("fuzzyMatch", "true")
-  endpoint.searchParams.set("types", "place,locality,municipality,district")
+  endpoint.searchParams.set("types", "place,locality,municipality,municipal_district")
   if (options.countryCode) endpoint.searchParams.set("country", options.countryCode.toLowerCase())
 
   const response = await fetch(endpoint.toString(), {
@@ -135,7 +135,7 @@ export async function searchPlaces(
   if (!response.ok) throw new Error("Nie udało się pobrać podpowiedzi miejscowości.")
 
   const payload = await response.json() as MapTilerPayload
-  const allowedTypes = new Set(["place", "locality", "municipality", "district"])
+  const allowedTypes = new Set(["place", "locality", "municipality", "municipal_district"])
 
   return (payload.features ?? [])
     .filter((feature) => {
@@ -164,7 +164,7 @@ export async function reverseGeocode(
   endpoint.searchParams.set("key", apiKey)
   endpoint.searchParams.set("language", options.language || "pl")
   endpoint.searchParams.set("limit", "1")
-  endpoint.searchParams.set("types", "place,locality,municipality,district")
+  endpoint.searchParams.set("types", "place,locality,municipality,municipal_district")
 
   const response = await fetch(endpoint.toString(), {
     cache: "no-store",
