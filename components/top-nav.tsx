@@ -135,6 +135,7 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
     .map((value) => value.trim())
     .filter(Boolean)
   const locationFilter = (searchParams.get("q") || "").trim()
+  const geographicLocation = (searchParams.get("location") || "").trim()
   const nearbyFilter = Boolean((searchParams.get("bbox") || "").trim()) && !locationFilter
   const dateFilter = (searchParams.get("date") || "").trim()
   const guestsValue = Number.parseInt(searchParams.get("guests") || "1", 10)
@@ -148,12 +149,12 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
 
   const activeFilterCount =
     (categorySlugs.length ? 1 : 0) +
-    (locationFilter || nearbyFilter ? 1 : 0) +
+    (locationFilter || geographicLocation || nearbyFilter ? 1 : 0) +
     (dateFilter ? 1 : 0) +
     (guestsFilter ? 1 : 0) +
     (ageMinFilter || ageMaxFilter ? 1 : 0)
 
-  const locationLabel = nearbyFilter ? "Moja lokalizacja" : locationFilter
+  const locationLabel = geographicLocation || (nearbyFilter ? "Moja lokalizacja" : locationFilter)
   const mobilePrimaryLabel = categoryLabel || locationLabel || "Czego szukasz?"
   const mobileSecondaryParts = [
     categoryLabel && locationLabel ? locationLabel : "",

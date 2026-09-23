@@ -360,8 +360,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     const initialDynamicCategory = selectedDynamicCategory(searchParams.get("categories"))
     const initialBbox = searchParams.get("bbox") || ""
     const initialQuery = searchParams.get("q") || ""
+    const initialLocation = searchParams.get("location") || ""
     return {
-      location: initialBbox && !initialQuery ? "Moja lokalizacja" : initialQuery,
+      location: initialBbox && !initialQuery ? initialLocation || "Moja lokalizacja" : initialQuery,
       bbox: initialBbox,
       checkIn: "",
       checkOut: "",
@@ -389,8 +390,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   useEffect(() => {
     const currentBbox = searchParams.get("bbox") || ""
     const currentQuery = searchParams.get("q") || ""
+    const currentLocation = searchParams.get("location") || ""
     setFilters({
-      location: currentBbox && !currentQuery ? "Moja lokalizacja" : currentQuery,
+      location: currentBbox && !currentQuery ? currentLocation || "Moja lokalizacja" : currentQuery,
       bbox: currentBbox,
       checkIn: "",
       checkOut: "",
@@ -493,6 +495,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     urlState.setMany({
       page: 1,
       q: next.bbox ? null : next.location?.trim() || null,
+      location: next.bbox ? next.location?.trim() || null : null,
       bbox: next.bbox || null,
       guests: next.guests !== "1" ? next.guests : null,
       min_price: next.priceRange[0] > 0 ? next.priceRange[0] : null,
@@ -570,7 +573,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">{list}</div>
         <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_14px_38px_rgba(11,18,32,0.08)]">
-          <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" />
+          <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} focusBbox={filters.bbox} className="h-full border-0 shadow-none" />
         </div>
       </div>
 
@@ -582,7 +585,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję wyniki…
               </div>
             )}
-            <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
+            <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} focusBbox={filters.bbox} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
           <div className={mobileImmersive ? "h-full min-h-0 overflow-y-auto bg-background pt-3" : "pb-24"}>{list}</div>

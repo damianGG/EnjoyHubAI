@@ -8,6 +8,7 @@ import { CalendarClock, Info, MapPin, PlusCircle, Store, Ticket } from "lucide-r
 
 import { addOrganizerAttraction } from "@/app/host/atrakcje/nowa/actions"
 import { ImageUploadSection } from "@/components/forms/ImageUploadSection"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,6 +43,8 @@ export function AddAttractionForm({
   userId: string
 }) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [city, setCity] = useState("")
+  const [cityCenter, setCityCenter] = useState<{ lat: number; lng: number } | null>(null)
   const [images, setImages] = useState<ImageData[]>([])
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7])
   const onLocation = useCallback((lat: number, lng: number) => setLocation({ lat, lng }), [])
@@ -50,6 +53,7 @@ export function AddAttractionForm({
     <form action={addOrganizerAttraction} className="space-y-6">
       <input type="hidden" name="latitude" value={location?.lat ?? ""} />
       <input type="hidden" name="longitude" value={location?.lng ?? ""} />
+      <input type="hidden" name="city" value={city} />
       <input type="hidden" name="images" value={JSON.stringify(images)} />
       {days.map((day) => <input key={day} type="hidden" name="weekdays" value={day} />)}
 
@@ -70,9 +74,24 @@ export function AddAttractionForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ulica i numer" className="sm:col-span-2"><Input name="address" required minLength={3} maxLength={240} /></Field>
             <Field label="Kod pocztowy"><Input name="postalCode" maxLength={20} /></Field>
-            <Field label="Miejscowość"><Input name="city" required minLength={2} maxLength={120} /></Field>
+            <Field label="Miejscowość">
+              <LocationAutocomplete
+                value={city}
+                onChange={(value) => {
+                  setCity(value)
+                  setCityCenter(null)
+                }}
+                onSelect={(place) => {
+                  setCity(place.name)
+                  setCityCenter({ lat: place.latitude, lng: place.longitude })
+                  setLocation(null)
+                }}
+                placeholder="Zacznij wpisywać, np. Rzeszów"
+                inputClassName="h-11"
+              />
+            </Field>
           </div>
-          <div className="space-y-2"><Label>Położenie na mapie</Label><LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} /></div>
+          <div className="space-y-2"><Label>Położenie na mapie</Label><LocationPicker onLocationSelect={onLocation} initialLat={cityCenter?.lat} initialLng={cityCenter?.lng} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} /></div>
           <ImageUploadSection images={images} onImagesChange={setImages} userId={userId} maxImages={8} />
         </CardContent>
       </Card>

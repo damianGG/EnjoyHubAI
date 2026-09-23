@@ -44,6 +44,7 @@ interface AttractionMapProps {
   onAttractionSelect?: (attractionId: string | null) => void
   className?: string
   immersiveMobile?: boolean
+  focusBbox?: string
 }
 
 type MarkerRecord = {
@@ -180,12 +181,14 @@ export default function AttractionMap({
   onAttractionSelect,
   className = "",
   immersiveMobile = false,
+  focusBbox = "",
 }: AttractionMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const mapLibreRef = useRef<any>(null)
   const markersByIdRef = useRef<Map<string, MarkerRecord>>(new Map())
   const fittedLocationsRef = useRef<string | null>(null)
+  const fittedFocusBboxRef = useRef<string | null>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
 
   const [map, setMap] = useState<any>(null)
@@ -252,6 +255,7 @@ export default function AttractionMap({
       mapInstanceRef.current?.remove()
       mapInstanceRef.current = null
       fittedLocationsRef.current = null
+      fittedFocusBboxRef.current = null
     }
   }, [immersiveMobile])
 
@@ -264,8 +268,24 @@ export default function AttractionMap({
 
     if (!attractions.length) {
       fittedLocationsRef.current = null
+      const coordinates = focusBbox.split(",").map((value) => Number.parseFloat(value))
+      if (
+        coordinates.length === 4
+        && coordinates.every((value) => Number.isFinite(value))
+        && fittedFocusBboxRef.current !== focusBbox
+      ) {
+        const [west, south, east, north] = coordinates
+        map.fitBounds([[west, south], [east, north]], {
+          padding: immersiveMobile ? 46 : 60,
+          maxZoom: 12,
+          duration: 420,
+        })
+        fittedFocusBboxRef.current = focusBbox
+      }
       return
     }
+
+    fittedFocusBboxRef.current = focusBbox || null
 
     const bounds = new maplibregl.LngLatBounds()
     const locations: string[] = []
@@ -320,7 +340,7 @@ export default function AttractionMap({
       })
       fittedLocationsRef.current = locationsKey
     }
-  }, [attractions, map, onAttractionSelect, immersiveMobile])
+  }, [attractions, map, onAttractionSelect, immersiveMobile, focusBbox])
 
   useEffect(() => {
     markersByIdRef.current.forEach(({ element }, id) => {
