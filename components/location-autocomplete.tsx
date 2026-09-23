@@ -95,7 +95,7 @@ export function LocationAutocomplete({
     onSelect(place)
   }
 
-  const dropdownVisible = focused && (loading || error || suggestions.length > 0)
+  const dropdownVisible = focused && (loading || Boolean(error) || suggestions.length > 0)
 
   return (
     <div className={cn("relative min-w-0", className)}>
