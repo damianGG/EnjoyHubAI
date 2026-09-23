@@ -5,6 +5,7 @@ import Image from "next/image"
 import { ArrowLeft, CalendarDays, LocateFixed, Loader2, MapPin, Minus, Plus, Search, Sparkles, Users, WalletCards } from "lucide-react"
 
 import { DynamicFilterSection, type DynamicFilterCondition, type DynamicFilterDefinition } from "@/components/dynamic-filter-section"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -116,8 +117,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [location, setLocation] = useState("")
-  const [currentLocationBbox, setCurrentLocationBbox] = useState("")
-  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false)
+  const [locationBbox, setLocationBbox] = useState("")
+  const [locationMode, setLocationMode] = useState<"text" | "place" | "current">("text")
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [date, setDate] = useState("")
@@ -195,10 +196,17 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setSelectedCategories(currentCategories)
     const savedBbox = params.get("bbox") || ""
     const savedQuery = params.get("q") || ""
-    const hasCurrentLocation = Boolean(savedBbox && !savedQuery)
-    setCurrentLocationBbox(savedBbox)
-    setUsingCurrentLocation(hasCurrentLocation)
-    setLocation(hasCurrentLocation ? "Moja lokalizacja" : savedQuery)
+    const savedLocation = params.get("location") || ""
+    const hasGeographicLocation = Boolean(savedBbox && !savedQuery)
+    setLocationBbox(savedBbox)
+    setLocationMode(
+      hasGeographicLocation
+        ? savedLocation.startsWith("W pobliżu:") || savedLocation === "Moja lokalizacja"
+          ? "current"
+          : "place"
+        : "text",
+    )
+    setLocation(hasGeographicLocation ? savedLocation || "Moja lokalizacja" : savedQuery)
     setLocationError(null)
     setDate(params.get("date") || "")
     setAgeMin(params.get("age_min") || "")
@@ -286,8 +294,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setSelectedGroup(null)
     setSelectedCategories([])
     setLocation("")
-    setCurrentLocationBbox("")
-    setUsingCurrentLocation(false)
+    setLocationBbox("")
+    setLocationMode("text")
     setLocationError(null)
     setDate("")
     setGuests(1)
@@ -311,8 +319,8 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
 
     try {
       const result = await resolveCurrentLocation(getMapTilerKey())
-      setCurrentLocationBbox(result.bbox)
-      setUsingCurrentLocation(true)
+      setLocationBbox(result.bbox)
+      setLocationMode("current")
       setLocation(result.label ? `W pobliżu: ${result.label}` : "Moja lokalizacja")
     } catch (error) {
       setLocationError(error instanceof Error ? error.message : "Nie udało się pobrać lokalizacji.")
@@ -341,8 +349,9 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
     setUrlParams({
       page: 1,
       categories: selectedCategories.length ? selectedCategories.join(",") : null,
-      q: usingCurrentLocation ? null : location.trim() || null,
-      bbox: usingCurrentLocation && currentLocationBbox ? currentLocationBbox : null,
+      q: locationMode === "text" ? location.trim() || null : null,
+      location: locationMode !== "text" && locationBbox ? location.trim() || null : null,
+      bbox: locationMode !== "text" && locationBbox ? locationBbox : null,
       date: date || null,
       guests: guests > 1 ? String(guests) : null,
       age_min: normalizedMin || null,
@@ -502,25 +511,32 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   <h4 className="text-xs font-extrabold">Gdzie?</h4>
                 </div>
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-                  <Input
+                  <Search className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary" />
+                  <LocationAutocomplete
                     value={location}
-                    onChange={(event) => {
-                      setLocation(event.target.value)
-                      setUsingCurrentLocation(false)
-                      setCurrentLocationBbox("")
+                    onChange={(value) => {
+                      setLocation(value)
+                      setLocationMode("text")
+                      setLocationBbox("")
                       setLocationError(null)
                     }}
+                    onSelect={(place) => {
+                      setLocation(place.label)
+                      setLocationMode("place")
+                      setLocationBbox(place.bbox)
+                      setLocationError(null)
+                    }}
+                    onEnter={handleSearch}
                     placeholder="Miasto, okolica lub nazwa atrakcji"
-                    className="h-14 min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 pr-12 text-sm shadow-sm focus-visible:ring-primary/25"
+                    inputClassName="h-14 min-w-0 rounded-[18px] border-[#0b1220]/[0.07] bg-white pl-11 pr-12 text-sm shadow-sm focus-visible:ring-primary/25"
                   />
                   <button
                     type="button"
                     onClick={useCurrentLocation}
                     disabled={locationLoading}
                     className={cn(
-                      "absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full transition",
-                      usingCurrentLocation
+                      "absolute right-2 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full transition",
+                      locationMode === "current"
                         ? "bg-primary text-white shadow-[0_6px_16px_rgba(255,90,31,0.25)]"
                         : "bg-secondary text-primary hover:bg-primary/10",
                     )}
@@ -539,7 +555,7 @@ export function SearchDialog({ open: controlledOpen, onOpenChange: controlledOnO
                   >
                     {locationLoading ? "Ustalam lokalizację…" : "Użyj mojej lokalizacji"}
                   </button>
-                  {usingCurrentLocation && (
+                  {locationMode !== "text" && locationBbox && (
                     <span className="text-[10px] font-medium text-muted-foreground">okolica ok. 30 km</span>
                   )}
                 </div>
