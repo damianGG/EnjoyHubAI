@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DynamicFilterSection, hasDynamicFilterCondition, type DynamicFilterCondition, type DynamicFilterDefinition } from "@/components/dynamic-filter-section"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Slider } from "@/components/ui/slider"
 import { resolveCurrentLocation } from "@/lib/search/current-location"
 import { getMapTilerKey } from "@/lib/maps/maplibre"
@@ -161,16 +161,22 @@ export default function AttractionFilters({
       <div className="surface-3d flex flex-col gap-2 rounded-2xl border bg-background p-2 md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5 focus-within:bg-muted/50">
           <MapPin className="h-4 w-4 shrink-0 text-[#ff5a1f]" />
-          <Input
+          <LocationAutocomplete
             value={filters.location ?? ""}
-            onChange={(event) => {
+            onChange={(value) => {
               setLocationError(null)
-              onFiltersChange({ ...filters, location: event.target.value, bbox: "" })
+              onFiltersChange({ ...filters, location: value, bbox: "" })
             }}
-            onKeyDown={(event) => event.key === "Enter" && onSearch()}
+            onSelect={(place) => {
+              const next = { ...filters, location: place.label, bbox: place.bbox }
+              setLocationError(null)
+              onFiltersChange(next)
+              onSearch(next)
+            }}
+            onEnter={() => onSearch()}
             placeholder="Miasto, okolica lub atrakcja"
-            aria-label="Lokalizacja lub nazwa atrakcji"
-            className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+            className="min-w-0 flex-1"
+            inputClassName="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
           />
           <button
             type="button"
