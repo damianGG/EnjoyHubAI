@@ -70,7 +70,8 @@ function normalizeCountryCode(value?: string | null) {
 
 function featureToPlace(feature: MapTilerFeature, radiusKm = DEFAULT_LOCATION_RADIUS_KM): GeocodedPlace | null {
   const [longitude, latitude] = feature.center ?? []
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+  if (typeof latitude !== "number" || !Number.isFinite(latitude)) return null
+  if (typeof longitude !== "number" || !Number.isFinite(longitude)) return null
 
   const name = feature.text?.trim() || feature.place_name?.split(",")[0]?.trim()
   if (!name) return null
@@ -86,9 +87,7 @@ function featureToPlace(feature: MapTilerFeature, radiusKm = DEFAULT_LOCATION_RA
   const labelParts = [name]
   if (region && region.toLocaleLowerCase("pl") !== name.toLocaleLowerCase("pl")) labelParts.push(region)
 
-  const providerBbox = Array.isArray(feature.bbox) && feature.bbox.length === 4
-    ? feature.bbox
-    : null
+  const providerBbox = feature.bbox?.length === 4 ? feature.bbox : null
 
   return {
     id: feature.id || `${latitude},${longitude}`,
