@@ -360,8 +360,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     const initialDynamicCategory = selectedDynamicCategory(searchParams.get("categories"))
     const initialBbox = searchParams.get("bbox") || ""
     const initialQuery = searchParams.get("q") || ""
+    const initialLocation = searchParams.get("location") || ""
     return {
-      location: initialBbox && !initialQuery ? "Moja lokalizacja" : initialQuery,
+      location: initialBbox && !initialQuery ? initialLocation || "Moja lokalizacja" : initialQuery,
       bbox: initialBbox,
       checkIn: "",
       checkOut: "",
@@ -389,8 +390,9 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
   useEffect(() => {
     const currentBbox = searchParams.get("bbox") || ""
     const currentQuery = searchParams.get("q") || ""
+    const currentLocation = searchParams.get("location") || ""
     setFilters({
-      location: currentBbox && !currentQuery ? "Moja lokalizacja" : currentQuery,
+      location: currentBbox && !currentQuery ? currentLocation || "Moja lokalizacja" : currentQuery,
       bbox: currentBbox,
       checkIn: "",
       checkOut: "",
@@ -493,6 +495,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
     urlState.setMany({
       page: 1,
       q: next.bbox ? null : next.location?.trim() || null,
+      location: next.bbox ? next.location?.trim() || null : null,
       bbox: next.bbox || null,
       guests: next.guests !== "1" ? next.guests : null,
       min_price: next.priceRange[0] > 0 ? next.priceRange[0] : null,
