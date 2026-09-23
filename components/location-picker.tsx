@@ -24,7 +24,6 @@ export default function LocationPicker({
 }: LocationPickerProps) {
   const mapElementRef = useRef<HTMLDivElement>(null)
   const callbackRef = useRef(onLocationSelect)
-  const initialSelectionRef = useRef({ lat: selectedLat, lng: selectedLng })
   const [hasSelection, setHasSelection] = useState(
     selectedLat !== null && selectedLng !== null,
   )
@@ -51,10 +50,9 @@ export default function LocationPicker({
         const maplibregl = await loadMapLibre()
         if (disposed || !mapElementRef.current) return
 
-        const initialSelection = initialSelectionRef.current
-        const startsWithSelection = initialSelection.lat !== null && initialSelection.lng !== null
-        const startLat = initialSelection.lat ?? initialLat
-        const startLng = initialSelection.lng ?? initialLng
+        const startsWithSelection = selectedLat !== null && selectedLng !== null
+        const startLat = selectedLat ?? initialLat
+        const startLng = selectedLng ?? initialLng
 
         const map = new maplibregl.Map({
           container: mapElementRef.current,
