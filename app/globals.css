@@ -160,6 +160,20 @@
   ::selection {
     background: rgba(255, 90, 31, 0.2);
   }
+
+  /*
+   * iOS Safari automatically zooms the viewport when focusing form controls
+   * rendered below 16px. Some feature-level classes intentionally use
+   * text-sm, so enforce the accessibility-safe minimum only on mobile.
+   * This prevents focus zoom without disabling the user's pinch-to-zoom.
+   */
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {
