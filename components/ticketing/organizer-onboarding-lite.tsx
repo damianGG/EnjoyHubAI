@@ -23,6 +23,7 @@ import {
   type OrganizerOnboardingActionState,
 } from "@/app/host/onboarding/actions"
 import { ImageUploadSection } from "@/components/forms/ImageUploadSection"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -152,6 +153,7 @@ export function OrganizerOnboardingLite({ categories, subcategories, userId, use
   const [error, setError] = useState<string | null>(null)
   const [images, setImages] = useState<ImageData[]>([])
   const [location, setLocation] = useState<LocationValue | null>(null)
+  const [cityCenter, setCityCenter] = useState<LocationValue | null>(null)
   const [days, setDays] = useState<number[]>([])
   const [salesMode, setSalesMode] = useState<SalesMode>("")
   const [values, setValues] = useState<Values>({
@@ -469,12 +471,34 @@ export function OrganizerOnboardingLite({ categories, subcategories, userId, use
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Ulica i numer" htmlFor="addressVisible" className="sm:col-span-2"><Input id="addressVisible" maxLength={240} value={values.address} onChange={(e) => setValue("address", e.target.value)} placeholder="ul. Przykładowa 10" /></Field>
                 <Field label="Kod pocztowy" htmlFor="postalCodeVisible"><Input id="postalCodeVisible" maxLength={20} value={values.postalCode} onChange={(e) => setValue("postalCode", e.target.value)} placeholder="35-001" /></Field>
-                <Field label="Miejscowość" htmlFor="cityVisible"><Input id="cityVisible" maxLength={120} value={values.city} onChange={(e) => setValue("city", e.target.value)} placeholder="Rzeszów" /></Field>
+                <Field label="Miejscowość" htmlFor="cityVisible">
+                  <LocationAutocomplete
+                    id="cityVisible"
+                    value={values.city}
+                    onChange={(value) => {
+                      setValue("city", value)
+                      setCityCenter(null)
+                    }}
+                    onSelect={(place) => {
+                      setValue("city", place.name)
+                      setCityCenter({ lat: place.latitude, lng: place.longitude })
+                      setLocation(null)
+                    }}
+                    placeholder="Zacznij wpisywać, np. Rzeszów"
+                    inputClassName="h-11"
+                  />
+                </Field>
               </div>
               <div className="space-y-2">
                 <Label>Dokładne miejsce wejścia na mapie</Label>
                 <p className="text-xs text-muted-foreground">Kliknij punkt, do którego ma trafić klient. Lokalizację wykorzystamy na stronie atrakcji i w nawigacji.</p>
-                <LocationPicker onLocationSelect={onLocation} selectedLat={location?.lat ?? null} selectedLng={location?.lng ?? null} />
+                <LocationPicker
+                  onLocationSelect={onLocation}
+                  initialLat={cityCenter?.lat}
+                  initialLng={cityCenter?.lng}
+                  selectedLat={location?.lat ?? null}
+                  selectedLng={location?.lng ?? null}
+                />
               </div>
               <ImageUploadSection images={images} onImagesChange={setImages} userId={userId} maxImages={8} />
             </CardContent>
