@@ -12,6 +12,7 @@ interface SetManyOptions {
 export const MARKETPLACE_SEARCH_PARAM_KEYS = [
   "categories",
   "q",
+  "location",
   "date",
   "date_from",
   "date_to",
