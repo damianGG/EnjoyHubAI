@@ -148,6 +148,8 @@ export default function AttractionFilters({
     onClearFilters(createDefaultFilterState())
   }
 
+  const usingCurrentLocation = filters.location === "Moja lokalizacja" || filters.location?.startsWith("W pobliżu:")
+
   const activeFiltersCount = [
     filters.guests !== "1",
     filters.priceRange[0] > 0 || filters.priceRange[1] < 500,
@@ -183,7 +185,7 @@ export default function AttractionFilters({
             onClick={useCurrentLocation}
             disabled={locationLoading}
             className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
-              filters.bbox
+              usingCurrentLocation
                 ? "bg-primary text-white shadow-[0_6px_16px_rgba(255,90,31,0.22)]"
                 : "bg-secondary text-primary hover:bg-primary/10"
             }`}
