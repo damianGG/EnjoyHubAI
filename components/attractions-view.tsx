@@ -573,7 +573,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
       <div className="hidden gap-4 lg:grid lg:grid-cols-[minmax(390px,43%)_1fr]">
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">{list}</div>
         <div className="sticky top-4 h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-[28px] border border-[#0b1220]/[0.06] bg-muted shadow-[0_14px_38px_rgba(11,18,32,0.08)]">
-          <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" />
+          <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} focusBbox={filters.bbox} className="h-full border-0 shadow-none" />
         </div>
       </div>
 
@@ -585,7 +585,7 @@ export default function AttractionsView({ attractions, mobileImmersive = false }
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Aktualizuję wyniki…
               </div>
             )}
-            <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
+            <AttractionMap attractions={filteredAttractions} selectedAttraction={selectedAttraction} onAttractionSelect={setSelectedAttraction} focusBbox={filters.bbox} className="h-full border-0 shadow-none" immersiveMobile={mobileImmersive} />
           </div>
         ) : (
           <div className={mobileImmersive ? "h-full min-h-0 overflow-y-auto bg-background pt-3" : "pb-24"}>{list}</div>
