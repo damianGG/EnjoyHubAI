@@ -39,11 +39,13 @@ export function LocationAutocomplete({
   const [loading, setLoading] = useState(false)
   const [focused, setFocused] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const selectedLabelRef = useRef<string | null>(null)
+  const selectedPlaceRef = useRef<{ name: string; label: string } | null>(null)
 
   useEffect(() => {
     const query = value.trim()
-    if (!focused || query.length < 2 || selectedLabelRef.current === query) {
+    const selectedPlace = selectedPlaceRef.current
+    const matchesSelectedPlace = selectedPlace && (query === selectedPlace.name || query === selectedPlace.label)
+    if (!focused || query.length < 2 || matchesSelectedPlace) {
       setSuggestions([])
       setLoading(false)
       setError(null)
@@ -79,15 +81,17 @@ export function LocationAutocomplete({
   }, [countryCode, focused, language, value])
 
   const handleChange = (nextValue: string) => {
-    if (selectedLabelRef.current !== nextValue) selectedLabelRef.current = null
+    const selectedPlace = selectedPlaceRef.current
+    if (selectedPlace && nextValue !== selectedPlace.name && nextValue !== selectedPlace.label) {
+      selectedPlaceRef.current = null
+    }
     onChange(nextValue)
   }
 
   const choose = (place: GeocodedPlace) => {
-    selectedLabelRef.current = place.label
+    selectedPlaceRef.current = { name: place.name, label: place.label }
     setSuggestions([])
     setError(null)
-    onChange(place.label)
     onSelect(place)
   }
 
