@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { cloudinary } from "@/lib/cloudinary"
 
 // POST - Upload file to Cloudinary
 export async function POST(request: Request) {
+  const requestId = getRequestId(request)
   try {
     // Check if user is authenticated
     const supabase = createClient()
@@ -68,7 +70,12 @@ export async function POST(request: Request) {
       public_id: result.public_id,
     })
   } catch (error) {
-    console.error("Upload error:", error)
+    reportServerError(error, {
+      area: "media",
+      operation: "upload_image",
+      route: "/api/upload",
+      requestId,
+    })
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
