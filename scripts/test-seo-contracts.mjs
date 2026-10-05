@@ -226,7 +226,7 @@ assert.match(quality, /seoExcluded/)
 assert.match(quality, /SEO_LOCAL_THRESHOLDS/)
 
 const adminSeo = await source("app/admin/seo/page.tsx")
-assert.match(adminSeo, /Kontrola jakości SEO/)
+assert.match(adminSeo, /Indeksowanie Google/)
 assert.match(adminSeo, /IndexNow/)
 assert.match(adminSeo, /setSeoIndexedAction/)
 assert.match(adminSeo, /publishRecommendedSeoAction/)
