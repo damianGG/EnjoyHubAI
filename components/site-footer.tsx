@@ -54,6 +54,7 @@ export function SiteFooter() {
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             <Link className="hover:text-foreground hover:underline" href="/regulamin">Regulamin</Link>
             <Link className="hover:text-foreground hover:underline" href="/privacy">Prywatność</Link>
+            <Link className="hover:text-foreground hover:underline" href="/privacy#cookies">Cookies</Link>
             <Link className="hover:text-foreground hover:underline" href="/kontakt">Kontakt</Link>
           </div>
         </div>
