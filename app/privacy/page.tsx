@@ -34,7 +34,7 @@ const sections = [
   {
     title: "5. Pozostali odbiorcy danych",
     content:
-      "Dane mogą być powierzane lub udostępniane dostawcom hostingu, bazy danych, płatności, poczty transakcyjnej, narzędzi bezpieczeństwa i innych usług technicznych wykorzystywanych do działania EnjoyHub. Każdy podmiot otrzymuje dane tylko w zakresie potrzebnym do realizacji swojej funkcji i zgodnie z właściwą podstawą prawną.",
+      "Dane mogą być powierzane lub udostępniane dostawcom hostingu, bazy danych, płatności, poczty transakcyjnej, analityki, narzędzi bezpieczeństwa i innych usług technicznych wykorzystywanych do działania EnjoyHub. Każdy podmiot otrzymuje dane tylko w zakresie potrzebnym do realizacji swojej funkcji i zgodnie z właściwą podstawą prawną.",
   },
   {
     title: "6. Podstawy prawne",
@@ -54,7 +54,7 @@ const sections = [
   {
     title: "9. Pliki cookies i analityka",
     content:
-      "Serwis używa niezbędnych plików cookies do logowania, utrzymania sesji, checkoutu i bezpieczeństwa. Narzędzia analityczne lub inne technologie niewymagane do podstawowego działania są stosowane zgodnie z obowiązującymi wymogami dotyczącymi zgody i preferencji użytkownika.",
+      "Serwis używa niezbędnych plików cookies do logowania, utrzymania sesji, checkoutu i bezpieczeństwa. Po uzyskaniu zgody możemy używać PostHog do analizy ruchu, kliknięć, ścieżek użytkownika, wydajności oraz nagrań sesji w celu ulepszania UX. Pola formularzy są maskowane w nagraniach, a adresy IP są anonimizowane po stronie projektu. Zgodę można odrzucić albo zmienić później przez ustawienia cookies dostępne w stopce.",
   },
   {
     title: "10. Aktualizacje polityki",
