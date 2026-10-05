@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 type RawDefinition = {
@@ -45,6 +46,8 @@ function mapDefinition(scope: FilterDefinition["scope"], definition: RawDefiniti
 export const revalidate = 300
 
 export async function GET(request: Request) {
+  const route = "/api/search/filter-definitions"
+  const requestId = getRequestId(request)
   const { searchParams } = new URL(request.url)
   const slug = normalizeSlug(searchParams.get("category") || "")
 
@@ -61,7 +64,13 @@ export async function GET(request: Request) {
     .maybeSingle()
 
   if (categoryError) {
-    console.error("[search filters] Failed to resolve category", categoryError)
+    reportServerError(categoryError, {
+      area: "search",
+      operation: "resolve_filter_category",
+      route,
+      requestId,
+      extras: { slug },
+    })
     return NextResponse.json({ error: "Unable to load filters" }, { status: 500 })
   }
 
@@ -76,7 +85,13 @@ export async function GET(request: Request) {
       .maybeSingle()
 
     if (subcategoryError) {
-      console.error("[search filters] Failed to resolve subcategory", subcategoryError)
+      reportServerError(subcategoryError, {
+        area: "search",
+        operation: "resolve_filter_subcategory",
+        route,
+        requestId,
+        extras: { slug },
+      })
       return NextResponse.json({ error: "Unable to load filters" }, { status: 500 })
     }
 
@@ -90,7 +105,13 @@ export async function GET(request: Request) {
       .single()
 
     if (parentError || !parentCategory) {
-      console.error("[search filters] Failed to resolve parent category", parentError)
+      reportServerError(parentError ?? new Error("Filter parent category not found"), {
+        area: "search",
+        operation: "resolve_filter_parent_category",
+        route,
+        requestId,
+        extras: { slug, parentCategoryId: subcategory.parent_category_id },
+      })
       return NextResponse.json({ error: "Unable to load filters" }, { status: 500 })
     }
     resolvedCategory = parentCategory
@@ -135,7 +156,13 @@ export async function GET(request: Request) {
 
   const firstError = categorySupply.error || subcategorySupply.error || categoryProduct.error || subcategoryProduct.error
   if (firstError) {
-    console.error("[search filters] Failed to load definitions", firstError)
+    reportServerError(firstError, {
+      area: "search",
+      operation: "load_filter_definitions",
+      route,
+      requestId,
+      extras: { slug },
+    })
     return NextResponse.json({ error: "Unable to load filters" }, { status: 500 })
   }
 

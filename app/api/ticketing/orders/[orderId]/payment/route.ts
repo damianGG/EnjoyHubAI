@@ -2,7 +2,9 @@ import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+import { readAnalyticsRequestContext, recordAnalyticsEvent } from "@/lib/analytics/server"
 import { isMarketplaceLegalContactConfigured } from "@/lib/legal/marketplace"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin"
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe"
 import {
@@ -46,6 +48,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
+  const route = "/api/ticketing/orders/[orderId]/payment"
+  const requestId = getRequestId(request)
+
   if (!isTicketingPaymentsEnabled) {
     return paymentError("Płatności są jeszcze wyłączone.", 404)
   }
@@ -84,7 +89,13 @@ export async function POST(
     .maybeSingle()
 
   if (legalOrderError) {
-    console.error("Order legal acceptance check failed", legalOrderError)
+    reportServerError(legalOrderError, {
+      area: "payments",
+      operation: "legal_acceptance_check",
+      route,
+      requestId,
+      extras: { orderId },
+    })
     return paymentError("Nie udało się potwierdzić warunków prawnych zamówienia.", 503)
   }
 
@@ -107,7 +118,13 @@ export async function POST(
   )
 
   if (paymentAccessError) {
-    console.error("Organizer payment readiness check failed", paymentAccessError)
+    reportServerError(paymentAccessError, {
+      area: "payments",
+      operation: "organizer_payment_readiness",
+      route,
+      requestId,
+      extras: { orderId },
+    })
     return paymentError("Nie udało się sprawdzić gotowości organizatora do płatności.", 503)
   }
 
@@ -164,7 +181,15 @@ export async function POST(
   })
 
   if (error || !data?.[0]) {
-    console.error("Ticketing payment preparation error", error)
+    if (error) {
+      reportServerError(error, {
+        area: "payments",
+        operation: "prepare_payment_checkout",
+        route,
+        requestId,
+        extras: { orderId },
+      })
+    }
     return paymentError(
       error?.message.includes("starts too soon")
         ? "Termin rozpoczyna się zbyt szybko, aby otworzyć płatność online."
@@ -181,6 +206,7 @@ export async function POST(
     )
 
     if (existingSession.status === "open" && existingSession.url) {
+      await recordPaymentStarted(request, orderId, prepared, true)
       return paymentResponse(existingSession.url, orderId, checkoutCookie!.holdToken)
     }
 
@@ -239,10 +265,16 @@ export async function POST(
   )
 
   if (calculatedAmount !== Number(prepared.payment_amount_minor)) {
-    console.error("Ticketing payment amount mismatch before Stripe", {
-      orderId,
-      calculatedAmount,
-      expectedAmount: prepared.payment_amount_minor,
+    reportServerError(new Error("Ticketing payment amount mismatch before Stripe"), {
+      area: "payments",
+      operation: "validate_payment_amount",
+      route,
+      requestId,
+      extras: {
+        orderId,
+        calculatedAmount,
+        expectedAmount: Number(prepared.payment_amount_minor),
+      },
     })
     return paymentError("Nie udało się potwierdzić kwoty zamówienia.", 500)
   }
@@ -301,11 +333,46 @@ export async function POST(
   )
 
   if (attachError) {
-    console.error("Ticketing Stripe session attach error", attachError)
+    reportServerError(attachError, {
+      area: "payments",
+      operation: "attach_stripe_checkout",
+      route,
+      requestId,
+      extras: { orderId, paymentAttemptId: prepared.payment_attempt_id },
+    })
     return paymentError("Nie udało się bezpiecznie połączyć płatności z zamówieniem.", 500)
   }
 
+  await recordPaymentStarted(request, orderId, prepared, false)
   return paymentResponse(session.url, orderId, checkoutCookie!.holdToken)
+}
+
+async function recordPaymentStarted(
+  request: Request,
+  orderId: string,
+  prepared: PreparedPayment,
+  reusedCheckout: boolean,
+) {
+  const context = readAnalyticsRequestContext(request)
+  await recordAnalyticsEvent({
+    eventName: "payment_started",
+    anonymousId: context.anonymousId,
+    analyticsSessionId: context.analyticsSessionId,
+    searchId: context.searchId,
+    orderId,
+    source: context.source,
+    medium: context.medium,
+    campaign: context.campaign,
+    referrer: request.headers.get("referer"),
+    path: new URL(request.url).pathname,
+    currency: prepared.payment_currency,
+    properties: {
+      provider: "stripe",
+      paymentAttemptId: prepared.payment_attempt_id,
+      reusedCheckout,
+    },
+    dedupeKey: `payment_started:${prepared.payment_attempt_id}`,
+  })
 }
 
 function paymentResponse(url: string, orderId: string, holdToken: string) {

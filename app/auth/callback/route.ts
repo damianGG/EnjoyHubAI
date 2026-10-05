@@ -3,9 +3,12 @@ import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 
 import { getSafeAuthReturnTo } from "@/lib/auth/return-to"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  const route = "/auth/callback"
+  const requestId = getRequestId(request)
   const code = requestUrl.searchParams.get("code")
   const next = getSafeAuthReturnTo(requestUrl.searchParams.get("next"))
 
@@ -32,7 +35,12 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error || !data.user) {
-    console.error("Auth callback exchange error:", error)
+    reportServerError(error ?? new Error("Auth callback did not return a user"), {
+      area: "auth",
+      operation: "exchange_code_for_session",
+      route,
+      requestId,
+    })
     return NextResponse.redirect(getLoginErrorUrl(requestUrl.origin, next))
   }
 
@@ -57,7 +65,13 @@ export async function GET(request: NextRequest) {
     )
 
   if (profileError) {
-    console.error("Auth callback profile synchronization error:", profileError)
+    reportServerError(profileError, {
+      area: "auth",
+      operation: "sync_profile",
+      route,
+      requestId,
+      extras: { userId: data.user.id },
+    })
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin))

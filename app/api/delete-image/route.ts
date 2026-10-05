@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { cloudinary } from "@/lib/cloudinary"
 
 // DELETE - Delete an image from Cloudinary
 export async function DELETE(request: Request) {
+  const requestId = getRequestId(request)
   try {
     // Check if user is authenticated
     const supabase = createClient()
@@ -15,10 +17,18 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { publicId } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+    }
 
-    if (!publicId) {
+    const publicId = body && typeof body === "object" && "publicId" in body
+      ? (body as { publicId?: unknown }).publicId
+      : null
+
+    if (typeof publicId !== "string" || !publicId.trim()) {
       return NextResponse.json({ error: "Public ID is required" }, { status: 400 })
     }
 
@@ -36,7 +46,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Failed to delete image" }, { status: 400 })
     }
   } catch (error) {
-    console.error("Delete error:", error)
+    reportServerError(error, {
+      area: "media",
+      operation: "delete_image",
+      route: "/api/delete-image",
+      requestId,
+    })
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

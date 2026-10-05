@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 
 import type { NextResponse } from "next/server"
 
+import { reportServerError } from "@/lib/monitoring/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export const ANALYTICS_ANON_COOKIE = "eh_anon_id"
@@ -180,12 +181,20 @@ export async function recordAnalyticsEvent(input: RecordAnalyticsInput) {
       p_search_results: input.searchResults ?? [],
     })
     if (error) {
-      console.error("Analytics event persistence failed", { eventName: input.eventName, code: error.code, message: error.message })
+      reportServerError(error, {
+        area: "analytics",
+        operation: "record_event",
+        extras: { eventName: input.eventName, code: error.code },
+      })
       return null
     }
     return data as string | null
   } catch (error) {
-    console.error("Analytics event persistence failed", { eventName: input.eventName, error })
+    reportServerError(error, {
+      area: "analytics",
+      operation: "record_event",
+      extras: { eventName: input.eventName },
+    })
     return null
   }
 }
@@ -208,9 +217,19 @@ export async function enrichAnalyticsEvent(
       p_referrer: safeReferrer(context.referrer),
       p_path: safeText(context.path, 500),
     })
-    if (error) console.error("Analytics enrichment failed", { dedupeKey, code: error.code, message: error.message })
+    if (error) {
+      reportServerError(error, {
+        area: "analytics",
+        operation: "enrich_event",
+        extras: { dedupeKey, code: error.code },
+      })
+    }
   } catch (error) {
-    console.error("Analytics enrichment failed", { dedupeKey, error })
+    reportServerError(error, {
+      area: "analytics",
+      operation: "enrich_event",
+      extras: { dedupeKey },
+    })
   }
 }
 

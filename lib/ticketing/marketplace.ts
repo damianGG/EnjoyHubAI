@@ -1,3 +1,4 @@
+import { reportServerError } from "@/lib/monitoring/server"
 import { isTicketingCheckoutEnabled } from "@/lib/ticketing/config"
 import { createPublicServerClient, isPublicSupabaseConfigured } from "@/lib/supabase/public-server"
 
@@ -60,9 +61,10 @@ export async function getMarketplaceTicketingVenue(
 
   if (error || !data) {
     if (error && !isMissingMarketplaceBridge(error)) {
-      console.error("Marketplace venue lookup failed", {
-        code: error.code,
-        message: error.message,
+      reportServerError(error, {
+        area: "ticketing",
+        operation: "marketplace_venue_lookup",
+        extras: { propertyId, code: error.code },
       })
     }
     return null
@@ -95,9 +97,10 @@ export async function listMarketplacePropertySessions(
 
   if (error || !data) {
     if (error && !isMissingMarketplaceBridge(error)) {
-      console.error("Marketplace session lookup failed", {
-        code: error.code,
-        message: error.message,
+      reportServerError(error, {
+        area: "ticketing",
+        operation: "marketplace_session_lookup",
+        extras: { propertyId, startDate, endDate, code: error.code },
       })
     }
     return []
