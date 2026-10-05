@@ -7,11 +7,15 @@ import type { User } from "@supabase/supabase-js"
 import {
   CalendarDays,
   Heart,
+  CircleHelp,
+  Info,
   LogOut,
   MapPin,
   Menu,
+  MessageCircle,
   Search,
   Settings,
+  Ticket,
   User as UserIcon,
 } from "lucide-react"
 
@@ -216,6 +220,38 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                   <UserIcon className="h-[18px] w-[18px]" />
                 </button>
               )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="grid h-9 w-9 place-items-center rounded-full border border-[#0b1220]/[0.06] bg-white"
+                    aria-label="Menu"
+                  >
+                    <Menu className="h-[18px] w-[18px]" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 rounded-2xl p-2" align="end" sideOffset={8}>
+                  {user ? (
+                    <>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/bookings"><Ticket className="mr-2 h-4 w-4" />Moje bilety</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/messages"><MessageCircle className="mr-2 h-4 w-4" />Wiadomości</Link></DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem className="rounded-xl" onClick={openLoginSheet}><UserIcon className="mr-2 h-4 w-4" />Zaloguj się</DropdownMenuItem>
+                      <DropdownMenuItem className="rounded-xl" onClick={openSignupSheet}>Dołącz do EnjoyHub</DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/dla-organizatorow">Dodaj atrakcję</Link></DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Informacje</div>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/jak-to-dziala"><CircleHelp className="mr-2 h-4 w-4" />Jak to działa</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/o-nas"><Info className="mr-2 h-4 w-4" />O EnjoyHub</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/kontakt">Kontakt</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/regulamin">Regulamin</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className="rounded-xl"><Link href="/privacy">Prywatność</Link></DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -307,8 +343,18 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                     <div className="p-2"><p className="font-semibold">{displayName}</p><p className="truncate text-xs text-muted-foreground">{user.email}</p></div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard"><UserIcon className="mr-2 h-4 w-4" />Mój panel</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/bookings"><Ticket className="mr-2 h-4 w-4" />Moje bilety</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/messages"><MessageCircle className="mr-2 h-4 w-4" />Wiadomości</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/favorites"><Heart className="mr-2 h-4 w-4" />Ulubione</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-xl"><Link href="/dashboard/profile"><Settings className="mr-2 h-4 w-4" />Ustawienia</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/dla-organizatorow">Dodaj atrakcję</Link></DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Informacje</div>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/jak-to-dziala"><CircleHelp className="mr-2 h-4 w-4" />Jak to działa</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/o-nas"><Info className="mr-2 h-4 w-4" />O EnjoyHub</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/kontakt">Kontakt</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/regulamin">Regulamin</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-xl"><Link href="/privacy">Prywatność</Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="cursor-pointer rounded-xl text-red-600 focus:text-red-600" onClick={() => setShowLogoutDialog(true)} disabled={isLoading}>
                       <LogOut className="mr-2 h-4 w-4" />{isLoading ? "Wylogowywanie..." : "Wyloguj się"}
@@ -319,6 +365,23 @@ export function TopNav({ onSearchClick }: { onSearchClick?: () => void }) {
                 <>
                   <Button variant="ghost" className="rounded-full" onClick={openLoginSheet}>Zaloguj</Button>
                   <Button className="rounded-full px-5 orange-glow" onClick={openSignupSheet}>Dołącz</Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-11 w-11 rounded-full" aria-label="Menu">
+                        <Menu className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-64 rounded-2xl p-2" align="end" sideOffset={10}>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/dla-organizatorow">Dodaj atrakcję</Link></DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Informacje</div>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/jak-to-dziala"><CircleHelp className="mr-2 h-4 w-4" />Jak to działa</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/o-nas"><Info className="mr-2 h-4 w-4" />O EnjoyHub</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/kontakt">Kontakt</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/regulamin">Regulamin</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild className="rounded-xl"><Link href="/privacy">Prywatność</Link></DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               )}
             </div>
