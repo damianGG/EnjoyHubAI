@@ -34,6 +34,8 @@ export type PublicAttractionSeoRecord = {
   amenities?: string[] | null
   opening_hours?: string | null
   venue_id?: string | null
+  seo_indexed?: boolean | null
+  seo_excluded?: boolean | null
   updated_at?: string | null
   users?: {
     full_name?: string | null
@@ -87,6 +89,8 @@ async function loadPublicAttractionSeoRecord(column: "id" | "public_code", value
       images,
       amenities,
       venue_id,
+      seo_indexed,
+      seo_excluded,
       updated_at,
       users!properties_host_id_fkey (full_name, avatar_url, created_at, email, phone),
       reviews (
@@ -184,8 +188,34 @@ function publicHttpUrl(value?: string | null) {
   }
 }
 
+function normalizedPlaceToken(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+function titleAlreadyContainsCity(title: string, city: string) {
+  const titleToken = normalizedPlaceToken(title)
+  const cityToken = normalizedPlaceToken(city)
+  if (!cityToken) return false
+  return titleToken === cityToken
+    || titleToken.startsWith(`${cityToken}-`)
+    || titleToken.endsWith(`-${cityToken}`)
+    || titleToken.includes(`-${cityToken}-`)
+}
+
+export function getAttractionPageTitle(attraction: Pick<PublicAttractionSeoRecord, "title" | "city">) {
+  if (!attraction.city || titleAlreadyContainsCity(attraction.title, attraction.city)) return attraction.title
+  return `${attraction.title} – ${attraction.city}`
+}
+
 export function getAttractionMetaDescription(attraction: Pick<PublicAttractionSeoRecord, "title" | "city" | "description">) {
-  const prefix = `${attraction.title}${attraction.city ? ` w ${attraction.city}` : ""}. `
+  const prefix = titleAlreadyContainsCity(attraction.title, attraction.city)
+    ? `${attraction.title}. `
+    : `${attraction.title}${attraction.city ? ` w ${attraction.city}` : ""}. `
   const description = compactText(attraction.description)
 
   if (description) return truncateAtWord(`${prefix}${description}`, 160)
@@ -327,7 +357,7 @@ export function buildAttractionJsonLd({
         "@type": "WebPage",
         "@id": `${canonicalUrl}#webpage`,
         url: canonicalUrl,
-        name: `${attraction.title}${attraction.city ? ` – ${attraction.city}` : ""}`,
+        name: getAttractionPageTitle(attraction),
         description,
         inLanguage: "pl-PL",
         mainEntity: { "@id": `${canonicalUrl}#attraction` },
