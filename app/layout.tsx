@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 // import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AnalyticsPageTracker } from '@/components/analytics/page-tracker'
+import { PostHogConsent } from '@/components/analytics/posthog-consent'
 import { getPublicSiteUrl } from '@/lib/site-url'
 import './globals.css'
 
@@ -85,6 +86,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased min-h-screen bg-background">
         {children}
+        <PostHogConsent />
         <AnalyticsPageTracker />
         <Analytics />
       </body>
