@@ -4,18 +4,86 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { submitIndexNowForAttractionId, submitIndexNowSeoSnapshot } from "@/lib/seo/indexnow"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
+import { getSeoQualityDashboard } from "@/lib/seo/quality"
 import { requirePlatformStaff } from "@/lib/platform-admin/access"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 const seoRoles = ["platform_superadmin", "platform_content"] as const
 
+export async function setSeoIndexedAction(propertyId: string, indexed: boolean, _formData: FormData) {
+  await requirePlatformStaff(seoRoles, "/admin/seo")
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+
+  const patch = indexed
+    ? { seo_indexed: true, seo_indexed_at: now, seo_excluded: false, updated_at: now }
+    : { seo_indexed: false, seo_indexed_at: null, updated_at: now }
+
+  const { data: attraction, error } = await admin
+    .from("properties")
+    .update(patch)
+    .eq("id", propertyId)
+    .select("id,title,city,property_type")
+    .single()
+
+  if (error || !attraction) {
+    console.error("[admin:seo] Failed to change manual indexing state", error)
+    redirect("/admin/seo?blad=seo-indexed")
+  }
+
+  revalidatePath(publicAttractionPath(attraction))
+  revalidatePath("/admin/seo")
+  revalidatePath("/attractions")
+  revalidatePath("/sitemap.xml")
+
+  // When disabling indexing, still submit the URL once so crawlers can see noindex.
+  await submitIndexNowForAttractionId(propertyId, { includeUnindexed: !indexed })
+}
+
+export async function publishRecommendedSeoAction(_formData: FormData) {
+  await requirePlatformStaff(seoRoles, "/admin/seo")
+  const admin = createAdminClient()
+  const dashboard = await getSeoQualityDashboard()
+  const selectedProfiles = dashboard.profiles
+    .filter((profile) => profile.seoEligible && !profile.seoIndexed && !profile.seoExcluded)
+  const ids = selectedProfiles.map((profile) => profile.id)
+
+  if (ids.length === 0) redirect("/admin/seo?opublikowano=0")
+
+  const now = new Date().toISOString()
+  for (let index = 0; index < ids.length; index += 200) {
+    const { error } = await admin
+      .from("properties")
+      .update({ seo_indexed: true, seo_indexed_at: now, seo_excluded: false, updated_at: now })
+      .in("id", ids.slice(index, index + 200))
+
+    if (error) {
+      console.error("[admin:seo] Failed to publish recommended profiles", error)
+      redirect("/admin/seo?blad=publish-recommended")
+    }
+  }
+
+  for (const profile of selectedProfiles) revalidatePath(profile.canonicalPath)
+  revalidatePath("/admin/seo")
+  revalidatePath("/attractions")
+  revalidatePath("/sitemap.xml")
+  await submitIndexNowSeoSnapshot()
+  redirect(`/admin/seo?opublikowano=${ids.length}&status=recommended`)
+}
+
 export async function setSeoExcludedAction(propertyId: string, excluded: boolean, _formData: FormData) {
   await requirePlatformStaff(seoRoles, "/admin/seo")
   const admin = createAdminClient()
+  const now = new Date().toISOString()
 
   const { error } = await admin
     .from("properties")
-    .update({ seo_excluded: excluded, updated_at: new Date().toISOString() })
+    .update({
+      seo_excluded: excluded,
+      ...(excluded ? { seo_indexed: false, seo_indexed_at: null } : {}),
+      updated_at: now,
+    })
     .eq("id", propertyId)
 
   if (error) {
@@ -26,7 +94,7 @@ export async function setSeoExcludedAction(propertyId: string, excluded: boolean
   revalidatePath("/admin/seo")
   revalidatePath("/attractions")
   revalidatePath("/sitemap.xml")
-  await submitIndexNowForAttractionId(propertyId)
+  await submitIndexNowForAttractionId(propertyId, { includeUnindexed: excluded })
 }
 
 export async function submitSeoSnapshotToIndexNowAction(_formData: FormData) {

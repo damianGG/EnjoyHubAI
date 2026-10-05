@@ -32,6 +32,7 @@ type AttractionRow = {
   property_type?: string | null
   category_id?: string | null
   seo_excluded?: boolean | null
+  seo_indexed?: boolean | null
 }
 
 function canonicalSite() {
@@ -114,7 +115,10 @@ async function attractionCanonicalUrl(attraction: AttractionRow) {
   return `${siteUrl}${publicAttractionPath(attraction)}`
 }
 
-export async function submitIndexNowForAttractionId(attractionId: string) {
+export async function submitIndexNowForAttractionId(
+  attractionId: string,
+  options: { includeUnindexed?: boolean } = {},
+) {
   if (!isSupabaseAdminConfigured || !attractionId) {
     return { submitted: 0, batches: 0, ok: true, statuses: [] } satisfies IndexNowResult
   }
@@ -122,7 +126,7 @@ export async function submitIndexNowForAttractionId(attractionId: string) {
   const admin = createAdminClient()
   const { data: attraction, error } = await admin
     .from("properties")
-    .select("id,title,city,city_slug,property_type,category_id,seo_excluded")
+    .select("id,title,city,city_slug,property_type,category_id,seo_excluded,seo_indexed")
     .eq("id", attractionId)
     .maybeSingle()
 
@@ -132,10 +136,16 @@ export async function submitIndexNowForAttractionId(attractionId: string) {
   }
 
   const row = attraction as AttractionRow
+  const isIndexed = row.seo_indexed === true && row.seo_excluded !== true
+
+  if (!isIndexed && !options.includeUnindexed) {
+    return { submitted: 0, batches: 0, ok: true, statuses: [] } satisfies IndexNowResult
+  }
+
   const { siteUrl } = canonicalSite()
   const urls = [await attractionCanonicalUrl(row), `${siteUrl}/attractions`, `${siteUrl}/sitemap.xml`]
 
-  if (!row.seo_excluded) {
+  if (isIndexed) {
     const catalog = await getSeoLandingCatalog()
     const city = findSeoCatalogCity(catalog, row.city_slug || row.city)
     if (city && isSeoCityIndexable(city)) {
@@ -167,9 +177,10 @@ async function listIndexableAttractions() {
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await admin
       .from("properties")
-      .select("id,title,city,city_slug,property_type,category_id,seo_excluded")
+      .select("id,title,city,city_slug,property_type,category_id,seo_excluded,seo_indexed")
       .eq("is_active", true)
       .eq("seo_excluded", false)
+      .eq("seo_indexed", true)
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
