@@ -1,3 +1,5 @@
+import { capturePostHogEvent } from "@/lib/posthog-browser"
+
 export type ClientAnalyticsEventName =
   | "attraction_viewed"
   | "availability_viewed"
@@ -72,18 +74,33 @@ export function trackAnalyticsEvent(input: {
 }) {
   if (typeof window === "undefined") return
   const attribution = getAttribution()
+  const analyticsSessionId = getSessionId()
+  const path = `${window.location.pathname}${window.location.search}`.slice(0, 500)
+
   void fetch("/api/analytics/events", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     keepalive: true,
     body: JSON.stringify({
       ...input,
-      analyticsSessionId: getSessionId(),
+      analyticsSessionId,
       source: attribution.source,
       medium: attribution.medium,
       campaign: attribution.campaign,
       referrer: attribution.referrer,
-      path: `${window.location.pathname}${window.location.search}`.slice(0, 500),
+      path,
     }),
   }).catch(() => undefined)
+
+  capturePostHogEvent(input.eventName, {
+    attraction_id: input.attractionId ?? undefined,
+    product_id: input.productId ?? undefined,
+    ticketing_session_id: input.ticketingSessionId ?? undefined,
+    analytics_session_id: analyticsSessionId ?? undefined,
+    source: attribution.source,
+    medium: attribution.medium,
+    campaign: attribution.campaign,
+    path,
+    ...input.properties,
+  })
 }
