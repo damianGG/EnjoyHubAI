@@ -14,12 +14,12 @@ import {
   TicketCheck,
 } from "lucide-react"
 
+import { SiteFooter } from "@/components/site-footer"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-import { SiteFooter } from "@/components/site-footer"
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -268,6 +268,8 @@ export default function OrganizerLandingPage() {
           </Button>
         </div>
       </section>
+
+      <SiteFooter />
     </main>
   )
 }
