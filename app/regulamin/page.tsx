@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { SiteFooter } from "@/components/site-footer"
+
 import {
   LEGAL_EFFECTIVE_DATE,
   MARKETPLACE_TERMS_VERSION,
@@ -96,6 +98,7 @@ export default function TermsPage() {
           </LegalSection>
         </div>
       </div>
+      <SiteFooter />
     </main>
   )
 }

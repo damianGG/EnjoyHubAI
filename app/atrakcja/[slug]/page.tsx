@@ -23,6 +23,7 @@ import { AttractionDemandCard } from "@/components/attraction-demand-card"
 import AttractionMap from "@/components/attraction-map"
 import PropertyContactInfo from "@/components/property-contact-info"
 import ReviewsList from "@/components/reviews-list"
+import { SiteFooter } from "@/components/site-footer"
 import { RelatedAttractions } from "@/components/seo/related-attractions"
 import { MarketplaceCalendar } from "@/components/ticketing/marketplace-calendar"
 import { TopNav } from "@/components/top-nav"
@@ -353,6 +354,8 @@ export default async function AttractionPage({ params }: AttractionPageProps) {
           <RelatedAttractions sections={seoLinking.relatedSections} />
         </div>
       </div>
+
+      <SiteFooter />
 
       {(ticketingVenue || isPaintball) && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(11,18,32,0.12)] backdrop-blur md:hidden">

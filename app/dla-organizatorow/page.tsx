@@ -14,6 +14,7 @@ import {
   TicketCheck,
 } from "lucide-react"
 
+import { SiteFooter } from "@/components/site-footer"
 import {
   Accordion,
   AccordionContent,
@@ -267,6 +268,8 @@ export default function OrganizerLandingPage() {
           </Button>
         </div>
       </section>
+
+      <SiteFooter />
     </main>
   )
 }

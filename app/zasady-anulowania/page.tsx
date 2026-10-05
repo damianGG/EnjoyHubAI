@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { SiteFooter } from "@/components/site-footer"
 import {
   CANCELLATION_POLICY_VERSION,
   LEGAL_EFFECTIVE_DATE,
@@ -63,6 +64,7 @@ export default function CancellationPolicyPage() {
           </PolicySection>
         </div>
       </div>
+      <SiteFooter />
     </main>
   )
 }

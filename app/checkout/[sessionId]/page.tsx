@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { SiteFooter } from "@/components/site-footer"
 import { ArrowLeft, CalendarDays, Check, Clock, MapPin, ShieldCheck, Users } from "lucide-react"
 import { notFound } from "next/navigation"
 
@@ -97,6 +98,8 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sessi
           </aside>
         </div>
       </div>
+
+      <SiteFooter />
     </main>
   )
 }
