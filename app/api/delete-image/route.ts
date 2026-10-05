@@ -17,10 +17,18 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { publicId } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+    }
 
-    if (!publicId) {
+    const publicId = body && typeof body === "object" && "publicId" in body
+      ? (body as { publicId?: unknown }).publicId
+      : null
+
+    if (typeof publicId !== "string" || !publicId.trim()) {
       return NextResponse.json({ error: "Public ID is required" }, { status: 400 })
     }
 
