@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect } from "react"
+import * as Sentry from "@sentry/nextjs"
+
 import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
 
@@ -12,7 +14,12 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error("Error:", error)
+    Sentry.withScope((scope) => {
+      scope.setTag("area", "app")
+      scope.setTag("boundary", "root")
+      if (error.digest) scope.setTag("digest", error.digest)
+      Sentry.captureException(error)
+    })
   }, [error])
 
   return (
