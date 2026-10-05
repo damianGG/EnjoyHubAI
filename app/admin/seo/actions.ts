@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { submitIndexNowForAttractionId, submitIndexNowSeoSnapshot } from "@/lib/seo/indexnow"
+import { publicAttractionPath } from "@/lib/marketplace/attraction-path"
 import { getSeoQualityDashboard } from "@/lib/seo/quality"
 import { requirePlatformStaff } from "@/lib/platform-admin/access"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -19,16 +20,19 @@ export async function setSeoIndexedAction(propertyId: string, indexed: boolean, 
     ? { seo_indexed: true, seo_indexed_at: now, seo_excluded: false, updated_at: now }
     : { seo_indexed: false, seo_indexed_at: null, updated_at: now }
 
-  const { error } = await admin
+  const { data: attraction, error } = await admin
     .from("properties")
     .update(patch)
     .eq("id", propertyId)
+    .select("id,title,city,property_type")
+    .single()
 
-  if (error) {
+  if (error || !attraction) {
     console.error("[admin:seo] Failed to change manual indexing state", error)
     redirect("/admin/seo?blad=seo-indexed")
   }
 
+  revalidatePath(publicAttractionPath(attraction))
   revalidatePath("/admin/seo")
   revalidatePath("/attractions")
   revalidatePath("/sitemap.xml")
@@ -41,9 +45,9 @@ export async function publishRecommendedSeoAction(_formData: FormData) {
   await requirePlatformStaff(seoRoles, "/admin/seo")
   const admin = createAdminClient()
   const dashboard = await getSeoQualityDashboard()
-  const ids = dashboard.profiles
+  const selectedProfiles = dashboard.profiles
     .filter((profile) => profile.seoEligible && !profile.seoIndexed && !profile.seoExcluded)
-    .map((profile) => profile.id)
+  const ids = selectedProfiles.map((profile) => profile.id)
 
   if (ids.length === 0) redirect("/admin/seo?opublikowano=0")
 
@@ -60,6 +64,7 @@ export async function publishRecommendedSeoAction(_formData: FormData) {
     }
   }
 
+  for (const profile of selectedProfiles) revalidatePath(profile.canonicalPath)
   revalidatePath("/admin/seo")
   revalidatePath("/attractions")
   revalidatePath("/sitemap.xml")
