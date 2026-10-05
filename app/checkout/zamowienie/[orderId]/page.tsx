@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import Image from "next/image"
 import Link from "next/link"
+import { SiteFooter } from "@/components/site-footer"
 import { ArrowLeft, Check, CheckCircle2, CircleAlert, Mail, MapPin, ShieldCheck, Ticket } from "lucide-react"
 import { notFound } from "next/navigation"
 
@@ -222,6 +223,8 @@ export default async function CheckoutOrderPage({
           </aside>
         </div>
       </div>
+
+      <SiteFooter />
     </main>
   )
 }
