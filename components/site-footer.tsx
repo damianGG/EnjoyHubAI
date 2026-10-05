@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { CookieSettingsButton } from "@/components/analytics/cookie-settings-button"
 import { platformOperator } from "@/lib/legal/marketplace"
 
 const sections = [
@@ -55,6 +56,7 @@ export function SiteFooter() {
             <Link className="hover:text-foreground hover:underline" href="/regulamin">Regulamin</Link>
             <Link className="hover:text-foreground hover:underline" href="/privacy">Prywatność</Link>
             <Link className="hover:text-foreground hover:underline" href="/privacy#cookies">Cookies</Link>
+            <CookieSettingsButton />
             <Link className="hover:text-foreground hover:underline" href="/kontakt">Kontakt</Link>
           </div>
         </div>
