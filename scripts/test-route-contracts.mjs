@@ -40,6 +40,7 @@ const requiredRoutes = [
   "app/host/sprzedaz/konfiguracja/actions.ts",
   "app/api/search/filter-definitions/route.ts",
   "app/api/ticketing/properties/[propertyId]/sessions/route.ts",
+  "app/api/ticketing/orders/[orderId]/payment/route.ts",
   "components/ticketing/marketplace-calendar.tsx",
   "components/dynamic-filter-section.tsx",
   "components/attraction-demand-status.tsx",
@@ -543,6 +544,12 @@ assert.match(publicTicketingOffer, /Termin dostępny dla jednej grupy/)
 const checkoutForm = await source("components/ticketing/checkout-form.tsx")
 assert.match(checkoutForm, /Cena obejmuje cały termin dla jednej grupy/)
 assert.match(checkoutForm, /Rezerwacja grupowa/)
+
+const paymentRoute = await source("app/api/ticketing/orders/[orderId]/payment/route.ts")
+assert.match(paymentRoute, /eventName: "payment_started"/)
+assert.match(paymentRoute, /payment_started:\$\{prepared\.payment_attempt_id\}/)
+assert.match(paymentRoute, /recordAnalyticsEvent/)
+assert.match(paymentRoute, /reportServerError/)
 
 const ticketingQueries = await source("lib/ticketing/queries.ts")
 assert.match(ticketingQueries, /pricingModelFromRestrictions/)
