@@ -45,6 +45,8 @@ type PropertyRow = {
   images: string[] | null
   category_id: string | null
   seo_excluded: boolean | null
+  seo_indexed: boolean | null
+  seo_indexed_at: string | null
   is_active: boolean | null
   updated_at: string | null
 }
@@ -58,6 +60,8 @@ export type SeoQualityProfile = {
   missingLabels: string[]
   seoEligible: boolean
   seoExcluded: boolean
+  seoIndexed: boolean
+  seoIndexedAt: string | null
   canonicalPath: string
   updatedAt: string | null
 }
@@ -76,6 +80,8 @@ export type SeoQualityCity = {
 export type SeoQualityDashboard = {
   totalActive: number
   eligibleProfiles: number
+  indexedProfiles: number
+  pendingRecommendedProfiles: number
   excludedProfiles: number
   averageScore: number
   indexableCities: number
@@ -112,7 +118,7 @@ async function listActiveProperties() {
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await admin
       .from("properties")
-      .select("id,title,description,address,city,city_slug,property_type,latitude,longitude,images,category_id,seo_excluded,is_active,updated_at")
+      .select("id,title,description,address,city,city_slug,property_type,latitude,longitude,images,category_id,seo_excluded,seo_indexed,seo_indexed_at,is_active,updated_at")
       .eq("is_active", true)
       .order("updated_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1)
@@ -154,15 +160,20 @@ export async function getSeoQualityDashboard(): Promise<SeoQualityDashboard> {
       missingLabels: missing.map((requirement) => requirementLabels[requirement]),
       seoEligible: missing.length === 0 && !row.seo_excluded,
       seoExcluded: Boolean(row.seo_excluded),
+      seoIndexed: Boolean(row.seo_indexed) && !row.seo_excluded,
+      seoIndexedAt: row.seo_indexed_at,
       canonicalPath,
       updatedAt: row.updated_at,
     }
   })
 
   profiles.sort((a, b) => {
-    if (a.seoExcluded !== b.seoExcluded) return a.seoExcluded ? -1 : 1
-    if (a.seoEligible !== b.seoEligible) return a.seoEligible ? 1 : -1
-    if (a.score !== b.score) return a.score - b.score
+    const aPendingRecommended = a.seoEligible && !a.seoIndexed
+    const bPendingRecommended = b.seoEligible && !b.seoIndexed
+    if (aPendingRecommended !== bPendingRecommended) return aPendingRecommended ? -1 : 1
+    if (a.seoIndexed !== b.seoIndexed) return a.seoIndexed ? 1 : -1
+    if (a.seoExcluded !== b.seoExcluded) return a.seoExcluded ? 1 : -1
+    if (a.score !== b.score) return b.score - a.score
     return a.title.localeCompare(b.title, "pl")
   })
 
@@ -183,6 +194,8 @@ export async function getSeoQualityDashboard(): Promise<SeoQualityDashboard> {
   })
 
   const eligibleProfiles = profiles.filter((profile) => profile.seoEligible).length
+  const indexedProfiles = profiles.filter((profile) => profile.seoIndexed).length
+  const pendingRecommendedProfiles = profiles.filter((profile) => profile.seoEligible && !profile.seoIndexed).length
   const excludedProfiles = profiles.filter((profile) => profile.seoExcluded).length
   const averageScore = profiles.length
     ? Math.round(profiles.reduce((sum, profile) => sum + profile.score, 0) / profiles.length)
@@ -191,6 +204,8 @@ export async function getSeoQualityDashboard(): Promise<SeoQualityDashboard> {
   return {
     totalActive: profiles.length,
     eligibleProfiles,
+    indexedProfiles,
+    pendingRecommendedProfiles,
     excludedProfiles,
     averageScore,
     indexableCities: cities.filter((city) => city.indexable).length,
