@@ -35,6 +35,7 @@ import {
   getAttractionCanonicalPath,
   getAttractionCanonicalUrl,
   getAttractionMetaDescription,
+  getAttractionPageTitle,
   getAttractionSocialImages,
   getPublicAttractionSeoRecordByCode,
   serializeJsonLd,
@@ -69,8 +70,9 @@ export async function generateMetadata({ params }: Pick<AttractionPageProps, "pa
 
   const canonicalUrl = getAttractionCanonicalUrl(attraction)
   const description = getAttractionMetaDescription(attraction)
-  const pageTitle = `${attraction.title}${attraction.city ? ` – ${attraction.city}` : ""}`
+  const pageTitle = getAttractionPageTitle(attraction)
   const socialImages = getAttractionSocialImages(attraction)
+  const shouldIndex = attraction.seo_indexed === true && attraction.seo_excluded !== true
 
   return {
     title: pageTitle,
@@ -87,7 +89,7 @@ export async function generateMetadata({ params }: Pick<AttractionPageProps, "pa
       description,
       images: socialImages.map((url) => ({
         url,
-        alt: `${attraction.title}${attraction.city ? ` – ${attraction.city}` : ""}`,
+        alt: pageTitle,
       })),
     },
     twitter: {
@@ -97,10 +99,10 @@ export async function generateMetadata({ params }: Pick<AttractionPageProps, "pa
       ...(socialImages.length > 0 ? { images: [socialImages[0]] } : {}),
     },
     robots: {
-      index: true,
+      index: shouldIndex,
       follow: true,
       googleBot: {
-        index: true,
+        index: shouldIndex,
         follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,
