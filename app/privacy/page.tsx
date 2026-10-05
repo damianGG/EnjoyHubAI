@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
+import { SiteFooter } from "@/components/site-footer"
 import { LEGAL_EFFECTIVE_DATE, platformOperator } from "@/lib/legal/marketplace"
 
 export const metadata: Metadata = {
@@ -76,7 +77,7 @@ export default function PrivacyPage() {
 
         <div className="mt-10 space-y-8">
           {sections.map((section) => (
-            <section key={section.title}>
+            <section key={section.title} id={section.title.startsWith("9.") ? "cookies" : undefined} className="scroll-mt-24">
               <h2 className="text-xl font-semibold">{section.title}</h2>
               <p className="mt-3 leading-7 text-muted-foreground">{section.content}</p>
             </section>
@@ -88,6 +89,7 @@ export default function PrivacyPage() {
           <Link className="text-primary hover:underline" href="/zasady-anulowania">Zasady anulowania i zwrotów</Link>
         </div>
       </div>
+      <SiteFooter />
     </main>
   )
 }
