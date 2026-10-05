@@ -21,6 +21,7 @@ type SitemapAttraction = {
   property_type: string | null
   updated_at: string | null
   seo_excluded: boolean | null
+  seo_indexed: boolean | null
   is_test_data: boolean | null
 }
 
@@ -33,9 +34,10 @@ async function listAllPublicAttractions(): Promise<SitemapAttraction[]> {
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,city,property_type,updated_at,seo_excluded,is_test_data")
+      .select("id,title,city,property_type,updated_at,seo_excluded,seo_indexed,is_test_data")
       .eq("is_active", true)
       .eq("seo_excluded", false)
+      .eq("seo_indexed", true)
       .eq("is_test_data", false)
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
