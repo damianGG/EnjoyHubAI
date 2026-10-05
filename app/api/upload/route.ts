@@ -18,14 +18,14 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData()
-    const file = formData.get("image") as File
-    const userId = formData.get("userId") as string
+    const file = formData.get("image")
+    const userId = formData.get("userId")
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No valid image file provided" }, { status: 400 })
     }
 
-    if (!userId) {
+    if (typeof userId !== "string" || !userId.trim()) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
 
