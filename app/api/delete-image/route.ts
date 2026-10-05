@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { getRequestId, reportServerError } from "@/lib/monitoring/server"
 import { cloudinary } from "@/lib/cloudinary"
 
 // DELETE - Delete an image from Cloudinary
 export async function DELETE(request: Request) {
+  const requestId = getRequestId(request)
   try {
     // Check if user is authenticated
     const supabase = createClient()
@@ -36,7 +38,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Failed to delete image" }, { status: 400 })
     }
   } catch (error) {
-    console.error("Delete error:", error)
+    reportServerError(error, {
+      area: "media",
+      operation: "delete_image",
+      route: "/api/delete-image",
+      requestId,
+    })
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
